@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
@@ -66,7 +67,7 @@ import org.objectweb.asm.Opcodes;
  * The main class for mod loading operations.
  */
 @ApiStatus.Internal
-public class QuiltLoaderImpl implements org.quiltmc.loader.api.QuiltLoader {
+public class QuiltLoaderImpl implements FabricLoader {
 	public static final QuiltLoaderImpl INSTANCE = new QuiltLoaderImpl();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;

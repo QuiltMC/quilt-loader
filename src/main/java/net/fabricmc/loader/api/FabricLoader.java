@@ -33,12 +33,10 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
  *
  * @since 0.4.0
  */
-@Deprecated
 public interface FabricLoader {
 	/**
 	 * Returns the public-facing Fabric Loader instance.
 	 */
-	@Deprecated
 	static FabricLoader getInstance() {
 		if (QuiltLoaderImpl.INSTANCE == null) {
 			throw new RuntimeException("Accessed FabricLoader too early!");
