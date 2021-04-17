@@ -61,6 +61,17 @@ import java.util.zip.ZipError;
 import static com.google.common.jimfs.Feature.FILE_CHANNEL;
 import static com.google.common.jimfs.Feature.SECURE_DIRECTORY_STREAM;
 
+/** The main "resolver" for mods. This class has 2 jobs:
+ * <ul>
+ * <li>Finding valid mod jar files from the filesystem and classpath, and loading them into memory. This also includes
+ * loading mod jar files from within jar files.</li>
+ * <li>Finding a compatible set of mods, such that all of their dependencies are satisfied and none of them break with
+ * any of the other mods. This is also responsible for throwing {@link ModResolutionException} with a good error message
+ * if a valid set cannot be found.</li>
+ * </ul>
+ * <p>
+ * The main entry point for the first job is {@link #resolve(FabricLoader)}, which performs all of the work for loading,
+ * and also calls {@link #findCompatibleSet(Logger, Map)} to perform the second job upon the resolved set. */
 public class ModResolver {
 	// nested JAR store
 	private static final FileSystem inMemoryFs = Jimfs.newFileSystem(
@@ -108,9 +119,37 @@ public class ModResolver {
 		return readableNestedJarPaths.getOrDefault(c.getOriginUrl().toString(), path.toString());
 	}
 
+	/** Primarily used by {@link #resolve(FabricLoader)} to find a valid map of mod ids to a single mod candidate, where
+	 * all of the dependencies are present and no "breaking" mods are present.
+	 * 
+	 * @return A valid list of mods.
+	 * @throws ModResolutionException if that is impossible. */
 	// TODO: Find a way to sort versions of mods by suggestions and conflicts (not crucial, though)
 	public Map<String, ModCandidate> findCompatibleSet(Logger logger, Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
+
+		/*
+		 * Implementation notes:
+		 *
+		 * This makes heavy use of the Sat4j "partial boolean" functionality.
+		 *
+		 * To make defining mod [TODO]
+		 */
+
 		// First, map all ModCandidateSets to Set<ModCandidate>s.
+
+		/* This step performs the following actions:
+		 * 
+		 * 1: Checks to see if there are duplicate "mandatory" mods. (A mandatory mod is one where the user has
+		 *     added it directly to their mods folder or classpath, and duplicates would indicate that they
+		 *     have added multiple - E.G. both "buildcraft-9.0.1.jar" and "buildcraft-9.0.2.jar" are present).
+		 *
+		 * 2: Sorts all available instances of mods by their version - this means that we try to load the newest
+		 *     valid version of non-mandatory mods (I.E. library mods).
+		 * 
+		 * 3: Determines if we need to use sat4j at all - in simple cases (no jar-in-jar mods, and no "optional" mods)
+		 *     the valid mod list is just the list of mods available. Or, if there are missing dependencies or
+		 *     present "breaking" mods then we only need to perform the validation at the end of resolving.
+		 */
 		boolean isAdvanced = false;
 		Map<String, List<ModCandidate>> modCandidateMap = new HashMap<>();
 		Map<String, ModCandidate> mandatoryMods = new HashMap<>();
@@ -133,6 +172,8 @@ public class ModResolver {
 					mandatoryMods.put(mcs.getModId(), s.iterator().next());
 				}
 			} catch (ModResolutionException e) {
+				// Only thrown by "ModCandidateSet.toSortedSet" when there are duplicate mandatory mods.
+				// We collect them in a list so we can display all of the errors.
 				errors.add(e);
 			}
 		}
@@ -815,6 +856,9 @@ public class ModResolver {
 		return getCandidateFriendlyVersion(candidate.candidate);
 	}
 
+	/** A "scanner" like class that tests a single URL (representing either the root of a jar file or a folder) to see
+	 * if it contains a fabric.mod.json file, and as such if it can be loaded. Instances of this are created by
+	 * {@link ModResolver#resolve(FabricLoader)} and recursively if the scanned mod contains other jar files. */
 	static class UrlProcessAction extends RecursiveAction {
 		private final FabricLoader loader;
 		private final Map<String, ModCandidateSet> candidatesById;
@@ -994,6 +1038,11 @@ public class ModResolver {
 		}
 	}
 
+	/** The main entry point for finding mods from both the classpath, the game provider, and the filesystem.
+	 * 
+	 * @param loader
+	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
+	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
 	public Map<String, ModCandidate> resolve(FabricLoader loader) throws ModResolutionException {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
