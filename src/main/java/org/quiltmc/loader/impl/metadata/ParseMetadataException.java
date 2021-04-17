@@ -16,7 +16,8 @@
 
 package org.quiltmc.loader.impl.metadata;
 
-import org.quiltmc.loader.impl.gson.JsonReader;
+
+import org.quiltmc.json5.JsonReader;
 
 public class ParseMetadataException extends Exception {
 	public ParseMetadataException(String message) {

@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Map.Entry;
 
 import net.fabricmc.loader.api.metadata.CustomValue;
-import org.quiltmc.loader.impl.gson.JsonReader;
+import org.quiltmc.json5.JsonReader;
 
 abstract class CustomValueImpl implements CustomValue {
 	static final CustomValue BOOLEAN_TRUE = new BooleanImpl(true);

@@ -16,29 +16,25 @@
 
 package org.quiltmc.loader.impl.metadata;
 
+import org.jetbrains.annotations.Nullable;
+
 final class ParseWarning {
-	private final int line;
-	private final int column;
+	private final String location;
 	private final String key;
 	private final String reason;
 
-	ParseWarning(int line, int column, String key) {
-		this(line, column, key, null);
+	ParseWarning(String location, String key) {
+		this(location, key, null);
 	}
 
-	ParseWarning(int line, int column, String key, /* @Nullable */ String reason) {
-		this.line = line;
-		this.column = column;
+	ParseWarning(String location, String key, @Nullable String reason) {
+		this.location = location;
 		this.key = key;
 		this.reason = reason;
 	}
 
-	public int getLine() {
-		return this.line;
-	}
-
-	public int getColumn() {
-		return this.column;
+	public String getLocation() {
+		return this.location;
 	}
 
 	public String getKey() {

@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -35,8 +37,6 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import org.quiltmc.loader.impl.gson.JsonReader;
-import org.quiltmc.loader.impl.gson.JsonToken;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
@@ -120,7 +120,7 @@ public final class McVersionLookup {
 	}
 
 	private static McVersion fromVersionJson(InputStream is) {
-		try(JsonReader reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+		try(JsonReader reader = JsonReader.createStrict(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 			String id = null;
 			String name = null;
 			String release = null;

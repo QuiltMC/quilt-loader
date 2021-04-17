@@ -20,12 +20,12 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.PathType;
 
+import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import net.fabricmc.loader.api.Version;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.gson.MalformedJsonException;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.ModMetadataParser;
@@ -611,7 +611,7 @@ public class ModResolver {
 				info = new LoaderModMetadata[] { ModMetadataParser.parseMetadata(loader.getLogger(), modJson) };
 			} catch (ParseMetadataException.MissingRequired e){
 				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
-			} catch (MalformedJsonException | ParseMetadataException e) {
+			} catch (ParseException | ParseMetadataException e) {
 				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file!", path), e);
 			} catch (NoSuchFileException e) {
 				loader.getLogger().warn(String.format("Non-Fabric mod JAR at \"%s\", ignoring", path));
