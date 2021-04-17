@@ -18,7 +18,7 @@ package net.fabricmc.test;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -35,7 +35,7 @@ public class TestMod implements PreLaunchEntrypoint, ModInitializer {
 	 */
 	@Override
 	public void onPreLaunch() {
-		if (TestMod.class.getClassLoader() != FabricLauncherBase.getLauncher().getTargetClassLoader()) {
+		if (TestMod.class.getClassLoader() != QuiltLauncherBase.getLauncher().getTargetClassLoader()) {
 			throw new IllegalStateException("invalid class loader: "+TestMod.class.getClassLoader());
 		}
 
@@ -44,7 +44,7 @@ public class TestMod implements PreLaunchEntrypoint, ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		if (TestMod.class.getClassLoader() != FabricLauncherBase.getLauncher().getTargetClassLoader()) {
+		if (TestMod.class.getClassLoader() != QuiltLauncherBase.getLauncher().getTargetClassLoader()) {
 			throw new IllegalStateException("invalid class loader: "+TestMod.class.getClassLoader());
 		}
 

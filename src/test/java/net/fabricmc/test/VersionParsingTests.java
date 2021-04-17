@@ -17,8 +17,8 @@
 package net.fabricmc.test;
 
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.util.version.SemanticVersionImpl;
-import net.fabricmc.loader.util.version.SemanticVersionPredicateParser;
+import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
+import org.quiltmc.loader.impl.util.version.SemanticVersionPredicateParser;
 
 import org.jetbrains.annotations.Nullable;
 import java.util.function.Predicate;

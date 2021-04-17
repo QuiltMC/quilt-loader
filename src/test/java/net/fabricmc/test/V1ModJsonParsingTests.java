@@ -34,9 +34,9 @@ import org.junit.jupiter.api.Test;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.metadata.CustomValue;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.metadata.ModMetadataParser;
-import net.fabricmc.loader.metadata.ParseMetadataException;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.ModMetadataParser;
+import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 
 final class V1ModJsonParsingTests {
 	private static final Logger LOGGER = LogManager.getLogger();
