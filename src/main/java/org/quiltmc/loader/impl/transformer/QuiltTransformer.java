@@ -14,28 +14,28 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.transformer;
+package org.quiltmc.loader.impl.transformer;
 
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.FabricLoader;
-import net.fabricmc.loader.game.MinecraftGameProvider;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.MinecraftGameProvider;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
-public final class FabricTransformer {
+public final class QuiltTransformer {
 	public static byte[] lwTransformerHook(String name, String transformedName, byte[] bytes) {
-		boolean isDevelopment = FabricLauncherBase.getLauncher().isDevelopment();
-		EnvType envType = FabricLauncherBase.getLauncher().getEnvironmentType();
+		boolean isDevelopment = QuiltLauncherBase.getLauncher().isDevelopment();
+		EnvType envType = QuiltLauncherBase.getLauncher().getEnvironmentType();
 
 		byte[] input = MinecraftGameProvider.TRANSFORMER.transform(name);
 		if (input != null) {
-			return FabricTransformer.transform(isDevelopment, envType, name, input);
+			return QuiltTransformer.transform(isDevelopment, envType, name, input);
 		} else {
 			if (bytes != null) {
-				return FabricTransformer.transform(isDevelopment, envType, name, bytes);
+				return QuiltTransformer.transform(isDevelopment, envType, name, bytes);
 			} else {
 				return null;
 			}
@@ -45,9 +45,9 @@ public final class FabricTransformer {
 
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.indexOf('.') < 0;
-		boolean transformAccess = isMinecraftClass && FabricLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
+		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;
-		boolean applyAccessWidener = isMinecraftClass && FabricLoader.INSTANCE.getAccessWidener().getTargets().contains(name);
+		boolean applyAccessWidener = isMinecraftClass && QuiltLoaderImpl.INSTANCE.getAccessWidener().getTargets().contains(name);
 
 		if (!transformAccess && !environmentStrip && !applyAccessWidener) {
 			return bytes;
@@ -59,23 +59,23 @@ public final class FabricTransformer {
 		int visitorCount = 0;
 
 		if (applyAccessWidener) {
-			visitor = AccessWidenerVisitor.createClassVisitor(FabricLoader.ASM_VERSION, visitor, FabricLoader.INSTANCE.getAccessWidener());
+			visitor = AccessWidenerVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, QuiltLoaderImpl.INSTANCE.getAccessWidener());
 			visitorCount++;
 		}
 
 		if (transformAccess) {
-			visitor = new PackageAccessFixer(FabricLoader.ASM_VERSION, visitor);
+			visitor = new PackageAccessFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
 			visitorCount++;
 		}
 
 		if (environmentStrip) {
-			EnvironmentStrippingData stripData = new EnvironmentStrippingData(FabricLoader.ASM_VERSION, envType.toString());
+			EnvironmentStrippingData stripData = new EnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType.toString());
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 			if (stripData.stripEntireClass()) {
 				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
 			}
 			if (!stripData.isEmpty()) {
-				visitor = new ClassStripper(FabricLoader.ASM_VERSION, visitor, stripData.getStripInterfaces(), stripData.getStripFields(), stripData.getStripMethods());
+				visitor = new ClassStripper(QuiltLoaderImpl.ASM_VERSION, visitor, stripData.getStripInterfaces(), stripData.getStripFields(), stripData.getStripMethods());
 				visitorCount++;
 			}
 		}

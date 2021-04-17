@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch;
+package org.quiltmc.loader.impl.launch;
 
-import net.fabricmc.loader.transformer.FabricTransformer;
+import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import net.minecraft.launchwrapper.IClassTransformer;
 
-public class FabricClassTransformer implements IClassTransformer {
+public class QuiltClassTransformer implements IClassTransformer {
 	@Override
 	public byte[] transform(String name, String transformedName, byte[] basicClass) {
-		return FabricTransformer.lwTransformerHook(name, transformedName, basicClass);
+		return QuiltTransformer.lwTransformerHook(name, transformedName, basicClass);
 	}
 }

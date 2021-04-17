@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
-import net.fabricmc.loader.FabricLoader;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.IOException;
 import java.net.URL;
@@ -41,7 +41,7 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 	}
 
 	@Override
-	public void findCandidates(FabricLoader loader, BiConsumer<URL, Boolean> urlProposer) {
+	public void findCandidates(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> urlProposer) {
 		if (!Files.exists(path)) {
 			try {
 				Files.createDirectory(path);

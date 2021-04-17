@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
 public class ModResolutionException extends Exception {
 	public ModResolutionException(String s) {

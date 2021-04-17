@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft.hooks;
+package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 import java.io.File;
 
@@ -28,7 +28,7 @@ public final class EntrypointClient {
 			runDir = new File(".");
 		}
 
-		FabricLoader.INSTANCE.prepareModInit(runDir.toPath(), gameInstance);
+		QuiltLoaderImpl.INSTANCE.prepareModInit(runDir.toPath(), gameInstance);
 		EntrypointUtils.invoke("main", ModInitializer.class, ModInitializer::onInitialize);
 		EntrypointUtils.invoke("client", ClientModInitializer.class, ClientModInitializer::onInitializeClient);
 	}

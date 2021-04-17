@@ -14,40 +14,40 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.gui;
+package org.quiltmc.loader.impl.gui;
 
 import java.awt.GraphicsEnvironment;
 import java.util.HashSet;
 import java.util.Set;
 
-import net.fabricmc.loader.FabricLoader;
-import net.fabricmc.loader.game.GameProvider;
-import net.fabricmc.loader.gui.FabricStatusTree.FabricStatusNode;
-import net.fabricmc.loader.gui.FabricStatusTree.FabricStatusTab;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
 
-/** The main entry point for all fabric-based stuff. */
-public final class FabricGuiEntry {
-	/** Opens the given {@link FabricStatusTree} in a new swing window.
+/** The main entry point for all quilt-based stuff. */
+public final class QuiltGuiEntry {
+	/** Opens the given {@link QuiltStatusTree} in a new swing window.
 	 * 
 	 * @throws Exception if something went wrong while opening the window. */
-	public static void open(FabricStatusTree tree) throws Exception {
+	public static void open(QuiltStatusTree tree) throws Exception {
 		openWindow(tree, true);
 	}
 
-	private static void openWindow(FabricStatusTree tree, boolean shouldWait) throws Exception {
-		FabricMainWindow.open(tree, shouldWait);
+	private static void openWindow(QuiltStatusTree tree, boolean shouldWait) throws Exception {
+		QuiltMainWindow.open(tree, shouldWait);
 	}
 
 	/** @param exitAfter If true then this will call {@link System#exit(int)} after showing the gui, otherwise this will
 	 *            return normally. */
 	public static void displayCriticalError(Throwable exception, boolean exitAfter) {
-		FabricLoader.INSTANCE.getLogger().fatal("A critical error occurred", exception);
+		QuiltLoaderImpl.INSTANCE.getLogger().fatal("A critical error occurred", exception);
 
-		GameProvider provider = FabricLoader.INSTANCE.getGameProvider();
+		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
 
 		if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
-			FabricStatusTree tree = new FabricStatusTree();
-			FabricStatusTab crashTab = tree.addTab("Crash");
+			QuiltStatusTree tree = new QuiltStatusTree();
+			QuiltStatusTab crashTab = tree.addTab("Crash");
 
 			tree.mainText = "Failed to launch!";
 			addThrowable(crashTab.node, exception, new HashSet<>());
@@ -60,7 +60,7 @@ public final class FabricGuiEntry {
 				open(tree);
 			} catch (Exception e) {
 				if (exitAfter) {
-					FabricLoader.INSTANCE.getLogger().warn("Failed to open the error gui!", e);
+					QuiltLoaderImpl.INSTANCE.getLogger().warn("Failed to open the error gui!", e);
 				} else {
 					throw new RuntimeException("Failed to open the error gui!", e);
 				}
@@ -72,7 +72,7 @@ public final class FabricGuiEntry {
 		}
 	}
 
-	private static void addThrowable(FabricStatusNode node, Throwable e, Set<Throwable> seen) {
+	private static void addThrowable(QuiltStatusNode node, Throwable e, Set<Throwable> seen) {
 		if (!seen.add(e)) {
 			return;
 		}
@@ -99,7 +99,7 @@ public final class FabricGuiEntry {
 			e = cause;
 		}
 
-		FabricStatusNode sub = node.addException(e);
+		QuiltStatusNode sub = node.addException(e);
 
 		if (e.getCause() != null) {
 			addThrowable(sub, e.getCause(), seen);

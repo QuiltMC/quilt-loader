@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft;
+package org.quiltmc.loader.impl.entrypoint.minecraft;
 
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,13 +36,13 @@ public class ModClassLoader_125_FML extends URLClassLoader {
 	private URL[] localUrls;
 
 	public ModClassLoader_125_FML() {
-		super(new URL[0], FabricLauncherBase.getLauncher().getTargetClassLoader());
+		super(new URL[0], QuiltLauncherBase.getLauncher().getTargetClassLoader());
 		localUrls = new URL[0];
 	}
 
 	@Override
 	protected void addURL(URL url) {
-		FabricLauncherBase.getLauncher().propose(url);
+		QuiltLauncherBase.getLauncher().propose(url);
 
 		URL[] newLocalUrls = new URL[localUrls.length + 1];
 		System.arraycopy(localUrls, 0, newLocalUrls, 0, localUrls.length);
@@ -85,7 +85,7 @@ public class ModClassLoader_125_FML extends URLClassLoader {
 	 */
 	public File getParentSource() {
 		try {
-			return UrlUtil.asFile(UrlUtil.asUrl(FabricLauncherBase.minecraftJar));
+			return UrlUtil.asFile(UrlUtil.asUrl(QuiltLauncherBase.minecraftJar));
 		} catch (UrlConversionException e) {
 			throw new RuntimeException(e);
 		}

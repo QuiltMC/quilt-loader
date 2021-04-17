@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.language;
+package org.quiltmc.loader.impl.language;
 
 import java.io.IOException;
 

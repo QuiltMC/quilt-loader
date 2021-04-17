@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft;
+package org.quiltmc.loader.impl.entrypoint.minecraft;
 
-import net.fabricmc.loader.entrypoint.EntrypointPatch;
-import net.fabricmc.loader.entrypoint.EntrypointTransformer;
-import net.fabricmc.loader.launch.common.FabricLauncher;
-import net.fabricmc.loader.launch.knot.Knot;
+import org.quiltmc.loader.impl.entrypoint.EntrypointPatch;
+import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.objectweb.asm.commons.ClassRemapper;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.ClassNode;
@@ -28,9 +28,9 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 public class EntrypointPatchFML125 extends EntrypointPatch {
-	private static final String FROM = "net.fabricmc.loader.entrypoint.minecraft.ModClassLoader_125_FML";
+	private static final String FROM = "org.quiltmc.loader.impl.entrypoint.minecraft.ModClassLoader_125_FML";
 	private static final String TO = "cpw.mods.fml.common.ModClassLoader";
-	private static final String FROM_INTERNAL = "net/fabricmc/loader/entrypoint/minecraft/ModClassLoader_125_FML";
+	private static final String FROM_INTERNAL = "org/quiltmc/loader/impl/entrypoint/minecraft/ModClassLoader_125_FML";
 	private static final String TO_INTERNAL = "cpw/mods/fml/common/ModClassLoader";
 
 	public EntrypointPatchFML125(EntrypointTransformer transformer) {
@@ -38,7 +38,7 @@ public class EntrypointPatchFML125 extends EntrypointPatch {
 	}
 
 	@Override
-	public void process(FabricLauncher launcher, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter) {
 		if (classExists(launcher, TO)
 			&& !classExists(launcher, "cpw.mods.fml.relauncher.FMLRelauncher")) {
 

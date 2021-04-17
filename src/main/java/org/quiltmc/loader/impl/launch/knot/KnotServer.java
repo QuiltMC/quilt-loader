@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.knot;
+package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.util.SystemProperties;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 import java.io.File;
 

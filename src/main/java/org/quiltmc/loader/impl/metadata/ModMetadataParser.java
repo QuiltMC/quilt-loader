@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -27,8 +27,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import net.fabricmc.loader.lib.gson.JsonReader;
-import net.fabricmc.loader.lib.gson.JsonToken;
+import org.quiltmc.loader.impl.gson.JsonReader;
+import org.quiltmc.loader.impl.gson.JsonToken;
 
 public final class ModMetadataParser {
 	private static final Logger LOGGER = LogManager.getLogger();

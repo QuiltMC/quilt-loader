@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint;
+package org.quiltmc.loader.impl.entrypoint;
 
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -42,7 +42,7 @@ public abstract class EntrypointPatch {
 		transformer.logger.warn(s);
 	}
 
-	protected boolean classExists(FabricLauncher launcher, String className) {
+	protected boolean classExists(QuiltLauncher launcher, String className) {
 		try {
 			return launcher.getClassByteArray(className, false) != null;
 		} catch (IOException e) {
@@ -50,7 +50,7 @@ public abstract class EntrypointPatch {
 		}
 	}
 
-	protected ClassNode loadClass(FabricLauncher launcher, String className) throws IOException {
+	protected ClassNode loadClass(QuiltLauncher launcher, String className) throws IOException {
 		return transformer.loadClass(launcher, className);
 	}
 
@@ -136,5 +136,5 @@ public abstract class EntrypointPatch {
 		return ((access & 0x0F) == (Opcodes.ACC_PUBLIC | 0 /* non-static */));
 	}
 
-	public abstract void process(FabricLauncher launcher, Consumer<ClassNode> classEmitter);
+	public abstract void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter);
 }

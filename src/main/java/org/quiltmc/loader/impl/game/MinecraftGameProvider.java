@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.game;
+package org.quiltmc.loader.impl.game;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.entrypoint.EntrypointTransformer;
-import net.fabricmc.loader.entrypoint.minecraft.EntrypointPatchBranding;
-import net.fabricmc.loader.entrypoint.minecraft.EntrypointPatchFML125;
-import net.fabricmc.loader.entrypoint.minecraft.EntrypointPatchHook;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.metadata.BuiltinModMetadata;
-import net.fabricmc.loader.minecraft.McVersionLookup;
-import net.fabricmc.loader.minecraft.McVersionLookup.McVersion;
-import net.fabricmc.loader.util.Arguments;
-import net.fabricmc.loader.util.SystemProperties;
+import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchBranding;
+import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchFML125;
+import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchHook;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
+import org.quiltmc.loader.impl.minecraft.McVersionLookup;
+import org.quiltmc.loader.impl.minecraft.McVersionLookup.McVersion;
+import org.quiltmc.loader.impl.util.Arguments;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -106,7 +106,7 @@ public class MinecraftGameProvider implements GameProvider {
 			return new File(".").toPath();
 		}
 
-		return FabricLauncherBase.getLaunchDirectory(arguments).toPath();
+		return QuiltLauncherBase.getLaunchDirectory(arguments).toPath();
 	}
 
 	@Override
@@ -158,7 +158,7 @@ public class MinecraftGameProvider implements GameProvider {
 		if (version == null) version = System.getProperty(SystemProperties.GAME_VERSION);
 		versionData = version != null ? McVersionLookup.getVersion(version) : McVersionLookup.getVersion(gameJar);
 
-		FabricLauncherBase.processArgumentMap(arguments, envType);
+		QuiltLauncherBase.processArgumentMap(arguments, envType);
 
 		return true;
 	}
@@ -217,7 +217,7 @@ public class MinecraftGameProvider implements GameProvider {
 		String targetClass = entrypoint;
 
 		if (envType == EnvType.CLIENT && targetClass.contains("Applet")) {
-			targetClass = "net.fabricmc.loader.entrypoint.applet.AppletMain";
+			targetClass = "org.quiltmc.loader.impl.entrypoint.applet.AppletMain";
 		}
 
 		try {

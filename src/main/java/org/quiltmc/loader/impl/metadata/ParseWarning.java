@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 final class ParseWarning {
 	private final int line;

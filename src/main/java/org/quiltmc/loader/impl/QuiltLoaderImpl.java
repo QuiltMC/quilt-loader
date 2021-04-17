@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader;
+package org.quiltmc.loader.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -34,8 +34,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
-import net.fabricmc.loader.discovery.RuntimeModRemapper;
-import net.fabricmc.loader.metadata.DependencyOverrides;
+import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
+import org.quiltmc.loader.impl.metadata.DependencyOverrides;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,19 +44,19 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.MappingResolver;
 import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.discovery.ClasspathModCandidateFinder;
-import net.fabricmc.loader.discovery.DirectoryModCandidateFinder;
-import net.fabricmc.loader.discovery.ModCandidate;
-import net.fabricmc.loader.discovery.ModResolutionException;
-import net.fabricmc.loader.discovery.ModResolver;
-import net.fabricmc.loader.game.GameProvider;
-import net.fabricmc.loader.gui.FabricGuiEntry;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.knot.Knot;
-import net.fabricmc.loader.metadata.EntrypointMetadata;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.util.DefaultLanguageAdapter;
-import net.fabricmc.loader.util.SystemProperties;
+import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
+import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
+import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModResolutionException;
+import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.knot.Knot;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 
@@ -64,13 +65,9 @@ import org.objectweb.asm.Opcodes;
 /**
  * The main class for mod loading operations.
  */
-public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
-	/**
-	 * @deprecated Use {@link net.fabricmc.loader.api.FabricLoader#getInstance()} where possible,
-	 * report missing areas as an issue.
-	 */
-	@Deprecated
-	public static final FabricLoader INSTANCE = new FabricLoader();
+@ApiStatus.Internal
+public class QuiltLoaderImpl implements org.quiltmc.loader.api.QuiltLoader {
+	public static final QuiltLoaderImpl INSTANCE = new QuiltLoaderImpl();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
@@ -92,7 +89,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 	private Path gameDir;
 	private Path configDir;
 
-	protected FabricLoader() {
+	protected QuiltLoaderImpl() {
 	}
 
 	/**
@@ -131,7 +128,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 
 	@Override
 	public EnvType getEnvironmentType() {
-		return FabricLauncherBase.getLauncher().getEnvironmentType();
+		return QuiltLauncherBase.getLauncher().getEnvironmentType();
 	}
 
 	/**
@@ -200,7 +197,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 		try {
 			setup();
 		} catch (ModResolutionException exception) {
-			FabricGuiEntry.displayCriticalError(exception, true);
+			QuiltGuiEntry.displayCriticalError(exception, true);
 		}
 	}
 
@@ -254,7 +251,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainer mod : mods) {
 			if (!mod.getInfo().getId().equals("fabricloader") && !mod.getInfo().getType().equals("builtin")) {
-				FabricLauncherBase.getLauncher().propose(mod.getOriginUrl());
+				QuiltLauncherBase.getLauncher().propose(mod.getOriginUrl());
 			}
 		}
 
@@ -280,9 +277,9 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 	@Override
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
-			mappingResolver = new FabricMappingResolver(
-				FabricLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
-				FabricLauncherBase.getLauncher().getTargetNamespace()
+			mappingResolver = new QuiltMappingResolver(
+				QuiltLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
+				QuiltLauncherBase.getLauncher().getTargetNamespace()
 			);
 		}
 
@@ -306,7 +303,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 
 	@Override
 	public boolean isDevelopmentEnvironment() {
-		return FabricLauncherBase.getLauncher().isDevelopment();
+		return QuiltLauncherBase.getLauncher().isDevelopment();
 	}
 
 	/**
@@ -399,7 +396,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 				}
 
 				try {
-					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
+					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to instantiate language adapter: " + laEntry.getKey(), e);
 				}
@@ -449,9 +446,9 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 			throw new RuntimeException("Cannot instantiate mods when not frozen!");
 		}
 
-		if (gameInstance != null && FabricLauncherBase.getLauncher() instanceof Knot) {
+		if (gameInstance != null && QuiltLauncherBase.getLauncher() instanceof Knot) {
 			ClassLoader gameClassLoader = gameInstance.getClass().getClassLoader();
-			ClassLoader targetClassLoader = FabricLauncherBase.getLauncher().getTargetClassLoader();
+			ClassLoader targetClassLoader = QuiltLauncherBase.getLauncher().getTargetClassLoader();
 			boolean matchesKnot = (gameClassLoader == targetClassLoader);
 			boolean containsKnot = false;
 
@@ -472,7 +469,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 					getLogger().info("Environment: Target class loader is parent of game class loader.");
 				} else {
 					getLogger().warn("\n\n* CLASS LOADER MISMATCH! THIS IS VERY BAD AND WILL PROBABLY CAUSE WEIRD ISSUES! *\n"
-						+ " - Expected game class loader: " + FabricLauncherBase.getLauncher().getTargetClassLoader() + "\n"
+						+ " - Expected game class loader: " + QuiltLauncherBase.getLauncher().getTargetClassLoader() + "\n"
 						+ " - Actual game class loader: " + gameClassLoader + "\n"
 						+ "Could not find the expected class loader in game class loader parents!\n");
 				}

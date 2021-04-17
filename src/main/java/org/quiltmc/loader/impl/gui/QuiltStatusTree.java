@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.gui;
+package org.quiltmc.loader.impl.gui;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public final class FabricStatusTree {
+public final class QuiltStatusTree {
 	public enum FabricTreeWarningLevel {
 		ERROR,
 		WARN,
@@ -89,59 +89,59 @@ public final class FabricStatusTree {
 	 * of {@link #ICON_TYPE_TICK} */
 	public static final String ICON_TYPE_LESSER_CROSS = "lesser_cross";
 
-	public final List<FabricStatusTab> tabs = new ArrayList<>();
-	public final List<FabricStatusButton> buttons = new ArrayList<>();
+	public final List<QuiltStatusTab> tabs = new ArrayList<>();
+	public final List<QuiltStatusButton> buttons = new ArrayList<>();
 
 	public String mainText = null;
 
-	public FabricStatusTab addTab(String name) {
-		FabricStatusTab tab = new FabricStatusTab(name);
+	public QuiltStatusTab addTab(String name) {
+		QuiltStatusTab tab = new QuiltStatusTab(name);
 		tabs.add(tab);
 		return tab;
 	}
 
-	public FabricStatusButton addButton(String text) {
-		FabricStatusButton button = new FabricStatusButton(text);
+	public QuiltStatusButton addButton(String text) {
+		QuiltStatusButton button = new QuiltStatusButton(text);
 		buttons.add(button);
 		return button;
 	}
 
-	public static final class FabricStatusButton {
+	public static final class QuiltStatusButton {
 		public final String text;
 		public boolean shouldClose, shouldContinue;
 
-		public FabricStatusButton(String text) {
+		public QuiltStatusButton(String text) {
 			this.text = text;
 		}
 
-		public FabricStatusButton makeClose() {
+		public QuiltStatusButton makeClose() {
 			shouldClose = true;
 			return this;
 		}
 
-		public FabricStatusButton makeContinue() {
+		public QuiltStatusButton makeContinue() {
 			this.shouldContinue = true;
 			return this;
 		}
 	}
 
-	public static final class FabricStatusTab {
-		public final FabricStatusNode node;
+	public static final class QuiltStatusTab {
+		public final QuiltStatusNode node;
 
 		/** The minimum warning level to display for this tab. */
 		public FabricTreeWarningLevel filterLevel = FabricTreeWarningLevel.NONE;
 
-		public FabricStatusTab(String name) {
-			this.node = new FabricStatusNode(null, name);
+		public QuiltStatusTab(String name) {
+			this.node = new QuiltStatusNode(null, name);
 		}
 
-		public FabricStatusNode addChild(String name) {
+		public QuiltStatusNode addChild(String name) {
 			return node.addChild(name);
 		}
 	}
 
-	public static final class FabricStatusNode {
-		private FabricStatusNode parent;
+	public static final class QuiltStatusNode {
+		private QuiltStatusNode parent;
 
 		public String name;
 
@@ -154,17 +154,17 @@ public final class FabricStatusTree {
 
 		public boolean expandByDefault = false;
 
-		public final List<FabricStatusNode> children = new ArrayList<>();
+		public final List<QuiltStatusNode> children = new ArrayList<>();
 
 		/** Extra text for more information. Lines should be separated by "\n". */
 		public String details;
 
-		private FabricStatusNode(FabricStatusNode parent, String name) {
+		private QuiltStatusNode(QuiltStatusNode parent, String name) {
 			this.parent = parent;
 			this.name = name;
 		}
 
-		public void moveTo(FabricStatusNode newParent) {
+		public void moveTo(QuiltStatusNode newParent) {
 			parent.children.remove(this);
 			this.parent = newParent;
 			newParent.children.add(this);
@@ -203,18 +203,18 @@ public final class FabricStatusTree {
 			setWarningLevel(FabricTreeWarningLevel.INFO);
 		}
 
-		private FabricStatusNode addChild(String string) {
+		private QuiltStatusNode addChild(String string) {
 			if (string.startsWith("\t")) {
 				if (children.size() == 0) {
-					FabricStatusNode rootChild = new FabricStatusNode(this, "");
+					QuiltStatusNode rootChild = new QuiltStatusNode(this, "");
 					children.add(rootChild);
 				}
-				FabricStatusNode lastChild = children.get(children.size() - 1);
+				QuiltStatusNode lastChild = children.get(children.size() - 1);
 				lastChild.addChild(string.substring(1));
 				lastChild.expandByDefault = true;
 				return lastChild;
 			} else {
-				FabricStatusNode child = new FabricStatusNode(this, cleanForNode(string));
+				QuiltStatusNode child = new QuiltStatusNode(this, cleanForNode(string));
 				children.add(child);
 				return child;
 			}
@@ -231,8 +231,8 @@ public final class FabricStatusTree {
 			return string;
 		}
 
-		public FabricStatusNode addException(Throwable exception) {
-			FabricStatusNode sub = new FabricStatusNode(this, "...");
+		public QuiltStatusNode addException(Throwable exception) {
+			QuiltStatusNode sub = new QuiltStatusNode(this, "...");
 			children.add(sub);
 
 			sub.setError();
@@ -262,10 +262,10 @@ public final class FabricStatusTree {
 				return;
 			}
 
-			FabricStatusNode child = children.remove(0);
+			QuiltStatusNode child = children.remove(0);
 			name += join + child.name;
 
-			for (FabricStatusNode cc : child.children) {
+			for (QuiltStatusNode cc : child.children) {
 				cc.parent = this;
 				children.add(cc);
 			}
@@ -287,27 +287,27 @@ public final class FabricStatusTree {
 		}
 
 		public void mergeChildFilePaths(String folderType) {
-			for (FabricStatusNode node : children) {
+			for (QuiltStatusNode node : children) {
 				node.mergeSingleChildFilePath(folderType);
 			}
 		}
 
-		public FabricStatusNode getFileNode(String file, String folderType, String fileType) {
-			FabricStatusNode fileNode = this;
+		public QuiltStatusNode getFileNode(String file, String folderType, String fileType) {
+			QuiltStatusNode fileNode = this;
 
 			pathIteration: for (String s : file.split("/")) {
 				if (s.isEmpty()) {
 					continue;
 				}
 
-				for (FabricStatusNode c : fileNode.children) {
+				for (QuiltStatusNode c : fileNode.children) {
 					if (c.name.equals(s)) {
 						fileNode = c;
 						continue pathIteration;
 					}
 				}
 
-				if (fileNode.iconType.equals(FabricStatusTree.ICON_TYPE_DEFAULT)) {
+				if (fileNode.iconType.equals(QuiltStatusTree.ICON_TYPE_DEFAULT)) {
 					fileNode.iconType = folderType;
 				}
 

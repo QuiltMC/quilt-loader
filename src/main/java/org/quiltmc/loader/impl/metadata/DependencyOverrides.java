@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import net.fabricmc.loader.lib.gson.JsonReader;
-import net.fabricmc.loader.lib.gson.JsonToken;
+import org.quiltmc.loader.impl.gson.JsonReader;
+import org.quiltmc.loader.impl.gson.JsonToken;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -43,7 +43,7 @@ public final class DependencyOverrides {
 	private final Map<String, Map<String, Map<String, ModDependency>>> dependencyOverrides;
 
 	private DependencyOverrides() {
-		Path path = FabricLoader.INSTANCE.getConfigDir().resolve("fabric_loader_dependencies.json");
+		Path path = QuiltLoaderImpl.INSTANCE.getConfigDir().resolve("fabric_loader_dependencies.json");
 		exists = Files.exists(path);
 
 		if (!exists) {

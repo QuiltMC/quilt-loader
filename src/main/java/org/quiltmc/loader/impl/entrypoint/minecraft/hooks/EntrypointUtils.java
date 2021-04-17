@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft.hooks;
+package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
 
-import net.fabricmc.loader.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Consumer;
 
 public final class EntrypointUtils {
 	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
 		@SuppressWarnings("deprecation")
-		FabricLoader loader = FabricLoader.INSTANCE;
+		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 
 		if (!loader.hasEntrypoints(name)) {
 			loader.getLogger().debug("No subscribers for entrypoint '" + name + "'");
@@ -39,7 +36,7 @@ public final class EntrypointUtils {
 
 	private static <T> void invoke0(String name, Class<T> type, Consumer<? super T> invoker) {
 		@SuppressWarnings("deprecation")
-		FabricLoader loader = FabricLoader.INSTANCE;
+		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		RuntimeException exception = null;
 		Collection<EntrypointContainer<T>> entrypoints = loader.getEntrypointContainers(name, type);
 

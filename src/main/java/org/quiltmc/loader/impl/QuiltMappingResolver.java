@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader;
+package org.quiltmc.loader.impl;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -30,7 +30,7 @@ import net.fabricmc.mapping.tree.Descriptored;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.mappings.EntryTriple;
 
-class FabricMappingResolver implements MappingResolver {
+class QuiltMappingResolver implements MappingResolver {
 	private final Supplier<TinyTree> mappingsSupplier;
 	private final Set<String> namespaces;
 	private final Map<String, NamespaceData> namespaceDataMap = new HashMap<>();
@@ -43,7 +43,7 @@ class FabricMappingResolver implements MappingResolver {
 		private final Map<EntryTriple, String> methodNames = new HashMap<>();
 	}
 
-	FabricMappingResolver(Supplier<TinyTree> mappingsSupplier, String targetNamespace) {
+	QuiltMappingResolver(Supplier<TinyTree> mappingsSupplier, String targetNamespace) {
 		this.mappingsSupplier = mappingsSupplier;
 		this.targetNamespace = targetNamespace;
 		namespaces = Collections.unmodifiableSet(new HashSet<>(mappingsSupplier.get().getMetadata().getNamespaces()));
@@ -81,7 +81,7 @@ class FabricMappingResolver implements MappingResolver {
 	}
 
 	private String mapClassName(Map<String, String> classNameMap, String s) {
-		return classNameMap.computeIfAbsent(s, FabricMappingResolver::replaceSlashesWithDots);
+		return classNameMap.computeIfAbsent(s, QuiltMappingResolver::replaceSlashesWithDots);
 	}
 
 	private <T extends Descriptored> void recordMember(String fromNamespace, Collection<T> descriptoredList, Map<EntryTriple, String> putInto, String fromClass) {

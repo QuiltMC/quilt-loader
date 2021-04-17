@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft;
+package org.quiltmc.loader.impl.entrypoint.minecraft;
 
-import net.fabricmc.loader.entrypoint.EntrypointPatch;
-import net.fabricmc.loader.entrypoint.EntrypointTransformer;
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.entrypoint.EntrypointPatch;
+import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -35,7 +35,7 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 	}
 
 	@Override
-	public void process(FabricLauncher launcher, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter) {
 		for (String brandClassName : new String[] {
 			"net.minecraft.client.ClientBrandRetriever",
 			"net.minecraft.server.MinecraftServer"
@@ -65,7 +65,7 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 				while (it.hasNext()) {
 					if (it.next().getOpcode() == Opcodes.ARETURN) {
 						it.previous();
-						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/fabricmc/loader/entrypoint/minecraft/hooks/EntrypointBranding", "brand", "(Ljava/lang/String;)Ljava/lang/String;", false));
+						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/minecraft/hooks/EntrypointBranding", "brand", "(Ljava/lang/String;)Ljava/lang/String;", false));
 						it.next();
 					}
 				}

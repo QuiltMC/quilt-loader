@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint;
+package org.quiltmc.loader.impl.entrypoint;
 
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -41,7 +41,7 @@ public class EntrypointTransformer {
 		this.patches = patches.apply(this);
 	}
 
-	ClassNode loadClass(FabricLauncher launcher, String className) throws IOException {
+	ClassNode loadClass(QuiltLauncher launcher, String className) throws IOException {
 		byte[] data = patchedClasses.containsKey(className) ? patchedClasses.get(className) : launcher.getClassByteArray(className, true);
 		if (data != null) {
 			ClassReader reader = new ClassReader(data);
@@ -64,7 +64,7 @@ public class EntrypointTransformer {
 		patchedClasses.put(key, writer.toByteArray());
 	}
 
-	public void locateEntrypoints(FabricLauncher launcher) {
+	public void locateEntrypoints(QuiltLauncher launcher) {
 		if (entrypointsLocated) {
 			return;
 		}

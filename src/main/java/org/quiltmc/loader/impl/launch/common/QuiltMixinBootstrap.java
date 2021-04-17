@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.common;
+package org.quiltmc.loader.impl.launch.common;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.util.mappings.MixinIntermediaryDevRemapper;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,8 +32,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class FabricMixinBootstrap {
-	private FabricMixinBootstrap() {
+public final class QuiltMixinBootstrap {
+	private QuiltMixinBootstrap() {
 
 	}
 
@@ -44,7 +44,7 @@ public final class FabricMixinBootstrap {
 		Mixins.addConfiguration(configuration);
 	}
 
-	static Set<String> getMixinConfigs(FabricLoader loader, EnvType type) {
+	static Set<String> getMixinConfigs(QuiltLoaderImpl loader, EnvType type) {
 		return loader.getAllMods().stream()
 			.map(ModContainer::getMetadata)
 			.filter((m) -> m instanceof LoaderModMetadata)
@@ -53,13 +53,13 @@ public final class FabricMixinBootstrap {
 			.collect(Collectors.toSet());
 	}
 
-	public static void init(EnvType side, FabricLoader loader) {
+	public static void init(EnvType side, QuiltLoaderImpl loader) {
 		if (initialized) {
-			throw new RuntimeException("FabricMixinBootstrap has already been initialized!");
+			throw new IllegalStateException("QuiltMixinBootstrap has already been initialized!");
 		}
 
-		if (FabricLauncherBase.getLauncher().isDevelopment()) {
-			MappingConfiguration mappingConfiguration = FabricLauncherBase.getLauncher().getMappingConfiguration();
+		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
+			MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 			TinyTree mappings = mappingConfiguration.getMappings();
 
 			if (mappings != null) {
@@ -70,9 +70,9 @@ public final class FabricMixinBootstrap {
 					try {
 						MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, "intermediary", mappingConfiguration.getTargetNamespace());
 						MixinEnvironment.getDefaultEnvironment().getRemappers().add(remapper);
-						LOGGER.info("Loaded Fabric development mappings for mixin remapper!");
+						LOGGER.info("Loaded Quilt development mappings for mixin remapper!");
 					} catch (Exception e) {
-						LOGGER.error("Fabric development environment setup error - the game will probably crash soon!");
+						LOGGER.error("Quilt development environment setup error - the game will probably crash soon!");
 						e.printStackTrace();
 					}
 				}
@@ -80,7 +80,7 @@ public final class FabricMixinBootstrap {
 		}
 
 		MixinBootstrap.init();
-		getMixinConfigs(loader, side).forEach(FabricMixinBootstrap::addConfiguration);
+		getMixinConfigs(loader, side).forEach(QuiltMixinBootstrap::addConfiguration);
 		initialized = true;
 	}
 }

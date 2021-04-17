@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.server;
+package org.quiltmc.loader.impl.launch.server;
 
-import net.fabricmc.loader.util.SystemProperties;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 
-public class FabricServerLauncher {
-	private static final ClassLoader parentLoader = FabricServerLauncher.class.getClassLoader();
-	private static String mainClass = "net.fabricmc.loader.launch.knot.KnotServer";
+public class QuiltServerLauncher {
+	private static final ClassLoader parentLoader = QuiltServerLauncher.class.getClassLoader();
+	private static String mainClass = "org.quiltmc.loader.impl.launch.knot.KnotServer";
 
 	public static void main(String[] args) {
 		URL propUrl = parentLoader.getResource("fabric-server-launch.properties");
@@ -52,7 +52,7 @@ public class FabricServerLauncher {
 				throw new RuntimeException("Failed to setup Fabric server environment!", e);
 			}
 		} else {
-			launch(mainClass, FabricServerLauncher.class.getClassLoader(), args);
+			launch(mainClass, QuiltServerLauncher.class.getClassLoader(), args);
 		}
 	}
 
@@ -101,7 +101,7 @@ public class FabricServerLauncher {
 
 		System.setProperty(SystemProperties.GAME_JAR_PATH, serverJar.getAbsolutePath());
 		try {
-			URLClassLoader newClassLoader = new InjectingURLClassLoader(new URL[] { FabricServerLauncher.class.getProtectionDomain().getCodeSource().getLocation(), UrlUtil.asUrl(serverJar) }, parentLoader, "com.google.common.jimfs.");
+			URLClassLoader newClassLoader = new InjectingURLClassLoader(new URL[] { QuiltServerLauncher.class.getProtectionDomain().getCodeSource().getLocation(), UrlUtil.asUrl(serverJar) }, parentLoader, "com.google.common.jimfs.");
 			Thread.currentThread().setContextClassLoader(newClassLoader);
 			launch(mainClass, newClassLoader, runArguments);
 		} catch (Exception ex) {

@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.util;
+package org.quiltmc.loader.impl.util;
 
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.LanguageAdapterException;
 import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +41,7 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 
 		Class<?> c;
 		try {
-			c = Class.forName(methodSplit[0], true, FabricLauncherBase.getLauncher().getTargetClassLoader());
+			c = Class.forName(methodSplit[0], true, QuiltLauncherBase.getLauncher().getTargetClassLoader());
 		} catch (ClassNotFoundException e) {
 			throw new LanguageAdapterException(e);
 		}
@@ -116,7 +115,7 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 			final Object targetObject = object;
 
 			//noinspection unchecked
-			return (T) Proxy.newProxyInstance(FabricLauncherBase.getLauncher().getTargetClassLoader(), new Class[] { type }, new InvocationHandler() {
+			return (T) Proxy.newProxyInstance(QuiltLauncherBase.getLauncher().getTargetClassLoader(), new Class[] { type }, new InvocationHandler() {
 				@Override
 				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 					return targetMethod.invoke(targetObject, args);

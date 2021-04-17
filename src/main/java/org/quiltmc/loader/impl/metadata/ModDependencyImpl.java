@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 import java.util.List;
 import java.util.Set;
@@ -23,7 +23,7 @@ import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.VersionPredicate;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import net.fabricmc.loader.util.version.VersionPredicateParser;
+import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
 final class ModDependencyImpl implements ModDependency {
 	private final String modId;

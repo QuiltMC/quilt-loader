@@ -1,1 +1,1 @@
-net.fabricmc.loader.launch.knot.FabricGlobalPropertyService
+org.quiltmc.loader.impl.launch.knot.QuiltGlobalPropretyService

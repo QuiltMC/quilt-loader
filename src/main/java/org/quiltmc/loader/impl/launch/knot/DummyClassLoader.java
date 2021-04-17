@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.knot;
+package org.quiltmc.loader.impl.launch.knot;
 
 import java.io.IOException;
 import java.net.URL;

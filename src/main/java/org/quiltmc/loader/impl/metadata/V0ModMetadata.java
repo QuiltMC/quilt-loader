@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,7 +44,7 @@ final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetada
 	private final Map<String, ModDependency> suggests;
 	private final Map<String, ModDependency> conflicts;
 	private final Map<String, ModDependency> breaks;
-	private final String languageAdapter = "net.fabricmc.loader.language.JavaLanguageAdapter"; // TODO: Constants class?
+	private final String languageAdapter = "org.quiltmc.loader.impl.language.JavaLanguageAdapter"; // TODO: Constants class?
 	private final Mixins mixins;
 	private final ModEnvironment environment; // REMOVEME: Replacing Side in old metadata with this
 	private final String initializer;

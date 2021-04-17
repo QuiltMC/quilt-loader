@@ -16,7 +16,7 @@
 
 package org.spongepowered.asm.mixin.transformer;
 
-public class FabricMixinTransformerProxy {
+public class QuiltMixinTransformerProxy {
 	private final MixinTransformer transformer = new MixinTransformer();
 
 	public byte[] transformClassBytes(String name, String transformedName, byte[] basicClass) {

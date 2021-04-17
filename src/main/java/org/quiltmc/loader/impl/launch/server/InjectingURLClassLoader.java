@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.server;
+package org.quiltmc.loader.impl.launch.server;
 
 import java.net.URL;
 import java.net.URLClassLoader;

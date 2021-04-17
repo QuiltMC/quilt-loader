@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
-import net.fabricmc.loader.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 
 import java.net.URL;
 

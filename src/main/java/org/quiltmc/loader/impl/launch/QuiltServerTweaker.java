@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch;
+package org.quiltmc.loader.impl.launch;
 
 import net.fabricmc.api.EnvType;
 
-public final class FabricServerTweaker extends FabricTweaker {
+public final class QuiltServerTweaker extends QuiltTweaker {
 	@Override
 	public EnvType getEnvironmentType() {
 		return EnvType.SERVER;

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.game;
+package org.quiltmc.loader.impl.game;
 
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.IOException;
 import java.net.URL;

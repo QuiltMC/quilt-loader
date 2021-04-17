@@ -16,11 +16,9 @@
 
 package net.fabricmc.loader.api;
 
-import java.util.Enumeration;
 import java.util.Optional;
-import java.util.StringTokenizer;
 
-import net.fabricmc.loader.util.version.VersionDeserializer;
+import org.quiltmc.loader.impl.util.version.VersionDeserializer;
 
 /**
  * Represents a <a href="https://semver.org/">Sematic Version</a>.

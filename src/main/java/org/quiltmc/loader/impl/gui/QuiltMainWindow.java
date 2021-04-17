@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.gui;
+package org.quiltmc.loader.impl.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -60,15 +60,15 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-import net.fabricmc.loader.gui.FabricStatusTree.FabricStatusButton;
-import net.fabricmc.loader.gui.FabricStatusTree.FabricStatusNode;
-import net.fabricmc.loader.gui.FabricStatusTree.FabricStatusTab;
-import net.fabricmc.loader.gui.FabricStatusTree.FabricTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusButton;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
 
-class FabricMainWindow {
+class QuiltMainWindow {
 	static Icon missingIcon = null;
 
-	static void open(FabricStatusTree tree, boolean shouldWait) throws Exception {
+	static void open(QuiltStatusTree tree, boolean shouldWait) throws Exception {
 		if (GraphicsEnvironment.isHeadless()) {
 			throw new HeadlessException();
 		}
@@ -77,7 +77,7 @@ class FabricMainWindow {
 		open0(tree, shouldWait);
 	}
 
-	private static void open0(FabricStatusTree tree, boolean shouldWait) throws Exception {
+	private static void open0(QuiltStatusTree tree, boolean shouldWait) throws Exception {
 		CountDownLatch guiTerminatedLatch = new CountDownLatch(1);
 
 		SwingUtilities.invokeAndWait(() -> {
@@ -89,10 +89,10 @@ class FabricMainWindow {
 		}
 	}
 
-	private static void createUi(CountDownLatch onCloseLatch, FabricStatusTree tree) {
+	private static void createUi(CountDownLatch onCloseLatch, QuiltStatusTree tree) {
 		JFrame window = new JFrame();
 		window.setVisible(false);
-		window.setTitle("Fabric Loader");
+		window.setTitle("Quilt Loader");
 
 		try {
 			window.setIconImage(loadImage("/ui/icon/fabric_x128.png"));
@@ -123,17 +123,17 @@ class FabricMainWindow {
 		IconSet icons = new IconSet();
 
 		if (tree.tabs.isEmpty()) {
-			FabricStatusTab tab = new FabricStatusTab("Opening Errors");
+			QuiltStatusTab tab = new QuiltStatusTab("Opening Errors");
 			tab.addChild("No tabs provided! (Something is very broken)").setError();
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
 		} else if (tree.tabs.size() == 1) {
-			FabricStatusTab tab = tree.tabs.get(0);
+			QuiltStatusTab tab = tree.tabs.get(0);
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
 		} else {
 			JTabbedPane tabs = new JTabbedPane();
 			contentPane.add(tabs, BorderLayout.CENTER);
 
-			for (FabricStatusTab tab : tree.tabs) {
+			for (QuiltStatusTab tab : tree.tabs) {
 				tabs.addTab(tab.node.name, createTreePanel(tab.node, tab.filterLevel, icons));
 			}
 		}
@@ -143,7 +143,7 @@ class FabricMainWindow {
 			contentPane.add(buttons, BorderLayout.SOUTH);
 			buttons.setLayout(new FlowLayout(FlowLayout.TRAILING));
 
-			for (FabricStatusButton button : tree.buttons) {
+			for (QuiltStatusButton button : tree.buttons) {
 				JButton btn = new JButton(button.text);
 				buttons.add(btn);
 				btn.addActionListener(e -> {
@@ -164,8 +164,8 @@ class FabricMainWindow {
 		window.requestFocus();
 	}
 
-	private static JPanel createTreePanel(FabricStatusNode rootNode, FabricTreeWarningLevel minimumWarningLevel,
-		IconSet iconSet) {
+	private static JPanel createTreePanel(QuiltStatusNode rootNode, FabricTreeWarningLevel minimumWarningLevel,
+										  IconSet iconSet) {
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
@@ -201,7 +201,7 @@ class FabricMainWindow {
 	}
 
 	private static InputStream loadStream(String str) throws FileNotFoundException {
-		InputStream stream = FabricMainWindow.class.getResourceAsStream(str);
+		InputStream stream = QuiltMainWindow.class.getResourceAsStream(str);
 
 		if (stream == null) {
 			throw new FileNotFoundException(str);
@@ -320,7 +320,7 @@ class FabricMainWindow {
 			}
 		}
 
-		public static IconInfo fromNode(FabricStatusNode node) {
+		public static IconInfo fromNode(QuiltStatusNode node) {
 			String[] split = node.iconType.split("\\+");
 
 			if (split.length == 1 && split[0].isEmpty()) {
@@ -418,15 +418,15 @@ class FabricMainWindow {
 
 	static class CustomTreeNode implements TreeNode {
 		public final TreeNode parent;
-		public final FabricStatusNode node;
+		public final QuiltStatusNode node;
 		public final List<CustomTreeNode> displayedChildren = new ArrayList<>();
 		private IconInfo iconInfo;
 
-		public CustomTreeNode(TreeNode parent, FabricStatusNode node, FabricTreeWarningLevel minimumWarningLevel) {
+		public CustomTreeNode(TreeNode parent, QuiltStatusNode node, FabricTreeWarningLevel minimumWarningLevel) {
 			this.parent = parent;
 			this.node = node;
 
-			for (FabricStatusNode c : node.children) {
+			for (QuiltStatusNode c : node.children) {
 				if (minimumWarningLevel.isHigherThan(c.getMaximumWarningLevel())) {
 					continue;
 				}

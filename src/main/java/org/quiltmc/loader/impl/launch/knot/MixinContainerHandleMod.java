@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.knot;
+package org.quiltmc.loader.impl.launch.knot;
 
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 

@@ -17,7 +17,7 @@
  * This file has been modified by the Fabric project (repackage, minor changes).
  */
 
-package net.fabricmc.loader.lib.gson;
+package org.quiltmc.loader.impl.gson;
 
 /**
  * Lexical scoping elements within a JSON reader or writer.

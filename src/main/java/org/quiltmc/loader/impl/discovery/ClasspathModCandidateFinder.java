@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
-import net.fabricmc.loader.FabricLoader;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,21 +32,21 @@ import java.util.stream.Stream;
 
 public class ClasspathModCandidateFinder implements ModCandidateFinder {
 	@Override
-	public void findCandidates(FabricLoader loader, BiConsumer<URL, Boolean> appender) {
+	public void findCandidates(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> appender) {
 		Stream<URL> urls;
 
 		URL fabricCodeSource;
 		try {
-			fabricCodeSource = FabricLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation();
+			fabricCodeSource = QuiltLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation();
 		} catch (Throwable t) {
 			loader.getLogger().debug("Could not retrieve launcher code source!", t);
 			fabricCodeSource = null;
 		}
 
-		if (FabricLauncherBase.getLauncher().isDevelopment()) {
+		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
-				Enumeration<URL> mods = FabricLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
+				Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
 				Set<URL> modsList = new HashSet<>();
 				while (mods.hasMoreElements()) {
 					try {
@@ -76,8 +76,8 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 								// Fabric being supposedly uninitialized.
 								// This heuristic could probably be better, but I doubt that any sane
 								// mod would include a second FabricLoader.
-								if (!FabricLoader.INSTANCE.isDevelopmentEnvironment() || !url.equals(fabricCodeSource)) {
-									FabricLauncherBase.getLauncher().propose(url);
+								if (!QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment() || !url.equals(fabricCodeSource)) {
+									QuiltLauncherBase.getLauncher().propose(url);
 								}
 							}
 						} catch (UrlConversionException e) {

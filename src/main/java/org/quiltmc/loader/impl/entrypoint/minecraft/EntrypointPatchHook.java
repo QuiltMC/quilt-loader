@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft;
+package org.quiltmc.loader.impl.entrypoint.minecraft;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.entrypoint.EntrypointPatch;
-import net.fabricmc.loader.entrypoint.EntrypointTransformer;
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.entrypoint.EntrypointPatch;
+import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -36,11 +36,11 @@ public class EntrypointPatchHook extends EntrypointPatch {
 	}
 
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
-		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/fabricmc/loader/entrypoint/minecraft/hooks/Entrypoint" + (type == EnvType.CLIENT ? "Client" : "Server"), "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
+		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/minecraft/hooks/Entrypoint" + (type == EnvType.CLIENT ? "Client" : "Server"), "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
 	}
 
 	@Override
-	public void process(FabricLauncher launcher, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter) {
 		EnvType type = launcher.getEnvironmentType();
 		String entrypoint = launcher.getEntrypoint();
 
@@ -371,7 +371,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					it.add(new LdcInsnNode("."));
 					it.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/lang/String;)V", false)); */
 					it.add(new InsnNode(Opcodes.ACONST_NULL));
-					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/fabricmc/loader/entrypoint/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
+					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
 					it.add(new VarInsnNode(Opcodes.ALOAD, 0));
 					finishEntrypoint(type, it);
 				} else {
@@ -379,7 +379,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					ListIterator<AbstractInsnNode> it = gameConstructor.instructions.iterator();
 					moveAfter(it, Opcodes.INVOKESPECIAL); /* Object.init */
 					it.add(new FieldInsnNode(Opcodes.GETSTATIC, gameClass.name, runDirectory.name, runDirectory.desc));
-					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/fabricmc/loader/entrypoint/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
+					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
 					it.add(new FieldInsnNode(Opcodes.PUTSTATIC, gameClass.name, runDirectory.name, runDirectory.desc));
 
 					it = gameMethod.instructions.iterator();
@@ -448,7 +448,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 		}
 	}
 
-	private boolean hasSuperClass(String cls, String superCls, FabricLauncher launcher) {
+	private boolean hasSuperClass(String cls, String superCls, QuiltLauncher launcher) {
 		if (cls.contains("$") || (!cls.startsWith("net/minecraft") && cls.contains("/"))) {
 			return false;
 		}
@@ -462,7 +462,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 		}
 	}
 
-	private boolean hasStrInMethod(String cls, String methodName, String methodDesc, String str, FabricLauncher launcher) {
+	private boolean hasStrInMethod(String cls, String methodName, String methodDesc, String str, QuiltLauncher launcher) {
 		if (cls.contains("$") || (!cls.startsWith("net/minecraft") && cls.contains("/"))) {
 			return false;
 		}

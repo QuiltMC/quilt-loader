@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.common;
+package org.quiltmc.loader.impl.launch.common;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.util.SystemProperties;
-import net.fabricmc.loader.util.mappings.TinyRemapperMappingsHelper;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
-import net.fabricmc.loader.util.Arguments;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.Arguments;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -39,16 +39,16 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarFile;
 
-public abstract class FabricLauncherBase implements FabricLauncher {
+public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public static Path minecraftJar;
 
 	protected static Logger LOGGER = LogManager.getFormatterLogger("FabricLoader");
 	private static boolean mixinReady;
 	private static Map<String, Object> properties;
-	private static FabricLauncher launcher;
+	private static QuiltLauncher launcher;
 	private static MappingConfiguration mappingConfiguration = new MappingConfiguration();
 
-	protected FabricLauncherBase() {
+	protected QuiltLauncherBase() {
 		setLauncher(this);
 	}
 
@@ -67,7 +67,7 @@ public abstract class FabricLauncherBase implements FabricLauncher {
 
 	private static boolean emittedInfo = false;
 
-	protected static Path deobfuscate(String gameId, String gameVersion, Path gameDir, Path jarFile, FabricLauncher launcher) {
+	protected static Path deobfuscate(String gameId, String gameVersion, Path gameDir, Path jarFile, QuiltLauncher launcher) {
 		Path resultJarFile = jarFile;
 
 		LOGGER.debug("Requesting deobfuscation of " + jarFile.getFileName());
@@ -250,7 +250,7 @@ public abstract class FabricLauncherBase implements FabricLauncher {
 		properties = propertiesA;
 	}
 
-	private static void setLauncher(FabricLauncher launcherA) {
+	private static void setLauncher(QuiltLauncher launcherA) {
 		if (launcher != null && launcher != launcherA) {
 			throw new RuntimeException("Duplicate setLauncher call!");
 		}
@@ -258,7 +258,7 @@ public abstract class FabricLauncherBase implements FabricLauncher {
 		launcher = launcherA;
 	}
 
-	public static FabricLauncher getLauncher() {
+	public static QuiltLauncher getLauncher() {
 		return launcher;
 	}
 

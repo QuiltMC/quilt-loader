@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.knot;
+package org.quiltmc.loader.impl.launch.knot;
 
 import org.spongepowered.asm.service.IMixinServiceBootstrap;
 
@@ -26,7 +26,7 @@ public class MixinServiceKnotBootstrap implements IMixinServiceBootstrap {
 
 	@Override
 	public String getServiceClassName() {
-		return "net.fabricmc.loader.launch.knot.MixinServiceKnot";
+		return "org.quiltmc.loader.impl.launch.knot.MixinServiceKnot";
 	}
 
 	@Override

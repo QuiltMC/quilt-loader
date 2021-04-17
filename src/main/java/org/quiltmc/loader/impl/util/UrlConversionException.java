@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.util;
+package org.quiltmc.loader.impl.util;
 
 public class UrlConversionException extends Exception {
 	public UrlConversionException() {

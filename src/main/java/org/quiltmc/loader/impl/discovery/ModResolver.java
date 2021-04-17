@@ -14,26 +14,26 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.PathType;
 
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import net.fabricmc.loader.game.GameProvider.BuiltinMod;
+import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.lib.gson.MalformedJsonException;
-import net.fabricmc.loader.metadata.BuiltinModMetadata;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.metadata.ModMetadataParser;
-import net.fabricmc.loader.metadata.NestedJarEntry;
-import net.fabricmc.loader.metadata.ParseMetadataException;
-import net.fabricmc.loader.util.FileSystemUtil;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.gson.MalformedJsonException;
+import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.ModMetadataParser;
+import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.ParseMetadataException;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.util.sat4j.core.VecInt;
 import org.quiltmc.loader.util.sat4j.minisat.SolverFactory;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
@@ -346,7 +346,7 @@ public class ModResolver {
 		if(depCandidate == null) {
 			for (ModCandidate value : result.values()) {
 				if (value.getInfo().getProvides().contains(depModId)) {
-					if(FabricLoader.INSTANCE.isDevelopmentEnvironment()) logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + value.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
+					if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + value.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
 					depCandidate = value;
 					break;
 				}
@@ -551,13 +551,13 @@ public class ModResolver {
 	}
 
 	static class UrlProcessAction extends RecursiveAction {
-		private final FabricLoader loader;
+		private final QuiltLoaderImpl loader;
 		private final Map<String, ModCandidateSet> candidatesById;
 		private final URL url;
 		private final int depth;
 		private final boolean requiresRemap;
 
-		UrlProcessAction(FabricLoader loader, Map<String, ModCandidateSet> candidatesById, URL url, int depth, boolean requiresRemap) {
+		UrlProcessAction(QuiltLoaderImpl loader, Map<String, ModCandidateSet> candidatesById, URL url, int depth, boolean requiresRemap) {
 			this.loader = loader;
 			this.candidatesById = candidatesById;
 			this.url = url;
@@ -589,7 +589,7 @@ public class ModResolver {
 				if (loader.isDevelopmentEnvironment() && !Files.exists(modJson)) {
 					loader.getLogger().warn("Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
 					synchronized (launcherSyncObject) {
-						FabricLauncherBase.getLauncher().propose(url);
+						QuiltLauncherBase.getLauncher().propose(url);
 					}
 				}
 			} else {
@@ -723,7 +723,7 @@ public class ModResolver {
 		}
 	}
 
-	public Map<String, ModCandidate> resolve(FabricLoader loader) throws ModResolutionException {
+	public Map<String, ModCandidate> resolve(QuiltLoaderImpl loader) throws ModResolutionException {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
 		long time1 = System.currentTimeMillis();

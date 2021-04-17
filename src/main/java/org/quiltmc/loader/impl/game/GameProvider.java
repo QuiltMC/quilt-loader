@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.game;
+package org.quiltmc.loader.impl.game;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.fabricmc.loader.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
 
 import java.net.URL;
 import java.nio.file.Path;

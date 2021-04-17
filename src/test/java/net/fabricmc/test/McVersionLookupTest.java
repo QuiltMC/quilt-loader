@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import net.fabricmc.loader.minecraft.McVersionLookup;
-import net.fabricmc.loader.minecraft.McVersionLookup.McVersion;
+import org.quiltmc.loader.impl.minecraft.McVersionLookup;
+import org.quiltmc.loader.impl.minecraft.McVersionLookup.McVersion;
 
 public final class McVersionLookupTest {
 	public static void main(String[] args) throws IOException {

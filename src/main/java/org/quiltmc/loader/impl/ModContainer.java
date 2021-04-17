@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader;
+package org.quiltmc.loader.impl;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.util.FileSystemUtil;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.IOException;
 import java.net.URL;

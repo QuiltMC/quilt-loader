@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.util.version;
+package org.quiltmc.loader.impl.util.version;
 
 import java.util.*;
 import java.util.function.Function;

@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch;
+package org.quiltmc.loader.impl.launch;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import net.fabricmc.loader.entrypoint.minecraft.hooks.EntrypointUtils;
-import net.fabricmc.loader.game.GameProvider;
-import net.fabricmc.loader.game.MinecraftGameProvider;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
-import net.fabricmc.loader.util.Arguments;
-import net.fabricmc.loader.util.SystemProperties;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.entrypoint.minecraft.hooks.EntrypointUtils;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.MinecraftGameProvider;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
+import org.quiltmc.loader.impl.util.Arguments;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.Launch;
@@ -53,7 +53,7 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
-public abstract class FabricTweaker extends FabricLauncherBase implements ITweaker {
+public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker {
 	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Tweaker");
 	protected Arguments arguments;
 	private LaunchClassLoader launchClassLoader;
@@ -86,7 +86,7 @@ public abstract class FabricTweaker extends FabricLauncherBase implements ITweak
 			arguments.put("assetsDir", assetsDir.getAbsolutePath());
 		}
 
-		FabricLauncherBase.processArgumentMap(arguments, getEnvironmentType());
+		QuiltLauncherBase.processArgumentMap(arguments, getEnvironmentType());
 	}
 
 	@Override
@@ -99,7 +99,7 @@ public abstract class FabricTweaker extends FabricLauncherBase implements ITweak
 		launchClassLoader.addClassLoaderExclusion("org.objectweb.asm.");
 		launchClassLoader.addClassLoaderExclusion("org.spongepowered.asm.");
 		launchClassLoader.addClassLoaderExclusion("net.fabricmc.loader.");
-
+		launchClassLoader.addClassLoaderExclusion("org.quiltmc.loader.");
 		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.Environment");
 		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.EnvType");
 		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.ModInitializer");
@@ -116,12 +116,12 @@ public abstract class FabricTweaker extends FabricLauncherBase implements ITweak
 		}
 
 		@SuppressWarnings("deprecation")
-		FabricLoader loader = FabricLoader.INSTANCE;
+		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		loader.setGameProvider(provider);
 		loader.load();
 		loader.freeze();
 
-		launchClassLoader.registerTransformer("net.fabricmc.loader.launch.FabricClassTransformer");
+		launchClassLoader.registerTransformer("org.quiltmc.loader.impl.launch.FabricClassTransformer");
 
 		if (!isDevelopment) {
 			// Obfuscated environment
@@ -136,7 +136,7 @@ public abstract class FabricTweaker extends FabricLauncherBase implements ITweak
 				}
 
 				Path obfuscated = jarFile.toPath();
-				Path remapped = FabricLauncherBase.deobfuscate(provider.getGameId(), provider.getNormalizedGameVersion(), provider.getLaunchDirectory(), obfuscated, this);
+				Path remapped = QuiltLauncherBase.deobfuscate(provider.getGameId(), provider.getNormalizedGameVersion(), provider.getLaunchDirectory(), obfuscated, this);
 				if (remapped != obfuscated) {
 					preloadRemappedJar(remapped);
 				}
@@ -145,13 +145,13 @@ public abstract class FabricTweaker extends FabricLauncherBase implements ITweak
 			}
 		}
 
-		FabricLoader.INSTANCE.loadAccessWideners();
+		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
 
 		MinecraftGameProvider.TRANSFORMER.locateEntrypoints(this);
 
 		// Setup Mixin environment
 		MixinBootstrap.init();
-		FabricMixinBootstrap.init(getEnvironmentType(), FabricLoader.INSTANCE);
+		QuiltMixinBootstrap.init(getEnvironmentType(), QuiltLoaderImpl.INSTANCE);
 		MixinEnvironment.getDefaultEnvironment().setSide(getEnvironmentType() == EnvType.CLIENT ? MixinEnvironment.Side.CLIENT : MixinEnvironment.Side.SERVER);
 
 		EntrypointUtils.invoke("preLaunch", PreLaunchEntrypoint.class, PreLaunchEntrypoint::onPreLaunch);

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.language;
+package org.quiltmc.loader.impl.language;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
@@ -44,7 +44,7 @@ public class JavaLanguageAdapter implements LanguageAdapter {
 				}
 		}
 
-		InputStream stream = FabricLauncherBase.getLauncher().getResourceAsStream(className);
+		InputStream stream = QuiltLauncherBase.getLauncher().getResourceAsStream(className);
 		if (stream == null) {
 			return false;
 		}
@@ -63,7 +63,7 @@ public class JavaLanguageAdapter implements LanguageAdapter {
 
 	public static Class<?> getClass(String className, Options options) throws ClassNotFoundException, IOException {
 		String classFilename = className.replace('.', '/') + ".class";
-		InputStream stream = FabricLauncherBase.getLauncher().getResourceAsStream(classFilename);
+		InputStream stream = QuiltLauncherBase.getLauncher().getResourceAsStream(classFilename);
 		if (stream == null) {
 			throw new ClassNotFoundException("Could not find or load class " + classFilename);
 		}
@@ -85,7 +85,7 @@ public class JavaLanguageAdapter implements LanguageAdapter {
 		}
 
 		stream.close();
-		return FabricLauncherBase.getClass(className);
+		return QuiltLauncherBase.getClass(className);
 	}
 
 	@Override

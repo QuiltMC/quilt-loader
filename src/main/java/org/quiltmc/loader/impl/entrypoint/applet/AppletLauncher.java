@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.applet;
+package org.quiltmc.loader.impl.entrypoint.applet;
 
-import net.fabricmc.loader.entrypoint.EntrypointTransformer;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 import java.applet.Applet;
 import java.applet.AppletStub;
@@ -60,7 +60,7 @@ public class AppletLauncher extends Applet implements AppletStub {
 		params.put("demo", Boolean.toString(demo));
 
 		try {
-			mcApplet = (Applet) FabricLauncherBase.getLauncher().getTargetClassLoader().loadClass(EntrypointTransformer.appletMainClass)
+			mcApplet = (Applet) QuiltLauncherBase.getLauncher().getTargetClassLoader().loadClass(EntrypointTransformer.appletMainClass)
 				.getDeclaredConstructor().newInstance();
 			//noinspection ConstantConditions
 			if (mcApplet == null) {

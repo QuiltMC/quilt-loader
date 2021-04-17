@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.transformer;
+package org.quiltmc.loader.impl.transformer;
 
 import net.fabricmc.api.Environment;
 import net.fabricmc.api.EnvironmentInterface;

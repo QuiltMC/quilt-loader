@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.common;
+package org.quiltmc.loader.impl.launch.common;
 
 import net.fabricmc.api.EnvType;
 
@@ -23,7 +23,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Collection;
 
-public interface FabricLauncher {
+public interface QuiltLauncher {
 	MappingConfiguration getMappingConfiguration();
 
 	void propose(URL url);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.util;
+package org.quiltmc.loader.impl.util;
 
 public final class SystemProperties {
 	public static final String DEVELOPMENT = "quilt.development";

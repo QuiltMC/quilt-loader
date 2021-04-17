@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.knot;
+package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import net.fabricmc.loader.entrypoint.minecraft.hooks.EntrypointUtils;
-import net.fabricmc.loader.game.GameProvider;
-import net.fabricmc.loader.game.GameProviders;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
-import net.fabricmc.loader.util.SystemProperties;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
+import org.quiltmc.loader.impl.entrypoint.minecraft.hooks.EntrypointUtils;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.GameProviders;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import java.io.File;
@@ -37,7 +37,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public final class Knot extends FabricLauncherBase {
+public final class Knot extends QuiltLauncherBase {
 	protected Map<String, Object> properties = new HashMap<>();
 
 	private KnotClassLoaderInterface classLoader;
@@ -106,7 +106,7 @@ public final class Knot extends FabricLauncherBase {
 
 		if (provider.isObfuscated()) {
 			for (Path path : provider.getGameContextJars()) {
-				FabricLauncherBase.deobfuscate(
+				QuiltLauncherBase.deobfuscate(
 						provider.getGameId(), provider.getNormalizedGameVersion(),
 						provider.getLaunchDirectory(),
 						path,
@@ -121,16 +121,16 @@ public final class Knot extends FabricLauncherBase {
 		Thread.currentThread().setContextClassLoader(cl);
 
 		@SuppressWarnings("deprecation")
-		FabricLoader loader = FabricLoader.INSTANCE;
+		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		loader.setGameProvider(provider);
 		loader.load();
 		loader.freeze();
 
-		FabricLoader.INSTANCE.loadAccessWideners();
+		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
 
 		MixinBootstrap.init();
-		FabricMixinBootstrap.init(getEnvironmentType(), loader);
-		FabricLauncherBase.finishMixinBootstrapping();
+		QuiltMixinBootstrap.init(getEnvironmentType(), loader);
+		QuiltLauncherBase.finishMixinBootstrapping();
 
 		classLoader.getDelegate().initializeTransformers();
 
@@ -180,7 +180,7 @@ public final class Knot extends FabricLauncherBase {
 
 	@Override
 	public void propose(URL url) {
-		FabricLauncherBase.LOGGER.debug("[Knot] Proposed " + url + " to classpath.");
+		QuiltLauncherBase.LOGGER.debug("[Knot] Proposed " + url + " to classpath.");
 		classLoader.addURL(url);
 	}
 

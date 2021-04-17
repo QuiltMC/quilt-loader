@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.minecraft;
+package org.quiltmc.loader.impl.minecraft;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -35,13 +35,13 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import net.fabricmc.loader.lib.gson.JsonReader;
-import net.fabricmc.loader.lib.gson.JsonToken;
-import net.fabricmc.loader.metadata.ParseMetadataException;
-import net.fabricmc.loader.util.FileSystemUtil;
-import net.fabricmc.loader.util.version.SemanticVersionImpl;
-import net.fabricmc.loader.util.version.SemanticVersionPredicateParser;
-import net.fabricmc.loader.util.version.VersionParsingException;
+import org.quiltmc.loader.impl.gson.JsonReader;
+import org.quiltmc.loader.impl.gson.JsonToken;
+import org.quiltmc.loader.impl.metadata.ParseMetadataException;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
+import org.quiltmc.loader.impl.util.version.SemanticVersionPredicateParser;
+import org.quiltmc.loader.impl.util.version.VersionParsingException;
 
 public final class McVersionLookup {
 	private static final Pattern VERSION_PATTERN = Pattern.compile(
@@ -423,7 +423,7 @@ public final class McVersionLookup {
 
 	private static final class FieldStringConstantVisitor extends ClassVisitor implements Analyzer {
 		public FieldStringConstantVisitor(String fieldName) {
-			super(FabricLoader.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.fieldName = fieldName;
 		}
@@ -494,7 +494,7 @@ public final class McVersionLookup {
 
 	private static final class MethodStringConstantContainsVisitor extends ClassVisitor implements Analyzer {
 		public MethodStringConstantContainsVisitor(String methodOwner, String methodName) {
-			super(FabricLoader.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodOwner = methodOwner;
 			this.methodName = methodName;
@@ -549,7 +549,7 @@ public final class McVersionLookup {
 
 	private static final class MethodConstantRetVisitor extends ClassVisitor implements Analyzer {
 		public MethodConstantRetVisitor(String methodName) {
-			super(FabricLoader.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodName = methodName;
 		}
@@ -607,7 +607,7 @@ public final class McVersionLookup {
 
 	private static final class MethodConstantVisitor extends ClassVisitor implements Analyzer {
 		public MethodConstantVisitor(String methodNameHint) {
-			super(FabricLoader.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodNameHint = methodNameHint;
 		}
@@ -625,7 +625,7 @@ public final class McVersionLookup {
 				return null;
 			}
 
-			return new MethodVisitor(FabricLoader.ASM_VERSION) {
+			return new MethodVisitor(QuiltLoaderImpl.ASM_VERSION) {
 				@Override
 				public void visitLdcInsn(Object value) {
 					String str;
@@ -647,7 +647,7 @@ public final class McVersionLookup {
 
 	private static abstract class InsnFwdMethodVisitor extends MethodVisitor {
 		public InsnFwdMethodVisitor() {
-			super(FabricLoader.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 		}
 
 		protected abstract void visitAnyInsn();

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -34,9 +34,9 @@ import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
-import net.fabricmc.loader.lib.gson.JsonReader;
-import net.fabricmc.loader.lib.gson.JsonToken;
-import net.fabricmc.loader.util.version.VersionDeserializer;
+import org.quiltmc.loader.impl.gson.JsonReader;
+import org.quiltmc.loader.impl.gson.JsonToken;
+import org.quiltmc.loader.impl.util.version.VersionDeserializer;
 
 final class V0ModMetadataParser {
 	private static final Pattern WEBSITE_PATTERN = Pattern.compile("\\((.+)\\)");

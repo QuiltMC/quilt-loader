@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.applet;
+package org.quiltmc.loader.impl.entrypoint.applet;
 
 import java.io.File;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader;
+package org.quiltmc.loader.impl;
 
 public class DependencyException extends RuntimeException {
 

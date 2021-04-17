@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.common;
+package org.quiltmc.loader.impl.launch.common;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class MappingConfiguration {
 
 	public TinyTree getMappings() {
 		if (!checkedMappings) {
-			InputStream mappingStream = FabricLauncherBase.class.getClassLoader().getResourceAsStream("mappings/mappings.tiny");
+			InputStream mappingStream = QuiltLauncherBase.class.getClassLoader().getResourceAsStream("mappings/mappings.tiny");
 
 			if (mappingStream != null) {
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(mappingStream))) {
@@ -65,7 +65,7 @@ public class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
-		return FabricLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
+		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
 	}
 
 	public boolean requiresPackageAccessHack() {

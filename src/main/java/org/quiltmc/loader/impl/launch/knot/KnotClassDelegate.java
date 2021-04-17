@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.launch.knot;
+package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.game.GameProvider;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.transformer.FabricTransformer;
-import net.fabricmc.loader.util.FileSystemUtil;
-import net.fabricmc.loader.util.UrlConversionException;
-import net.fabricmc.loader.util.UrlUtil;
-import org.spongepowered.asm.mixin.transformer.FabricMixinTransformerProxy;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.transformer.QuiltTransformer;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
+import org.spongepowered.asm.mixin.transformer.QuiltMixinTransformerProxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -58,7 +58,7 @@ class KnotClassDelegate {
 	private final GameProvider provider;
 	private final boolean isDevelopment;
 	private final EnvType envType;
-	private FabricMixinTransformerProxy mixinTransformer;
+	private QuiltMixinTransformerProxy mixinTransformer;
 	private boolean transformInitialized = false;
 
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
@@ -73,12 +73,12 @@ class KnotClassDelegate {
 			throw new RuntimeException("Cannot initialize KnotClassDelegate twice!");
 		}
 
-		mixinTransformer = new FabricMixinTransformerProxy();
+		mixinTransformer = new QuiltMixinTransformerProxy();
 
 		transformInitialized = true;
 	}
 
-	private FabricMixinTransformerProxy getMixinTransformer() {
+	private QuiltMixinTransformerProxy getMixinTransformer() {
 		assert mixinTransformer != null;
 		return mixinTransformer;
 	}
@@ -130,7 +130,7 @@ class KnotClassDelegate {
 							}
 						}
 					} catch (IOException | FileSystemNotFoundException | UrlConversionException e) {
-						if (FabricLauncherBase.getLauncher().isDevelopment()) {
+						if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 							System.err.println("Failed to load manifest: " + e);
 							e.printStackTrace();
 						}
@@ -182,7 +182,7 @@ class KnotClassDelegate {
 		}
 
 		if (input != null) {
-			return FabricTransformer.transform(isDevelopment, envType, name, input);
+			return QuiltTransformer.transform(isDevelopment, envType, name, input);
 		}
 
 		return null;

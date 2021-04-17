@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader;
+package org.quiltmc.loader.impl;
 
 import net.fabricmc.loader.api.EntrypointException;
 import net.fabricmc.loader.api.LanguageAdapter;
 import net.fabricmc.loader.api.LanguageAdapterException;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
-import net.fabricmc.loader.entrypoint.EntrypointContainerImpl;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.metadata.EntrypointMetadata;
+import org.quiltmc.loader.impl.entrypoint.EntrypointContainerImpl;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 
 import java.util.*;
 
@@ -34,8 +34,8 @@ class EntrypointStorage {
 	}
 
 	private static class OldEntry implements Entry {
-		private static final net.fabricmc.loader.language.LanguageAdapter.Options options = net.fabricmc.loader.language.LanguageAdapter.Options.Builder.create()
-			.missingSuperclassBehaviour(net.fabricmc.loader.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
+		private static final org.quiltmc.loader.impl.language.LanguageAdapter.Options options = org.quiltmc.loader.impl.language.LanguageAdapter.Options.Builder.create()
+			.missingSuperclassBehaviour(org.quiltmc.loader.impl.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
 			.build();
 
 		private final ModContainer mod;
@@ -57,7 +57,7 @@ class EntrypointStorage {
 		@Override
 		public <T> T getOrCreate(Class<T> type) throws Exception {
 			if (object == null) {
-				net.fabricmc.loader.language.LanguageAdapter adapter = (net.fabricmc.loader.language.LanguageAdapter) Class.forName(languageAdapter, true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
+				org.quiltmc.loader.impl.language.LanguageAdapter adapter = (org.quiltmc.loader.impl.language.LanguageAdapter) Class.forName(languageAdapter, true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
 				object = adapter.createInstance(value, options);
 			}
 
@@ -120,7 +120,7 @@ class EntrypointStorage {
 	}
 
 	protected void addDeprecated(ModContainer modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
-		FabricLoader.INSTANCE.getLogger().debug("Registering 0.3.x old-style initializer " + value + " for mod " + modContainer.getInfo().getId());
+		QuiltLoaderImpl.INSTANCE.getLogger().debug("Registering 0.3.x old-style initializer " + value + " for mod " + modContainer.getInfo().getId());
 		OldEntry oe = new OldEntry(modContainer, adapter, value);
 		getOrCreateEntries("main").add(oe);
 		getOrCreateEntries("client").add(oe);
@@ -132,7 +132,7 @@ class EntrypointStorage {
 			throw new Exception("Could not find adapter '" + metadata.getAdapter() + "' (mod " + modContainer.getInfo().getId() + "!)");
 		}
 
-		FabricLoader.INSTANCE.getLogger().debug("Registering new-style initializer " + metadata.getValue() + " for mod " + modContainer.getInfo().getId() + " (key " + key + ")");
+		QuiltLoaderImpl.INSTANCE.getLogger().debug("Registering new-style initializer " + metadata.getValue() + " for mod " + modContainer.getInfo().getId() + " (key " + key + ")");
 		getOrCreateEntries(key).add(new NewEntry(
 			modContainer, adapterMap.get(metadata.getAdapter()), metadata.getValue()
 		));

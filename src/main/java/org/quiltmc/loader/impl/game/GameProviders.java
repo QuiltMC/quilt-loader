@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.game;
+package org.quiltmc.loader.impl.game;
 
 import java.util.Collections;
 import java.util.List;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -32,10 +32,10 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.Person;
-import net.fabricmc.loader.metadata.AbstractModMetadata;
-import net.fabricmc.loader.metadata.EntrypointMetadata;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.AbstractModMetadata;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 
 class BuiltinMetadataWrapper extends AbstractModMetadata implements LoaderModMetadata {
 	private final ModMetadata parent;

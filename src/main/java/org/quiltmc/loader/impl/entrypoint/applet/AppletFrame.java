@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.applet;
+package org.quiltmc.loader.impl.entrypoint.applet;
 
-import net.fabricmc.loader.util.Arguments;
+import org.quiltmc.loader.impl.util.Arguments;
 
 import javax.swing.*;
 import java.awt.*;

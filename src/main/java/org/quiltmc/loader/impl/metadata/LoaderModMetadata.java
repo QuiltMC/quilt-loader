@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -31,7 +31,7 @@ import java.util.Map;
 public interface LoaderModMetadata extends ModMetadata {
 	int getSchemaVersion();
 	default String getOldStyleLanguageAdapter() {
-		return "net.fabricmc.loader.language.JavaLanguageAdapter";
+		return "org.quiltmc.loader.impl.language.JavaLanguageAdapter";
 	}
 	Map<String, String> getLanguageAdapterDefinitions();
 	Collection<NestedJarEntry> getJars();

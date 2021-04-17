@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.metadata;
+package org.quiltmc.loader.impl.metadata;
 
-import net.fabricmc.loader.lib.gson.JsonReader;
+import org.quiltmc.loader.impl.gson.JsonReader;
 
 public class ParseMetadataException extends Exception {
 	public ParseMetadataException(String message) {

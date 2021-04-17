@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.discovery;
+package org.quiltmc.loader.impl.discovery;
 
-import net.fabricmc.loader.FabricLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 import java.net.URL;
 import java.util.function.BiConsumer;
 
 @FunctionalInterface
 public interface ModCandidateFinder {
-	void findCandidates(FabricLoader loader, BiConsumer<URL, Boolean> urlProposer);
+	void findCandidates(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> urlProposer);
 }
