@@ -39,6 +39,7 @@ dependencies {
 	implementation "org.ow2.asm:asm-tree:${project.asm_version}"
 	implementation "org.ow2.asm:asm-util:${project.asm_version}"
 
+	implementation 'org.quiltmc:quilt-json5:1.0.0-rc.3' // TODO: shadow me
 	// Required for mixin annotation processor
 	annotationProcessor "org.ow2.asm:asm:${project.asm_version}"
 	annotationProcessor "org.ow2.asm:asm-analysis:${project.asm_version}"

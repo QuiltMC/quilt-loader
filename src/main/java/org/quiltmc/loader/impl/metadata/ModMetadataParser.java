@@ -26,9 +26,9 @@ import java.util.List;
 import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
 
-import org.quiltmc.loader.impl.gson.JsonReader;
-import org.quiltmc.loader.impl.gson.JsonToken;
 
 public final class ModMetadataParser {
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -54,7 +54,7 @@ public final class ModMetadataParser {
 			// Re-read the JSON file.
 			int schemaVersion = 0;
 
-			try (JsonReader reader = new JsonReader(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
+			try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
 				if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 					throw new ParseMetadataException("Root of \"fabric.mod.json\" must be an object", reader);
 				}
@@ -89,7 +89,7 @@ public final class ModMetadataParser {
 			}
 
 			// Slow path, schema version wasn't specified early enough, re-read with detected/inferred version
-			try (JsonReader reader = new JsonReader(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
+			try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
 				// No need to check if the start of the json file as it has already been checked
 				reader.beginObject();
 				final LoaderModMetadata ret = readModMetadata(logger, reader, schemaVersion);
@@ -136,10 +136,9 @@ public final class ModMetadataParser {
 					.append(warning.getReason())
 					.append(" \"")
 					.append(warning.getKey())
-					.append("\" at line ")
-					.append(warning.getLine())
-					.append(" column ")
-					.append(warning.getColumn());
+					.append('"')
+					.append(warning.getLocation())
+					.append('"');
 		}
 
 		logger.warn(message.toString());
