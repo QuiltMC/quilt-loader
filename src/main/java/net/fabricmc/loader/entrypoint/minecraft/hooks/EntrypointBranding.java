@@ -20,10 +20,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class EntrypointBranding {
-	public static final String FABRIC = "fabric";
+	public static final String QUILT = "quilt_loader";
 	public static final String VANILLA = "vanilla";
 
-	private static final Logger LOGGER = LogManager.getLogger("Fabric|Branding");
+	private static final Logger LOGGER = LogManager.getLogger("Quilt|Branding");
 
 	private EntrypointBranding() {
 	}
@@ -31,8 +31,8 @@ public final class EntrypointBranding {
 	public static String brand(final String brand) {
 		if (brand == null || brand.isEmpty()) {
 			LOGGER.warn("Null or empty branding found!", new IllegalStateException());
-			return FABRIC;
+			return QUILT;
 		}
-		return VANILLA.equals(brand) ? FABRIC : brand + ',' + FABRIC;
+		return VANILLA.equals(brand) ? QUILT : brand + ',' + QUILT;
 	}
 }

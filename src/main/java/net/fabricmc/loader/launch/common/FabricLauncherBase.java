@@ -17,6 +17,7 @@
 package net.fabricmc.loader.launch.common;
 
 import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.util.SystemProperties;
 import net.fabricmc.loader.util.mappings.TinyRemapperMappingsHelper;
 import net.fabricmc.loader.util.UrlConversionException;
 import net.fabricmc.loader.util.UrlUtil;
@@ -214,18 +215,20 @@ public abstract class FabricLauncherBase implements FabricLauncher {
 		switch (envType) {
 			case CLIENT:
 				if (!argMap.containsKey("accessToken")) {
-					argMap.put("accessToken", "FabricMC");
+					argMap.put("accessToken", "QuiltMC");
 				}
 
-				if (!argMap.containsKey("version")) {
-					argMap.put("version", "Fabric");
+				String version = System.getProperty(SystemProperties.LAUNCHER_NAME);
+				if (version == null) {
+					version = argMap.containsKey("version") ? argMap.get("version") : "Unknown";
 				}
+				argMap.put("version", version);
 
 				String versionType = "";
 				if(argMap.containsKey("versionType") && !argMap.get("versionType").equalsIgnoreCase("release")){
 					versionType = argMap.get("versionType") + "/";
 				}
-				argMap.put("versionType", versionType + "Fabric");
+				argMap.put("versionType", versionType + "Quilt Loader");
 
 				if (!argMap.containsKey("gameDir")) {
 					argMap.put("gameDir", getLaunchDirectory(argMap).getAbsolutePath());

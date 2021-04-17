@@ -54,7 +54,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 public abstract class FabricTweaker extends FabricLauncherBase implements ITweaker {
-	protected static Logger LOGGER = LogManager.getFormatterLogger("Fabric|Tweaker");
+	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Tweaker");
 	protected Arguments arguments;
 	private LaunchClassLoader launchClassLoader;
 	private boolean isDevelopment;

@@ -34,13 +34,13 @@ import net.fabricmc.loader.metadata.ParseMetadataException;
 import net.fabricmc.loader.util.FileSystemUtil;
 import net.fabricmc.loader.util.UrlConversionException;
 import net.fabricmc.loader.util.UrlUtil;
-import net.fabricmc.loader.util.sat4j.core.VecInt;
-import net.fabricmc.loader.util.sat4j.minisat.SolverFactory;
-import net.fabricmc.loader.util.sat4j.specs.ContradictionException;
-import net.fabricmc.loader.util.sat4j.specs.IProblem;
-import net.fabricmc.loader.util.sat4j.specs.ISolver;
-import net.fabricmc.loader.util.sat4j.specs.IVecInt;
-import net.fabricmc.loader.util.sat4j.specs.TimeoutException;
+import org.quiltmc.loader.util.sat4j.core.VecInt;
+import org.quiltmc.loader.util.sat4j.minisat.SolverFactory;
+import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
+import org.quiltmc.loader.util.sat4j.specs.IProblem;
+import org.quiltmc.loader.util.sat4j.specs.ISolver;
+import org.quiltmc.loader.util.sat4j.specs.IVecInt;
+import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import org.apache.logging.log4j.Logger;
 

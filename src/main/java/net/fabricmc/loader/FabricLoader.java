@@ -74,7 +74,7 @@ public class FabricLoader implements net.fabricmc.loader.api.FabricLoader {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	protected static Logger LOGGER = LogManager.getFormatterLogger("Fabric|Loader");
+	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Loader");
 
 	protected final Map<String, ModContainer> modMap = new HashMap<>();
 	protected List<ModContainer> mods = new ArrayList<>();
