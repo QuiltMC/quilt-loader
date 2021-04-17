@@ -16,10 +16,10 @@
 
 package org.quiltmc.loader.impl.metadata;
 
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import org.quiltmc.loader.impl.gson.JsonReader;
-import org.quiltmc.loader.impl.gson.JsonToken;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -51,7 +51,7 @@ public final class DependencyOverrides {
 			return;
 		}
 
-		try (JsonReader reader = new JsonReader(new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8))) {
+		try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(path), StandardCharsets.UTF_8))) {
 			dependencyOverrides = parse(reader);
 		} catch (IOException | ParseMetadataException e) {
 			throw new RuntimeException("Failed to parse " + path.toString(), e);

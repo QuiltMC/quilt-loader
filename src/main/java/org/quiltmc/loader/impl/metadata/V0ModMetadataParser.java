@@ -34,8 +34,8 @@ import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
-import org.quiltmc.loader.impl.gson.JsonReader;
-import org.quiltmc.loader.impl.gson.JsonToken;
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.util.version.VersionDeserializer;
 
 final class V0ModMetadataParser {
@@ -131,7 +131,7 @@ final class V0ModMetadataParser {
 					environment = ModEnvironment.SERVER;
 					break;
 				default:
-					warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), rawEnvironment, "Invalid side type"));
+					warnings.add(new ParseWarning(reader.locationString(), rawEnvironment, "Invalid side type"));
 				}
 
 				break;
@@ -204,7 +204,7 @@ final class V0ModMetadataParser {
 				license = reader.nextString();
 				break;
 			default:
-				warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Unsupported root entry"));
+				warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
 				reader.skipValue();
 				break;
 			}
@@ -265,7 +265,7 @@ final class V0ModMetadataParser {
 					contactInfo.put("sources", reader.nextString());
 					break;
 				default:
-					warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Unsupported links entry"));
+					warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported links entry"));
 					reader.skipValue();
 				}
 			}
@@ -304,7 +304,7 @@ final class V0ModMetadataParser {
 				server.addAll(readStringArray(reader, "server"));
 				break;
 			default:
-				warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), environment, "Invalid environment type"));
+				warnings.add(new ParseWarning(reader.locationString(), environment, "Invalid environment type"));
 				reader.skipValue();
 			}
 		}
@@ -446,7 +446,7 @@ final class V0ModMetadataParser {
 					contactMap.put("website", reader.nextString());
 					break;
 				default:
-					warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Unsupported contact information entry"));
+					warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported contact information entry"));
 					reader.skipValue();
 				}
 			}

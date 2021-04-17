@@ -35,8 +35,8 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
-import org.quiltmc.loader.impl.gson.JsonReader;
-import org.quiltmc.loader.impl.gson.JsonToken;
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.util.version.VersionDeserializer;
 
 final class V1ModMetadataParser {
@@ -209,7 +209,7 @@ final class V1ModMetadataParser {
 				readCustomValues(reader, customValues);
 				break;
 			default:
-				warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Unsupported root entry"));
+				warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
 				reader.skipValue();
 				break;
 			}
@@ -302,7 +302,7 @@ final class V1ModMetadataParser {
 							value = reader.nextString();
 							break;
 						default:
-							warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), entryKey, "Invalid entry in entrypoint metadata"));
+							warnings.add(new ParseWarning(reader.locationString(), entryKey, "Invalid entry in entrypoint metadata"));
 							reader.skipValue();
 							break;
 						}
@@ -355,7 +355,7 @@ final class V1ModMetadataParser {
 
 					file = reader.nextString();
 				} else {
-					warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Invalid entry in jar entry"));
+					warnings.add(new ParseWarning(reader.locationString(), key, "Invalid entry in jar entry"));
 					reader.skipValue();
 				}
 			}
@@ -407,7 +407,7 @@ final class V1ModMetadataParser {
 						config = reader.nextString();
 						break;
 					default:
-						warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Invalid entry in mixin config entry"));
+						warnings.add(new ParseWarning(reader.locationString(), key, "Invalid entry in mixin config entry"));
 						reader.skipValue();
 					}
 				}
@@ -425,7 +425,7 @@ final class V1ModMetadataParser {
 				mixins.add(new V1ModMetadata.MixinEntry(config, environment));
 				break;
 			default:
-				warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), "Invalid mixin entry type"));
+				warnings.add(new ParseWarning(reader.locationString(), "Invalid mixin entry type"));
 				reader.skipValue();
 				break;
 			}
@@ -509,7 +509,7 @@ final class V1ModMetadataParser {
 						break;
 					default:
 						// Ignore unsupported keys
-						warnings.add(new ParseWarning(reader.getLineNumber(), reader.getColumn(), key, "Invalid entry in person"));
+						warnings.add(new ParseWarning(reader.locationString(), key, "Invalid entry in person"));
 						reader.skipValue();
 					}
 				}
