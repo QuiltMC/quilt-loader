@@ -202,53 +202,58 @@ public class ModResolver {
 			}
 		} else {
 			Map<String, ModIdDefinition> modDefs = new HashMap<>();
-			Map<ModCandidate, MainModLoadOption> modToLoadOption = new HashMap<>();
 			DependencyHelper<LoadOption, ModLink> helper = new DependencyHelper<>(SolverFactory.newLight());
 			helper.setNegator(new LoadOptionNegator());
 
 			try {
+				Map<String, List<ModLoadOption>> modOptions = new HashMap<>();
+				Map<ModCandidate, MainModLoadOption> modToLoadOption = new HashMap<>();
 
 				// Put primary mod (first mod in jar)
 				for (Entry<String, List<ModCandidate>> entry : modCandidateMap.entrySet()) {
 					String modId = entry.getKey();
 					List<ModCandidate> candidates = entry.getValue();
 					ModCandidate mandatedCandidate = mandatoryMods.get(modId);
-					MandatoryModIdDefinition mandatedDefinition = null;
+					List<ModLoadOption> cOptions = modOptions.computeIfAbsent(modId, s -> new ArrayList<>());
 
-					if (mandatedCandidate != null) {
-						MainModLoadOption cOption = new MainModLoadOption(mandatedCandidate, -1);
-						modToLoadOption.put(mandatedCandidate, cOption);
-						mandatedDefinition = new MandatoryModIdDefinition(cOption);
-					}
-
-					List<ModLoadOption> cOptions = new ArrayList<>();
 					int index = 0;
 
 					for (ModCandidate m : candidates) {
+						MainModLoadOption cOption;
+
 						if (m == mandatedCandidate) {
-							cOptions.add(mandatedDefinition.candidate);
-							continue;
+							cOption = new MainModLoadOption(mandatedCandidate, -1);
+							modToLoadOption.put(mandatedCandidate, cOption);
+							modDefs.put(modId, new MandatoryModIdDefinition(cOption));
+						} else {
+							cOption = new MainModLoadOption(m, candidates.size() == 1 ? -1 : index);
+							modToLoadOption.put(m, cOption);
+							helper.addToObjectiveFunction(cOption, -1000 + index++);
 						}
 
-						MainModLoadOption cOption = new MainModLoadOption(m, candidates.size() == 1 ? -1 : index);
-						modToLoadOption.put(m, cOption);
-						helper.addToObjectiveFunction(cOption, -1000 + index++);
 						cOptions.add(cOption);
 
 						for (String provided : m.getInfo().getProvides()) {
-							ProvidedModOption pOption = new ProvidedModOption(cOption, provided);
-							// FIXME: Handle provided mods correctly!
+							modOptions.computeIfAbsent(provided, s -> new ArrayList<>())
+								.add(new ProvidedModOption(cOption, provided));
 						}
 					}
+				}
 
+				for (Entry<String, List<ModLoadOption>> entry : modOptions.entrySet()) {
+
+					String modId = entry.getKey();
 					ModIdDefinition def;
-					ModLoadOption[] optionArray = cOptions.toArray(new ModLoadOption[0]);
+					ModLoadOption[] optionArray = entry.getValue().toArray(new ModLoadOption[0]);
 
-					if (mandatedDefinition != null) {
-						def = mandatedDefinition;
+					ModCandidate mandatoryCandidate = mandatoryMods.get(modId);
+
+					if (mandatoryCandidate != null) {
+						MandatoryModIdDefinition mandatoryDef = (MandatoryModIdDefinition) modDefs.get(modId);
+						def = mandatoryDef;
 						if (optionArray.length > 1) {
-							def = new OverridenModIdDefintion(mandatedDefinition, optionArray);
-							mandatedDefinition.put(helper);
+							def = new OverridenModIdDefintion(mandatoryDef, optionArray);
+							mandatoryDef.put(helper);
 						}
 					} else {
 						def = new OptionalModIdDefintion(modId, optionArray);
@@ -257,8 +262,6 @@ public class ModResolver {
 					def.put(helper);
 					modDefs.put(modId, def);
 				}
-
-				// secondary mods (siblings) and "provides" mods.
 
 				// Put dependencies and conflicts of everything
 				for (Entry<ModCandidate, MainModLoadOption> entry : modToLoadOption.entrySet()) {
@@ -1325,6 +1328,15 @@ public class ModResolver {
 		 *         but will never be null. */
 		abstract ModLoadOption[] sources();
 
+		/** Utility for {@link #put(DependencyHelper)} which returns only {@link ModLoadOption#getRoot()} */
+		protected static MainModLoadOption[] processSources(ModLoadOption[] array) {
+			MainModLoadOption[] dst = new MainModLoadOption[array.length];
+			for (int i = 0; i < dst.length; i++) {
+				dst[i] = array[i].getRoot();
+			}
+			return dst;
+		}
+
 		abstract String getFriendlyName();
 
 		@Override
@@ -1425,7 +1437,7 @@ public class ModResolver {
 
 		@Override
 		OptionalModIdDefintion put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			helper.atMost(this, 1, sources);
+			helper.atMost(this, 1, processSources(sources));
 			return this;
 		}
 
@@ -1439,7 +1451,7 @@ public class ModResolver {
 		}
 	}
 
-	/** A variant of {@link OptionalModIdDefintion} but which is overriden by a {@link MandatoryModIdDefinition} (and so
+	/** A variant of {@link OptionalModIdDefintion} but which is overridden by a {@link MandatoryModIdDefinition} (and so
 	 * none of these candidates can load). */
 	static final class OverridenModIdDefintion extends ModIdDefinition {
 		final MandatoryModIdDefinition overrider;
@@ -1467,7 +1479,7 @@ public class ModResolver {
 
 		@Override
 		OverridenModIdDefintion put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			helper.atMost(this, 1, sources);
+			helper.atMost(this, 1, processSources(sources));
 			return this;
 		}
 
