@@ -81,6 +81,16 @@ final class ModResolvingTests {
 	}
 
 	@Test
+	public void providedDepends() throws Exception {
+		Map<String, ModCandidate> modSet = resolveModSet("valid", "provided_depends");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library-but-renamed", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void includedDep() throws Exception {
 		Map<String, ModCandidate> modSet = resolveModSet("valid", "included_dep");
 
