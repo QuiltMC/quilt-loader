@@ -90,7 +90,7 @@ java {
 jar {
 	manifest {
 		attributes (
-			'Main-Class': 'net.fabricmc.loader.launch.server.FabricServerLauncher'
+			'Main-Class': 'org.quiltmc.impl.launch.server.QuiltServerLauncher'
 		)
 	}
 
