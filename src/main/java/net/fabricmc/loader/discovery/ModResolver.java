@@ -237,6 +237,7 @@ public class ModResolver {
 
 						for (String provided : m.getInfo().getProvides()) {
 							ProvidedModOption pOption = new ProvidedModOption(cOption, provided);
+							// FIXME: Handle provided mods correctly!
 						}
 					}
 
