@@ -322,6 +322,20 @@ public class ModResolver {
 						}
 					}
 
+					// Plugin functionality to handle errors would likely go *RIGHT HERE*
+					// I.E. downloading missing / outdated *optional* mods
+
+					/*
+					 * Plugins would most likely be passed the map of roots, and the list of causes.
+					 * Alternatively, we could do some pre-processing to identify specific cases, such as
+					 * a mod or library (or api class implementation) being missing, and then send those
+					 * out separately.
+					 *
+					 * This does mean that we'd need to remove and re-add edited clauses though when
+					 * trying to fix problems. (For example downloading a mod should process all of the
+					 * dependencies, provides, etc of that mod related to all others). 
+					 */
+
 					ModResolutionException ex = describeError(roots, causes);
 					if (ex == null) {
 						ex = fallbackErrorDescription(roots, causes);
