@@ -92,14 +92,23 @@ public final class QuiltStatusTree {
 	/** Generic Fabric-related jar file. */
 	public static final String ICON_TYPE_FABRIC_JAR_FILE = "jar+fabric";
 
+    /** Generic Quilt-related jar file. */
+    public static final String ICON_TYPE_QUILT_JAR_FILE = "jar+quilt";
+
 	/** Something related to Fabric (It's not defined what exactly this is for, but it uses the main Fabric logo). */
 	public static final String ICON_TYPE_FABRIC = "fabric";
+
+    /** Something related to Quilt (It's not defined what exactly this is for, but it uses the main Fabric logo). */
+    public static final String ICON_TYPE_QUILT = "quilt";
 
 	/** Generic JSON file. */
 	public static final String ICON_TYPE_JSON = "json";
 
 	/** A file called "fabric.mod.json". */
 	public static final String ICON_TYPE_FABRIC_JSON = "json+fabric";
+
+    /** A file called "quilt.mod.json". */
+    public static final String ICON_TYPE_QUILT_JSON = "json+quilt";
 
 	/** Java bytecode class file. */
 	public static final String ICON_TYPE_JAVA_CLASS = "java_class";
