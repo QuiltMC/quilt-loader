@@ -28,7 +28,7 @@ import net.fabricmc.loader.api.MappingResolver;
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.Descriptored;
 import net.fabricmc.mapping.tree.TinyTree;
-import net.fabricmc.mappings.EntryTriple;
+import net.fabricmc.mapping.util.EntryTriple;
 
 class QuiltMappingResolver implements MappingResolver {
 	private final Supplier<TinyTree> mappingsSupplier;

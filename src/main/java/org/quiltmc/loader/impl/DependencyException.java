@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl;
 
+@SuppressWarnings("serial")
 public class DependencyException extends RuntimeException {
 
 	public DependencyException() {

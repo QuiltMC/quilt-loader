@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.fabricmc.loader.api.VersionParsingException;
+
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -41,7 +43,6 @@ import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.SemanticVersionPredicateParser;
-import org.quiltmc.loader.impl.util.version.VersionParsingException;
 
 public final class McVersionLookup {
 	private static final Pattern VERSION_PATTERN = Pattern.compile(

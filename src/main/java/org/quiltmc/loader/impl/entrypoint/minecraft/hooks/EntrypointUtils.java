@@ -24,7 +24,6 @@ import java.util.function.Consumer;
 
 public final class EntrypointUtils {
 	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
-		@SuppressWarnings("deprecation")
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 
 		if (!loader.hasEntrypoints(name)) {
@@ -35,7 +34,6 @@ public final class EntrypointUtils {
 	}
 
 	private static <T> void invoke0(String name, Class<T> type, Consumer<? super T> invoker) {
-		@SuppressWarnings("deprecation")
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		RuntimeException exception = null;
 		Collection<EntrypointContainer<T>> entrypoints = loader.getEntrypointContainers(name, type);

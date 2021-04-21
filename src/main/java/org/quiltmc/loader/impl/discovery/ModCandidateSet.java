@@ -31,8 +31,9 @@ public class ModCandidateSet {
 		Version bv = b.getInfo().getVersion();
 
 		if (av instanceof Comparable && bv instanceof Comparable) {
-			//noinspection unchecked
-			return ((Comparable) bv).compareTo(av);
+			@SuppressWarnings("unchecked")
+			Comparable<? super Version> cv = (Comparable<? super Version>) bv; 
+			return (cv.compareTo(av));
 		} else {
 			return 0;
 		}

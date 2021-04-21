@@ -120,7 +120,6 @@ public final class Knot extends QuiltLauncherBase {
 
 		Thread.currentThread().setContextClassLoader(cl);
 
-		@SuppressWarnings("deprecation")
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		loader.setGameProvider(provider);
 		loader.load();
