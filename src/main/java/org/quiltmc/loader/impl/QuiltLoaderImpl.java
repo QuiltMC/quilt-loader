@@ -251,7 +251,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 		// add mods to classpath
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainer mod : mods) {
-			if (!mod.getInfo().getId().equals("fabricloader") && !mod.getInfo().getType().equals("builtin")) {
+			if (!mod.getInfo().getId().equals("quilt_loader") && !mod.getInfo().getType().equals("builtin")) {
 				QuiltLauncherBase.getLauncher().propose(mod.getOriginUrl());
 			}
 		}
