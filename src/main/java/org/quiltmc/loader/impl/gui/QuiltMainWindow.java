@@ -479,7 +479,7 @@ class QuiltMainWindow {
 		}
 
 		@Override
-		public Enumeration children() {
+		public Enumeration<? extends TreeNode> children() {
 			return new Enumeration<CustomTreeNode>() {
 				Iterator<CustomTreeNode> it = displayedChildren.iterator();
 
