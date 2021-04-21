@@ -4,7 +4,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id("org.cadixdev.licenser") version "0.5.0"
-    id("org.quiltmc.loom") version "0.7.13"
+	id("org.quiltmc.loom") version "0.7.13"
 }
 
 sourceCompatibility = 1.8
