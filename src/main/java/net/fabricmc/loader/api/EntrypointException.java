@@ -21,6 +21,7 @@ package net.fabricmc.loader.api;
  * 
  * @see FabricLoader#getEntrypointContainers(String, Class) 
  */
+@SuppressWarnings("serial")
 public class EntrypointException extends RuntimeException {
 	private final String key;
 

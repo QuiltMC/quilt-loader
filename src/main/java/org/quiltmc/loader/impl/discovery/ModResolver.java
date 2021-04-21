@@ -292,8 +292,9 @@ public class ModResolver {
 				for (ModCandidate other : modCandidateMap.get(candidate.getInfo().getId())) {
 					Version otherVersion = other.getInfo().getVersion();
 					if (version instanceof Comparable && otherVersion instanceof Comparable && !version.equals(otherVersion)) {
-						//noinspection unchecked
-						if (((Comparable) version).compareTo(otherVersion) == 0) {
+						@SuppressWarnings("unchecked")
+						Comparable<? super Version> cv = (Comparable<? super Version>) version;
+						if (cv.compareTo(otherVersion) == 0) {
 							suspiciousVersions.add(otherVersion);
 						}
 					}
@@ -550,6 +551,7 @@ public class ModResolver {
 		return errorList.isEmpty();
 	}
 
+	@SuppressWarnings("serial")
 	static class UrlProcessAction extends RecursiveAction {
 		private final QuiltLoaderImpl loader;
 		private final Map<String, ModCandidateSet> candidatesById;

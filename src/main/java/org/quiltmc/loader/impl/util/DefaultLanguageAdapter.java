@@ -49,8 +49,9 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 		if (methodSplit.length == 1) {
 			if (type.isAssignableFrom(c)) {
 				try {
-					//noinspection unchecked
-					return (T) c.getDeclaredConstructor().newInstance();
+					@SuppressWarnings("unchecked")
+					T tmp = (T) c.getDeclaredConstructor().newInstance();
+					return tmp;
 				} catch (Exception e) {
 					throw new LanguageAdapterException(e);
 				}
@@ -83,8 +84,9 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 					throw new LanguageAdapterException("Field " + value + " cannot be cast to " + type.getName() + "!");
 				}
 
-				//noinspection unchecked
-				return (T) field.get(null);
+				@SuppressWarnings("unchecked")
+				T tmp = (T) field.get(null);
+				return tmp;
 			} catch (NoSuchFieldException e) {
 				// ignore
 			} catch (IllegalAccessException e) {
@@ -114,13 +116,14 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 
 			final Object targetObject = object;
 
-			//noinspection unchecked
-			return (T) Proxy.newProxyInstance(QuiltLauncherBase.getLauncher().getTargetClassLoader(), new Class[] { type }, new InvocationHandler() {
+			@SuppressWarnings("unchecked")
+			T tmp = (T) Proxy.newProxyInstance(QuiltLauncherBase.getLauncher().getTargetClassLoader(), new Class[] { type }, new InvocationHandler() {
 				@Override
 				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 					return targetMethod.invoke(targetObject, args);
 				}
 			});
+			return tmp;
 		}
 	}
 }

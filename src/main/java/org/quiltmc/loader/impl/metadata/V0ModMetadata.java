@@ -274,12 +274,6 @@ final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetada
 		final Collection<String> common;
 		final Collection<String> server;
 
-		private Mixins() {
-			this.client = Collections.emptyList();
-			this.common = Collections.emptyList();
-			this.server = Collections.emptyList();
-		}
-
 		Mixins(Collection<String> client, Collection<String> common, Collection<String> server) {
 			this.client = Collections.unmodifiableCollection(client);
 			this.common = Collections.unmodifiableCollection(common);

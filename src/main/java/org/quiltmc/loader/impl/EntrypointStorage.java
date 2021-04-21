@@ -33,6 +33,7 @@ class EntrypointStorage {
 		ModContainer getModContainer();
 	}
 
+	@SuppressWarnings("deprecation")
 	private static class OldEntry implements Entry {
 		private static final org.quiltmc.loader.impl.language.LanguageAdapter.Options options = org.quiltmc.loader.impl.language.LanguageAdapter.Options.Builder.create()
 			.missingSuperclassBehaviour(org.quiltmc.loader.impl.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
@@ -64,8 +65,9 @@ class EntrypointStorage {
 			if (object == null || !type.isAssignableFrom(object.getClass())) {
 				return null;
 			} else {
-				//noinspection unchecked
-				return (T) object;
+				@SuppressWarnings("unchecked")
+				T tmp = (T) object;
+				return tmp;
 			}
 		}
 
@@ -99,8 +101,9 @@ class EntrypointStorage {
 				o = create(type);
 				instanceMap.put(type, o);
 			}
-			//noinspection unchecked
-			return (T) o;
+			@SuppressWarnings("unchecked")
+			T tmp = (T) o;
+			return tmp;
 		}
 
 		@Override
@@ -142,6 +145,7 @@ class EntrypointStorage {
 		return entryMap.containsKey(key);
 	}
 
+	@SuppressWarnings("deprecation") // internal use, ignore warning deprecation
 	protected <T> List<T> getEntrypoints(String key, Class<T> type) {
 		List<Entry> entries = entryMap.get(key);
 		if (entries == null) return Collections.emptyList();
@@ -172,6 +176,7 @@ class EntrypointStorage {
 		return results;
 	}
 
+	@SuppressWarnings("deprecation") // internal use, ignore warning deprecation
 	protected <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		List<Entry> entries = entryMap.get(key);
 		if (entries == null) return Collections.emptyList();
