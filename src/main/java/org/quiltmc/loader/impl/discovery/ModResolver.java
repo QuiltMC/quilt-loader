@@ -551,6 +551,7 @@ public class ModResolver {
 		return errorList.isEmpty();
 	}
 
+	@SuppressWarnings("serial")
 	static class UrlProcessAction extends RecursiveAction {
 		private final QuiltLoaderImpl loader;
 		private final Map<String, ModCandidateSet> candidatesById;

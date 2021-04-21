@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.util.version;
 
 /** @deprecated Replaced by {@link net.fabricmc.loader.api.VersionParsingException} */
+@SuppressWarnings("serial")
 @Deprecated
 public class VersionParsingException extends Exception {
 	public VersionParsingException() {
