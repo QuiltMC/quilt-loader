@@ -20,7 +20,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.spongepowered.asm.service.IGlobalPropertyService;
 import org.spongepowered.asm.service.IPropertyKey;
 
-public class QuiltGlobalPropretyService implements IGlobalPropertyService {
+public class QuiltGlobalPropertyService implements IGlobalPropertyService {
 	@Override
 	public IPropertyKey resolveKey(String name) {
 		return new MixinStringPropertyKey(name);
