@@ -65,7 +65,8 @@ public final class ModMetadataParser {
 
 				while (reader.hasNext()) {
 					// Try to read the schemaVersion
-					if (reader.nextName().equals("schemaVersion")) {
+					final String nextName = reader.nextName();
+					if (nextName.equals("schemaVersion")) {
 						if (reader.peek() != JsonToken.NUMBER) {
 							throw new ParseMetadataException("\"schemaVersion\" must be a number.", reader);
 						}
@@ -76,6 +77,10 @@ public final class ModMetadataParser {
 							// Finish reading the metadata
 							return readModMetadata(logger, reader, schemaVersion);
 						}
+					} else if (nextName.equals("$schema")) {
+						reader.skipValue();
+						// Avoid setting firstField to false, to prevent using the slow route when $schema is before schemaVersion
+						continue;
 
 						// schemaVersion found, but after some content -> start over to parse all data with the detected version
 					} else {
