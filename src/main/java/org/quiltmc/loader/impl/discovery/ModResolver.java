@@ -19,10 +19,22 @@ package org.quiltmc.loader.impl.discovery;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.PathType;
+import com.google.gson.JsonElement;
 
+import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.api.VersionPredicate;
+import net.fabricmc.loader.api.metadata.ContactInformation;
+import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
+import net.fabricmc.loader.api.metadata.Person;
 
+import net.fabricmc.api.EnvType;
+
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.ParseException;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -31,6 +43,7 @@ import org.quiltmc.loader.impl.util.SystemProperties;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.ModMetadataParser;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
@@ -38,6 +51,8 @@ import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.version.StringVersion;
+import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 import org.quiltmc.loader.util.sat4j.core.VecInt;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
@@ -49,8 +64,11 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import org.apache.logging.log4j.Logger;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -62,6 +80,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipError;
 
 import static com.google.common.jimfs.Feature.FILE_CHANNEL;
@@ -208,6 +227,7 @@ public class ModResolver {
 			}
 		} else {
 			Map<String, ModIdDefinition> modDefs = new HashMap<>();
+			List<ModLink> constraints = new ArrayList<>();
 			DependencyHelper<LoadOption, ModLink> helper = new DependencyHelper<>(org.quiltmc.loader.util.sat4j.pb.SolverFactory.newLight());
 			helper.setNegator(new LoadOptionNegator());
 
@@ -260,12 +280,14 @@ public class ModResolver {
 						if (optionArray.length > 1) {
 							def = new OverridenModIdDefintion(mandatoryDef, optionArray);
 							mandatoryDef.put(helper);
+							constraints.add(mandatoryDef);
 						}
 					} else {
 						def = new OptionalModIdDefintion(modId, optionArray);
 					}
 
 					def.put(helper);
+					constraints.add(def);
 					modDefs.put(modId, def);
 				}
 
@@ -274,32 +296,7 @@ public class ModResolver {
 					ModCandidate mc = entry.getKey();
 					MainModLoadOption option = entry.getValue();
 
-					for (ModDependency dep : mc.getInfo().getDepends()) {
-						ModIdDefinition def = modDefs.get(dep.getModId());
-						if (def == null) {
-							def = new OptionalModIdDefintion(dep.getModId(), new ModLoadOption[0]);
-							modDefs.put(dep.getModId(), def);
-							def.put(helper);
-						}
-
-						new ModDep(logger, option, dep, def).put(helper);
-					}
-
-					for (ModDependency conflict : mc.getInfo().getBreaks()) {
-						ModIdDefinition def = modDefs.get(conflict.getModId());
-						if (def == null) {
-							def = new OptionalModIdDefintion(conflict.getModId(), new ModLoadOption[0]);
-							modDefs.put(conflict.getModId(), def);
-
-							def.put(helper);
-						}
-
-						for (ModLoadOption op : def.sources()) {
-							if (conflict.matches(op.candidate.getInfo().getVersion())) {
-								new ModBreakage(logger, option, conflict, op).put(helper);
-							}
-						}
-					}
+					processDependencies(logger, modDefs, constraints, helper, mc, option);
 				}
 
 			} catch (ContradictionException e) {
@@ -341,6 +338,32 @@ public class ModResolver {
 					 * trying to fix problems. (For example downloading a mod should process all of the
 					 * dependencies, provides, etc of that mod related to all others). 
 					 */
+
+					// START CHANGES
+
+					// FOR NOW
+					// just check for the simple case of a missing mod
+					if (causes.size() == 1) {
+						ModLink link = causes.get(0);
+
+						if (link instanceof ModDep) {
+							ModDep dep = (ModDep) link;
+							ModIdDefinition on = dep.on;
+							if (on instanceof OptionalModIdDefintion) {
+								OptionalModIdDefintion optional = (OptionalModIdDefintion) on;
+								if (optional.sources.length == 0) {
+									// Missing
+									// Fetch index from public alexiil repo
+
+									if (handleFromAlexRepo(logger, helper, constraints, modDefs, modCandidateMap, on)) {
+										continue;
+									}
+								}
+							}
+						}
+					}
+
+					// END CHANGES
 
 					ModResolutionException ex = describeError(roots, causes);
 					if (ex == null) {
@@ -402,6 +425,9 @@ public class ModResolver {
 					throw ex;
 				}
 
+			} catch (ContradictionException e) {
+				// This shouldn't happen. But if it does it's a bit of a problem.
+				throw new ModResolutionException(e);
 			} catch (TimeoutException e) {
 				throw new ModResolutionException("Mod collection took too long to be resolved", e);
 			}
@@ -502,6 +528,338 @@ public class ModResolver {
 		}
 
 		return result;
+	}
+
+	void processDependencies(Logger logger, Map<String, ModIdDefinition> modDefs, List<ModLink> constraints,
+		DependencyHelper<LoadOption, ModLink> helper, ModCandidate mc, ModLoadOption option)
+		throws ContradictionException {
+
+		for (ModDependency dep : mc.getInfo().getDepends()) {
+			ModIdDefinition def = modDefs.get(dep.getModId());
+			if (def == null) {
+				def = new OptionalModIdDefintion(dep.getModId(), new ModLoadOption[0]);
+				modDefs.put(dep.getModId(), def);
+				def.put(helper);
+				constraints.add(def);
+			}
+
+			ModDep depLink = new ModDep(logger, option, dep, def);
+			depLink.put(helper);
+			constraints.add(depLink);
+		}
+
+		for (ModDependency conflict : mc.getInfo().getBreaks()) {
+			ModIdDefinition def = modDefs.get(conflict.getModId());
+			if (def == null) {
+				def = new OptionalModIdDefintion(conflict.getModId(), new ModLoadOption[0]);
+				modDefs.put(conflict.getModId(), def);
+
+				def.put(helper);
+				constraints.add(def);
+			}
+
+			ModBreakage breakLink = new ModBreakage(logger, option, conflict, def);
+			breakLink.put(helper);
+			constraints.add(breakLink);
+		}
+	}
+	
+	static class RemoteModVersions {
+		final	String version;
+		/**
+		 * Array of { mod id on, version strings...}
+		 */
+		final String[][] deps;
+
+		public RemoteModVersions(String version, String[][] deps) {
+			this.version = version;
+			this.deps = deps;
+		}
+	}
+
+	private boolean handleFromAlexRepo(Logger logger, DependencyHelper<LoadOption, ModLink> helper, List<
+		ModLink> constraints, Map<String, ModIdDefinition> modDefs, Map<String, List<ModCandidate>> modCandidateMap,
+		ModIdDefinition on) throws ContradictionException {
+
+		String modid = on.getModId();
+		String urlStr = "https://alexiil.uk/quilt_temp_maven/index/" + modid + ".json.gz";
+
+		// le bad quick coding
+		List<RemoteModVersions> versions = new ArrayList<>();
+
+		try {
+			
+			// yes this uses java 9
+			// shush
+
+			URL url = new URL(urlStr);
+			try (InputStream stream = url.openStream()) {
+				BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(stream)));
+				JsonReader reader = JsonReader.create(br);
+
+				reader.beginObject();
+				assertIs("id", reader.nextName());
+				assertIs(modid, reader.nextString());
+				assertIs("versions", reader.nextName());
+				reader.beginObject();
+				while (reader.peek() == JsonToken.NAME) {
+					String version = reader.nextName();
+					reader.beginObject();
+					assertIs("depends", reader.nextName());
+					reader.beginObject();
+
+					List<String[]> versionList = new ArrayList<>();
+
+					while (reader.peek() == JsonToken.NAME) {
+						String modto = reader.nextName();
+						String versionTo = reader.nextString();
+						reader.endObject();
+						versionList.add(new String[]{modto, versionTo});
+					}
+
+					versions.add(new RemoteModVersions(version, versionList.toArray(new String[0][])));
+
+					reader.endObject();
+				}
+			}
+
+		} catch (IOException io) {
+			throw new Error("#Blame AlexIIL", io);
+		}
+
+		for (RemoteModVersions v : versions) {
+			LoaderModMetadata info = new DummyModMetadata(modid, v);
+			ModCandidate candidate;
+			try {
+				candidate = new ModCandidate(info, new URL("file:///INVALID_NOPE_REALLY_DOESNT_EXIST_YET"), 1, true);
+			} catch (MalformedURLException e) {
+				throw new Error(e);
+			}
+			ModLoadOption option = new RemoteModLoadOption(candidate, v.version);
+
+			helper.addToObjectiveFunction(option, -1000 - modDefs.get(modid).sources().length + 1);
+
+			processDependencies(logger, modDefs, constraints, helper, candidate, option);
+
+			for (ModLink constraint : constraints) {
+				constraint.offerNewOption(logger, helper, option);
+			}
+			modCandidateMap.computeIfAbsent(modid, m -> new ArrayList<>()).add(candidate);
+		}
+
+		return true;
+	}
+
+	private void assertIs(String expected, String actual) {
+		if (!expected.equals(actual)) {
+			throw new Error(expected + " != " + actual);
+		}
+	}
+
+	static class DummyModMetadata implements LoaderModMetadata {
+		
+		final String modid;
+		final RemoteModVersions version;
+
+		Version v = null;
+
+		public DummyModMetadata(String modid, RemoteModVersions version) {
+			this.modid = modid;
+			this.version = version;
+		}
+
+		@Override
+		public String getType() {
+			return "fabric";
+		}
+
+		@Override
+		public String getId() {
+			return modid;
+		}
+
+		@Override
+		public Collection<String> getProvides() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Version getVersion() {
+			return v == null ? v = calcVersion() : v;
+		}
+
+		private Version calcVersion() {
+			try {
+				return Version.parse(version.version);
+			} catch (VersionParsingException e) {
+				e.printStackTrace();
+				return new StringVersion(version.version);
+			}
+		}
+
+		@Override
+		public ModEnvironment getEnvironment() {
+			return ModEnvironment.UNIVERSAL;
+		}
+
+		@Override
+		public Collection<ModDependency> getDepends() {
+			List<ModDependency> list = new ArrayList<>();
+			for (String[] str : version.deps) {
+				list.add(new ModDependency(){
+					@Override
+					public String getModId() {
+						return str[0];
+					}
+
+					@Override
+					public boolean matches(Version version) {
+						try {
+							return VersionPredicateParser.matches(version, str[1]);
+						} catch (VersionParsingException e) {
+							throw new Error(e);
+						}
+					}
+
+					@Override
+					public Set<VersionPredicate> getVersionRequirements() {
+						return VersionPredicate.parse(Collections.singletonList(str[1]));
+					}
+				});
+			}
+			return list;
+		}
+
+		@Override
+		public Collection<ModDependency> getRecommends() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Collection<ModDependency> getSuggests() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Collection<ModDependency> getConflicts() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Collection<ModDependency> getBreaks() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public String getName() {
+			return modid;
+		}
+
+		@Override
+		public String getDescription() {
+			return modid;
+		}
+
+		@Override
+		public Collection<Person> getAuthors() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Collection<Person> getContributors() {
+			return Collections.emptyList();
+			}
+
+		@Override
+		public ContactInformation getContact() {
+			return ContactInformation.EMPTY;
+		}
+
+		@Override
+		public Collection<String> getLicense() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Optional<String> getIconPath(int size) {
+			return Optional.empty();
+		}
+
+		@Override
+		public boolean containsCustomValue(String key) {
+			return false;
+		}
+
+		@Override
+		public CustomValue getCustomValue(String key) {
+			throw new AbstractMethodError("// TODO: Implement this!");
+		}
+
+		@Override
+		public Map<String, CustomValue> getCustomValues() {
+			return Collections.emptyMap();
+		}
+
+		@Override
+		public boolean containsCustomElement(String key) {
+			return false;
+		}
+
+		@Override
+		public JsonElement getCustomElement(String key) {
+			// TODO Auto-generated method stub
+			throw new AbstractMethodError("// TODO: Implement this!");
+		}
+
+		@Override
+		public int getSchemaVersion() {
+			return 1;
+		}
+
+		@Override
+		public Map<String, String> getLanguageAdapterDefinitions() {
+			return Collections.emptyMap();
+		}
+
+		@Override
+		public Collection<NestedJarEntry> getJars() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Collection<String> getMixinConfigs(EnvType type) {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public String getAccessWidener() {
+			return "";
+		}
+
+		@Override
+		public boolean loadsInEnvironment(EnvType type) {
+			return true;
+		}
+
+		@Override
+		public Collection<String> getOldInitializers() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public List<EntrypointMetadata> getEntrypoints(String type) {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public Collection<String> getEntrypointKeys() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public void emitFormatWarnings(Logger logger) {
+
+		}
 	}
 
 	// TODO: Convert all these methods to new error syntax
@@ -1191,7 +1549,32 @@ public class ModResolver {
 
 		abstract String getSpecificInfo();
 
-		abstract MainModLoadOption getRoot();
+		abstract ModLoadOption getRoot();
+	}
+
+	static class RemoteModLoadOption extends ModLoadOption {
+
+		final String version;
+
+		public RemoteModLoadOption(ModCandidate candidate, String version) {
+			super(candidate);
+			this.version = version;
+		}
+
+		@Override
+		String shortString() {
+			return "Remote Mod " + modId();
+		}
+
+		@Override
+		String getSpecificInfo() {
+			return "version " + version;
+		}
+
+		@Override
+		ModLoadOption getRoot() {
+			return this;
+		}
 	}
 
 	static class MainModLoadOption extends ModLoadOption {
@@ -1320,6 +1703,8 @@ public class ModResolver {
 		 */
 		public abstract Collection<? extends LoadOption> getNodesTo();
 
+		public abstract void offerNewOption(Logger logger, DependencyHelper<LoadOption, ModLink> helper, LoadOption option) throws ContradictionException;
+
 		@Override
 		public final int compareTo(ModLink o) {
 			if (o.getClass() == getClass()) {
@@ -1350,8 +1735,8 @@ public class ModResolver {
 		abstract ModLoadOption[] sources();
 
 		/** Utility for {@link #put(DependencyHelper)} which returns only {@link ModLoadOption#getRoot()} */
-		protected static MainModLoadOption[] processSources(ModLoadOption[] array) {
-			MainModLoadOption[] dst = new MainModLoadOption[array.length];
+		protected static ModLoadOption[] processSources(ModLoadOption[] array) {
+			ModLoadOption[] dst = new ModLoadOption[array.length];
 			for (int i = 0; i < dst.length; i++) {
 				dst[i] = array[i].getRoot();
 			}
@@ -1417,12 +1802,17 @@ public class ModResolver {
 		public String toString() {
 			return "mandatory " + candidate.fullString();
 		}
+
+		@Override
+		public void offerNewOption(Logger logger, DependencyHelper<LoadOption, ModLink> helper, LoadOption option) {
+			// Do nothing
+		}
 	}
 
 	/** A concrete definition that allows the modid to be loaded from any of a set of {@link ModCandidate}s. */
 	static final class OptionalModIdDefintion extends ModIdDefinition {
 		final String modid;
-		final ModLoadOption[] sources;
+		ModLoadOption[] sources;
 
 		public OptionalModIdDefintion(String modid, ModLoadOption[] sources) {
 			this.modid = modid;
@@ -1470,13 +1860,29 @@ public class ModResolver {
 				default: return "optional mod '" + modid + "' (" + sources.length + " sources)";
 			}
 		}
+
+		@Override
+		public void offerNewOption(Logger logger, DependencyHelper<LoadOption, ModLink> helper, LoadOption option) throws ContradictionException {
+			if (option instanceof ModLoadOption) {
+				ModLoadOption mod = (ModLoadOption) option;
+				if (modid.equals(mod.modId())) {
+					ModLoadOption[] sources2 = new ModLoadOption[sources.length + 1];
+					System.arraycopy(sources, 0, sources2, 0, sources.length);
+					sources2[sources.length] = mod;
+					this.sources = sources2;
+
+					helper.removeConstraint(this);
+					put(helper);
+				}
+			}
+		}
 	}
 
 	/** A variant of {@link OptionalModIdDefintion} but which is overridden by a {@link MandatoryModIdDefinition} (and so
 	 * none of these candidates can load). */
 	static final class OverridenModIdDefintion extends ModIdDefinition {
 		final MandatoryModIdDefinition overrider;
-		final ModLoadOption[] sources;
+		ModLoadOption[] sources;
 
 		public OverridenModIdDefintion(MandatoryModIdDefinition overrider, ModLoadOption[] sources) {
 			this.overrider = overrider;
@@ -1507,6 +1913,24 @@ public class ModResolver {
 		@Override
 		public String toString() {
 			return "overriden mods '" + overrider.getModId() + "' of " + sources.length + " by " + overrider;
+		}
+
+		@Override
+		public void offerNewOption(Logger logger, DependencyHelper<LoadOption, ModLink> helper, LoadOption option)
+			throws ContradictionException {
+
+			if (option instanceof ModLoadOption) {
+				ModLoadOption mod = (ModLoadOption) option;
+				if (getModId().equals(mod.modId())) {
+					ModLoadOption[] sources2 = new ModLoadOption[sources.length + 1];
+					System.arraycopy(sources, 0, sources2, 0, sources.length);
+					sources2[sources.length] = mod;
+					this.sources = sources2;
+
+					helper.removeConstraint(this);
+					put(helper);
+				}
+			}
 		}
 	}
 
@@ -1552,10 +1976,13 @@ public class ModResolver {
 
 		@Override
 		ModDep put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			List<LoadOption> clause = new ArrayList<>();
-			clause.addAll(validOptions);
-			clause.add(new NegatedLoadOption(source));
-			helper.clause(this, clause.toArray(new LoadOption[0]));
+
+			LoadOption[] clause = new LoadOption[validOptions.size() + 1];
+			clause[0] = new NegatedLoadOption(source);
+			for (int i = 0; i < validOptions.size(); i++) {
+				clause[i+1] = validOptions.get(i).getRoot();
+			}
+			helper.clause(this, clause);
 			return this;
 		}
 
@@ -1591,28 +2018,89 @@ public class ModResolver {
 
 			return on.compareTo(other.on);
 		}
+
+		@Override
+		public void offerNewOption(Logger logger, DependencyHelper<LoadOption, ModLink> helper, LoadOption option)
+			throws ContradictionException {
+
+			if (option instanceof ModLoadOption) {
+				ModLoadOption mod = (ModLoadOption) option;
+				if (on.getModId().equals(mod.modId())) {
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver] " + this + " was offered " + mod.fullString());
+					}
+
+					allOptions.add(mod);
+
+					if (publicDep.matches(mod.candidate.getInfo().getVersion())) {
+						if (DEBUG_PRINT_STATE) {
+							logger.info("[ModResolver]   + valid option");
+						}
+						validOptions.add(mod);
+					} else {
+						if (DEBUG_PRINT_STATE) {
+							logger.info("[ModResolver]   x mismatching option");
+						}
+						invalidOptions.add(mod);
+					}
+
+					helper.removeConstraint(this);
+					put(helper);
+				}
+			}
+		}
+		
 	}
 
 	static final class ModBreakage extends ModLink {
 		final ModLoadOption source;
 		final ModDependency publicDep;
-		final ModLoadOption with;
+		final ModIdDefinition with;
+		final List<ModLoadOption> validOptions;
+		final List<ModLoadOption> invalidOptions;
+		final List<ModLoadOption> allOptions;
 
-		public ModBreakage(Logger logger, ModLoadOption source, ModDependency publicDep, ModLoadOption with) {
+		public ModBreakage(Logger logger, ModLoadOption source, ModDependency publicDep, ModIdDefinition with) {
 			this.source = source;
 			this.publicDep = publicDep;
 			this.with = with;
+			validOptions = new ArrayList<>();
+			invalidOptions = new ArrayList<>();
+			allOptions = new ArrayList<>();
 
 			if (DEBUG_PRINT_STATE) {
 				logger.info("[ModResolver] Adding a mod breakage:");
 				logger.info("[ModResolver]   from " + source.fullString());
-				logger.info("[ModResolver]   with " + with.fullString());
+				logger.info("[ModResolver]   with " + with.getModId());
+			}
+
+			for (ModLoadOption option : with.sources()) {
+				allOptions.add(option);
+
+				if (publicDep.matches(option.candidate.getInfo().getVersion())) {
+					invalidOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  +  breaking option: " + option.fullString());
+					}
+				} else {
+					validOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  x  non-conflicting option: " + option.fullString());
+					}
+				}
 			}
 		}
 
 		@Override
 		ModBreakage put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			helper.clause(this, new NegatedLoadOption(source), new NegatedLoadOption(with));
+			LoadOption[] disallowed = new LoadOption[invalidOptions.size()];
+			for (int i = 0; i < invalidOptions.size(); i++) {
+				disallowed[i] = invalidOptions.get(i).getRoot();
+			}
+			helper.halfOr(this, new NegatedLoadOption(source), disallowed);
 			return this;
 		}
 
@@ -1628,17 +2116,47 @@ public class ModResolver {
 
 		@Override
 		public Collection<? extends LoadOption> getNodesTo() {
-			return Collections.singleton(with);
+			return allOptions;
 		}
 
 		@Override
 		protected int compareToSelf(ModLink o) {
 			ModBreakage other = (ModBreakage) o;
-			int c = source.modId().compareTo(other.source.modId());
+
+			if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
+				return validOptions.isEmpty() ? -1 : 1;
+			}
+
+			int c = source.candidate.getOriginUrl().toString()
+				.compareTo(other.source.candidate.getOriginUrl().toString());
+
 			if (c != 0) {
 				return c;
 			}
-			return with.modId().compareTo(other.with.modId());
+
+			return with.compareTo(other.with);
+		}
+
+		@Override
+		public void offerNewOption(Logger logger, DependencyHelper<LoadOption, ModLink> helper, LoadOption option)
+			throws ContradictionException {
+
+			if (option instanceof ModLoadOption) {
+				ModLoadOption mod = (ModLoadOption) option;
+				if (with.getModId().equals(mod.modId())) {
+
+					allOptions.add(mod);
+
+					if (publicDep.matches(mod.candidate.getInfo().getVersion())) {
+						invalidOptions.add(mod);
+					} else {
+						validOptions.add(mod);
+					}
+
+					helper.removeConstraint(this);
+					put(helper);
+				}
+			}
 		}
 	}
 }
