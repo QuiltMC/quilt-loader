@@ -29,27 +29,27 @@
       },
       {
         "name": "com.google.jimfs:jimfs:1.2",
-        "url": "https://maven.quiltmc.org/repository/release/"
+        "url": "https://maven.quiltmc.org/repository/central/"
       },
       {
         "name": "org.ow2.asm:asm:9.1",
-        "url": "https://maven.quiltmc.org/repository/release/"
+        "url": "https://maven.quiltmc.org/repository/central/"
       },
       {
         "name": "org.ow2.asm:asm-analysis:9.1",
-        "url": "https://maven.quiltmc.org/repository/release/"
+        "url": "https://maven.quiltmc.org/repository/central/"
       },
       {
         "name": "org.ow2.asm:asm-commons:9.1",
-        "url": "https://maven.quiltmc.org/repository/release/"
+        "url": "https://maven.quiltmc.org/repository/central/"
       },
       {
         "name": "org.ow2.asm:asm-tree:9.1",
-        "url": "https://maven.quiltmc.org/repository/release/"
+        "url": "https://maven.quiltmc.org/repository/central/"
       },
       {
         "name": "org.ow2.asm:asm-util:9.1",
-        "url": "https://maven.quiltmc.org/repository/release/"
+        "url": "https://maven.quiltmc.org/repository/central/"
       }
     ],
     "server": [
