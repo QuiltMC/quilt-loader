@@ -32,12 +32,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import net.fabricmc.loader.discovery.ModCandidate;
-import net.fabricmc.loader.discovery.ModCandidateSet;
-import net.fabricmc.loader.discovery.ModResolver;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-import net.fabricmc.loader.metadata.ModMetadataParser;
-import net.fabricmc.loader.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModCandidateSet;
+import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.ModMetadataParser;
+import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 
 final class ModResolvingTests {
 	private static final Logger LOGGER = LogManager.getLogger();

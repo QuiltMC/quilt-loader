@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 /**
  * The public-facing FabricLoader instance.
@@ -36,13 +37,12 @@ public interface FabricLoader {
 	/**
 	 * Returns the public-facing Fabric Loader instance.
 	 */
-	@SuppressWarnings("deprecation")
 	static FabricLoader getInstance() {
-		if (net.fabricmc.loader.FabricLoader.INSTANCE == null) {
+		if (QuiltLoaderImpl.INSTANCE == null) {
 			throw new RuntimeException("Accessed FabricLoader too early!");
 		}
 
-		return net.fabricmc.loader.FabricLoader.INSTANCE;
+		return QuiltLoaderImpl.INSTANCE;
 	}
 
 	/**
