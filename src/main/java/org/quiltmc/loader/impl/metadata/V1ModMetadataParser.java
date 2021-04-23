@@ -208,6 +208,9 @@ final class V1ModMetadataParser {
 			case "custom":
 				readCustomValues(reader, customValues);
 				break;
+			case "$schema":
+				reader.skipValue();
+				break;
 			default:
 				warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
 				reader.skipValue();
