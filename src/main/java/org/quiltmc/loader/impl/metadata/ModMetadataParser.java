@@ -65,7 +65,8 @@ public final class ModMetadataParser {
 
 				while (reader.hasNext()) {
 					// Try to read the schemaVersion
-					final String nextName = reader.nextName();
+					String nextName = reader.nextName();
+
 					if (nextName.equals("schemaVersion")) {
 						if (reader.peek() != JsonToken.NUMBER) {
 							throw new ParseMetadataException("\"schemaVersion\" must be a number.", reader);
