@@ -8,23 +8,27 @@
         "name": "net.minecraft:launchwrapper:1.12"
       },
       {
-        "name": "net.fabricmc:tiny-mappings-parser:0.3.0",
+        "name": "org.quiltmc:tiny-mappings-parser:0.3.0",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
-        "name": "net.fabricmc:sponge-mixin:0.9.2+mixin.0.8.2",
+        "name": "org.quiltmc:sponge-mixin:0.9.2+mixin.0.8.2",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
-        "name": "net.fabricmc:tiny-remapper:0.3.2",
+        "name": "org.quiltmc:tiny-remapper:0.3.2",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
-        "name": "net.fabricmc:access-widener:1.0.2",
+        "name": "org.quiltmc:access-widener:1.0.2",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
-        "name": "net.fabricmc:quilt-loader-sat4j:2.3.5",
+        "name": "org.quiltmc:quilt-loader-sat4j:2.3.5",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc:quilt-json5:1.0.0-rc.3",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {

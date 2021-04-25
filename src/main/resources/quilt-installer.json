@@ -25,6 +25,10 @@
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
+        "name": "org.quiltmc:quilt-json5:1.0.0-rc.3",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
         "name": "com.google.jimfs:jimfs:1.2",
         "url": "https://maven.quiltmc.org/repository/central/"
       },
