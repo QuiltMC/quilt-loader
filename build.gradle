@@ -148,7 +148,7 @@ javadoc {
 	classpath = sourceSets.main.compileClasspath + sourceSets.main.output // compile impl stuff for dep as well
 	include("**/api/**")
 	// workaround as one of the api stuff use that package
-	failOnError false
+	failOnError = false
 }
 
 task javadocJar(type: Jar) {
@@ -162,9 +162,6 @@ build.dependsOn javadocJar
 license {
 	header file("HEADER")
 	include '**/*.java'
-
-	// Exclude gson since it is google's code, we just modify and bundle it
-	exclude '**/lib/gson/*.java'
 }
 
 publishing {
@@ -178,10 +175,10 @@ publishing {
 				builtBy remapSourcesJar
 			}
 			artifact javadocJar
-			artifact(file('src/main/resources/fabric-installer.json')) {
+			artifact(file('src/main/resources/quilt-installer.json')) {
 				builtBy remapJar
 			}
-			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
+			artifact(file('src/main/resources/quilt-installer.launchwrapper.json')) {
 				builtBy remapJar
 				classifier = "launchwrapper"
 			}
