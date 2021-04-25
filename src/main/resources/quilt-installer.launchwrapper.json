@@ -72,12 +72,12 @@
   "launchwrapper": {
     "tweakers": {
       "client": [
-        "net.fabricmc.loader.impl.launch.QuiltClientTweaker"
+        "org.quiltmc.loader.impl.launch.QuiltClientTweaker"
       ],
       "common": [
       ],
       "server": [
-        "net.fabricmc.loader.impl.launch.QuiltServerTweaker"
+        "org.quiltmc.loader.impl.launch.QuiltServerTweaker"
       ]
     }
   }

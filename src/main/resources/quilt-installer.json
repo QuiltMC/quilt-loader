@@ -58,7 +58,7 @@
     ]
   },
   "mainClass": {
-    "client": "net.quiltmc.loader.impl.launch.knot.KnotClient",
-    "server": "net.quiltmc.loader.impl.launch.knot.KnotServer"
+    "client": "org.quiltmc.loader.impl.launch.knot.KnotClient",
+    "server": "org.quiltmc.loader.impl.launch.knot.KnotServer"
   }
 }
