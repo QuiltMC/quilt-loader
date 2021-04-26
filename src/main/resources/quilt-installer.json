@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "libraries": {
+    "client": [
+    ],
+    "common": [
+      {
+        "name": "org.quiltmc:tiny-mappings-parser:0.3.0",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc:sponge-mixin:0.9.2+mixin.0.8.2",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc:tiny-remapper:0.3.2",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc:access-widener:1.0.2",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc:quilt-loader-sat4j:2.3.5",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc:quilt-json5:1.0.0-rc.3",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "com.google.jimfs:jimfs:1.2",
+        "url": "https://maven.quiltmc.org/repository/central/"
+      },
+      {
+        "name": "org.ow2.asm:asm:9.1",
+        "url": "https://maven.quiltmc.org/repository/central/"
+      },
+      {
+        "name": "org.ow2.asm:asm-analysis:9.1",
+        "url": "https://maven.quiltmc.org/repository/central/"
+      },
+      {
+        "name": "org.ow2.asm:asm-commons:9.1",
+        "url": "https://maven.quiltmc.org/repository/central/"
+      },
+      {
+        "name": "org.ow2.asm:asm-tree:9.1",
+        "url": "https://maven.quiltmc.org/repository/central/"
+      },
+      {
+        "name": "org.ow2.asm:asm-util:9.1",
+        "url": "https://maven.quiltmc.org/repository/central/"
+      }
+    ],
+    "server": [
+      {
+        "_comment": "jimfs in quilt-server-launch requires guava on the system classloader",
+        "name": "com.google.guava:guava:21.0",
+        "url": "https://libraries.minecraft.net/"
+      }
+    ]
+  },
+  "mainClass": {
+    "client": "org.quiltmc.loader.impl.launch.knot.KnotClient",
+    "server": "org.quiltmc.loader.impl.launch.knot.KnotServer"
+  }
+}
