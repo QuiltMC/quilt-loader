@@ -274,32 +274,7 @@ public class ModResolver {
 					ModCandidate mc = entry.getKey();
 					MainModLoadOption option = entry.getValue();
 
-					for (ModDependency dep : mc.getInfo().getDepends()) {
-						ModIdDefinition def = modDefs.get(dep.getModId());
-						if (def == null) {
-							def = new OptionalModIdDefintion(dep.getModId(), new ModLoadOption[0]);
-							modDefs.put(dep.getModId(), def);
-							def.put(helper);
-						}
-
-						new ModDep(logger, option, dep, def).put(helper);
-					}
-
-					for (ModDependency conflict : mc.getInfo().getBreaks()) {
-						ModIdDefinition def = modDefs.get(conflict.getModId());
-						if (def == null) {
-							def = new OptionalModIdDefintion(conflict.getModId(), new ModLoadOption[0]);
-							modDefs.put(conflict.getModId(), def);
-
-							def.put(helper);
-						}
-
-						for (ModLoadOption op : def.sources()) {
-							if (conflict.matches(op.candidate.getInfo().getVersion())) {
-								new ModBreakage(logger, option, conflict, op).put(helper);
-							}
-						}
-					}
+					processDependencies(logger, modDefs, helper, mc, option);
 				}
 
 			} catch (ContradictionException e) {
@@ -502,6 +477,34 @@ public class ModResolver {
 		}
 
 		return result;
+	}
+
+	void processDependencies(Logger logger, Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
+		ModLink> helper, ModCandidate mc, ModLoadOption option)
+		throws ContradictionException {
+
+		for (ModDependency dep : mc.getInfo().getDepends()) {
+			ModIdDefinition def = modDefs.get(dep.getModId());
+			if (def == null) {
+				def = new OptionalModIdDefintion(dep.getModId(), new ModLoadOption[0]);
+				modDefs.put(dep.getModId(), def);
+				def.put(helper);
+			}
+
+			new ModDep(logger, option, dep, def).put(helper);
+		}
+
+		for (ModDependency conflict : mc.getInfo().getBreaks()) {
+			ModIdDefinition def = modDefs.get(conflict.getModId());
+			if (def == null) {
+				def = new OptionalModIdDefintion(conflict.getModId(), new ModLoadOption[0]);
+				modDefs.put(conflict.getModId(), def);
+
+				def.put(helper);
+			}
+
+			new ModBreakage(logger, option, conflict, def).put(helper);
+		}
 	}
 
 	// TODO: Convert all these methods to new error syntax
@@ -786,14 +789,37 @@ public class ModResolver {
 				}
 			} else if (cause instanceof ModBreakage) {
 				ModBreakage breakage = (ModBreakage) cause;
-				errors.append("x Mod ").append(getLoadOptionDescription(breakage.source))
+				errors.append(breakage.invalidOptions.isEmpty() ? "-" : "x");
+				errors.append(" Mod ").append(getLoadOptionDescription(breakage.source))
 						.append(" conflicts with ").append(getDependencyVersionRequirements(breakage.publicDep))
-						.append(" of mod ").append(getLoadOptionDescription(breakage.with))
-						.append("\n\t+ The developer(s) of ").append(getCandidateName(breakage.source))
-						.append(" have found that version ").append(getCandidateFriendlyVersion(breakage.with))
-						.append(" of ").append(getCandidateName(breakage.with))
-						.append(" critically conflicts with their mod.")
-						.append("\n\t+ You must remove one of the mods.");
+						.append(" of ");
+
+				ModIdDefinition def = breakage.with;
+				ModLoadOption[] sources = def.sources();
+
+				if (sources.length == 0) {
+					errors.append("unknown mod '").append(def.getModId()).append("'\n")
+							.append("\t- You must remove ").append(getDependencyVersionRequirements(breakage.publicDep))
+							.append(" of '").append(def.getModId()).append("'.");
+				} else {
+					errors.append(def.getFriendlyName());
+
+					if (breakage.invalidOptions.isEmpty()) {
+						errors.append("\n\t- You must remove ").append(getDependencyVersionRequirements(breakage.publicDep))
+								.append(" of ").append(def.getFriendlyName()).append('.');
+					}
+
+					if (sources.length == 1) {
+						errors.append("\n\t- Your current version of ").append(getCandidateName(sources[0].candidate))
+							.append(" is ").append(getCandidateFriendlyVersion(sources[0].candidate)).append(".");
+					} else {
+						errors.append("\n\t- You have the following versions available:");
+
+						for (ModLoadOption source : sources) {
+							errors.append("\n\t\t- ").append(getCandidateFriendlyVersion(source)).append(".");
+						}
+					}
+				}
 			} else {
 				errors.append("x Unknown error type?")
 						.append("\n\t+ cause.getClass() =>")
@@ -1596,23 +1622,58 @@ public class ModResolver {
 	static final class ModBreakage extends ModLink {
 		final ModLoadOption source;
 		final ModDependency publicDep;
-		final ModLoadOption with;
+		final ModIdDefinition with;
 
-		public ModBreakage(Logger logger, ModLoadOption source, ModDependency publicDep, ModLoadOption with) {
+		/** Every mod option that this does NOT conflict with - as such it can be loaded at the same time as {@link #source}. */
+		final List<ModLoadOption> validOptions;
+
+		/** Every mod option that this DOES conflict with - as such it must not be loaded at the same time as
+		 * {@link #source}. */
+		final List<ModLoadOption> invalidOptions;
+
+		/** Every option. (This is just {@link #validOptions} plus {@link #invalidOptions} */
+		final List<ModLoadOption> allOptions;
+
+		public ModBreakage(Logger logger, ModLoadOption source, ModDependency publicDep, ModIdDefinition with) {
 			this.source = source;
 			this.publicDep = publicDep;
 			this.with = with;
+			validOptions = new ArrayList<>();
+			invalidOptions = new ArrayList<>();
+			allOptions = new ArrayList<>();
 
 			if (DEBUG_PRINT_STATE) {
 				logger.info("[ModResolver] Adding a mod breakage:");
 				logger.info("[ModResolver]   from " + source.fullString());
-				logger.info("[ModResolver]   with " + with.fullString());
+				logger.info("[ModResolver]   with " + with.getModId());
+			}
+
+			for (ModLoadOption option : with.sources()) {
+				allOptions.add(option);
+
+				if (publicDep.matches(option.candidate.getInfo().getVersion())) {
+					invalidOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  +  breaking option: " + option.fullString());
+					}
+				} else {
+					validOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  x  non-conflicting option: " + option.fullString());
+					}
+				}
 			}
 		}
 
 		@Override
 		ModBreakage put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			helper.clause(this, new NegatedLoadOption(source), new NegatedLoadOption(with));
+			LoadOption[] disallowed = new LoadOption[invalidOptions.size()];
+			for (int i = 0; i < invalidOptions.size(); i++) {
+				disallowed[i] = invalidOptions.get(i).getRoot();
+			}
+			helper.halfOr(this, new NegatedLoadOption(source), disallowed);
 			return this;
 		}
 
@@ -1628,17 +1689,25 @@ public class ModResolver {
 
 		@Override
 		public Collection<? extends LoadOption> getNodesTo() {
-			return Collections.singleton(with);
+			return allOptions;
 		}
 
 		@Override
 		protected int compareToSelf(ModLink o) {
 			ModBreakage other = (ModBreakage) o;
-			int c = source.modId().compareTo(other.source.modId());
+
+			if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
+				return validOptions.isEmpty() ? -1 : 1;
+			}
+
+			int c = source.candidate.getOriginUrl().toString()
+				.compareTo(other.source.candidate.getOriginUrl().toString());
+
 			if (c != 0) {
 				return c;
 			}
-			return with.modId().compareTo(other.with.modId());
+
+			return with.compareTo(other.with);
 		}
 	}
 }
