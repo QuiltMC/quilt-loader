@@ -27,7 +27,7 @@ public interface LanguageAdapter {
 
 	default Object createInstance(String classString, Options options) throws ClassNotFoundException, LanguageAdapterException {
 		try {
-			Class c = JavaLanguageAdapter.getClass(classString, options);
+			Class<?> c = JavaLanguageAdapter.getClass(classString, options);
 			if (c != null) {
 				return createInstance(c, options);
 			} else {

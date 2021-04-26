@@ -115,7 +115,6 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 			throw new RuntimeException("Could not locate Minecraft: provider locate failed");
 		}
 
-		@SuppressWarnings("deprecation")
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		loader.setGameProvider(provider);
 		loader.load();
@@ -214,8 +213,9 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 		try {
 			Field f = LaunchClassLoader.class.getDeclaredField("resourceCache");
 			f.setAccessible(true);
-			//noinspection unchecked
-			resourceCache = (Map<String, byte[]>) f.get(launchClassLoader);
+			@SuppressWarnings("unchecked")
+			Map<String, byte[]> tmp = (Map<String, byte[]>) f.get(launchClassLoader);
+			resourceCache = tmp;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

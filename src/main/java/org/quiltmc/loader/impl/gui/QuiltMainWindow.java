@@ -95,7 +95,10 @@ class QuiltMainWindow {
 		window.setTitle("Quilt Loader");
 
 		try {
-			window.setIconImage(loadImage("/ui/icon/fabric_x128.png"));
+			List<BufferedImage> images = new ArrayList<BufferedImage>();
+			images.add(loadImage("/ui/icon/quilt_x16.png"));
+			images.add(loadImage("/ui/icon/quilt_x128.png"));
+			window.setIconImages(images);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -479,7 +482,7 @@ class QuiltMainWindow {
 		}
 
 		@Override
-		public Enumeration children() {
+		public Enumeration<? extends TreeNode> children() {
 			return new Enumeration<CustomTreeNode>() {
 				Iterator<CustomTreeNode> it = displayedChildren.iterator();
 
