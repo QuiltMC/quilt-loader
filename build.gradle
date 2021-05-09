@@ -66,7 +66,7 @@ dependencies {
 	implementation('com.google.jimfs:jimfs:1.2') {
         exclude module: 'guava'
     }
-	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5-alexiil.2'
+	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5-alexiil.4'
 
 	// launchwrapper + dependencies
 	implementation ('net.minecraft:launchwrapper:1.12') {

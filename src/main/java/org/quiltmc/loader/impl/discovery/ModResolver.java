@@ -342,7 +342,7 @@ public class ModResolver {
 							}
 
 							if (link instanceof ModDep || link instanceof ModBreakage) {
-								if (helper.removeConstraint(link)) {
+								if (helper.quilt_removeConstraint(link)) {
 									removedAny = true;
 									break;
 								}
@@ -352,7 +352,7 @@ public class ModResolver {
 						// If that failed... try removing anything else
 						if (!removedAny) {
 							for (ModLink link : causes) {
-								if (helper.removeConstraint(link)) {
+								if (helper.quilt_removeConstraint(link)) {
 									removedAny = true;
 									break;
 								}
