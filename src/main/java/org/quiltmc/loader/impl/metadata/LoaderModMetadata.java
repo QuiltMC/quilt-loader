@@ -20,6 +20,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -36,7 +37,7 @@ public interface LoaderModMetadata extends ModMetadata {
 	Map<String, String> getLanguageAdapterDefinitions();
 	Collection<NestedJarEntry> getJars();
 	Collection<String> getMixinConfigs(EnvType type);
-	/* @Nullable */
+	@Nullable
 	String getAccessWidener();
 	boolean loadsInEnvironment(EnvType type);
 
