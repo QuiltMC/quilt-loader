@@ -20,7 +20,7 @@ import org.quiltmc.json5.exception.MalformedSyntaxException;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 
-public interface JsonLoaderValue extends LoaderValue {
+interface JsonLoaderValue extends LoaderValue {
 	static JsonLoaderValue read(JsonReader reader) throws IOException, ParseException {
 		switch (reader.peek()) {
 		case BEGIN_ARRAY: {

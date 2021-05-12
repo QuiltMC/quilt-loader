@@ -8,9 +8,6 @@ import org.quiltmc.loader.api.LoaderValue;
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
 final class V1ModMetadataReader {
-	private V1ModMetadataReader() {
-	}
-
 	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
@@ -24,5 +21,8 @@ final class V1ModMetadataReader {
 		}
 
 		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	private V1ModMetadataReader() {
 	}
 }

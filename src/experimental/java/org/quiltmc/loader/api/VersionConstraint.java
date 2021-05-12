@@ -38,30 +38,37 @@ public interface VersionConstraint {
 		 * A version constraint which allows all versions.
 		 */
 		ANY("*"),
+
 		/**
 		 * A version constraint where the versions must match.
 		 */
 		EQUALS("="),
+
 		/**
 		 * A version constraint where the version must be greater than the constraint's requirement.
 		 */
 		GREATER_THAN(">"),
+
 		/**
 		 * A version constraint where the version must be less than the constraint's requirement.
 		 */
 		LESSER_THAN("<"),
+
 		/**
 		 * A version constraint where the version must be equal to or greater than the constraint's requirement.
 		 */
 		GREATER_THAN_OR_EQUAL(">="),
+
 		/**
 		 * A version constraint where the version must be equal to or less than the constraint's requirement.
 		 */
 		LESSER_THAN_OR_EQUAL("<="),
+
 		/**
 		 * A version constraint where the major component of the version must match the constraint's major component.
 		 */
 		SAME_MAJOR("^"),
+
 		/**
 		 * A version constraint where the major and minor components of the version must match the constraint's major
 		 * and minor components.

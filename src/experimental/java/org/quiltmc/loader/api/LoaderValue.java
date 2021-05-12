@@ -31,6 +31,7 @@ public interface LoaderValue {
 	 * @throws ClassCastException if this value is not an array
 	 */
 	LArray getArray();
+
 	/**
 	 * Coerces this custom value to a {@link LType#STRING}.
 	 *
@@ -62,6 +63,7 @@ public interface LoaderValue {
 	 */
 	@ApiStatus.NonExtendable
 	interface LObject extends LoaderValue, Map<String, LoaderValue> {
+		// TODO: Docs
 		@Nullable
 		@Override
 		LoaderValue get(Object o);
@@ -74,6 +76,7 @@ public interface LoaderValue {
 	 */
 	@ApiStatus.NonExtendable
 	interface LArray extends LoaderValue, List<LoaderValue> {
+		// TODO: Docs
 		@Nullable
 		@Override
 		LoaderValue get(int i);
