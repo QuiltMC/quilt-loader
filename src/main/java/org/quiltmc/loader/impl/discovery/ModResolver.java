@@ -1314,6 +1314,10 @@ public class ModResolver {
 
 	/** Base definition of a link between one or more {@link LoadOption}s, that */
 	static abstract class ModLink implements Comparable<ModLink> {
+
+		/** Used for {@link #compareTo(ModLink)}. AFAIK this is only needed since sat4j uses a TreeMap rather than a
+		 * HashMap for return links in {@link DependencyHelper#why()}. As we don't care about that order all that
+		 * matters is we get a consistent comparison. */
 		static final List<Class<? extends ModLink>> LINK_ORDER = new ArrayList<>();
 
 		static {
@@ -1330,20 +1334,29 @@ public class ModResolver {
 		public abstract String toString();
 
 		/**
-		 * TODO: Better name!
+		 * Checks to see if this link is [...]
+		 * 
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
 		 */
+		@Deprecated
 		public boolean isNode() {
 			return true;
 		}
 
 		/**
 		 * TODO: Better name!
+		 * 
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
 		 */
+		@Deprecated
 		public abstract Collection<? extends LoadOption> getNodesFrom();
 
 		/**
 		 * TODO: Better name!
+		 * 
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
 		 */
+		@Deprecated
 		public abstract Collection<? extends LoadOption> getNodesTo();
 
 		@Override
@@ -1386,16 +1399,28 @@ public class ModResolver {
 
 		abstract String getFriendlyName();
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public boolean isNode() {
 			return false;
 		}
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public Collection<? extends LoadOption> getNodesFrom() {
 			return Collections.emptySet();
 		}
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public Collection<? extends LoadOption> getNodesTo() {
 			return Collections.emptySet();
@@ -1590,11 +1615,19 @@ public class ModResolver {
 			return source + " depends on " + on + " version " + publicDep;
 		}
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public Collection<? extends LoadOption> getNodesFrom() {
 			return Collections.singleton(source);
 		}
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public Collection<? extends LoadOption> getNodesTo() {
 			return allOptions;
@@ -1682,11 +1715,19 @@ public class ModResolver {
 			return source + " breaks " + with + " version " + publicDep;
 		}
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public Collection<? extends LoadOption> getNodesFrom() {
 			return Collections.singleton(source);
 		}
 
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
 		@Override
 		public Collection<? extends LoadOption> getNodesTo() {
 			return allOptions;
