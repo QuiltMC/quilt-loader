@@ -38,13 +38,9 @@ import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
-import org.quiltmc.loader.util.sat4j.core.VecInt;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
-import org.quiltmc.loader.util.sat4j.specs.IProblem;
-import org.quiltmc.loader.util.sat4j.specs.ISolver;
-import org.quiltmc.loader.util.sat4j.specs.IVecInt;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import org.apache.logging.log4j.Logger;
