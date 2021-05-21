@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.google.gson.JsonElement;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loader.api.Version;
 
@@ -154,7 +156,7 @@ public interface ModMetadata {
 	 * @param key the key
 	 * @return the custom value, or {@code null} if no such value is present
 	 */
-	/* @Nullable */
+	@Nullable
 	CustomValue getCustomValue(String key);
 
 	/**
@@ -169,12 +171,14 @@ public interface ModMetadata {
 	/**
 	 * @deprecated Use {@link #containsCustomValue} instead, this will be removed (can't expose GSON types)!
 	 */
+	@ApiStatus.ScheduledForRemoval
 	@Deprecated
 	boolean containsCustomElement(String key);
 
 	/**
 	 * @deprecated Use {@link #getCustomValue} instead, this will be removed (can't expose GSON types)!
 	 */
+	@ApiStatus.ScheduledForRemoval
 	@Deprecated
 	JsonElement getCustomElement(String key);
 }
