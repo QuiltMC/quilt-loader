@@ -12,7 +12,7 @@ import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.Version;
 
-final class V1ModMetadataImpl implements ModMetadata {
+final class V1ModMetadataImpl implements InternalModMetadata {
 	private final JsonLoaderValue.ObjectImpl root;
 	/* Required fields */
 	private final String id;
@@ -27,6 +27,7 @@ final class V1ModMetadataImpl implements ModMetadata {
 	private final Collection<ModDependency> depends;
 	private final Collection<ModDependency> breaks;
 	private final Icons icons;
+	/* Internal fields */
 
 	V1ModMetadataImpl(
 			JsonLoaderValue.ObjectImpl root,
@@ -158,7 +159,49 @@ final class V1ModMetadataImpl implements ModMetadata {
 
 	@Override
 	public <T> T get(Class<T> type) throws IllegalArgumentException {
-		// TODO: Implement when we figure out custom objects
-		return null;
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	// Internal
+
+	@Override
+	public Collection<?> provides() {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Nullable
+	@Override
+	public Collection<AdapterLoadableClassEntry> getEntrypoints(String key) {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Override
+	public Collection<AdapterLoadableClassEntry> getPlugins() {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Override
+	public Collection<String> jars() {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Override
+	public Map<String, String> languageAdapters() {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Override
+	public Collection<String> repositories() {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Override
+	public Collection<String> mixins() {
+		throw new UnsupportedOperationException("Implement me!");
+	}
+
+	@Override
+	public Collection<String> accessWideners() {
+		throw new UnsupportedOperationException("Implement me!");
 	}
 }
