@@ -19,7 +19,7 @@ import org.quiltmc.loader.api.Version;
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
 final class V1ModMetadataReader {
-	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root) {
+	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root, Map<String, ModLicense> spdxLicenses) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -31,10 +31,10 @@ final class V1ModMetadataReader {
 			throw parseException(quiltLoader, "quilt_loader field must be an object");
 		}
 
-		return readFields(logger, root);
+		return readFields(logger, root, spdxLicenses);
 	}
 
-	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root) {
+	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root, Map<String, ModLicense> spdxLicenses) {
 		/* Required fields */
 		String id = null;
 		String group = null;
@@ -42,22 +42,22 @@ final class V1ModMetadataReader {
 		/* Optional fields */
 		String name = null;
 		String description = null;
-		Set<ModLicense> licenses = null;
-		Set<ModContributor> contributors = null;
+		List<ModLicense> licenses = new ArrayList<>();
+		List<ModContributor> contributors = new ArrayList<>();
 		Map<String, String> contactInformation = null;
-		Set<ModDependency> depends = null;
-		Set<ModDependency> breaks = null;
+		List<ModDependency> depends = new ArrayList<>();
+		List<ModDependency> breaks = new ArrayList<>();
 		Icons icons = null;
 		/* Internal fields */
-		Set<?> provides = null;
-		Set<AdapterLoadableClassEntry> entrypoints = null;
-		Set<AdapterLoadableClassEntry> plugins = null;
-		Set<String> jars = null;
+		List<?> provides = new ArrayList<>();
+		List<AdapterLoadableClassEntry> entrypoints = new ArrayList<>();
+		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
+		List<String> jars = new ArrayList<>();
 		Map<String, String> languageAdapters = null;
-		Set<String> repositories = null;
+		List<String> repositories = new ArrayList<>();
 		/* TODO: Move to plugins */
-		Set<String> mixins = null;
-		Set<String> accessWideners = null;
+		List<String> mixins = new ArrayList<>();
+		List<String> accessWideners = new ArrayList<>();
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
 
@@ -87,18 +87,21 @@ final class V1ModMetadataReader {
 			// TODO: repositories
 
 			// Metadata
-			JsonLoaderValue metadata = quiltLoader.get("metadata");
+			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
 
-			if (metadata != null) {
-				if (metadata.type() != LoaderValue.LType.OBJECT) {
-					throw parseException(metadata, "metadata must be an object");
+			if (metadataValue != null) {
+				if (metadataValue.type() != LoaderValue.LType.OBJECT) {
+					throw parseException(metadataValue, "metadata must be an object");
 				}
 
-				// TODO: name
-				// TODO: description
+				JsonLoaderValue.ObjectImpl metadata = (JsonLoaderValue.ObjectImpl) metadataValue;
+
+				name = string(metadata, "name");
+				description = string(metadata, "description");
 				// TODO: contributors
 				// TODO: contact
 				// TODO: license
+				readLicenses(metadata, licenses, spdxLicenses);
 				// TODO: icon
 			}
 		}
@@ -148,6 +151,21 @@ final class V1ModMetadataReader {
 		return value.getString();
 	}
 
+	@Nullable
+	private static String string(JsonLoaderValue.ObjectImpl object, String field) {
+		JsonLoaderValue value = object.get(field);
+
+		if (value == null) {
+			return null;
+		}
+
+		if (value.type() != LoaderValue.LType.STRING) {
+			throw parseException(value, String.format("%s must be a string", field));
+		}
+
+		return value.getString();
+	}
+
 	/**
 	 * Read an array as a collection of strings.
 	 *
@@ -168,6 +186,58 @@ final class V1ModMetadataReader {
 		}
 
 		return entries;
+	}
+
+	private static void readLicenses(JsonLoaderValue.ObjectImpl metadata, List<ModLicense> licenses, Map<String, ModLicense> spdxLicenses) {
+		JsonLoaderValue licensesValue = metadata.get("license");
+
+		if (licensesValue != null) {
+			switch (licensesValue.type()) {
+			case ARRAY:
+				for (LoaderValue license : ((JsonLoaderValue.ArrayImpl) licenses)) {
+					licenses.add(readLicenseObject((JsonLoaderValue) license, spdxLicenses));
+				}
+
+				break;
+			case OBJECT:
+			case STRING:
+				licenses.add(readLicenseObject(licensesValue, spdxLicenses));
+				break;
+			default:
+				throw parseException(licensesValue, "license field must be a string, an array or an object");
+			}
+		}
+	}
+
+	private static ModLicense readLicenseObject(JsonLoaderValue licenseValue, Map<String, ModLicense> spdxLicenses) {
+		switch (licenseValue.type()) {
+		case OBJECT: {
+			JsonLoaderValue.ObjectImpl object = licenseValue.getObject();
+
+			String name = requiredString(object, "name");
+			String id = requiredString(object, "id");
+			String url = requiredString(object, "url");
+			@Nullable String description = string(object, "description");
+
+			return new ModLicenseImpl(name, id, url, description != null ? description : "");
+		}
+		case STRING: {
+			@Nullable ModLicense license = spdxLicenses.get(licenseValue.getString());
+
+			// TODO: Emit dev time warning
+			if (license == null) {
+				// No entry in the reference?
+				// Fill in the data the best we can.
+				String id = licenseValue.getString();
+
+				return new ModLicenseImpl(id, id, String.format("https://spdx.org/licenses/%s.html", id), "");
+			}
+
+			return license;
+		}
+		default:
+			throw parseException(licenseValue, "License entry must be an object or string");
+		}
 	}
 
 	private V1ModMetadataReader() {

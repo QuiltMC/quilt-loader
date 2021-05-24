@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -12,6 +13,7 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.ModMetadata;
 
 /**
@@ -29,7 +31,7 @@ public final class ModMetadataReader {
 	 * @throws IOException if there are any issues reading the json file
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
-	public static ModMetadata read(Logger logger, Path json) throws IOException, ParseException {
+	public static ModMetadata read(Logger logger, Path json, Map<String, ModLicense> spdxLicenses) throws IOException, ParseException {
 		JsonLoaderValue value;
 
 		try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {
@@ -63,7 +65,7 @@ public final class ModMetadataReader {
 
 		switch (version) {
 		case 1:
-			return V1ModMetadataReader.read(logger, root);
+			return V1ModMetadataReader.read(logger, root, spdxLicenses);
 		default:
 			if (version < 0) {
 				throw parseException(schemaVersion, "schema_version must not be negative");
