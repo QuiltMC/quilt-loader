@@ -28,6 +28,14 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<ModDependency> breaks;
 	private final Icons icons;
 	/* Internal fields */
+	private final Collection<?> provides;
+	private final Collection<AdapterLoadableClassEntry> entrypoints;
+	private final Collection<AdapterLoadableClassEntry> plugins;
+	private final Collection<String> jars;
+	private final Map<String, String> languageAdapters;
+	private final Collection<String> repositories;
+	private final Collection<String> mixins;
+	private final Collection<String> accessWideners;
 
 	V1ModMetadataImpl(
 			JsonLoaderValue.ObjectImpl root,
@@ -43,7 +51,17 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			Map<String, String> contactInformation,
 			Collection<ModDependency> depends,
 			Collection<ModDependency> breaks,
-			@Nullable Icons icons
+			@Nullable Icons icons,
+			/* Internal fields */
+			Collection<?> provides, // TODO: Data type
+			Collection<AdapterLoadableClassEntry> entrypoints,
+			Collection<AdapterLoadableClassEntry> plugins,
+			Collection<String> jars,
+			Map<String, String> languageAdapters,
+			Collection<String> repositories,
+			/* TODO: Move to plugins */
+			Collection<String> mixins,
+			Collection<String> accessWideners
 			// TODO: Custom objects - long term
 	) {
 		this.root = root;
@@ -77,6 +95,17 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			this.icons = new Icons.Single(null);
 		}
 
+		// Internal fields
+		this.provides = Collections.unmodifiableCollection(provides);
+		this.entrypoints = Collections.unmodifiableCollection(entrypoints);
+		this.plugins = Collections.unmodifiableCollection(plugins);
+		this.jars = Collections.unmodifiableCollection(jars);
+		this.languageAdapters = Collections.unmodifiableMap(languageAdapters);
+		this.repositories = Collections.unmodifiableCollection(repositories);
+
+		// Move to plugins
+		this.mixins = Collections.unmodifiableCollection(mixins);
+		this.accessWideners = Collections.unmodifiableCollection(accessWideners);
 	}
 
 	@Override
@@ -166,42 +195,42 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Override
 	public Collection<?> provides() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.provides;
 	}
 
 	@Nullable
 	@Override
 	public Collection<AdapterLoadableClassEntry> getEntrypoints(String key) {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.entrypoints;
 	}
 
 	@Override
 	public Collection<AdapterLoadableClassEntry> getPlugins() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.plugins;
 	}
 
 	@Override
 	public Collection<String> jars() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.jars;
 	}
 
 	@Override
 	public Map<String, String> languageAdapters() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.languageAdapters;
 	}
 
 	@Override
 	public Collection<String> repositories() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.repositories;
 	}
 
 	@Override
 	public Collection<String> mixins() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.mixins;
 	}
 
 	@Override
 	public Collection<String> accessWideners() {
-		throw new UnsupportedOperationException("Implement me!");
+		return this.accessWideners;
 	}
 }
