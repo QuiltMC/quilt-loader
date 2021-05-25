@@ -54,7 +54,7 @@ public final class ModMetadataParser {
 			// Re-read the JSON file.
 			int schemaVersion = 0;
 
-			try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
+			try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
 				if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 					throw new ParseMetadataException("Root of \"fabric.mod.json\" must be an object", reader);
 				}
@@ -95,7 +95,7 @@ public final class ModMetadataParser {
 			}
 
 			// Slow path, schema version wasn't specified early enough, re-read with detected/inferred version
-			try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
+			try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
 				// No need to check if the start of the json file as it has already been checked
 				reader.beginObject();
 				final LoaderModMetadata ret = readModMetadata(logger, reader, schemaVersion);
