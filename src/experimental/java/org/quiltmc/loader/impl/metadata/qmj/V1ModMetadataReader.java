@@ -1,11 +1,9 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -18,6 +16,7 @@ import org.quiltmc.loader.api.Version;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
+// TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root, Map<String, ModLicense> spdxLicenses) {
 		// Read loader category
@@ -36,24 +35,24 @@ final class V1ModMetadataReader {
 
 	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root, Map<String, ModLicense> spdxLicenses) {
 		/* Required fields */
-		String id = null;
-		String group = null;
+		String id;
+		String group;
 		Version version = null;
 		/* Optional fields */
 		String name = null;
 		String description = null;
 		List<ModLicense> licenses = new ArrayList<>();
 		List<ModContributor> contributors = new ArrayList<>();
-		Map<String, String> contactInformation = null;
+		Map<String, String> contactInformation = new LinkedHashMap<>();
 		List<ModDependency> depends = new ArrayList<>();
 		List<ModDependency> breaks = new ArrayList<>();
 		Icons icons = null;
 		/* Internal fields */
 		List<?> provides = new ArrayList<>();
-		List<AdapterLoadableClassEntry> entrypoints = new ArrayList<>();
+		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
 		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
 		List<String> jars = new ArrayList<>();
-		Map<String, String> languageAdapters = null;
+		Map<String, String> languageAdapters = new LinkedHashMap<>();
 		List<String> repositories = new ArrayList<>();
 		/* TODO: Move to plugins */
 		List<String> mixins = new ArrayList<>();
@@ -78,13 +77,66 @@ final class V1ModMetadataReader {
 
 			// Now we reach optional fields
 			// TODO: provides
-			// TODO: entrypoints
-			// TODO: plugins
-			// TODO: jars
-			// TODO: language adapters,
+
+			@Nullable
+			JsonLoaderValue entrypointsValue = quiltLoader.get("entrypoints");
+
+			if (entrypointsValue != null) {
+				if (entrypointsValue.type() != LoaderValue.LType.OBJECT) {
+					throw parseException(entrypointsValue, "entrypoints must be an object");
+				}
+
+				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", entrypoints);
+			}
+
+			@Nullable
+			JsonLoaderValue pluginsValue = quiltLoader.get("plugins");
+
+			if (pluginsValue != null) {
+				if (pluginsValue.type() != LoaderValue.LType.ARRAY) {
+					throw parseException(pluginsValue, "plugins must be an array");
+				}
+
+				for (LoaderValue entry : pluginsValue.getArray()) {
+					plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
+				}
+			}
+
+			@Nullable
+			JsonLoaderValue jarsValue = quiltLoader.get("jars");
+
+			if (jarsValue != null) {
+				if (jarsValue.type() != LoaderValue.LType.ARRAY) {
+					throw parseException(jarsValue, "jars must be an array");
+				}
+
+				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", jars);
+			}
+
+			@Nullable
+			JsonLoaderValue languageAdaptersValue = quiltLoader.get("language_adapters");
+
+			if (languageAdaptersValue != null) {
+				if (languageAdaptersValue.type() != LoaderValue.LType.OBJECT) {
+					throw parseException(languageAdaptersValue, "language_adapters must be an object");
+				}
+
+				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapterss", languageAdapters);
+			}
+
 			// TODO: depends
 			// TODO: breaks
-			// TODO: repositories
+
+			@Nullable
+			JsonLoaderValue repositoriesValue = quiltLoader.get("repositories");
+
+			if (repositoriesValue != null) {
+				if (repositoriesValue.type() != LoaderValue.LType.ARRAY) {
+					throw parseException(repositoriesValue, "repositories must be an array");
+				}
+
+				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, "repositories", repositories);
+			}
 
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
@@ -99,8 +151,18 @@ final class V1ModMetadataReader {
 				name = string(metadata, "name");
 				description = string(metadata, "description");
 				// TODO: contributors
-				// TODO: contact
-				// TODO: license
+
+				@Nullable
+				JsonLoaderValue contact = metadata.get("contact");
+
+				if (contact != null) {
+					if (contact.type() != LoaderValue.LType.OBJECT) {
+						throw parseException(contact, "contact must be an object");
+					}
+
+					readStringMap((JsonLoaderValue.ObjectImpl) contact, "contact", contactInformation);
+				}
+
 				readLicenses(metadata, licenses, spdxLicenses);
 				// TODO: icon
 			}
@@ -108,7 +170,23 @@ final class V1ModMetadataReader {
 
 		{
 			// FIXME: These entries need to be moved when plugins are ready
-			// TODO: Mixin
+			// TODO: Move mixin parsing to a plugin
+			@Nullable
+			JsonLoaderValue mixinValue = root.get("mixin");
+
+			if (mixinValue != null) {
+				switch (mixinValue.type()) {
+				case ARRAY:
+					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", mixins);
+					break;
+				case STRING:
+					mixins.add(mixinValue.getString());
+					break;
+				default:
+					throw parseException(mixinValue, "mixin value must be an array of strings or a string");
+				}
+			}
+
 			// TODO: Access wideners
 			// TODO: Minecraft game metadata
 		}
@@ -167,25 +245,36 @@ final class V1ModMetadataReader {
 	}
 
 	/**
-	 * Read an array as a collection of strings.
+	 * Read an array as a list of strings.
 	 *
 	 * @param array array to read from
 	 * @param inside the name of the array field
-	 * @return the entries
+	 * @param destination the list to add the strings to
 	 * @throws ParseException if any entry is not a string
 	 */
-	private static Collection<String> readStringCollection(JsonLoaderValue.ArrayImpl array, String inside) {
-		List<String> entries = new ArrayList<>(array.size());
-
+	private static void readStringList(JsonLoaderValue.ArrayImpl array, String inside, List<String> destination) {
 		for (LoaderValue value : array) {
 			if (value.type() != LoaderValue.LType.STRING) {
 				throw parseException((JsonLoaderValue) value, String.format("Entry inside %s must be a string", inside));
 			}
 
-			entries.add(value.getString());
+			destination.add(value.getString());
 		}
+	}
 
-		return entries;
+	private static void readStringMap(JsonLoaderValue.ObjectImpl object, String inside, Map<String, String> destination) {
+		for (Map.Entry<String, LoaderValue> entry : object.entrySet()) {
+			String key = entry.getKey();
+			LoaderValue value = entry.getValue();
+
+			if (value.type() != LoaderValue.LType.STRING) {
+				throw parseException((JsonLoaderValue) value, String.format("entry with key %s inside \"%s\" must be a string", key, inside));
+			}
+
+			if (destination.put(key, value.getString()) != null) {
+				// TODO: Warn in dev environment about duplicate keys
+			}
+		}
 	}
 
 	private static void readLicenses(JsonLoaderValue.ObjectImpl metadata, List<ModLicense> licenses, Map<String, ModLicense> spdxLicenses) {
@@ -237,6 +326,62 @@ final class V1ModMetadataReader {
 		}
 		default:
 			throw parseException(licenseValue, "License entry must be an object or string");
+		}
+	}
+
+	private static void readAdapterLoadableClassEntries(JsonLoaderValue.ObjectImpl object, String inside, Map<String, List<AdapterLoadableClassEntry>> destination) {
+		for (Map.Entry<String, LoaderValue> entry : object.entrySet()) {
+			String entrypointKey = entry.getKey();
+			LoaderValue value = entry.getValue();
+
+			// Add the entry if not already present
+			destination.putIfAbsent(entrypointKey, new ArrayList<>());
+			List<AdapterLoadableClassEntry> entries = destination.get(entrypointKey);
+
+			switch (value.type()) {
+			case ARRAY:
+				for (LoaderValue entrypoint : value.getArray()) {
+					entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) entrypoint, inside));
+				}
+
+				break;
+			case STRING:
+				entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) value, inside));
+				break;
+			default:
+			}
+		}
+	}
+
+	private static AdapterLoadableClassEntry readAdapterLoadableClassEntry(JsonLoaderValue entry, String inside) {
+		switch (entry.type()) {
+		case OBJECT:
+			LoaderValue.LObject entryObject = entry.getObject();
+			LoaderValue adapter = entryObject.get("adapter");
+			LoaderValue value = entryObject.get("value");
+
+			if (adapter == null) {
+				throw new ParseException(String.format("entry inside \"%s\" in object form is missing the \"adapter\" field", inside));
+			}
+
+			if (value == null) {
+				throw new ParseException(String.format("entry inside \"%s\" in object form is missing the \"value\" field", inside));
+			}
+
+			if (adapter.type() != LoaderValue.LType.STRING) {
+				throw parseException((JsonLoaderValue) adapter, String.format("adapter field inside \"%s\" must be a string", inside));
+			}
+
+			if (value.type() != LoaderValue.LType.STRING) {
+				throw parseException((JsonLoaderValue) value, String.format("adapter field inside \"%s\" must be a string", inside));
+			}
+
+			return new AdapterLoadableClassEntry(adapter.getString(), value.getString());
+		case STRING:
+			// Assume `default` as language adapter
+			return new AdapterLoadableClassEntry("default", entry.getString());
+		default:
+			throw parseException(entry, String.format("value inside \"%s\" must be a string or object", inside));
 		}
 	}
 

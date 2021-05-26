@@ -2,6 +2,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
@@ -29,7 +30,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Icons icons;
 	/* Internal fields */
 	private final Collection<?> provides;
-	private final Collection<AdapterLoadableClassEntry> entrypoints;
+	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
 	private final Collection<AdapterLoadableClassEntry> plugins;
 	private final Collection<String> jars;
 	private final Map<String, String> languageAdapters;
@@ -54,7 +55,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			@Nullable Icons icons,
 			/* Internal fields */
 			Collection<?> provides, // TODO: Data type
-			Collection<AdapterLoadableClassEntry> entrypoints,
+			Map<String, List<AdapterLoadableClassEntry>> entrypoints,
 			Collection<AdapterLoadableClassEntry> plugins,
 			Collection<String> jars,
 			Map<String, String> languageAdapters,
@@ -97,7 +98,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 		// Internal fields
 		this.provides = Collections.unmodifiableCollection(provides);
-		this.entrypoints = Collections.unmodifiableCollection(entrypoints);
+		this.entrypoints = Collections.unmodifiableMap(entrypoints);
 		this.plugins = Collections.unmodifiableCollection(plugins);
 		this.jars = Collections.unmodifiableCollection(jars);
 		this.languageAdapters = Collections.unmodifiableMap(languageAdapters);
@@ -200,12 +201,12 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Nullable
 	@Override
-	public Collection<AdapterLoadableClassEntry> getEntrypoints(String key) {
+	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints(String key) {
 		return this.entrypoints;
 	}
 
 	@Override
-	public Collection<AdapterLoadableClassEntry> getPlugins() {
+	public Map<String, Collection<AdapterLoadableClassEntry>> getPlugins() {
 		return this.plugins;
 	}
 

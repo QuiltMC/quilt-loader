@@ -3,7 +3,6 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.Collection;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModMetadata;
 
 /**
@@ -13,10 +12,9 @@ public interface InternalModMetadata extends ModMetadata, ModMetadataToBeMovedTo
 	// TODO: Data type
 	Collection<?> provides();
 
-	@Nullable
-	Collection<AdapterLoadableClassEntry> getEntrypoints(String key);
+	Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints(String key);
 
-	Collection<AdapterLoadableClassEntry> getPlugins();
+	Map<String, Collection<AdapterLoadableClassEntry>> getPlugins();
 
 	Collection<String> jars();
 
