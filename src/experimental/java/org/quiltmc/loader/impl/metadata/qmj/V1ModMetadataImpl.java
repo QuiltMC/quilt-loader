@@ -206,7 +206,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	@Override
-	public Map<String, Collection<AdapterLoadableClassEntry>> getPlugins() {
+	public Collection<AdapterLoadableClassEntry> getPlugins() {
 		return this.plugins;
 	}
 
