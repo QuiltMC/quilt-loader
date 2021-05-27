@@ -16,11 +16,18 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
+import org.quiltmc.json5.JsonWriter;
 
 public final class QuiltStatusTree {
 	public enum FabricTreeWarningLevel {
@@ -29,7 +36,15 @@ public final class QuiltStatusTree {
 		INFO,
 		NONE;
 
+		static final Map<String, FabricTreeWarningLevel> nameToValue = new HashMap<>();
+
 		public final String lowerCaseName = name().toLowerCase(Locale.ROOT);
+
+		static {
+			for (FabricTreeWarningLevel level : values()) {
+				nameToValue.put(level.lowerCaseName, level);
+			}
+		}
 
 		public boolean isHigherThan(FabricTreeWarningLevel other) {
 			return ordinal() < other.ordinal();
@@ -41,6 +56,19 @@ public final class QuiltStatusTree {
 
 		public static FabricTreeWarningLevel getHighest(FabricTreeWarningLevel a, FabricTreeWarningLevel b) {
 			return a.isHigherThan(b) ? a : b;
+		}
+
+		static FabricTreeWarningLevel read(JsonReader reader) throws IOException {
+			String string = reader.nextString();
+			if (string.isEmpty()) {
+				return NONE;
+			}
+			FabricTreeWarningLevel level = nameToValue.get(string);
+			if (level != null) {
+				return level;
+			} else {
+				throw new IOException("Expected a valid FabricTreeWarningLevel, but got '" + string + "'");
+			}
 		}
 	}
 
@@ -64,14 +92,23 @@ public final class QuiltStatusTree {
 	/** Generic Fabric-related jar file. */
 	public static final String ICON_TYPE_FABRIC_JAR_FILE = "jar+fabric";
 
+	/** Generic Quilt-related jar file. */
+	public static final String ICON_TYPE_QUILT_JAR_FILE = "jar+quilt";
+
 	/** Something related to Fabric (It's not defined what exactly this is for, but it uses the main Fabric logo). */
 	public static final String ICON_TYPE_FABRIC = "fabric";
+
+	/** Something related to Quilt (It's not defined what exactly this is for, but it uses the main Fabric logo). */
+	public static final String ICON_TYPE_QUILT = "quilt";
 
 	/** Generic JSON file. */
 	public static final String ICON_TYPE_JSON = "json";
 
 	/** A file called "fabric.mod.json". */
 	public static final String ICON_TYPE_FABRIC_JSON = "json+fabric";
+
+	/** A file called "quilt.mod.json". */
+	public static final String ICON_TYPE_QUILT_JSON = "json+quilt";
 
 	/** Java bytecode class file. */
 	public static final String ICON_TYPE_JAVA_CLASS = "java_class";
@@ -94,6 +131,9 @@ public final class QuiltStatusTree {
 
 	public String mainText = null;
 
+	public QuiltStatusTree() {}
+
+
 	public QuiltStatusTab addTab(String name) {
 		QuiltStatusTab tab = new QuiltStatusTab(name);
 		tabs.add(tab);
@@ -104,6 +144,63 @@ public final class QuiltStatusTree {
 		QuiltStatusButton button = new QuiltStatusButton(text);
 		buttons.add(button);
 		return button;
+	}
+
+	public QuiltStatusTree(JsonReader reader) throws IOException {
+		reader.beginObject();
+		// As we write ourselves we mandate the order
+		// (This also makes everything a lot simpler)
+		expectName(reader, "mainText");
+		mainText = reader.nextString();
+
+		expectName(reader, "tabs");
+		reader.beginArray();
+		while (reader.peek() != JsonToken.END_ARRAY) {
+			tabs.add(new QuiltStatusTab(reader));
+		}
+		reader.endArray();
+
+		expectName(reader, "buttons");
+		reader.beginArray();
+		while (reader.peek() != JsonToken.END_ARRAY) {
+			buttons.add(new QuiltStatusButton(reader));
+		}
+		reader.endArray();
+	
+		reader.endObject();
+	}
+
+	/** Writes this tree out as a single json object. */
+	public void write(JsonWriter writer) throws IOException {
+		writer.beginObject();
+		writer.name("mainText").value(mainText);
+		writer.name("tabs").beginArray();
+		for (QuiltStatusTab tab : tabs) {
+			tab.write(writer);
+		}
+		writer.endArray();
+		writer.name("buttons").beginArray();
+		for (QuiltStatusButton button : buttons) {
+			button.write(writer);
+		}
+		writer.endArray();
+		writer.endObject();
+	}
+
+	static void expectName(JsonReader reader, String expected) throws IOException {
+		String name = reader.nextName();
+		if (!expected.equals(name)) {
+			throw new IOException("Expected '" + expected + "', but read '" + name + "'");
+		}
+	}
+
+	static String readStringOrNull(JsonReader reader) throws IOException {
+		if (reader.peek() == JsonToken.STRING) {
+			return reader.nextString();
+		} else {
+			reader.nextNull();
+			return null;
+		}
 	}
 
 	public static final class QuiltStatusButton {
@@ -123,6 +220,25 @@ public final class QuiltStatusTree {
 			this.shouldContinue = true;
 			return this;
 		}
+
+		QuiltStatusButton(JsonReader reader) throws IOException {
+			reader.beginObject();
+			expectName(reader, "text");
+			text = reader.nextString();
+			expectName(reader, "shouldClose");
+			shouldClose = reader.nextBoolean();
+			expectName(reader, "shouldContinue");
+			shouldContinue = reader.nextBoolean();
+			reader.endObject();
+		}
+
+		void write(JsonWriter writer) throws IOException {
+			writer.beginObject();
+			writer.name("text").value(text);
+			writer.name("shouldClose").value(shouldClose);
+			writer.name("shouldContinue").value(shouldContinue);
+			writer.endObject();
+		}
 	}
 
 	public static final class QuiltStatusTab {
@@ -137,6 +253,23 @@ public final class QuiltStatusTree {
 
 		public QuiltStatusNode addChild(String name) {
 			return node.addChild(name);
+		}
+
+		QuiltStatusTab(JsonReader reader) throws IOException {
+			reader.beginObject();
+			expectName(reader, "level");
+			filterLevel = FabricTreeWarningLevel.read(reader);
+			expectName(reader, "node");
+			node = new QuiltStatusNode(null, reader);
+			reader.endObject();
+		}
+
+		void write(JsonWriter writer) throws IOException {
+			writer.beginObject();
+			writer.name("level").value(filterLevel.lowerCaseName);
+			writer.name("node");
+			node.write(writer);
+			writer.endObject();
 		}
 	}
 
@@ -162,6 +295,47 @@ public final class QuiltStatusTree {
 		private QuiltStatusNode(QuiltStatusNode parent, String name) {
 			this.parent = parent;
 			this.name = name;
+		}
+
+		private QuiltStatusNode(QuiltStatusNode parent, JsonReader reader) throws IOException {
+			this.parent = parent;
+			reader.beginObject();
+			expectName(reader, "name");
+			name = reader.nextString();
+			expectName(reader, "icon");
+			iconType = reader.nextString();
+			expectName(reader, "level");
+			warningLevel = FabricTreeWarningLevel.read(reader);
+			expectName(reader, "expandByDefault");
+			expandByDefault = reader.nextBoolean();
+			expectName(reader, "details");
+			details = readStringOrNull(reader);
+			expectName(reader, "children");
+			reader.beginArray();
+
+			while (reader.peek() != JsonToken.END_ARRAY) {
+				children.add(new QuiltStatusNode(this, reader));
+			}
+
+			reader.endArray();
+			reader.endObject();
+		}
+
+		void write(JsonWriter writer) throws IOException {
+			writer.beginObject();
+			writer.name("name").value(name);
+			writer.name("icon").value(iconType);
+			writer.name("level").value(warningLevel.lowerCaseName);
+			writer.name("expandByDefault").value(expandByDefault);
+			writer.name("details").value(details);
+			writer.name("children").beginArray();
+
+			for (QuiltStatusNode node : children) {
+				node.write(writer);
+			}
+
+			writer.endArray();
+			writer.endObject();
 		}
 
 		public void moveTo(QuiltStatusNode newParent) {
@@ -209,6 +383,7 @@ public final class QuiltStatusTree {
 					QuiltStatusNode rootChild = new QuiltStatusNode(this, "");
 					children.add(rootChild);
 				}
+
 				QuiltStatusNode lastChild = children.get(children.size() - 1);
 				lastChild.addChild(string.substring(1));
 				lastChild.expandByDefault = true;
@@ -222,12 +397,14 @@ public final class QuiltStatusTree {
 
 		private String cleanForNode(String string) {
 			string = string.trim();
+			
 			if (string.length() > 1) {
 				if (string.startsWith("-")) {
 					string = string.substring(1);
 					string = string.trim();
 				}
 			}
+			
 			return string;
 		}
 
