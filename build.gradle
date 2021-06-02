@@ -16,10 +16,9 @@ archivesBaseName = "quilt-loader"
 
 // Fetch build number from Jenkins
 def ENV = System.getenv()
-version = version + (ENV.GITHUB_ACTIONS ? "" : "+calexsat.13")
+version = version + (ENV.GITHUB_ACTIONS ? "" : "+local")
 
 repositories {
-	mavenLocal()
 	mavenCentral()
 	maven {
 		name = 'Quilt'
@@ -28,11 +27,6 @@ repositories {
 	maven {
 		name = 'mojang'
 		url = 'https://libraries.minecraft.net/'
-	}
-	maven {
-	   // Temp for alexiil's fork
-	   name = "alexiil"
-	   url = "https://alexiil.uk/maven/"
 	}
 }
 
@@ -63,10 +57,10 @@ dependencies {
 	implementation 'org.quiltmc:tiny-remapper:0.3.2'
 	implementation 'org.quiltmc:access-widener:1.0.2'
 
-	implementation('com.google.jimfs:jimfs:1.2') {
-        exclude module: 'guava'
+	implementation("com.google.jimfs:jimfs:1.2") {
+		exclude module: 'guava'
     }
-	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5-alexiil.4'
+	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
 	// launchwrapper + dependencies
 	implementation ('net.minecraft:launchwrapper:1.12') {
@@ -207,10 +201,6 @@ publishing {
 					password ENV.MAVEN_PASSWORD
 				}
 			}
-		} else {
-		  maven {
-                url System.getenv("MAVEN_DIR") ?: "$projectDir/build/maven"
-            }
 		}
 	}
 }
