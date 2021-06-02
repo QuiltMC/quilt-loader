@@ -28,7 +28,7 @@
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
-        "name": "org.quiltmc:quilt-json5:1.0.0-rc.3",
+        "name": "org.quiltmc:quilt-json5:1.0.0",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
