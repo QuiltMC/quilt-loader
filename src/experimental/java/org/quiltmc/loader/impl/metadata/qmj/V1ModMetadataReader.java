@@ -385,6 +385,33 @@ final class V1ModMetadataReader {
 		}
 	}
 
+	private static ModDependency readDependencyObject(JsonLoaderValue value) {
+		switch (value.type()) {
+		case OBJECT:
+			// Single dependency, with optional version(s) and unless criteria
+			// TODO
+			throw new UnsupportedOperationException("Implement me!");
+		case STRING:
+			// Single dependency, any version matching id
+			return new ModDependencyImpl.OnlyImpl(value.getString());
+		case ARRAY:
+			// OR or all sub dependencies
+			JsonLoaderValue.ArrayImpl array = value.getArray();
+			List<ModDependency> dependencies = new ArrayList<>(array.size());
+
+			for (LoaderValue loaderValue : array) {
+				dependencies.add(readDependencyObject((JsonLoaderValue) loaderValue));
+			}
+
+			return new ModDependencyImpl.AnyImpl(dependencies);
+		default:
+			throw parseException(
+					value,
+					"Dependency object must be an object or string to represent a single dependency or an array to represent any dependency"
+			);
+		}
+	}
+
 	private V1ModMetadataReader() {
 	}
 }
