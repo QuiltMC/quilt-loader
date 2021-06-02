@@ -1,5 +1,3 @@
-// ALL CHANGES MADE TO BUILD.GRADLE MUST BE REMOVED BEFORE MERGE
-// (except for version bumps for the sat4j dependency)
 plugins {
 	id 'java'
 	id 'idea'
@@ -59,7 +57,7 @@ dependencies {
 
 	implementation("com.google.jimfs:jimfs:1.2") {
 		exclude module: 'guava'
-    }
+	}
 	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
 	// launchwrapper + dependencies
