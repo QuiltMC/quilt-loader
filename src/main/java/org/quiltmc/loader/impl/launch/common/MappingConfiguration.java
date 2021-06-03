@@ -28,7 +28,7 @@ import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
 public class MappingConfiguration {
-	protected static Logger LOGGER = LogManager.getFormatterLogger("FabricLoader");
+	protected static Logger LOGGER = LogManager.getFormatterLogger("QuiltLoader");
 
 	private static TinyTree mappings;
 	private static boolean checkedMappings;
