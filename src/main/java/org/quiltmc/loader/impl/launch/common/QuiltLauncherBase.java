@@ -220,7 +220,10 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 
 				String version = System.getProperty(SystemProperties.LAUNCHER_NAME);
 				if (version == null) {
-					version = argMap.containsKey("version") ? argMap.get("version") : "Unknown";
+					if ((version = argMap.get("version")) == null) {
+						version = "Unknown";
+						LOGGER.error("Launcher version unknown! Please provide it by setting the system property " + SystemProperties.LAUNCHER_NAME);
+					}
 				}
 				argMap.put("version", version);
 
