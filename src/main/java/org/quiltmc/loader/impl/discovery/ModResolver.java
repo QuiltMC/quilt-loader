@@ -731,6 +731,8 @@ public class ModResolver {
 		return errorList.isEmpty();
 	}
 
+	/** @return A {@link ModResolutionException} describing the error in a readable format, or null if this is unable to
+	 *         do so. (In which case {@link #fallbackErrorDescription(Map, List)} will be used instead). */
 	private static ModResolutionException describeError(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
 		// TODO: Create a graph from roots to each other and then build the error through that!
 		return null;
