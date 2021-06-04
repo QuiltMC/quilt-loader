@@ -28,9 +28,7 @@ repositories {
 	}
 }
 
-dependencyLocking {
-	lockAllConfigurations()
-}
+
 dependencies {
 	minecraft "com.mojang:minecraft:1.16.5"
 	mappings "org.quiltmc:yarn:1.16.5+build.5:v2"
