@@ -339,9 +339,9 @@ public class EntrypointPatchHook extends EntrypointPatch {
 
 						// Duplicate dedicated server instance for loader
 						serverStartIt.add(new InsnNode(Opcodes.DUP));
-						serverStartIt.add(new FieldInsnNode(Opcodes.GETSTATIC, "net/fabricmc/loader/FabricLoader", "INSTANCE", "Lnet/fabricmc/loader/FabricLoader;"));
+						serverStartIt.add(new FieldInsnNode(Opcodes.GETSTATIC, "org/quiltmc/loader/impl/QuiltLoaderImpl", "INSTANCE", "Lorg/quiltmc/loader/impl/QuiltLoaderImpl;"));
 						serverStartIt.add(new InsnNode(Opcodes.SWAP));
-						serverStartIt.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "net/fabricmc/loader/FabricLoader", "setGameInstance", "(Ljava/lang/Object;)V", false));
+						serverStartIt.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, "org/quiltmc/loader/impl/QuiltLoaderImpl", "setGameInstance", "(Ljava/lang/Object;)V", false));
 					}
 
 					patched = true;

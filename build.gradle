@@ -4,7 +4,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id("org.cadixdev.licenser") version "0.5.0"
-	id("org.quiltmc.loom") version "0.7.13"
+	id("org.quiltmc.loom") version "0.7.24"
 }
 
 sourceCompatibility = 1.8
@@ -28,9 +28,10 @@ repositories {
 	}
 }
 
+
 dependencies {
-	minecraft "com.mojang:minecraft:1.16.4"
-	mappings "org.quiltmc:yarn:1.16.4+build.9:v2"
+	minecraft "com.mojang:minecraft:1.16.5"
+	mappings "org.quiltmc:yarn:1.16.5+build.5:v2"
 
 	// fabric-loader dependencies
 	implementation "org.ow2.asm:asm:${project.asm_version}"
@@ -115,14 +116,14 @@ jar {
 }
 
 task copyJson(type: Copy, dependsOn: ["remapJar"]) {
-	from('src/main/resources/fabric-installer.json') {
+	from('src/main/resources/quilt-installer.json') {
 		rename { "${archivesBaseName}-${version}.json" }
 	}
 	into 'build/libs'
 }
 
 task copyJsonLw(type: Copy, dependsOn: ["remapJar"]) {
-	from('src/main/resources/fabric-installer.launchwrapper.json') {
+	from('src/main/resources/quilt-installer.launchwrapper.json') {
 		rename { "${archivesBaseName}-${version}.launchwrapper.json" }
 	}
 	into 'build/libs'
