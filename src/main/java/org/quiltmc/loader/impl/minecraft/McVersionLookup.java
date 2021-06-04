@@ -121,7 +121,7 @@ public final class McVersionLookup {
 	}
 
 	private static McVersion fromVersionJson(InputStream is) {
-		try(JsonReader reader = JsonReader.createStrict(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+		try(JsonReader reader = JsonReader.json(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 			String id = null;
 			String name = null;
 			String release = null;

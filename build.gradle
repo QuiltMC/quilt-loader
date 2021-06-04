@@ -1,12 +1,10 @@
-// ALL CHANGES MADE TO BUILD.GRADLE MUST BE REMOVED BEFORE MERGE
-// (except for version bumps for the sat4j dependency)
 plugins {
 	id 'java'
 	id 'idea'
 	id 'eclipse'
 	id 'maven-publish'
 	id("org.cadixdev.licenser") version "0.5.0"
-	id("org.quiltmc.loom") version "0.7.13"
+	id("org.quiltmc.loom") version "0.7.24"
 }
 
 sourceCompatibility = 1.8
@@ -16,10 +14,9 @@ archivesBaseName = "quilt-loader"
 
 // Fetch build number from Jenkins
 def ENV = System.getenv()
-version = version + (ENV.GITHUB_ACTIONS ? "" : "+calexsat.13")
+version = version + (ENV.GITHUB_ACTIONS ? "" : "+local")
 
 repositories {
-	mavenLocal()
 	mavenCentral()
 	maven {
 		name = 'Quilt'
@@ -29,16 +26,14 @@ repositories {
 		name = 'mojang'
 		url = 'https://libraries.minecraft.net/'
 	}
-	maven {
-	   // Temp for alexiil's fork
-	   name = "alexiil"
-	   url = "https://alexiil.uk/maven/"
-	}
 }
 
+dependencyLocking {
+	lockAllConfigurations()
+}
 dependencies {
-	minecraft "com.mojang:minecraft:1.16.4"
-	mappings "org.quiltmc:yarn:1.16.4+build.9:v2"
+	minecraft "com.mojang:minecraft:1.16.5"
+	mappings "org.quiltmc:yarn:1.16.5+build.5:v2"
 
 	// fabric-loader dependencies
 	implementation "org.ow2.asm:asm:${project.asm_version}"
@@ -47,7 +42,7 @@ dependencies {
 	implementation "org.ow2.asm:asm-tree:${project.asm_version}"
 	implementation "org.ow2.asm:asm-util:${project.asm_version}"
 
-	implementation 'org.quiltmc:quilt-json5:1.0.0-rc.3' // TODO: shadow me
+	implementation 'org.quiltmc:quilt-json5:1.0.0' // TODO: shadow me
 	// Required for mixin annotation processor
 	annotationProcessor "org.ow2.asm:asm:${project.asm_version}"
 	annotationProcessor "org.ow2.asm:asm-analysis:${project.asm_version}"
@@ -63,10 +58,10 @@ dependencies {
 	implementation 'org.quiltmc:tiny-remapper:0.3.2'
 	implementation 'org.quiltmc:access-widener:1.0.2'
 
-	implementation('com.google.jimfs:jimfs:1.2') {
-        exclude module: 'guava'
-    }
-	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5-alexiil.4'
+	implementation("com.google.jimfs:jimfs:1.2") {
+		exclude module: 'guava'
+	}
+	implementation 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
 	// launchwrapper + dependencies
 	implementation ('net.minecraft:launchwrapper:1.12') {
@@ -112,14 +107,14 @@ jar {
 }
 
 task copyJson(type: Copy, dependsOn: ["remapJar"]) {
-	from('src/main/resources/fabric-installer.json') {
+	from('src/main/resources/quilt-installer.json') {
 		rename { "${archivesBaseName}-${version}.json" }
 	}
 	into 'build/libs'
 }
 
 task copyJsonLw(type: Copy, dependsOn: ["remapJar"]) {
-	from('src/main/resources/fabric-installer.launchwrapper.json') {
+	from('src/main/resources/quilt-installer.launchwrapper.json') {
 		rename { "${archivesBaseName}-${version}.launchwrapper.json" }
 	}
 	into 'build/libs'
@@ -207,10 +202,6 @@ publishing {
 					password ENV.MAVEN_PASSWORD
 				}
 			}
-		} else {
-		  maven {
-                url System.getenv("MAVEN_DIR") ?: "$projectDir/build/maven"
-            }
 		}
 	}
 }
