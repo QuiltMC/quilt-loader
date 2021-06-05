@@ -34,7 +34,7 @@ public final class ModMetadataReader {
 	public static ModMetadata read(Logger logger, Path json, Map<String, ModLicense> spdxLicenses) throws IOException, ParseException {
 		JsonLoaderValue value;
 
-		try (JsonReader reader = JsonReader.createStrict(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {
+		try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {
 			// Root must be an object
 			if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 				throw new ParseException(reader, "A quilt.mod.json must have an object at the root");

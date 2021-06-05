@@ -73,8 +73,7 @@ final class V1ModMetadataReader {
 				throw new ParseException("version is a required field");
 			}
 
-			// TODO: Parse version
-
+			version = Version.of(versionValue.getString());
 			// Now we reach optional fields
 			// TODO: provides
 
@@ -121,7 +120,7 @@ final class V1ModMetadataReader {
 					throw parseException(languageAdaptersValue, "language_adapters must be an object");
 				}
 
-				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapterss", languageAdapters);
+				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", languageAdapters);
 			}
 
 			// TODO: depends
