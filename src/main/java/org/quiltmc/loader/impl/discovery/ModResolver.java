@@ -856,7 +856,7 @@ public class ModResolver {
 		}
 
 		if (sources.length == 1) {
-			errors.append("\n- $jar+fabric$ ").append(getLoadOptionDescription(sources[0]))
+			errors.append("\n- ").append(sources[0].getSourceIcon()).append(" ").append(getLoadOptionDescription(sources[0]))
 				.append(" is being loaded from \"").append(sources[0].getLoadSource()).append("\".");
 		} else {
 			String name = getCandidateName(sources[0].candidate);
@@ -871,14 +871,16 @@ public class ModResolver {
 				errors.append("\n- $folder$ ").append(name).append(" can be loaded from:");
 
 				for (ModLoadOption source : sources) {
-					errors.append("\n\t- $jar+fabric$ v").append(getCandidateFriendlyVersion(source))
+					errors.append("\n\t- ").append(source.getSourceIcon()).append(" v")
+						.append(getCandidateFriendlyVersion(source))
 						.append(" in \"").append(source.getLoadSource()).append("\".");
 				}
 			} else {
 				errors.append("\n- $folder$ Mod ").append(def.getModId()).append(" can be loaded from:");
 
 				for (ModLoadOption source : sources) {
-					errors.append("\n\t- $jar+fabric$ ").append(getLoadOptionDescription(source))
+					errors.append("\n\t- ").append(source.getSourceIcon()).append(" ")
+						.append(getLoadOptionDescription(source))
 						.append(" \"").append(source.getLoadSource()).append("\".");
 				}
 			}
@@ -887,7 +889,8 @@ public class ModResolver {
 
 	private static void appendLoadSourceInfo(StringBuilder errors, HashSet<String> listedSources, ModLoadOption option) {
 		if (listedSources.add(option.modId())) {
-			errors.append("\n- $jar+fabric$ ").append(getLoadOptionDescription(option))
+			errors.append("\n- ").append(option.getSourceIcon()).append(" ")
+					.append(getLoadOptionDescription(option))
 					.append(" is being loaded from \"").append(option.getLoadSource()).append("\".");
 		}
 	}
@@ -1192,6 +1195,11 @@ public class ModResolver {
 
 		ModLoadOption(ModCandidate candidate) {
 			this.candidate = candidate;
+		}
+
+		String getSourceIcon() {
+			// TODO: Base this on whether the candidate was loaded from a fabric.mod.json or quilt.mod.json
+			return "$jar+fabric$";
 		}
 
 		String modId() {
