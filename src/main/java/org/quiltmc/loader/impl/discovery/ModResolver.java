@@ -89,7 +89,7 @@ public class ModResolver {
 	private static final Map<String, String> readableNestedJarPaths = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
-	private static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.PRINT_MOD_RESOLVING);
+	private static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
 
 	private final List<ModCandidateFinder> candidateFinders = new ArrayList<>();
 
