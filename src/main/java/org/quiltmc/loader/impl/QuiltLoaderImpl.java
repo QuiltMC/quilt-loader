@@ -49,6 +49,7 @@ import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
@@ -148,6 +149,12 @@ public class QuiltLoaderImpl implements FabricLoader {
 	 */
 	@Override
 	public Path getConfigDir() {
+		if (configDir == null) {
+			// May be null during tests
+			// If this is in production then things are about to go very wrong.
+			return null;
+		}
+
 		if (!Files.exists(configDir)) {
 			try {
 				Files.createDirectories(configDir);
@@ -286,7 +293,12 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	@Override
 	public boolean isDevelopmentEnvironment() {
-		return QuiltLauncherBase.getLauncher().isDevelopment();
+		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+		if (launcher == null) {
+			// Most likely a test
+			return true;
+		}
+		return launcher.isDevelopment();
 	}
 
 	/**
