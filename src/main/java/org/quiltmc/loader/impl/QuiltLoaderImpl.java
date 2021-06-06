@@ -118,14 +118,14 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
-		String configSubDir = System.getProperty("quilt.configSubDir");
-		this.configDir = gameDir.resolve(configSubDir == null ? "config" : configSubDir);
+		String configSubDir = System.getProperty(SystemProperties.CONFIG_SUBDIRECTORY);
+		this.configDir = gameDir.resolve(configSubDir == null || configSubDir.isEmpty()  ? "config" : configSubDir);
 		refreshModDir(gameDir);
 	}
 
 	private void refreshModDir(Path gameDir) {
-		String modSubDir = System.getProperty("quilt.modSubDir");
-		this.modDir = gameDir.resolve(modSubDir == null ? "mods" : modSubDir);
+		String modSubDir = System.getProperty(SystemProperties.MOD_SUBDIRECTORY);
+		this.modDir = gameDir.resolve(modSubDir == null || modSubDir.isEmpty() ? "mods" : modSubDir);
 	}
 
 	@Override
@@ -167,7 +167,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 			try {
 				Files.createDirectories(configDir);
 			} catch (IOException e) {
-				throw new RuntimeException("Creating config directory", e);
+				throw new RuntimeException("Failed to create config directory", e);
 			}
 		}
 		return configDir;
@@ -189,7 +189,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 			try {
 				Files.createDirectories(modDir);
 			} catch (IOException e) {
-				throw new RuntimeException("Creating mods directory", e);
+				throw new RuntimeException("Failed to create mods directory", e);
 			}
 		}
 		return modDir;
