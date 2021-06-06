@@ -120,27 +120,13 @@ public class QuiltLoaderImpl implements FabricLoader {
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
 		String configDir = System.getProperty(SystemProperties.CONFIG_DIRECTORY);
-		this.configDir = resolveIfNotAbsolute(gameDir, configDir == null || configDir.isEmpty()  ? "config" : configDir);
+		this.configDir = gameDir.resolve(configDir == null || configDir.isEmpty()  ? "config" : configDir);
 		refreshModsDir(gameDir);
 	}
 
 	private void refreshModsDir(Path gameDir) {
 		String modsSubDir = System.getProperty(SystemProperties.MODS_DIRECTORY);
-		this.modsDir = resolveIfNotAbsolute(gameDir, modsSubDir == null || modsSubDir.isEmpty() ? "mods" : modsSubDir);
-	}
-
-	/**
-	 * If the passed string toResolve is an absolute path, it will be
-	 * returned as a path. If it is not absolute, it will be returned
-	 * as a subdirectory of the passed rootDir.
-	 *
-	 * @param rootDir The parent directory to use if toResolve is not absolute
-	 * @param toResolve The subdirectory/absolute path to be interpreted
-	 * @return Either a path leading to a subdirectory of rootDir, or an absolute path
-	 */
-	private Path resolveIfNotAbsolute(Path rootDir, String toResolve) {
-		Path abs = Paths.get(toResolve);
-		return abs.isAbsolute() ? abs : rootDir.resolve(toResolve);
+		this.modsDir = gameDir.resolve(modsSubDir == null || modsSubDir.isEmpty() ? "mods" : modsSubDir);
 	}
 
 	@Override
