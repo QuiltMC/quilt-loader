@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -87,6 +88,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 	private GameProvider provider;
 	private Path gameDir;
 	private Path configDir;
+	private Path modDir;
 
 	protected QuiltLoaderImpl() {
 	}
@@ -117,7 +119,14 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
-		this.configDir = gameDir.resolve("config");
+		String configSubDir = System.getProperty("quilt.configSubDir");
+		this.configDir = gameDir.resolve(configSubDir == null ? "config" : configSubDir);
+		refreshModDir(gameDir);
+	}
+
+	private void refreshModDir(Path gameDir) {
+		String modSubDir = System.getProperty("quilt.modSubDir");
+		this.modDir = gameDir.resolve(modSubDir == null ? "mods" : modSubDir);
 	}
 
 	@Override
@@ -172,7 +181,19 @@ public class QuiltLoaderImpl implements FabricLoader {
 	}
 
 	public Path getModsDir() {
-		return getGameDir().resolve("mods");
+		if (modDir == null) {
+			// Should not be null ever
+			refreshModDir(gameDir);
+		}
+
+		if (!Files.exists(modDir)) {
+			try {
+				Files.createDirectories(modDir);
+			} catch (IOException e) {
+				throw new RuntimeException("Creating mods directory", e);
+			}
+		}
+		return modDir;
 	}
 
 	@Deprecated
