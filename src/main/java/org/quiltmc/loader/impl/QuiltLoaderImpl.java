@@ -16,51 +16,38 @@
 
 package org.quiltmc.loader.impl;
 
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.LanguageAdapter;
+import net.fabricmc.loader.api.MappingResolver;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
+import org.objectweb.asm.Opcodes;
+import org.quiltmc.loader.impl.discovery.*;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.knot.Knot;
+import org.quiltmc.loader.impl.metadata.DependencyOverrides;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.SystemProperties;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
-import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
-import org.quiltmc.loader.impl.metadata.DependencyOverrides;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.LanguageAdapter;
-import net.fabricmc.loader.api.MappingResolver;
-import net.fabricmc.loader.api.SemanticVersion;
-import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
-import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModResolver;
-import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.launch.knot.Knot;
-import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
-import org.quiltmc.loader.impl.util.SystemProperties;
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-
-import org.objectweb.asm.Opcodes;
 
 /**
  * The main class for mod loading operations.
