@@ -119,8 +119,8 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
-		String configSubDir = System.getProperty(SystemProperties.CONFIG_SUBDIRECTORY);
-		this.configDir = resolveIfNotAbsolute(gameDir, configSubDir == null || configSubDir.isEmpty()  ? "config" : configSubDir);
+		String configDir = System.getProperty(SystemProperties.CONFIG_DIRECTORY);
+		this.configDir = resolveIfNotAbsolute(gameDir, configDir == null || configDir.isEmpty()  ? "config" : configDir);
 		refreshModsDir(gameDir);
 	}
 
