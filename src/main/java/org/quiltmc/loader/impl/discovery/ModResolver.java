@@ -153,7 +153,10 @@ public class ModResolver {
 		 *     present "breaking" mods then we only need to perform the validation at the end of resolving.
 		 */
 		boolean isAdvanced = false;
+		// modCandidateMap doesn't contain provided mods, whereas fullCandidateMap does.
 		Map<String, List<ModCandidate>> modCandidateMap = new HashMap<>();
+		Map<String, List<ModCandidate>> fullCandidateMap = new HashMap<>();
+
 		Map<String, ModCandidate> mandatoryMods = new HashMap<>();
 		List<ModResolutionException> errors = new ArrayList<>();
 
@@ -161,8 +164,9 @@ public class ModResolver {
 			try {
 				Collection<ModCandidate> s = mcs.toSortedSet();
 				modCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
+				fullCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
 				for (String modProvide : mcs.getModProvides()) {
-					modCandidateMap.computeIfAbsent(modProvide, i -> new ArrayList<>()).addAll(s);
+					fullCandidateMap.computeIfAbsent(modProvide, i -> new ArrayList<>()).addAll(s);
 				}
 				isAdvanced |= (s.size() > 1) || (s.iterator().next().getDepth() > 0);
 
@@ -198,9 +202,7 @@ public class ModResolver {
 		if (!isAdvanced) {
 			result = new HashMap<>();
 			for (String s : modCandidateMap.keySet()) {
-				ModCandidate candidate = modCandidateMap.get(s).iterator().next();
-				// if the candidate isn't actually just a provided alias, then put it on
-				if(!candidate.getInfo().getProvides().contains(s)) result.put(s, candidate);
+				result.put(s, modCandidateMap.get(s).iterator().next());
 			}
 		} else {
 			Map<String, ModIdDefinition> modDefs = new HashMap<>();
@@ -438,7 +440,7 @@ public class ModResolver {
 				Version version = candidate.getInfo().getVersion();
 				List<Version> suspiciousVersions = new ArrayList<>();
 
-				for (ModCandidate other : modCandidateMap.get(candidate.getInfo().getId())) {
+				for (ModCandidate other : fullCandidateMap.get(candidate.getInfo().getId())) {
 					Version otherVersion = other.getInfo().getVersion();
 					if (version instanceof Comparable && otherVersion instanceof Comparable && !version.equals(otherVersion)) {
 						@SuppressWarnings("unchecked")
