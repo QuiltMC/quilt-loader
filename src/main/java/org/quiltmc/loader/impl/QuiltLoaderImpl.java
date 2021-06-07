@@ -55,6 +55,7 @@ import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.StringUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
@@ -71,6 +72,9 @@ public class QuiltLoaderImpl implements FabricLoader {
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
 	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Loader");
+
+	public static final String DEFAULT_MODS_DIR = "mods";
+	public static final String DEFAULT_CONFIG_DIR = "config";
 
 	protected final Map<String, ModContainer> modMap = new HashMap<>();
 	protected List<ModContainer> mods = new ArrayList<>();
@@ -119,13 +123,13 @@ public class QuiltLoaderImpl implements FabricLoader {
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
 		String configDir = System.getProperty(SystemProperties.CONFIG_DIRECTORY);
-		this.configDir = gameDir.resolve(configDir == null || configDir.isEmpty()  ? "config" : configDir);
+		this.configDir = gameDir.resolve(StringUtil.either(configDir, DEFAULT_CONFIG_DIR));
 		refreshModsDir(gameDir);
 	}
 
 	private void refreshModsDir(Path gameDir) {
-		String modsSubDir = System.getProperty(SystemProperties.MODS_DIRECTORY);
-		this.modsDir = gameDir.resolve(modsSubDir == null || modsSubDir.isEmpty() ? "mods" : modsSubDir);
+		String modsDir = System.getProperty(SystemProperties.MODS_DIRECTORY);
+		this.modsDir = gameDir.resolve(StringUtil.either(modsDir, DEFAULT_MODS_DIR));
 	}
 
 	@Override
