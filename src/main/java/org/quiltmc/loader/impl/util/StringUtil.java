@@ -16,9 +16,6 @@
 
 package org.quiltmc.loader.impl.util;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 public final class StringUtil {
 	private StringUtil() {
 
@@ -31,9 +28,5 @@ public final class StringUtil {
 		} else {
 			return new String[] { defaultNamespace, s };
 		}
-	}
-
-	public static String either(@Nullable String candidate, @NotNull String orElse) {
-		return (candidate == null || candidate.isEmpty()) ? orElse : candidate;
 	}
 }

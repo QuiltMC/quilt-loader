@@ -55,7 +55,6 @@ import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
-import org.quiltmc.loader.impl.util.StringUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
@@ -123,13 +122,13 @@ public class QuiltLoaderImpl implements FabricLoader {
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
 		String configDir = System.getProperty(SystemProperties.CONFIG_DIRECTORY);
-		this.configDir = gameDir.resolve(StringUtil.either(configDir, DEFAULT_CONFIG_DIR));
-		refreshModsDir(gameDir);
+		this.configDir = gameDir.resolve((configDir == null || configDir.isEmpty()) ? DEFAULT_CONFIG_DIR : configDir);
+		initializeModsDir(gameDir);
 	}
 
-	private void refreshModsDir(Path gameDir) {
+	private void initializeModsDir(Path gameDir) {
 		String modsDir = System.getProperty(SystemProperties.MODS_DIRECTORY);
-		this.modsDir = gameDir.resolve(StringUtil.either(modsDir, DEFAULT_MODS_DIR));
+		this.modsDir = gameDir.resolve((modsDir == null || modsDir.isEmpty()) ? DEFAULT_MODS_DIR : modsDir);
 	}
 
 	@Override
@@ -171,7 +170,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 			try {
 				Files.createDirectories(configDir);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to create config directory", e);
+				throw new RuntimeException(String.format("Failed to create config directory at '%s'", configDir), e);
 			}
 		}
 		return configDir;
@@ -184,16 +183,16 @@ public class QuiltLoaderImpl implements FabricLoader {
 	}
 
 	public Path getModsDir() {
+		// modsDir should be initialized before this method is ever called, this acts as a very special failsafe
 		if (modsDir == null) {
-			// Should not be null ever
-			refreshModsDir(gameDir);
+			initializeModsDir(gameDir);
 		}
 
 		if (!Files.exists(modsDir)) {
 			try {
 				Files.createDirectories(modsDir);
 			} catch (IOException e) {
-				throw new RuntimeException("Failed to create mods directory", e);
+				throw new RuntimeException(String.format("Failed to create mods directory at '%s'", modsDir), e);
 			}
 		}
 		return modsDir;
