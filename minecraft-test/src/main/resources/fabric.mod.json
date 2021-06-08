@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "minecraft-test",
+  "name": "Minecraft test mod",
+  "version": "1.0.0",
+  "entrypoints": {
+    "preLaunch": [
+      "org.quiltmc.test.PrelaunchTest"
+    ],
+    "main": [
+      "org.quiltmc.test.TestMod"
+    ]
+  }
+}
