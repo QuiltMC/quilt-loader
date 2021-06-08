@@ -203,3 +203,32 @@ publishing {
 		}
 	}
 }
+
+tasks.register("refreshMeta", RefreshMetaTask)
+
+class RefreshMetaTask extends DefaultTask {
+	@TaskAction
+	void doTask() {
+		def ENV = System.getenv()
+
+		if (ENV.META_UPDATE_URL) {
+			logger.lifecycle("Refreshing meta")
+			URL url = new URL(ENV.META_UPDATE_URL)
+
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.requestMethod = "GET"
+
+			try (InputStream _ = connection.inputStream) {
+			}
+
+			if (connection.responseCode != 200) {
+				throw GradleException("Failed to refresh meta server")
+			}
+
+			logger.lifecycle("Meta refresh done")
+		} else {
+			logger.lifecycle("META_UPDATE_URL not specified, not refreshing meta")
+		}
+	}
+}
+
