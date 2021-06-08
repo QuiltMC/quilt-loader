@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.Map;
 
 import org.quiltmc.json5.JsonReader;
@@ -56,6 +58,17 @@ public final class QuiltStatusTree {
 
 		public static FabricTreeWarningLevel getHighest(FabricTreeWarningLevel a, FabricTreeWarningLevel b) {
 			return a.isHigherThan(b) ? a : b;
+		}
+
+		/** @return The level to use, or null if the given char doesn't map to any level. */
+		public static FabricTreeWarningLevel fromChar(char c) {
+			switch (c) {
+				case '-': return NONE;
+				case '+': return INFO;
+				case '!': return WARN;
+				case 'x': return ERROR;
+				default: return null;
+			}
 		}
 
 		static FabricTreeWarningLevel read(JsonReader reader) throws IOException {
@@ -349,7 +362,7 @@ public final class QuiltStatusTree {
 		}
 
 		public void setWarningLevel(FabricTreeWarningLevel level) {
-			if (this.warningLevel == level) {
+			if (this.warningLevel == level || level == null) {
 				return;
 			}
 
@@ -377,35 +390,62 @@ public final class QuiltStatusTree {
 			setWarningLevel(FabricTreeWarningLevel.INFO);
 		}
 
-		private QuiltStatusNode addChild(String string) {
-			if (string.startsWith("\t")) {
-				if (children.size() == 0) {
-					QuiltStatusNode rootChild = new QuiltStatusNode(this, "");
-					children.add(rootChild);
-				}
+		public QuiltStatusNode addChild(String string) {
+			int indent = 0;
+			FabricTreeWarningLevel level = null;
 
-				QuiltStatusNode lastChild = children.get(children.size() - 1);
-				lastChild.addChild(string.substring(1));
-				lastChild.expandByDefault = true;
-				return lastChild;
-			} else {
-				QuiltStatusNode child = new QuiltStatusNode(this, cleanForNode(string));
-				children.add(child);
-				return child;
+			while (string.startsWith("\t")) {
+				indent++;
+				string = string.substring(1);
 			}
-		}
 
-		private String cleanForNode(String string) {
 			string = string.trim();
-			
+
 			if (string.length() > 1) {
-				if (string.startsWith("-")) {
-					string = string.substring(1);
-					string = string.trim();
+				if (Character.isWhitespace(string.charAt(1))) {
+					level = FabricTreeWarningLevel.fromChar(string.charAt(0));
+
+					if (level != null) {
+						string = string.substring(2);
+					}
 				}
 			}
-			
-			return string;
+
+			string = string.trim();
+			String icon = "";
+
+			if (string.length() > 3) {
+				if ('$' == string.charAt(0)) {
+					Pattern p = Pattern.compile("\\$([a-z.+-]+)\\$");
+					Matcher match = p.matcher(string);
+					if (match.find()) {
+						icon = match.group(1);
+						string = string.substring(icon.length() + 2);
+					}
+				}
+			}
+
+			string = string.trim();
+
+			QuiltStatusNode to = this;
+
+			for (; indent > 0; indent--) {
+				if (to.children.isEmpty()) {
+					QuiltStatusNode node = new QuiltStatusNode(to, "");
+					to.children.add(node);
+					to = node;
+				} else {
+					to = to.children.get(to.children.size() - 1);
+				}
+
+				to.expandByDefault = true;
+			}
+
+			QuiltStatusNode child = new QuiltStatusNode(to, string);
+			child.setWarningLevel(level);
+			child.iconType = icon;
+			to.children.add(child);
+			return child;
 		}
 
 		public QuiltStatusNode addException(Throwable exception) {

@@ -20,11 +20,15 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.PathType;
 
-import org.quiltmc.json5.exception.ParseException;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.api.metadata.ModDependency;
-import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.metadata.ModDependency;
+
+import org.quiltmc.json5.exception.ParseException;
+
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
+import org.quiltmc.loader.impl.util.SystemProperties;
+
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
@@ -34,12 +38,9 @@ import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
-import org.quiltmc.loader.util.sat4j.core.VecInt;
-import org.quiltmc.loader.util.sat4j.minisat.SolverFactory;
+import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
+import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
-import org.quiltmc.loader.util.sat4j.specs.IProblem;
-import org.quiltmc.loader.util.sat4j.specs.ISolver;
-import org.quiltmc.loader.util.sat4j.specs.IVecInt;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import org.apache.logging.log4j.Logger;
@@ -53,15 +54,26 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.zip.ZipError;
 
 import static com.google.common.jimfs.Feature.FILE_CHANNEL;
 import static com.google.common.jimfs.Feature.SECURE_DIRECTORY_STREAM;
 
+/** The main "resolver" for mods. This class has 2 jobs:
+ * <ul>
+ * <li>Finding valid mod jar files from the filesystem and classpath, and loading them into memory. This also includes
+ * loading mod jar files from within jar files.</li>
+ * <li>Finding a compatible set of mods, such that all of their dependencies are satisfied and none of them break with
+ * any of the other mods. This is also responsible for throwing {@link ModResolutionException} with a good error message
+ * if a valid set cannot be found.</li>
+ * </ul>
+ * <p>
+ * The main entry point for the first job is {@link #resolve(QuiltLoaderImpl)} which performs all of the work for loading,
+ * and also calls {@link #findCompatibleSet(Logger, Map)} to perform the second job upon the resolved set. */
 public class ModResolver {
 	// nested JAR store
 	private static final FileSystem inMemoryFs = Jimfs.newFileSystem(
@@ -74,8 +86,10 @@ public class ModResolver {
 			.build()
 	);
 	private static final Map<String, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
+	private static final Map<String, String> readableNestedJarPaths = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
+	private static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
 
 	private final List<ModCandidateFinder> candidateFinders = new ArrayList<>();
 
@@ -86,177 +100,313 @@ public class ModResolver {
 		candidateFinders.add(f);
 	}
 
-	private static IVecInt toVecInt(IntStream stream) {
-		return new VecInt(stream.toArray());
+	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
+		Path path;
+		try {
+			path = UrlUtil.asPath(c.getOriginUrl());
+		} catch (UrlConversionException e) {
+			throw new RuntimeException(e);
+		}
+
+		Path gameDir = loader.getGameDir();
+
+		if (gameDir != null) {
+			gameDir = gameDir.normalize();
+
+			if (path.startsWith(gameDir)) {
+				path = gameDir.relativize(path);
+			}
+		}
+
+		return readableNestedJarPaths.getOrDefault(c.getOriginUrl().toString(), path.toString());
 	}
 
+	/** Primarily used by {@link #resolve(QuiltLoaderImpl)} to find a valid map of mod ids to a single mod candidate, where
+	 * all of the dependencies are present and no "breaking" mods are present.
+	 * 
+	 * @return A valid list of mods.
+	 * @throws ModResolutionException if that is impossible. */
 	// TODO: Find a way to sort versions of mods by suggestions and conflicts (not crucial, though)
 	public Map<String, ModCandidate> findCompatibleSet(Logger logger, Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
+
+		/*
+		 * Implementation notes:
+		 *
+		 * This makes heavy use of the Sat4j "partial boolean" functionality.
+		 *
+		 * To make defining mod [TODO]
+		 */
+
 		// First, map all ModCandidateSets to Set<ModCandidate>s.
+
+		/* This step performs the following actions:
+		 * 
+		 * 1: Checks to see if there are duplicate "mandatory" mods. (A mandatory mod is one where the user has
+		 *     added it directly to their mods folder or classpath, and duplicates would indicate that they
+		 *     have added multiple - E.G. both "buildcraft-9.0.1.jar" and "buildcraft-9.0.2.jar" are present).
+		 *
+		 * 2: Sorts all available instances of mods by their version - this means that we try to load the newest
+		 *     valid version of non-mandatory mods (I.E. library mods).
+		 * 
+		 * 3: Determines if we need to use sat4j at all - in simple cases (no jar-in-jar mods, and no "optional" mods)
+		 *     the valid mod list is just the list of mods available. Or, if there are missing dependencies or
+		 *     present "breaking" mods then we only need to perform the validation at the end of resolving.
+		 */
 		boolean isAdvanced = false;
+		// modCandidateMap doesn't contain provided mods, whereas fullCandidateMap does.
 		Map<String, List<ModCandidate>> modCandidateMap = new HashMap<>();
-		Set<String> mandatoryMods = new HashSet<>();
+		Map<String, List<ModCandidate>> fullCandidateMap = new HashMap<>();
+
+		Map<String, ModCandidate> mandatoryMods = new HashMap<>();
+		List<ModResolutionException> errors = new ArrayList<>();
 
 		for (ModCandidateSet mcs : modCandidateSetMap.values()) {
-			Collection<ModCandidate> s = mcs.toSortedSet();
-			modCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
-			for (String modProvide : mcs.getModProvides()) {
-				modCandidateMap.computeIfAbsent(modProvide, i -> new ArrayList<>()).addAll(s);
-			}
-			isAdvanced |= (s.size() > 1) || (s.iterator().next().getDepth() > 0);
+			try {
+				Collection<ModCandidate> s = mcs.toSortedSet();
+				modCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
+				fullCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
+				for (String modProvide : mcs.getModProvides()) {
+					fullCandidateMap.computeIfAbsent(modProvide, i -> new ArrayList<>()).addAll(s);
+				}
+				isAdvanced |= (s.size() > 1) || (s.iterator().next().getDepth() > 0);
 
-			if (mcs.isUserProvided()) {
-				mandatoryMods.add(mcs.getModId());
+				for (ModCandidate c : s) {
+					isAdvanced |= !c.getInfo().getProvides().isEmpty();
+				}
+
+				if (mcs.isUserProvided()) {
+					mandatoryMods.put(mcs.getModId(), s.iterator().next());
+				}
+			} catch (ModResolutionException e) {
+				// Only thrown by "ModCandidateSet.toSortedSet" when there are duplicate mandatory mods.
+				// We collect them in a list so we can display all of the errors.
+				errors.add(e);
 			}
+		}
+
+		if (!errors.isEmpty()) {
+			if (errors.size() == 1) {
+				throw errors.get(0);
+			}
+			ModResolutionException ex = new ModResolutionException("Found " + errors.size() + " duplicated mandatory mods!");
+			for (ModResolutionException error : errors) {
+				ex.addSuppressed(error);
+			}
+			throw ex;
 		}
 
 		Map<String, ModCandidate> result;
 
+		isAdvanced = true;
+
 		if (!isAdvanced) {
 			result = new HashMap<>();
 			for (String s : modCandidateMap.keySet()) {
-				ModCandidate candidate = modCandidateMap.get(s).iterator().next();
-				// if the candidate isn't actually just a provided alias, then put it on
-				if(!candidate.getInfo().getProvides().contains(s)) result.put(s, candidate);
+				result.put(s, modCandidateMap.get(s).iterator().next());
 			}
 		} else {
-			// Inspired by http://0install.net/solver.html
-			// probably also horrendously slow, for now
-
-			// Map all the ModCandidates to DIMACS-format positive integers.
-			int varCount = 1;
-			Map<ModCandidate, Integer> candidateIntMap = new HashMap<>();
-			List<ModCandidate> intCandidateMap = new ArrayList<>(modCandidateMap.size() * 2);
-			intCandidateMap.add(null);
-			for (Collection<ModCandidate> m : modCandidateMap.values()) {
-				for (ModCandidate candidate : m) {
-					candidateIntMap.put(candidate, varCount++);
-					intCandidateMap.add(candidate);
-				}
-			}
-
-			ISolver solver = SolverFactory.newLight();
-			solver.newVar(varCount);
+			Map<String, ModIdDefinition> modDefs = new HashMap<>();
+			DependencyHelper<LoadOption, ModLink> helper = new DependencyHelper<>(org.quiltmc.loader.util.sat4j.pb.SolverFactory.newLight());
+			helper.setNegator(new LoadOptionNegator());
 
 			try {
-				// Each mod needs to have at most one version.
-				for (String id : modCandidateMap.keySet()) {
-					IVecInt versionVec = toVecInt(modCandidateMap.get(id).stream().mapToInt(candidateIntMap::get));
+				Map<String, List<ModLoadOption>> modOptions = new HashMap<>();
+				Map<ModCandidate, MainModLoadOption> modToLoadOption = new HashMap<>();
 
-					try {
-						if (mandatoryMods.contains(id)) {
-							solver.addExactly(versionVec, 1);
+				// Put primary mod (first mod in jar)
+				for (Entry<String, List<ModCandidate>> entry : modCandidateMap.entrySet()) {
+					String modId = entry.getKey();
+					List<ModCandidate> candidates = entry.getValue();
+					ModCandidate mandatedCandidate = mandatoryMods.get(modId);
+					List<ModLoadOption> cOptions = modOptions.computeIfAbsent(modId, s -> new ArrayList<>());
+
+					int index = 0;
+
+					for (ModCandidate m : candidates) {
+						MainModLoadOption cOption;
+
+						if (m == mandatedCandidate) {
+							cOption = new MainModLoadOption(mandatedCandidate, -1);
+							modToLoadOption.put(mandatedCandidate, cOption);
+							modDefs.put(modId, new MandatoryModIdDefinition(cOption));
 						} else {
-							solver.addAtMost(versionVec, 1);
+							cOption = new MainModLoadOption(m, candidates.size() == 1 ? -1 : index);
+							modToLoadOption.put(m, cOption);
+							helper.addToObjectiveFunction(cOption, -1000 + index++);
 						}
-					} catch (ContradictionException e) {
-						throw new ModResolutionException("Could not resolve valid mod collection (at: adding mod " + id + ")", e);
+
+						cOptions.add(cOption);
+
+						for (String provided : m.getInfo().getProvides()) {
+							modOptions.computeIfAbsent(provided, s -> new ArrayList<>())
+								.add(new ProvidedModOption(cOption, provided));
+						}
 					}
 				}
 
-				for (ModCandidate mod : candidateIntMap.keySet()) {
-					int modClauseId = candidateIntMap.get(mod);
+				for (Entry<String, List<ModLoadOption>> entry : modOptions.entrySet()) {
 
-					// Each mod's requirements must be satisfied, if it is to be present.
-					// mod => ((a or b) AND (d or e))
-					// \> not mod OR ((a or b) AND (d or e))
-					// \> ((not mod OR a OR b) AND (not mod OR d OR e))
+					String modId = entry.getKey();
+					ModIdDefinition def;
+					ModLoadOption[] optionArray = entry.getValue().toArray(new ModLoadOption[0]);
 
-					for (ModDependency dep : mod.getInfo().getDepends()) {
-						int[] matchingCandidates = modCandidateMap.getOrDefault(dep.getModId(), Collections.emptyList())
-							.stream()
-							.filter((c) -> dep.matches(c.getInfo().getVersion()))
-							.mapToInt(candidateIntMap::get)
-							.toArray();
+					ModCandidate mandatoryCandidate = mandatoryMods.get(modId);
 
-						int[] clause = new int[matchingCandidates.length + 1];
-						System.arraycopy(matchingCandidates, 0, clause, 0, matchingCandidates.length);
-						clause[matchingCandidates.length] = -modClauseId;
+					if (mandatoryCandidate != null) {
+						MandatoryModIdDefinition mandatoryDef = (MandatoryModIdDefinition) modDefs.get(modId);
+						def = mandatoryDef;
+						if (optionArray.length > 1) {
+							def = new OverridenModIdDefintion(mandatoryDef, optionArray);
+							mandatoryDef.put(helper);
+						}
+					} else {
+						def = new OptionalModIdDefintion(modId, optionArray);
+					}
 
-						try {
-							solver.addClause(new VecInt(clause));
-						} catch (ContradictionException e) {
-							//TODO: JiJ'd mods don't manage to throw this exception and instead fail silently
-							throw new ModResolutionException("Could not find required mod: " + mod.getInfo().getId() + " requires " + dep, e);
+					def.put(helper);
+					modDefs.put(modId, def);
+				}
+
+				// Put dependencies and conflicts of everything
+				for (Entry<ModCandidate, MainModLoadOption> entry : modToLoadOption.entrySet()) {
+					ModCandidate mc = entry.getKey();
+					MainModLoadOption option = entry.getValue();
+
+					processDependencies(logger, modDefs, helper, mc, option);
+				}
+
+			} catch (ContradictionException e) {
+				// This shouldn't happen. But if it does it's a bit of a problem.
+				throw new ModResolutionException(e);
+			}
+
+			// Resolving
+
+			try {
+				while (!helper.hasASolution()) {
+
+					List<ModLink> why = new ArrayList<>(helper.why());
+
+					Map<MainModLoadOption, MandatoryModIdDefinition> roots = new HashMap<>();
+					List<ModLink> causes = new ArrayList<>();
+					causes.addAll(why);
+
+					// Separate out mandatory mods (roots) from other causes
+					for (Iterator<ModLink> iterator = causes.iterator(); iterator.hasNext();) {
+						ModLink link = iterator.next();
+						if (link instanceof MandatoryModIdDefinition) {
+							MandatoryModIdDefinition mandatoryMod = (MandatoryModIdDefinition) link;
+							roots.put(mandatoryMod.candidate, mandatoryMod);
+							iterator.remove();
 						}
 					}
 
-					// Each mod's breaks must be NOT satisfied, if it is to be present.
-					// mod => (not a AND not b AND not d AND not e))
-					// \> not mod OR (not a AND not b AND not d AND not e)
-					// \> (not mod OR not a) AND (not mod OR not b) ...
+					// Plugin functionality to handle errors would likely go *RIGHT HERE*
+					// I.E. downloading missing / outdated *optional* mods
 
-					for (ModDependency dep : mod.getInfo().getBreaks()) {
-						int[] matchingCandidates = modCandidateMap.getOrDefault(dep.getModId(), Collections.emptyList())
-							.stream()
-							.filter((c) -> dep.matches(c.getInfo().getVersion()))
-							.mapToInt(candidateIntMap::get)
-							.toArray();
+					/*
+					 * Plugins would most likely be passed the map of roots, and the list of causes.
+					 * Alternatively, we could do some pre-processing to identify specific cases, such as
+					 * a mod or library (or api class implementation) being missing, and then send those
+					 * out separately.
+					 *
+					 * This does mean that we'd need to remove and re-add edited clauses though when
+					 * trying to fix problems. (For example downloading a mod should process all of the
+					 * dependencies, provides, etc of that mod related to all others). 
+					 */
 
-						try {
-							for (int m : matchingCandidates) {
-								solver.addClause(new VecInt(new int[] { -modClauseId, -m }));
+					ModResolutionException ex = describeError(roots, causes);
+					if (ex == null) {
+						ex = fallbackErrorDescription(roots, causes);
+					}
+
+					errors.add(ex);
+
+					if (causes.isEmpty()) {
+						break;
+					} else {
+
+						boolean removedAny = false;
+
+						// Remove dependences and conflicts first
+						for (ModLink link : causes) {
+
+							if (link instanceof ModDep) {
+								ModDep dep = (ModDep) link;
+
+								if (!dep.validOptions.isEmpty()) {
+									continue;
+								}
 							}
-						} catch (ContradictionException e) {
-							throw new ModResolutionException("Found conflicting mods: " + mod.getInfo().getId() + " conflicts with " + dep, e);
+
+							if (link instanceof ModDep || link instanceof ModBreakage) {
+								if (helper.quilt_removeConstraint(link)) {
+									removedAny = true;
+									break;
+								}
+							}
 						}
-					}
-				}
 
-				//noinspection UnnecessaryLocalVariable
-				IProblem problem = solver;
-				IVecInt assumptions = new VecInt(modCandidateMap.size());
+						// If that failed... try removing anything else
+						if (!removedAny) {
+							for (ModLink link : causes) {
+								if (helper.quilt_removeConstraint(link)) {
+									removedAny = true;
+									break;
+								}
+							}
+						}
 
-				for (String mod : modCandidateMap.keySet()) {
-					int pos = assumptions.size();
-					assumptions = assumptions.push(0);
-					Collection<ModCandidate> candidates = modCandidateMap.get(mod);
-					boolean satisfied = false;
-
-					for (ModCandidate candidate : candidates) {
-						assumptions.set(pos, candidateIntMap.get(candidate));
-						if (problem.isSatisfiable(assumptions)) {
-							satisfied = true;
+						// If that failed... stop finding more errors
+						if (!removedAny) {
 							break;
 						}
 					}
-
-					if (!satisfied) {
-						if (mandatoryMods.contains(mod)) {
-							throw new ModResolutionException("Could not resolve mod collection including mandatory mod '" + mod + "'");
-						} else {
-							assumptions = assumptions.pop();
-						}
-					}
 				}
 
-				// TODO: better error message, have a way to figure out precisely which mods are causing this
-				if (!problem.isSatisfiable(assumptions)) {
-					throw new ModResolutionException("Could not resolve mod collection due to an unknown error");
-				}
-				int[] model = problem.model();
-				result = new HashMap<>();
-
-				for (int i : model) {
-					if (i <= 0) {
-						continue;
+				if (!errors.isEmpty()) {
+					if (errors.size() == 1) {
+						throw errors.get(0);
 					}
-
-					ModCandidate candidate = intCandidateMap.get(i);
-					if (result.containsKey(candidate.getInfo().getId())) {
-						throw new ModResolutionException("Duplicate ID '" + candidate.getInfo().getId() + "' after solving - wrong constraints?");
-					} else {
-						result.put(candidate.getInfo().getId(), candidate);
+					ModResolutionException ex = new ModResolutionException("Found " + errors.size() + " errors while resolving mods!");
+					for (ModResolutionException error : errors) {
+						ex.addSuppressed(error);
 					}
+					throw ex;
 				}
+
 			} catch (TimeoutException e) {
 				throw new ModResolutionException("Mod collection took too long to be resolved", e);
+			}
+
+			Collection<LoadOption> solution = helper.getASolution();
+			result = new HashMap<>();
+
+			for (LoadOption option : solution) {
+				
+				boolean negated = option instanceof NegatedLoadOption;
+				if (negated) {
+					option = ((NegatedLoadOption) option).not;
+				}
+
+				if (option instanceof ModLoadOption) {
+					if (!negated) {
+						ModLoadOption modOption = (ModLoadOption) option;
+
+						ModCandidate previous = result.put(modOption.modId(), modOption.candidate);
+						if (previous != null) {
+							throw new ModResolutionException("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
+						}
+					}
+				} else {
+					throw new IllegalStateException("Unknown LoadOption " + option);
+				}
 			}
 		}
 
 		// verify result: all mandatory mods
 		Set<String> missingMods = new HashSet<>();
-		for (String m : mandatoryMods) {
+		for (String m : mandatoryMods.keySet()) {
 			if (!result.keySet().contains(m)) {
 				missingMods.add(m);
 			}
@@ -265,6 +415,7 @@ public class ModResolver {
 		StringBuilder errorsHard = new StringBuilder();
 		StringBuilder errorsSoft = new StringBuilder();
 
+		// TODO: Convert to new error syntax
 		if (!missingMods.isEmpty()) {
 			errorsHard.append("\n - Missing mods: ").append(String.join(", ", missingMods));
 		} else {
@@ -289,7 +440,7 @@ public class ModResolver {
 				Version version = candidate.getInfo().getVersion();
 				List<Version> suspiciousVersions = new ArrayList<>();
 
-				for (ModCandidate other : modCandidateMap.get(candidate.getInfo().getId())) {
+				for (ModCandidate other : fullCandidateMap.get(candidate.getInfo().getId())) {
 					Version otherVersion = other.getInfo().getVersion();
 					if (version instanceof Comparable && otherVersion instanceof Comparable && !version.equals(otherVersion)) {
 						@SuppressWarnings("unchecked")
@@ -326,6 +477,35 @@ public class ModResolver {
 		return result;
 	}
 
+	void processDependencies(Logger logger, Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
+		ModLink> helper, ModCandidate mc, ModLoadOption option)
+		throws ContradictionException {
+
+		for (ModDependency dep : mc.getInfo().getDepends()) {
+			ModIdDefinition def = modDefs.get(dep.getModId());
+			if (def == null) {
+				def = new OptionalModIdDefintion(dep.getModId(), new ModLoadOption[0]);
+				modDefs.put(dep.getModId(), def);
+				def.put(helper);
+			}
+
+			new ModDep(logger, option, dep, def).put(helper);
+		}
+
+		for (ModDependency conflict : mc.getInfo().getBreaks()) {
+			ModIdDefinition def = modDefs.get(conflict.getModId());
+			if (def == null) {
+				def = new OptionalModIdDefintion(conflict.getModId(), new ModLoadOption[0]);
+				modDefs.put(conflict.getModId(), def);
+
+				def.put(helper);
+			}
+
+			new ModBreakage(logger, option, conflict, def).put(helper);
+		}
+	}
+
+	// TODO: Convert all these methods to new error syntax
 	private void addErrorToList(Logger logger, ModCandidate candidate, ModDependency dependency, Map<String, ModCandidate> result, StringBuilder errors, String errorType, boolean cond) {
 		String depModId = dependency.getModId();
 
@@ -347,7 +527,9 @@ public class ModResolver {
 		if(depCandidate == null) {
 			for (ModCandidate value : result.values()) {
 				if (value.getInfo().getProvides().contains(depModId)) {
-					if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + value.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
+					if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
+						logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + value.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
+					}
 					depCandidate = value;
 					break;
 				}
@@ -551,6 +733,185 @@ public class ModResolver {
 		return errorList.isEmpty();
 	}
 
+	/** @return A {@link ModResolutionException} describing the error in a readable format, or null if this is unable to
+	 *         do so. (In which case {@link #fallbackErrorDescription(Map, List)} will be used instead). */
+	private static ModResolutionException describeError(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
+		// TODO: Create a graph from roots to each other and then build the error through that!
+		return null;
+	}
+
+	private static ModResolutionException fallbackErrorDescription(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
+		StringBuilder errors = new StringBuilder("Unhandled error involving mod");
+
+		if (roots.size() > 1) {
+			errors.append('s');
+		}
+
+		errors.append(' ').append(roots.keySet().stream()
+				.map(ModResolver::getLoadOptionDescription)
+				.collect(Collectors.joining(", ")))
+				.append(':');
+
+		for (ModLink cause : causes) {
+			errors.append('\n');
+
+			if (cause instanceof ModDep) {
+				ModDep dep = (ModDep) cause;
+				errors.append(dep.validOptions.isEmpty() ? "x" : "-");
+				errors.append(" Mod ").append(getLoadOptionDescription(dep.source))
+						.append(" requires ").append(getDependencyVersionRequirements(dep.publicDep))
+						.append(" of ");
+				ModIdDefinition def = dep.on;
+				ModLoadOption[] sources = def.sources();
+
+				if (sources.length == 0) {
+					errors.append("unknown mod '").append(def.getModId()).append("'\n")
+							.append("\t- You must install ").append(getDependencyVersionRequirements(dep.publicDep))
+							.append(" of '").append(def.getModId()).append("'.");
+				} else {
+					errors.append(def.getFriendlyName());
+
+					if (dep.validOptions.isEmpty()) {
+						errors.append("\n\t- You must install ").append(getDependencyVersionRequirements(dep.publicDep))
+								.append(" of ").append(def.getFriendlyName()).append('.');
+					}
+
+					if (sources.length == 1) {
+						errors.append("\n\t- Your current version of ").append(getCandidateName(sources[0].candidate))
+							.append(" is ").append(getCandidateFriendlyVersion(sources[0].candidate)).append(".");
+					} else {
+						errors.append("\n\t- You have the following versions available:");
+
+						for (ModLoadOption source : sources) {
+							errors.append("\n\t\t- ").append(getCandidateFriendlyVersion(source)).append(".");
+						}
+					}
+				}
+			} else if (cause instanceof ModBreakage) {
+				ModBreakage breakage = (ModBreakage) cause;
+				errors.append(breakage.invalidOptions.isEmpty() ? "-" : "x");
+				errors.append(" Mod ").append(getLoadOptionDescription(breakage.source))
+						.append(" conflicts with ").append(getDependencyVersionRequirements(breakage.publicDep))
+						.append(" of ");
+
+				ModIdDefinition def = breakage.with;
+				ModLoadOption[] sources = def.sources();
+
+				if (sources.length == 0) {
+					errors.append("unknown mod '").append(def.getModId()).append("'\n")
+							.append("\t- You must remove ").append(getDependencyVersionRequirements(breakage.publicDep))
+							.append(" of '").append(def.getModId()).append("'.");
+				} else {
+					errors.append(def.getFriendlyName());
+
+					if (breakage.invalidOptions.isEmpty()) {
+						errors.append("\n\t- You must remove ").append(getDependencyVersionRequirements(breakage.publicDep))
+								.append(" of ").append(def.getFriendlyName()).append('.');
+					}
+
+					if (sources.length == 1) {
+						errors.append("\n\t- Your current version of ").append(getCandidateName(sources[0].candidate))
+							.append(" is ").append(getCandidateFriendlyVersion(sources[0].candidate)).append(".");
+					} else {
+						errors.append("\n\t- You have the following versions available:");
+
+						for (ModLoadOption source : sources) {
+							errors.append("\n\t\t- ").append(getCandidateFriendlyVersion(source)).append(".");
+						}
+					}
+				}
+			} else {
+				errors.append("x Unknown error type?")
+						.append("\n\t+ cause.getClass() =>")
+						.append("\n\t\t").append(cause.getClass().getName())
+						.append("\n\t+ cause.toString() =>")
+						.append("\n\t\t").append(cause.toString());
+			}
+		}
+
+		// TODO: See if I can get results similar to appendJiJInfo (which requires a complete "mod ID -> candidate" map)
+		HashSet<String> listedSources = new HashSet<>();
+		for (ModLoadOption involvedMod : roots.keySet()) {
+			appendLoadSourceInfo(errors, listedSources, involvedMod);
+		}
+
+		for (ModLink involvedLink : causes) {
+			if (involvedLink instanceof ModDep) {
+				appendLoadSourceInfo(errors, listedSources, ((ModDep) involvedLink).on);
+			} else if (involvedLink instanceof ModBreakage) {
+				appendLoadSourceInfo(errors, listedSources, ((ModBreakage) involvedLink).with);
+			}
+		}
+
+		return new ModResolutionException(errors.toString());
+	}
+
+	private static void appendLoadSourceInfo(StringBuilder errors, HashSet<String> listedSources, ModIdDefinition def) {
+		if (!listedSources.add(def.getModId())) {
+			return;
+		}
+
+		ModLoadOption[] sources = def.sources();
+
+		if (sources.length == 0) {
+			return;
+		}
+
+		if (sources.length == 1) {
+			errors.append("\n- ").append(sources[0].getSourceIcon()).append(" ").append(getLoadOptionDescription(sources[0]))
+				.append(" is being loaded from \"").append(sources[0].getLoadSource()).append("\".");
+		} else {
+			String name = getCandidateName(sources[0].candidate);
+			for (ModLoadOption option : sources) {
+				if (!getCandidateName(option.candidate).equals(name)) {
+					name = null;
+					break;
+				}
+			}
+
+			if (name != null) {
+				errors.append("\n- $folder$ ").append(name).append(" can be loaded from:");
+
+				for (ModLoadOption source : sources) {
+					errors.append("\n\t- ").append(source.getSourceIcon()).append(" v")
+						.append(getCandidateFriendlyVersion(source))
+						.append(" in \"").append(source.getLoadSource()).append("\".");
+				}
+			} else {
+				errors.append("\n- $folder$ Mod ").append(def.getModId()).append(" can be loaded from:");
+
+				for (ModLoadOption source : sources) {
+					errors.append("\n\t- ").append(source.getSourceIcon()).append(" ")
+						.append(getLoadOptionDescription(source))
+						.append(" \"").append(source.getLoadSource()).append("\".");
+				}
+			}
+		}
+	}
+
+	private static void appendLoadSourceInfo(StringBuilder errors, HashSet<String> listedSources, ModLoadOption option) {
+		if (listedSources.add(option.modId())) {
+			errors.append("\n- ").append(option.getSourceIcon()).append(" ")
+					.append(getLoadOptionDescription(option))
+					.append(" is being loaded from \"").append(option.getLoadSource()).append("\".");
+		}
+	}
+
+	private static String getLoadOptionDescription(ModLoadOption loadOption) {
+		return getCandidateName(loadOption) + " v" + getCandidateFriendlyVersion(loadOption);
+	}
+
+	private static String getCandidateName(ModLoadOption candidate) {
+		return getCandidateName(candidate.candidate);
+	}
+
+	private static String getCandidateFriendlyVersion(ModLoadOption candidate) {
+		return getCandidateFriendlyVersion(candidate.candidate);
+	}
+
+	/** A "scanner" like class that tests a single URL (representing either the root of a jar file or a folder) to see
+	 * if it contains a fabric.mod.json file, and as such if it can be loaded. Instances of this are created by
+	 * {@link ModResolver#resolve(FabricLoader)} and recursively if the scanned mod contains other jar files. */
 	@SuppressWarnings("serial")
 	static class UrlProcessAction extends RecursiveAction {
 		private final QuiltLoaderImpl loader;
@@ -698,6 +1059,12 @@ public class ModResolver {
 									}
 
 									list.add(dest);
+
+									try {
+										readableNestedJarPaths.put(UrlUtil.asUrl(dest).toString(), String.format("%s!%s", getReadablePath(loader, candidate), modPath));
+									} catch (UrlConversionException e) {
+										e.printStackTrace();
+									}
 								}
 							});
 
@@ -725,6 +1092,11 @@ public class ModResolver {
 		}
 	}
 
+	/** The main entry point for finding mods from both the classpath, the game provider, and the filesystem.
+	 * 
+	 * @param loader
+	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
+	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
 	public Map<String, ModCandidate> resolve(QuiltLoaderImpl loader) throws ModResolutionException {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
@@ -810,5 +1182,581 @@ public class ModResolver {
 
 	public static FileSystem getInMemoryFs() {
 		return inMemoryFs;
+	}
+
+	// Classes used for dependency comparison
+	// All of these are package-private as they use fairly generic names for mods
+	// (Plus these are classes rather than hard-coded to make expanding easier)
+
+	/** Base definition of something that can either be completely loaded or not loaded. (Usually this is just a mod jar
+	 * file, but in the future this might refer to something else that loader has control over). */
+	static abstract class LoadOption {}
+
+	static abstract class ModLoadOption extends LoadOption {
+		final ModCandidate candidate;
+
+		ModLoadOption(ModCandidate candidate) {
+			this.candidate = candidate;
+		}
+
+		String getSourceIcon() {
+			// TODO: Base this on whether the candidate was loaded from a fabric.mod.json or quilt.mod.json
+			return "$jar+fabric$";
+		}
+
+		String modId() {
+			return candidate.getInfo().getId();
+		}
+
+		@Override
+		public String toString() {
+			return shortString();
+		}
+		
+		abstract String shortString();
+
+		String fullString() {
+			return shortString() + " " + getSpecificInfo();
+		}
+
+		String getLoadSource() {
+			return getReadablePath(QuiltLoaderImpl.INSTANCE, candidate);
+		}
+
+		abstract String getSpecificInfo();
+
+		abstract MainModLoadOption getRoot();
+	}
+
+	static class MainModLoadOption extends ModLoadOption {
+		/** Used to identify this {@link MainModLoadOption} against others with the same modid. A value of -1 indicates that
+		 * this is the only {@link LoadOption} for the given modid. */
+		final int index;
+
+		MainModLoadOption(ModCandidate candidate, int index) {
+			super(candidate);
+			this.index = index;
+		}
+
+		@Override
+		String shortString() {
+			if (index == -1) {
+				return "mod '" + modId() + "'";
+			} else {
+				return "mod '" + modId() + "'#" + (index + 1);
+			}
+		}
+
+		@Override
+		String getSpecificInfo() {
+			LoaderModMetadata info = candidate.getInfo();
+			return "version " + info.getVersion() + " loaded from " + getLoadSource();
+		}
+
+		@Override
+		MainModLoadOption getRoot() {
+			return this;
+		}
+	}
+
+	/**
+	 * A mod that is provided from the jar of a different mod.
+	 */
+	static class ProvidedModOption extends ModLoadOption {
+		final MainModLoadOption provider;
+		final String providedModId;
+
+		public ProvidedModOption(MainModLoadOption provider, String providedModId) {
+			super(provider.candidate);
+			this.provider = provider;
+			this.providedModId = providedModId;
+		}
+
+		@Override
+		String modId() {
+			return providedModId;
+		}
+
+		@Override
+		String shortString() {
+			return "provided mod '" + modId() + "' from " + provider.shortString();
+		}
+
+		@Override
+		String getSpecificInfo() {
+			return provider.getSpecificInfo();
+		}
+
+		@Override
+		MainModLoadOption getRoot() {
+			return provider;
+		}
+	}
+
+	/** Used for the "inverse load" condition - if this is required by a {@link ModLink} then it means the
+	 * {@link LoadOption} must not be loaded. */
+	static final class NegatedLoadOption extends LoadOption {
+		final LoadOption not;
+
+		public NegatedLoadOption(LoadOption not) {
+			this.not = not;
+		}
+
+		@Override
+		public String toString() {
+			return "NOT " + not;
+		}
+	}
+
+	static final class LoadOptionNegator implements INegator {
+		@Override
+		public boolean isNegated(Object thing) {
+			return thing instanceof NegatedLoadOption;
+		}
+
+		@Override
+		public Object unNegate(Object thing) {
+			return ((NegatedLoadOption) thing).not;
+		}
+	}
+
+	/** Base definition of a link between one or more {@link LoadOption}s, that */
+	static abstract class ModLink implements Comparable<ModLink> {
+
+		/** Used for {@link #compareTo(ModLink)}. AFAIK this is only needed since sat4j uses a TreeMap rather than a
+		 * HashMap for return links in {@link DependencyHelper#why()}. As we don't care about that order all that
+		 * matters is we get a consistent comparison. */
+		static final List<Class<? extends ModLink>> LINK_ORDER = new ArrayList<>();
+
+		static {
+			LINK_ORDER.add(MandatoryModIdDefinition.class);
+			LINK_ORDER.add(OptionalModIdDefintion.class);
+			LINK_ORDER.add(ModDep.class);
+			LINK_ORDER.add(ModBreakage.class);
+		}
+
+		abstract ModLink put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException;
+
+		/** @return A description of the link. */
+		@Override
+		public abstract String toString();
+
+		/**
+		 * Checks to see if this link is [...]
+		 * 
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		public boolean isNode() {
+			return true;
+		}
+
+		/**
+		 * TODO: Better name!
+		 * 
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		public abstract Collection<? extends LoadOption> getNodesFrom();
+
+		/**
+		 * TODO: Better name!
+		 * 
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		public abstract Collection<? extends LoadOption> getNodesTo();
+
+		@Override
+		public final int compareTo(ModLink o) {
+			if (o.getClass() == getClass()) {
+				return compareToSelf(o);
+			} else {
+				int i0 = LINK_ORDER.indexOf(getClass());
+				int i1 = LINK_ORDER.indexOf(o.getClass());
+				if (i0 < 0) {
+					throw new IllegalStateException("Unknown " + getClass() + " (It's not registered in ModLink.LINK_ORDER!)");
+				}
+				if (i1 < 0) {
+					throw new IllegalStateException("Unknown " + o.getClass() + " (It's not registered in ModLink.LINK_ORDER!)");
+				}
+				return Integer.compare(i1, i0);
+			}
+		}
+
+		protected abstract int compareToSelf(ModLink o);
+	}
+
+	/** A concrete definition of a modid. This also maps the modid to the {@link LoadOption} candidates, and so is used
+	 * instead of {@link LoadOption} in other links. */
+	static abstract class ModIdDefinition extends ModLink {
+		abstract String getModId();
+
+		/** @return An array of all the possible {@link LoadOption} instances that can define this modid. May be empty,
+		 *         but will never be null. */
+		abstract ModLoadOption[] sources();
+
+		/** Utility for {@link #put(DependencyHelper)} which returns only {@link ModLoadOption#getRoot()} */
+		protected static MainModLoadOption[] processSources(ModLoadOption[] array) {
+			MainModLoadOption[] dst = new MainModLoadOption[array.length];
+			for (int i = 0; i < dst.length; i++) {
+				dst[i] = array[i].getRoot();
+			}
+			return dst;
+		}
+
+		abstract String getFriendlyName();
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public boolean isNode() {
+			return false;
+		}
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public Collection<? extends LoadOption> getNodesFrom() {
+			return Collections.emptySet();
+		}
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public Collection<? extends LoadOption> getNodesTo() {
+			return Collections.emptySet();
+		}
+
+		@Override
+		protected int compareToSelf(ModLink o) {
+			ModIdDefinition other = (ModIdDefinition) o;
+			return getModId().compareTo(other.getModId());
+		}
+	}
+
+	/** A concrete definition that mandates that the modid must be loaded by the given singular {@link ModCandidate},
+	 * and no others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid
+	 * by the time this is used). */
+	static final class MandatoryModIdDefinition extends ModIdDefinition {
+		final MainModLoadOption candidate;
+
+		public MandatoryModIdDefinition(MainModLoadOption candidate) {
+			this.candidate = candidate;
+		}
+
+		@Override
+		String getModId() {
+			return candidate.modId();
+		}
+
+		@Override
+		MainModLoadOption[] sources() {
+			return new MainModLoadOption[] { candidate };
+		}
+
+		@Override
+		MandatoryModIdDefinition put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+			helper.clause(this, candidate);
+			return this;
+		}
+
+		@Override
+		String getFriendlyName() {
+			return getCandidateName(candidate);
+		}
+
+		@Override
+		public String toString() {
+			return "mandatory " + candidate.fullString();
+		}
+	}
+
+	/** A concrete definition that allows the modid to be loaded from any of a set of {@link ModCandidate}s. */
+	static final class OptionalModIdDefintion extends ModIdDefinition {
+		final String modid;
+		final ModLoadOption[] sources;
+
+		public OptionalModIdDefintion(String modid, ModLoadOption[] sources) {
+			this.modid = modid;
+			this.sources = sources;
+		}
+
+		@Override
+		String getModId() {
+			return modid;
+		}
+
+		@Override
+		ModLoadOption[] sources() {
+			return sources;
+		}
+
+		@Override
+		String getFriendlyName() {
+			String name = null;
+
+			for (ModLoadOption option : sources) {
+				String opName = option.candidate.getInfo().getName();
+
+				if (name == null) {
+					name = opName;
+				} else if (!name.equals(opName)) {
+					// TODO!
+				}
+			}
+
+			return getCandidateName(sources[0]);
+		}
+
+		@Override
+		OptionalModIdDefintion put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+			helper.atMost(this, 1, processSources(sources));
+			return this;
+		}
+
+		@Override
+		public String toString() {
+			switch (sources.length) {
+				case 0: return "unknown mod '" + modid + "'";
+				case 1: return "optional mod '" + modid + "' (1 source)";
+				default: return "optional mod '" + modid + "' (" + sources.length + " sources)";
+			}
+		}
+	}
+
+	/** A variant of {@link OptionalModIdDefintion} but which is overridden by a {@link MandatoryModIdDefinition} (and so
+	 * none of these candidates can load). */
+	static final class OverridenModIdDefintion extends ModIdDefinition {
+		final MandatoryModIdDefinition overrider;
+		final ModLoadOption[] sources;
+
+		public OverridenModIdDefintion(MandatoryModIdDefinition overrider, ModLoadOption[] sources) {
+			this.overrider = overrider;
+			this.sources = sources;
+		}
+
+		@Override
+		String getModId() {
+			return overrider.getModId();
+		}
+
+		@Override
+		ModLoadOption[] sources() {
+			return sources;
+		}
+
+		@Override
+		String getFriendlyName() {
+			return overrider.getFriendlyName();
+		}
+
+		@Override
+		OverridenModIdDefintion put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+			helper.atMost(this, 1, processSources(sources));
+			return this;
+		}
+
+		@Override
+		public String toString() {
+			return "overriden mods '" + overrider.getModId() + "' of " + sources.length + " by " + overrider;
+		}
+	}
+
+	static final class ModDep extends ModLink {
+		final ModLoadOption source;
+		final ModDependency publicDep;
+		final ModIdDefinition on;
+		final List<ModLoadOption> validOptions;
+		final List<ModLoadOption> invalidOptions;
+		final List<ModLoadOption> allOptions;
+
+		public ModDep(Logger logger, ModLoadOption source, ModDependency publicDep, ModIdDefinition on) {
+			this.source = source;
+			this.publicDep = publicDep;
+			this.on = on;
+			validOptions = new ArrayList<>();
+			invalidOptions = new ArrayList<>();
+			allOptions = new ArrayList<>();
+
+			if (DEBUG_PRINT_STATE) {
+				logger.info("[ModResolver] Adding a mod depencency from " + source + " to " + on.getModId());
+				logger.info("[ModResolver]   from " + source.fullString());
+			}
+
+			for (ModLoadOption option : on.sources()) {
+				allOptions.add(option);
+
+				if (publicDep.matches(option.candidate.getInfo().getVersion())) {
+					validOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  +  valid option: " + option.fullString());
+					}
+				} else {
+					invalidOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  x  mismatching option: " + option.fullString());
+					}
+				}
+			}
+		}
+
+		@Override
+		ModDep put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+			List<LoadOption> clause = new ArrayList<>();
+			clause.addAll(validOptions);
+			clause.add(new NegatedLoadOption(source));
+			helper.clause(this, clause.toArray(new LoadOption[0]));
+			return this;
+		}
+
+		@Override
+		public String toString() {
+			return source + " depends on " + on + " version " + publicDep;
+		}
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public Collection<? extends LoadOption> getNodesFrom() {
+			return Collections.singleton(source);
+		}
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public Collection<? extends LoadOption> getNodesTo() {
+			return allOptions;
+		}
+
+		@Override
+		protected int compareToSelf(ModLink o) {
+			ModDep other = (ModDep) o;
+
+			if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
+				return validOptions.isEmpty() ? -1 : 1;
+			}
+
+			int c = source.candidate.getOriginUrl().toString()
+				.compareTo(other.source.candidate.getOriginUrl().toString());
+
+			if (c != 0) {
+				return c;
+			}
+
+			return on.compareTo(other.on);
+		}
+	}
+
+	static final class ModBreakage extends ModLink {
+		final ModLoadOption source;
+		final ModDependency publicDep;
+		final ModIdDefinition with;
+
+		/** Every mod option that this does NOT conflict with - as such it can be loaded at the same time as {@link #source}. */
+		final List<ModLoadOption> validOptions;
+
+		/** Every mod option that this DOES conflict with - as such it must not be loaded at the same time as
+		 * {@link #source}. */
+		final List<ModLoadOption> invalidOptions;
+
+		/** Every option. (This is just {@link #validOptions} plus {@link #invalidOptions} */
+		final List<ModLoadOption> allOptions;
+
+		public ModBreakage(Logger logger, ModLoadOption source, ModDependency publicDep, ModIdDefinition with) {
+			this.source = source;
+			this.publicDep = publicDep;
+			this.with = with;
+			validOptions = new ArrayList<>();
+			invalidOptions = new ArrayList<>();
+			allOptions = new ArrayList<>();
+
+			if (DEBUG_PRINT_STATE) {
+				logger.info("[ModResolver] Adding a mod breakage:");
+				logger.info("[ModResolver]   from " + source.fullString());
+				logger.info("[ModResolver]   with " + with.getModId());
+			}
+
+			for (ModLoadOption option : with.sources()) {
+				allOptions.add(option);
+
+				if (publicDep.matches(option.candidate.getInfo().getVersion())) {
+					invalidOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  +  breaking option: " + option.fullString());
+					}
+				} else {
+					validOptions.add(option);
+
+					if (DEBUG_PRINT_STATE) {
+						logger.info("[ModResolver]  x  non-conflicting option: " + option.fullString());
+					}
+				}
+			}
+		}
+
+		@Override
+		ModBreakage put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+			LoadOption[] disallowed = new LoadOption[invalidOptions.size()];
+			for (int i = 0; i < invalidOptions.size(); i++) {
+				disallowed[i] = invalidOptions.get(i).getRoot();
+			}
+			helper.halfOr(this, new NegatedLoadOption(source), disallowed);
+			return this;
+		}
+
+		@Override
+		public String toString() {
+			return source + " breaks " + with + " version " + publicDep;
+		}
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public Collection<? extends LoadOption> getNodesFrom() {
+			return Collections.singleton(source);
+		}
+
+		/**
+		 * @deprecated Not used yet. In the future this will be used for better error message generation.
+		 */
+		@Deprecated
+		@Override
+		public Collection<? extends LoadOption> getNodesTo() {
+			return allOptions;
+		}
+
+		@Override
+		protected int compareToSelf(ModLink o) {
+			ModBreakage other = (ModBreakage) o;
+
+			if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
+				return validOptions.isEmpty() ? -1 : 1;
+			}
+
+			int c = source.candidate.getOriginUrl().toString()
+				.compareTo(other.source.candidate.getOriginUrl().toString());
+
+			if (c != 0) {
+				return c;
+			}
+
+			return with.compareTo(other.with);
+		}
 	}
 }
