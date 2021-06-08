@@ -9,6 +9,7 @@ import org.quiltmc.loader.api.VersionFormatException;
 import java.util.Arrays;
 import java.util.Iterator;
 
+// TODO: investigate regex and StringTokenizer once we're able to actually test this code
 public class SemanticVersionImpl implements Version.Semantic {
 	private final String raw;
 	private final int major;

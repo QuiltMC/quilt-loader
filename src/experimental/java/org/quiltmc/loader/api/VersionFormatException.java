@@ -1,5 +1,6 @@
 package org.quiltmc.loader.api;
 
+// TODO: make this extend the Fabric exception?
 public final class VersionFormatException extends Exception {
 
 	public VersionFormatException() {
