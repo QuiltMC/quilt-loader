@@ -15,6 +15,14 @@ dependencies {
 
 	// loader
 	implementation(rootProject)
+
+	// This is not typical for a buildscript
+	// ASM is required for the mixin annotation processor
+	annotationProcessor("org.ow2.asm:asm:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-analysis:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-commons:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-tree:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-util:$project.asmVersion")
 }
 
 processResources {
