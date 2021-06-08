@@ -2,7 +2,7 @@ plugins {
 	id "java"
 	id "idea"
 	id "eclipse"
-	id("org.cadixdev.licenser")
+	id("com.diffplug.spotless") version "5.12.5"
 	id("org.quiltmc.loom") version "0.7.24"
 }
 
@@ -41,5 +41,12 @@ tasks.withType(JavaCompile).configureEach {
 	// We'll use that if it's available, but otherwise we'll use the older option.
 	if (JavaVersion.current().isJava9Compatible()) {
 		it.options.release = 8
+	}
+}
+
+spotless {
+	java {
+		// Use comma separator for openjdk like license headers
+		licenseHeaderFile(rootProject.file("codeformat/HEADER")).yearSeparator(", ")
 	}
 }

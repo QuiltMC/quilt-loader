@@ -167,7 +167,7 @@ javadoc {
 }
 
 license {
-	header file("HEADER")
+	header file("codeformat/FABRIC-HEADER")
 	include '**/*.java'
 }
 
