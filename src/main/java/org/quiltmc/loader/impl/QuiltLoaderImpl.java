@@ -72,6 +72,9 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Loader");
 
+	public static final String DEFAULT_MODS_DIR = "mods";
+	public static final String DEFAULT_CONFIG_DIR = "config";
+
 	protected final Map<String, ModContainer> modMap = new HashMap<>();
 	protected List<ModContainer> mods = new ArrayList<>();
 
@@ -87,6 +90,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 	private GameProvider provider;
 	private Path gameDir;
 	private Path configDir;
+	private Path modsDir;
 
 	protected QuiltLoaderImpl() {
 	}
@@ -117,7 +121,14 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	private void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
-		this.configDir = gameDir.resolve("config");
+		String configDir = System.getProperty(SystemProperties.CONFIG_DIRECTORY);
+		this.configDir = gameDir.resolve((configDir == null || configDir.isEmpty()) ? DEFAULT_CONFIG_DIR : configDir);
+		initializeModsDir(gameDir);
+	}
+
+	private void initializeModsDir(Path gameDir) {
+		String modsDir = System.getProperty(SystemProperties.MODS_DIRECTORY);
+		this.modsDir = gameDir.resolve((modsDir == null || modsDir.isEmpty()) ? DEFAULT_MODS_DIR : modsDir);
 	}
 
 	@Override
@@ -159,7 +170,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 			try {
 				Files.createDirectories(configDir);
 			} catch (IOException e) {
-				throw new RuntimeException("Creating config directory", e);
+				throw new RuntimeException(String.format("Failed to create config directory at '%s'", configDir), e);
 			}
 		}
 		return configDir;
@@ -172,7 +183,19 @@ public class QuiltLoaderImpl implements FabricLoader {
 	}
 
 	public Path getModsDir() {
-		return getGameDir().resolve("mods");
+		// modsDir should be initialized before this method is ever called, this acts as a very special failsafe
+		if (modsDir == null) {
+			initializeModsDir(gameDir);
+		}
+
+		if (!Files.exists(modsDir)) {
+			try {
+				Files.createDirectories(modsDir);
+			} catch (IOException e) {
+				throw new RuntimeException(String.format("Failed to create mods directory at '%s'", modsDir), e);
+			}
+		}
+		return modsDir;
 	}
 
 	@Deprecated
