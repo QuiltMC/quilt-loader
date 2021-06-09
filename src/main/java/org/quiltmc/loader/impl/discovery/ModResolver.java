@@ -197,7 +197,7 @@ public class ModResolver {
 
 		Map<String, ModCandidate> result;
 
-		isAdvanced = true;
+		isAdvanced = true; // TODO: Weirdo hardsetting?
 
 		if (!isAdvanced) {
 			result = new HashMap<>();
@@ -238,6 +238,7 @@ public class ModResolver {
 						cOptions.add(cOption);
 
 						for (String provided : m.getInfo().getProvides()) {
+							// Add provided mods as an available option for other dependencies to select from.
 							modOptions.computeIfAbsent(provided, s -> new ArrayList<>())
 								.add(new ProvidedModOption(cOption, provided));
 						}
@@ -1611,8 +1612,14 @@ public class ModResolver {
 
 		@Override
 		ModDep put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			List<LoadOption> clause = new ArrayList<>();
-			clause.addAll(validOptions);
+			List<LoadOption> clause = new ArrayList<>(validOptions.size());
+
+			for (ModLoadOption validOption : validOptions) {
+				// Obtain the root of the valid options to resolve mod dependencies that succeed because the depended mod is
+				// provided.
+				clause.add(validOption.getRoot());
+			}
+
 			clause.add(new NegatedLoadOption(source));
 			helper.clause(this, clause.toArray(new LoadOption[0]));
 			return this;
@@ -1712,6 +1719,8 @@ public class ModResolver {
 		ModBreakage put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
 			LoadOption[] disallowed = new LoadOption[invalidOptions.size()];
 			for (int i = 0; i < invalidOptions.size(); i++) {
+				// Obtain the root of the invalid options to resolve mod breakages that occur because a mod that breaks
+				// is provided.
 				disallowed[i] = invalidOptions.get(i).getRoot();
 			}
 			helper.halfOr(this, new NegatedLoadOption(source), disallowed);
