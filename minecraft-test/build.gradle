@@ -1,0 +1,52 @@
+plugins {
+	id "java"
+	id "idea"
+	id "eclipse"
+	id("com.diffplug.spotless") version "5.12.5"
+	id("org.quiltmc.loom") version "0.7.24"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+	minecraft "com.mojang:minecraft:1.16.5"
+	mappings "org.quiltmc:yarn:1.16.5+build.5:v2"
+
+	// loader
+	implementation(rootProject)
+
+	// This is not typical for a buildscript
+	// ASM is required for the mixin annotation processor
+	annotationProcessor("org.ow2.asm:asm:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-analysis:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-commons:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-tree:$project.asmVersion")
+	annotationProcessor("org.ow2.asm:asm-util:$project.asmVersion")
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+
+	// The Minecraft launcher currently installs Java 8 for users, so your mod probably wants to target Java 8 too
+	// JDK 9 introduced a new way of specifying this that will make sure no newer classes or methods are used.
+	// We'll use that if it's available, but otherwise we'll use the older option.
+	if (JavaVersion.current().isJava9Compatible()) {
+		it.options.release = 8
+	}
+}
+
+spotless {
+	java {
+		// Use comma separator for openjdk like license headers
+		licenseHeaderFile(rootProject.file("codeformat/HEADER")).yearSeparator(", ")
+	}
+}
