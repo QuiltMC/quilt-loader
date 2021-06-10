@@ -17,13 +17,24 @@
 package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
+import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 
 import java.util.Collection;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 public final class EntrypointUtils {
 	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
+		invokeContainer(name, type, container -> invoker.accept(container.getEntrypoint()));
+	}
+
+	public static <T> void invoke(String name, Class<T> type, BiConsumer<T, ModContainer> invoker) {
+		invokeContainer(name, type, container -> invoker.accept(container.getEntrypoint(), container.getProvider()));
+	}
+
+	public static <T> void invokeContainer(String name, Class<T> type, Consumer<EntrypointContainer<T>> invoker) {
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 
 		if (!loader.hasEntrypoints(name)) {
@@ -33,7 +44,7 @@ public final class EntrypointUtils {
 		}
 	}
 
-	private static <T> void invoke0(String name, Class<T> type, Consumer<? super T> invoker) {
+	private static <T> void invoke0(String name, Class<T> type, Consumer<EntrypointContainer<T>> invoker) {
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		RuntimeException exception = null;
 		Collection<EntrypointContainer<T>> entrypoints = loader.getEntrypointContainers(name, type);
@@ -42,7 +53,7 @@ public final class EntrypointUtils {
 
 		for (EntrypointContainer<T> container : entrypoints) {
 			try {
-				invoker.accept(container.getEntrypoint());
+				invoker.accept(container);
 			} catch (Throwable t) {
 				if (exception == null) {
 					exception = new RuntimeException("Could not execute entrypoint stage '" + name + "' due to errors, provided by '" + container.getProvider().getMetadata().getId() + "'!", t);

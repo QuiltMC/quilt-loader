@@ -14,33 +14,23 @@
  * limitations under the License.
  */
 
-package net.fabricmc.api;
+package org.quiltmc.loader.api;
 
 import net.fabricmc.loader.api.ModContainer;
 
 /**
- * A mod initializer ran only on {@link EnvType#CLIENT}.
+ * A mod initializer ran only on {@link EnvType#SERVER}.
  *
- * <p>This entrypoint is suitable for setting up client-specific logic, such as rendering
- * or integrated server tweaks.</p>
- *
- * <p>In {@code fabric.mod.json}, the entrypoint is defined with {@code client} key.</p>
+ * <p>In {@code fabric.mod.json}, the entrypoint is defined with {@code server} key.</p>
  *
  * @see ModInitializer
- * @see DedicatedServerModInitializer
+ * @see ClientModInitializer
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
- * @deprecated Use {@link org.quiltmc.loader.api.ClientModInitializer} instead.
  */
-@Deprecated
 @FunctionalInterface
-public interface ClientModInitializer extends org.quiltmc.loader.api.ClientModInitializer {
+public interface DedicatedServerModInitializer {
 	/**
-	 * Runs the mod initializer on the client environment.
+	 * Runs the mod initializer on the server environment.
 	 */
-	void onInitializeClient();
-
-	@Override
-	default void onInitializeClient(ModContainer mod) {
-		onInitializeClient();
-	}
+	void onInitializeServer(ModContainer mod);
 }

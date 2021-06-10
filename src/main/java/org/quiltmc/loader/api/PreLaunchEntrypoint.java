@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api.entrypoint;
+package org.quiltmc.loader.api;
 
 import net.fabricmc.loader.api.ModContainer;
 
@@ -29,19 +29,12 @@ import net.fabricmc.loader.api.ModContainer;
  * <p>The entrypoint is exposed with {@code preLaunch} key in the mod json and runs for any environment. It usually
  * executes several seconds before the {@code main}/{@code client}/{@code server} entrypoints.
  * 
- * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
- * @deprecated Use {@link org.quiltmc.loader.api.PreLaunchEntrypoint} instead.
+ * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class) 
  */
-@Deprecated
 @FunctionalInterface
-public interface PreLaunchEntrypoint extends org.quiltmc.loader.api.PreLaunchEntrypoint {
+public interface PreLaunchEntrypoint {
 	/**
 	 * Runs the entrypoint.
 	 */
-	void onPreLaunch();
-
-	@Override
-	default void onPreLaunch(ModContainer mod) {
-		onPreLaunch();
-	}
+	void onPreLaunch(ModContainer mod);
 }

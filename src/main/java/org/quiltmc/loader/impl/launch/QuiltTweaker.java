@@ -17,8 +17,9 @@
 package org.quiltmc.loader.impl.launch;
 
 import net.fabricmc.api.EnvType;
+
+import org.quiltmc.loader.api.PreLaunchEntrypoint;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import org.quiltmc.loader.impl.entrypoint.minecraft.hooks.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.MinecraftGameProvider;

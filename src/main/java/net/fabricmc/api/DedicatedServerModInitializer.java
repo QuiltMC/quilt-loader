@@ -16,6 +16,8 @@
 
 package net.fabricmc.api;
 
+import net.fabricmc.loader.api.ModContainer;
+
 /**
  * A mod initializer ran only on {@link EnvType#SERVER}.
  *
@@ -24,11 +26,18 @@ package net.fabricmc.api;
  * @see ModInitializer
  * @see ClientModInitializer
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
+ * @deprecated Use {@link org.quiltmc.loader.api.DedicatedServerModInitializer} instead.
  */
+@Deprecated
 @FunctionalInterface
-public interface DedicatedServerModInitializer {
+public interface DedicatedServerModInitializer extends org.quiltmc.loader.api.DedicatedServerModInitializer {
 	/**
 	 * Runs the mod initializer on the server environment.
 	 */
 	void onInitializeServer();
+
+	@Override
+	default void onInitializeServer(ModContainer mod) {
+		onInitializeServer();
+	}
 }

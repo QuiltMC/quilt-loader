@@ -16,8 +16,8 @@
 
 package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
 
-import net.fabricmc.api.DedicatedServerModInitializer;
-import net.fabricmc.api.ModInitializer;
+import org.quiltmc.loader.api.DedicatedServerModInitializer;
+import org.quiltmc.loader.api.ModInitializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 import java.io.File;
