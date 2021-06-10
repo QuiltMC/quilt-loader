@@ -197,7 +197,7 @@ public class ModResolver {
 
 		Map<String, ModCandidate> result;
 
-		isAdvanced = true;
+		isAdvanced = true; // TODO: Weirdo hardsetting?
 
 		if (!isAdvanced) {
 			result = new HashMap<>();
@@ -238,6 +238,7 @@ public class ModResolver {
 						cOptions.add(cOption);
 
 						for (String provided : m.getInfo().getProvides()) {
+							// Add provided mods as an available option for other dependencies to select from.
 							modOptions.computeIfAbsent(provided, s -> new ArrayList<>())
 								.add(new ProvidedModOption(cOption, provided));
 						}
@@ -1611,10 +1612,20 @@ public class ModResolver {
 
 		@Override
 		ModDep put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-			List<LoadOption> clause = new ArrayList<>();
-			clause.addAll(validOptions);
-			clause.add(new NegatedLoadOption(source));
-			helper.clause(this, clause.toArray(new LoadOption[0]));
+			LoadOption[] allowed = new LoadOption[validOptions.size() + 1];
+			int i = 0;
+
+			for (; i < validOptions.size(); i++) {
+				// We don't want to have multiple "variables" for a single mod, since a provided mod is always present
+				// if the providing mod is present and vice versa. Calling getRoot means we depend on the provider and
+				// therefore solve properly rather than potentially saying the provided mod is present but the provide
+				// isn't and vice versa.
+				allowed[i] = validOptions.get(i).getRoot();
+			}
+
+			// i is incremented when we exit the for loop, so this is fine.
+			allowed[i] = new NegatedLoadOption(source);
+			helper.clause(this, allowed);
 			return this;
 		}
 
@@ -1712,6 +1723,10 @@ public class ModResolver {
 		ModBreakage put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
 			LoadOption[] disallowed = new LoadOption[invalidOptions.size()];
 			for (int i = 0; i < invalidOptions.size(); i++) {
+				// We don't want to have multiple "variables" for a single mod, since a provided mod is always present
+				// if the providing mod is present and vice versa. Calling getRoot means we depend on the provider and
+				// therefore solve properly rather than potentially saying the provided mod is present but the provide
+				// isn't and vice versa.
 				disallowed[i] = invalidOptions.get(i).getRoot();
 			}
 			helper.halfOr(this, new NegatedLoadOption(source), disallowed);
