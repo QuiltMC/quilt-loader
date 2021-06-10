@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.discovery.ModResolver.ModResolveResult;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.ModMetadataParser;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
@@ -56,7 +57,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void single() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "single");
+		ModResolveResult modSet = resolveModSet("valid", "single");
 
 		assertModPresent(modSet, "mod-resolving-tests-single", "1.0.0");
 		assertNoMoreMods(modSet);
@@ -64,7 +65,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void duel() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "duel");
+		ModResolveResult modSet = resolveModSet("valid", "duel");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
@@ -73,26 +74,26 @@ final class ModResolvingTests {
 
 	@Test
 	public void depends() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "depends");
+		ModResolveResult modSet = resolveModSet("valid", "depends");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
-	// @Test // FIXME: Broken, findCompatibleSet no longer returns provided mods.
+	@Test
 	public void providedDepends() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "provided_depends");
+		ModResolveResult modSet = resolveModSet("valid", "provided_depends");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library-but-renamed", "1.0.0");
+		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
 	@Test
 	public void includedDep() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "included_dep");
+		ModResolveResult modSet = resolveModSet("valid", "included_dep");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
@@ -101,7 +102,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void altDep() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "alt_deps");
+		ModResolveResult modSet = resolveModSet("valid", "alt_deps");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
@@ -109,7 +110,7 @@ final class ModResolvingTests {
 		assertNoMoreMods(modSet);
 	}
 
-	private static Map<String, ModCandidate> resolveModSet(String type, String subpath) throws Exception {
+	private static ModResolveResult resolveModSet(String type, String subpath) throws Exception {
 
 		ModResolver resolver = new ModResolver();
 		Map<String, ModCandidateSet> candidateMap = new HashMap<>();
@@ -159,28 +160,52 @@ final class ModResolvingTests {
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
 	 * removes the mod entry from the map. */
-	private static void assertModPresent(Map<String, ModCandidate> map, String modid, String version) {
-		ModCandidate mod = map.remove(modid);
+	private static void assertModPresent(ModResolveResult result, String modid, String version) {
+		ModCandidate mod = result.modMap.remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + map);
+			Assertions.fail(modid + " is missing from " + result.modMap);
 		} else {
 			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
 		}
 	}
 
 	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
-	private static void assertModMissing(Map<String, ModCandidate> map, String modid) {
-		ModCandidate mod = map.remove(modid);
+	private static void assertModMissing(ModResolveResult result, String modid) {
+		ModCandidate mod = result.modMap.remove(modid);
 
 		if (mod != null) {
 			Assertions.fail(modid + " is not missing, and instead is loaded: " + mod);
 		}
 	}
 
-	private static void assertNoMoreMods(Map<String, ModCandidate> modSet) {
-		if (!modSet.isEmpty()) {
-			Assertions.fail("Expected to find no more mods loaded, but found: " + modSet);
+	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
+	 * removes the mod entry from the map. */
+	private static void assertProvidedPresent(ModResolveResult result, String modid, String version) {
+		ModCandidate mod = result.providedMap.remove(modid);
+
+		if (mod == null) {
+			Assertions.fail(modid + " is missing from " + result.providedMap);
+		} else {
+			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
+		}
+	}
+
+	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
+	private static void assertProvidedMissing(ModResolveResult result, String modid) {
+		ModCandidate mod = result.providedMap.remove(modid);
+
+		if (mod != null) {
+			Assertions.fail(modid + " is not missing, and instead is provided by: " + mod);
+		}
+	}
+
+	private static void assertNoMoreMods(ModResolveResult result) {
+		if (!result.modMap.isEmpty()) {
+			Assertions.fail("Expected to find no more mods loaded, but found: " + result.modMap);
+		}
+		if (!result.providedMap.isEmpty()) {
+			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.modMap);
 		}
 	}
 }
