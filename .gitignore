@@ -16,6 +16,7 @@ out/
 .classpath
 .project
 .settings/
+*.launch
 
 ## vscode
 .vscode/
