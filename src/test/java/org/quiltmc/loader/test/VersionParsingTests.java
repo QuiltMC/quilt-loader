@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.test;
+package org.quiltmc.loader.test;
 
 import net.fabricmc.loader.api.VersionParsingException;
 import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;

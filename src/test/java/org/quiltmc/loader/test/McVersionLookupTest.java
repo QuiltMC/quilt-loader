@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.test;
+package org.quiltmc.loader.test;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
