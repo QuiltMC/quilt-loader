@@ -7,4 +7,7 @@ pluginManagement {
 		gradlePluginPortal()
 	}
 }
-rootProject.name='quilt-loader'
+
+include("minecraft-test")
+
+rootProject.name = "quilt-loader"

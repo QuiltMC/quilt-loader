@@ -1,20 +1,30 @@
-# Ignore everything
-/*
+# Gradle and build artifacts
+.gradle
+build/
+out/
 
-# Folders
-!/gradle
-!/src
-!/.github
+# IDEs
+## intellij
+.factorypath
+.idea
+*.iml
+*.ipr
+*.iws
 
-# Files
-!/.gitattributes
-!/.gitignore
-!/.editorconfig
-!/build.gradle
-!/gradle.properties
-!/gradlew
-!/gradlew.bat
-!/HEADER
-!/LICENSE
-!/README.md
-!/settings.gradle
+## eclipse
+.eclipse
+.classpath
+.project
+.settings/
+*.launch
+
+## vscode
+.vscode/
+bin/
+
+# macOS
+*.DS_Store
+
+# Testing
+run/
+logs/
