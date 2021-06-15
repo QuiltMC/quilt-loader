@@ -1,18 +1,13 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
-import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.ModContributor;
-import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModLicense;
-import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.*;
+import org.quiltmc.loader.impl.VersionConstraintImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
@@ -123,8 +118,19 @@ final class V1ModMetadataReader {
 				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", languageAdapters);
 			}
 
-			// TODO: depends
-			// TODO: breaks
+			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
+			if (dependsValue != null) {
+				for (LoaderValue v : dependsValue.getArray()) {
+					depends.add(readDependencyObject((JsonLoaderValue) v));
+				}
+			}
+
+			@Nullable JsonLoaderValue breaksValue = assertType(quiltLoader, "breaks", LoaderValue.LType.ARRAY);
+			if (breaksValue != null) {
+				for (LoaderValue v : breaksValue.getArray()) {
+					breaks.add(readDependencyObject((JsonLoaderValue) v));
+				}
+			}
 
 			@Nullable
 			JsonLoaderValue repositoriesValue = quiltLoader.get("repositories");
@@ -218,7 +224,7 @@ final class V1ModMetadataReader {
 		JsonLoaderValue value = object.get(field);
 
 		if (value == null) {
-			throw new ParseException(String.format("%s is a required field", field));
+			throw parseException(object, String.format("%s is a required field", field));
 		}
 
 		if (value.type() != LoaderValue.LType.STRING) {
@@ -228,12 +234,22 @@ final class V1ModMetadataReader {
 		return value.getString();
 	}
 
-	@Nullable
+	private static JsonLoaderValue requiredField(JsonLoaderValue.ObjectImpl object, String field) {
+		JsonLoaderValue value = object.get(field);
+
+		if (value == null) {
+			throw parseException(object, String.format("%s is a required field", field));
+		} else {
+			return value;
+		}
+	}
+
+	@NotNull
 	private static String string(JsonLoaderValue.ObjectImpl object, String field) {
 		JsonLoaderValue value = object.get(field);
 
 		if (value == null) {
-			return null;
+			return "";
 		}
 
 		if (value.type() != LoaderValue.LType.STRING) {
@@ -241,6 +257,22 @@ final class V1ModMetadataReader {
 		}
 
 		return value.getString();
+	}
+
+
+	@Nullable
+	private static JsonLoaderValue assertType(JsonLoaderValue.ObjectImpl object, String field, LoaderValue.LType type) {
+		JsonLoaderValue value = object.get(field);
+
+		if (value == null) {
+			return null;
+		}
+
+		if (value.type() != type) {
+			throw parseException(object, String.format("%s must be of type %s", field, type));
+		}
+
+		return value;
 	}
 
 	/**
@@ -387,16 +419,23 @@ final class V1ModMetadataReader {
 	private static ModDependency readDependencyObject(JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
-			// Single dependency, with optional version(s) and unless criteria
-			// TODO
-			throw new UnsupportedOperationException("Implement me!");
+			JsonLoaderValue.ObjectImpl obj = value.getObject();
+			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
+			Collection<VersionConstraint> versions = readConstraints(requiredField(obj, "versions"));
+			String reason = string(obj, "reason");
+			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
+			ModDependency unless = null;
+			if (unlessObj != null) {
+				unless = readDependencyObject(unlessObj);
+			}
+			return new ModDependencyImpl.OnlyImpl(id, versions, reason, unless);
 		case STRING:
 			// Single dependency, any version matching id
-			return new ModDependencyImpl.OnlyImpl(value.getString());
+			return new ModDependencyImpl.OnlyImpl(new ModDependencyIdentifierImpl(value.getString()));
 		case ARRAY:
 			// OR or all sub dependencies
 			JsonLoaderValue.ArrayImpl array = value.getArray();
-			List<ModDependency> dependencies = new ArrayList<>(array.size());
+			Collection<ModDependency> dependencies = new ArrayList<>(array.size());
 
 			for (LoaderValue loaderValue : array) {
 				dependencies.add(readDependencyObject((JsonLoaderValue) loaderValue));
@@ -408,6 +447,20 @@ final class V1ModMetadataReader {
 					value,
 					"Dependency object must be an object or string to represent a single dependency or an array to represent any dependency"
 			);
+		}
+	}
+
+	private static Collection<VersionConstraint> readConstraints(JsonLoaderValue value) {
+		if (value.type() == LoaderValue.LType.STRING) {
+			return Collections.singleton(VersionConstraintImpl.ofRaw(value.getString()));
+		} else if (value.type() == LoaderValue.LType.ARRAY) {
+			Collection<VersionConstraint> ret = new ArrayList<>(value.getArray().size());
+			for (LoaderValue s : value.getArray()) {
+				ret.add(VersionConstraintImpl.ofRaw(s.getString()));
+			}
+			return ret;
+		} else {
+			throw parseException(value, "Version constraint must be a string or array of strings");
 		}
 	}
 

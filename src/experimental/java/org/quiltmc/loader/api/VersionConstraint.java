@@ -1,11 +1,16 @@
 package org.quiltmc.loader.api;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.impl.VersionConstraintImpl;
 
 @ApiStatus.NonExtendable
 public interface VersionConstraint {
+	static VersionConstraint any() {
+		return VersionConstraintImpl.ANY;
+	}
+
 	/**
-	 * @return the version of this version constraint
+	 * @return the version of this version constraint. Always an empty string if {@link #type()} is {@link Type#ANY}
 	 */
 	String version();
 

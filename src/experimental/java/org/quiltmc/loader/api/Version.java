@@ -5,9 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.impl.metadata.qmj.GenericVersionImpl;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 
-import java.util.Arrays;
-import java.util.Iterator;
-
 /**
  * Representation of a version.
  */

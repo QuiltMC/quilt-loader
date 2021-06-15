@@ -1,13 +1,13 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.AbstractCollection;
-import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
 
@@ -34,24 +34,31 @@ final class ModDependencyImpl {
 	}
 
 	static final class OnlyImpl implements ModDependency.Only {
-		private final String id;
+		private static final Collection<VersionConstraint> ANY = Collections.singleton(VersionConstraint.any());
+		private final ModDependencyIdentifier id;
 		private final Collection<VersionConstraint> constraints;
 		private final String reason;
-		private final Collection<ModDependency> unless;
+		private final ModDependency unless;
 
-		OnlyImpl(String id) {
-			this(id, Collections.emptySet(), "", Collections.emptySet());
+		/**
+		 * Creates a ModDependency that matches any version of a specific mod id.
+		 */
+		OnlyImpl(ModDependencyIdentifier id) {
+			this(id, ANY, "", null);
 		}
-
-		OnlyImpl(String id, Collection<VersionConstraint> constraints, @Nullable String reason, Collection<ModDependency> unless) {
+		OnlyImpl(ModDependencyIdentifier id, Collection<VersionConstraint> constraints, @Nullable String reason, @Nullable ModDependency unless) {
+			// We need to have at least one constraint
+			if (constraints.isEmpty()) {
+				throw new IllegalArgumentException("A ModDependency must have at least one constraint");
+			}
 			this.id = id;
 			this.constraints = Collections.unmodifiableCollection(constraints);
 			this.reason = reason != null ? reason : "";
-			this.unless = Collections.unmodifiableCollection(unless);
+			this.unless = unless;
 		}
 
 		@Override
-		public String id() {
+		public ModDependencyIdentifier id() {
 			return this.id;
 		}
 
@@ -66,7 +73,7 @@ final class ModDependencyImpl {
 		}
 
 		@Override
-		public Collection<ModDependency> unless() {
+		public @Nullable ModDependency unless() {
 			return this.unless;
 		}
 

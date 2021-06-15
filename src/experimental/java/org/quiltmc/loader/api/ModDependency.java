@@ -1,10 +1,9 @@
 package org.quiltmc.loader.api;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Representation of a mod's dependency.
@@ -18,10 +17,10 @@ public interface ModDependency {
 		/**
 		 * @return the mod identifier that the dependency tries to check for
 		 */
-		String id();
+		ModDependencyIdentifier id();
 
 		/**
-		 * @return version constraints that this dependency
+		 * @return version constraints that this dependency has. This collection is never empty.
 		 */
 		Collection<VersionConstraint> versions();
 
@@ -31,11 +30,12 @@ public interface ModDependency {
 		String reason();
 
 		/**
-		 * Gets all dependencies that must be satisfied to allow this dependency to be active.
+		 * Gets the dependency that must <b>not</b> be satisfied to allow this dependency to be active.
 		 *
-		 * @return a the mod dependencies
+		 * @return the mod dependency. May be null if none exists
 		 */
-		Collection<ModDependency> unless();
+		@Nullable
+		ModDependency unless();
 
 		/**
 		 * Checks if the mod dependency is currently active and is used in dependency resolution.
