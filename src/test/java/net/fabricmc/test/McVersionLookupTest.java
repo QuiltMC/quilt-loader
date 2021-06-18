@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.quiltmc.loader.impl.minecraft.McVersion;
 import org.quiltmc.loader.impl.minecraft.McVersionLookup;
-import org.quiltmc.loader.impl.minecraft.McVersionLookup.McVersion;
 
 public final class McVersionLookupTest {
 	public static void main(String[] args) throws IOException {
@@ -68,11 +68,11 @@ public final class McVersionLookupTest {
 	}
 
 	private static void check(Path file, String name, List<String> invalid) {
-		McVersion result = McVersionLookup.getVersion(file);
-		String msg = String.format("%s: %s (%s)", name, result.normalized, result.raw);
+		McVersion result = McVersionLookup.getVersionExceptClassVersion(file);
+		String msg = String.format("%s: %s (%s)", name, result.getNormalized(), result.getRaw());
 		System.out.println(msg);
 
-		if (!pattern.matcher(result.normalized).matches()) {
+		if (!pattern.matcher(result.getNormalized()).matches()) {
 			System.out.println("** invalid!");
 			invalid.add(msg);
 		}
