@@ -21,6 +21,9 @@ import net.fabricmc.loader.api.LanguageAdapterException;
 import net.fabricmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandleProxies;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,16 +117,24 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 				}
 			}
 
-			final Object targetObject = object;
+			MethodHandle handle;
 
-			@SuppressWarnings("unchecked")
-			T tmp = (T) Proxy.newProxyInstance(QuiltLauncherBase.getLauncher().getTargetClassLoader(), new Class[] { type }, new InvocationHandler() {
-				@Override
-				public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-					return targetMethod.invoke(targetObject, args);
-				}
-			});
-			return tmp;
+			try {
+				handle = MethodHandles.lookup().unreflect(targetMethod);
+			} catch (Exception ex) {
+				throw new LanguageAdapterException(ex);
+			}
+
+			if (object != null) {
+				handle = handle.bindTo(object);
+			}
+
+			// uses proxy as well, but this handles default and object methods
+			try {
+				return MethodHandleProxies.asInterfaceInstance(type, handle);
+			} catch (Exception ex) {
+				throw new LanguageAdapterException(ex);
+			}
 		}
 	}
 }
