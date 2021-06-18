@@ -9,6 +9,11 @@
     ],
     "main": [
       "org.quiltmc.test.TestMod"
+    ],
+    "test:testing": [
+      "org.quiltmc.test.EntrypointTest:::staticEntry",
+      "org.quiltmc.test.EntrypointTest::instanceEntry",
+      "org.quiltmc.test.EntrypointTest::FIELD_ENTRY"
     ]
   }
 }
