@@ -19,7 +19,6 @@ package org.quiltmc.loader.impl.game;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
 import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchBranding;
-import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchFML125;
 import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchHook;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
@@ -50,8 +49,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 	public static final EntrypointTransformer TRANSFORMER = new EntrypointTransformer(it -> Arrays.asList(
 			new EntrypointPatchHook(it),
-			new EntrypointPatchBranding(it),
-			new EntrypointPatchFML125(it)
+			new EntrypointPatchBranding(it)
 			));
 
 	@Override
