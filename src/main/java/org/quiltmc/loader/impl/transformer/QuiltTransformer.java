@@ -44,6 +44,7 @@ public final class QuiltTransformer {
 	}
 
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
+		// FIXME: Could use a better way to detect this...
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;

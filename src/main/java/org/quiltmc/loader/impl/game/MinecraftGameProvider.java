@@ -249,9 +249,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 		@Override
 		public Set<VersionPredicate> getVersionRequirements() {
-			Set<VersionPredicate> requirements = new HashSet<>();
-			requirements.add(new VersionPredicate(VersionPredicate.Type.GREATER_THAN_OR_EQUAL, minVersion + ""));
-			return requirements;
+			return Collections.singleton(new VersionPredicate(VersionPredicate.Type.GREATER_THAN_OR_EQUAL, minVersion + ""));
 		}
 	}
 }
