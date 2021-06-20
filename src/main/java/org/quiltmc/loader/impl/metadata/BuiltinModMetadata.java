@@ -70,16 +70,16 @@ public final class BuiltinModMetadata extends AbstractModMetadata {
 		this.environment = environment;
 		this.name = name;
 		this.description = description;
-		this.authors = authors;
-		this.contributors = contributors;
+		this.authors = Collections.unmodifiableCollection(authors);
+		this.contributors = Collections.unmodifiableCollection(contributors);
 		this.contact = contact;
-		this.license = license;
-		this.icons = icons;
-		this.depends = depends;
-		this.recommends = recommends;
-		this.suggests = suggests;
-		this.conflicts = conflicts;
-		this.breaks = breaks;
+		this.license = Collections.unmodifiableCollection(license);
+		this.icons = Collections.unmodifiableNavigableMap(icons);
+		this.depends = Collections.unmodifiableCollection(depends);
+		this.recommends = Collections.unmodifiableCollection(recommends);
+		this.suggests = Collections.unmodifiableCollection(suggests);
+		this.conflicts = Collections.unmodifiableCollection(conflicts);
+		this.breaks = Collections.unmodifiableCollection(breaks);
 	}
 
 	@Override
