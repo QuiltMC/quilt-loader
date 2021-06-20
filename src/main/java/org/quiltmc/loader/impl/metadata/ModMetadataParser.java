@@ -116,10 +116,10 @@ public final class ModMetadataParser {
 		case 1:
 			return V1ModMetadataParser.parse(logger, reader);
 		case 0:
-			return V0ModMetadataParser.parse(logger, reader);
+			throw new ParseMetadataException("Quilt Loader does not support the old-style v0 of the fabric.mod.json specification.");
 		default:
 			if (schemaVersion > 0) {
-				throw new ParseMetadataException(String.format("This version of fabric-loader doesn't support the newer schema version of \"%s\""
+				throw new ParseMetadataException(String.format("This version of Quilt Loader doesn't support the newer schema version of \"%s\""
 					+ "\nPlease update fabric-loader to be able to read this.", schemaVersion));
 			}
 			throw new ParseMetadataException(String.format("Invalid/Unsupported schema version \"%s\" was found", schemaVersion));

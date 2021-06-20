@@ -99,8 +99,6 @@ class BuiltinMetadataWrapper extends AbstractModMetadata implements LoaderModMet
 	@Override
 	public boolean loadsInEnvironment(EnvType type) { return true; }
 	@Override
-	public Collection<String> getOldInitializers() { return Collections.emptyList(); }
-	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) { return Collections.emptyList(); }
 	@Override
 	public Collection<String> getEntrypointKeys() { return Collections.emptyList(); }

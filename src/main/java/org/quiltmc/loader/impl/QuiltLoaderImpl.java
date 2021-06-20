@@ -425,11 +425,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 	private void setupMods() {
 		for (ModContainer mod : mods) {
 			try {
-				for (String in : mod.getInfo().getOldInitializers()) {
-					String adapter = mod.getInfo().getOldStyleLanguageAdapter();
-					entrypointStorage.addDeprecated(mod, adapter, in);
-				}
-
 				for (String key : mod.getInfo().getEntrypointKeys()) {
 					for (EntrypointMetadata in : mod.getInfo().getEntrypoints(key)) {
 						entrypointStorage.add(mod, key, in, adapterMap);

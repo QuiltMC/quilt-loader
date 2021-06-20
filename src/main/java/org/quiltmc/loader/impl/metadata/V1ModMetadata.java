@@ -263,11 +263,6 @@ final class V1ModMetadata extends AbstractModMetadata implements LoaderModMetada
 	}
 
 	@Override
-	public Collection<String> getOldInitializers() {
-		return Collections.emptyList(); // Not applicable in V1
-	}
-
-	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) {
 		if (type == null) {
 			return Collections.emptyList();

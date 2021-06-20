@@ -33,50 +33,6 @@ class EntrypointStorage {
 		ModContainer getModContainer();
 	}
 
-	@SuppressWarnings("deprecation")
-	private static class OldEntry implements Entry {
-		private static final org.quiltmc.loader.impl.language.LanguageAdapter.Options options = org.quiltmc.loader.impl.language.LanguageAdapter.Options.Builder.create()
-			.missingSuperclassBehaviour(org.quiltmc.loader.impl.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
-			.build();
-
-		private final ModContainer mod;
-		private final String languageAdapter;
-		private final String value;
-		private Object object;
-
-		private OldEntry(ModContainer mod, String languageAdapter, String value) {
-			this.mod = mod;
-			this.languageAdapter = languageAdapter;
-			this.value = value;
-		}
-
-		@Override
-		public String toString() {
-			return mod.getInfo().getId() + "->" + value;
-		}
-
-		@Override
-		public <T> T getOrCreate(Class<T> type) throws Exception {
-			if (object == null) {
-				org.quiltmc.loader.impl.language.LanguageAdapter adapter = (org.quiltmc.loader.impl.language.LanguageAdapter) Class.forName(languageAdapter, true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
-				object = adapter.createInstance(value, options);
-			}
-
-			if (object == null || !type.isAssignableFrom(object.getClass())) {
-				return null;
-			} else {
-				@SuppressWarnings("unchecked")
-				T tmp = (T) object;
-				return tmp;
-			}
-		}
-
-		@Override
-		public ModContainer getModContainer() {
-			return mod;
-		}
-	}
-
 	private static class NewEntry implements Entry {
 		private final ModContainer mod;
 		private final LanguageAdapter adapter;
@@ -120,14 +76,6 @@ class EntrypointStorage {
 
 	private List<Entry> getOrCreateEntries(String key) {
 		return entryMap.computeIfAbsent(key, (z) -> new ArrayList<>());
-	}
-
-	protected void addDeprecated(ModContainer modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
-		QuiltLoaderImpl.INSTANCE.getLogger().debug("Registering 0.3.x old-style initializer " + value + " for mod " + modContainer.getInfo().getId());
-		OldEntry oe = new OldEntry(modContainer, adapter, value);
-		getOrCreateEntries("main").add(oe);
-		getOrCreateEntries("client").add(oe);
-		getOrCreateEntries("server").add(oe);
 	}
 
 	protected void add(ModContainer modContainer, String key, EntrypointMetadata metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
