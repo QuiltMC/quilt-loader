@@ -166,7 +166,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 					// force jar despite the .tmp extension
 					.assumeArchive(true)
 					// don't accept class names from a blacklist of dependencies that Quilt itself utilizes
-					// TODO: really could use a better solution, as always...
+					// FIXME: really could use a better solution, as always...
 					.filter(clsName -> !clsName.startsWith("com/google/common/")
 							&& !clsName.startsWith("com/google/gson/")
 							&& !clsName.startsWith("com/google/thirdparty/")

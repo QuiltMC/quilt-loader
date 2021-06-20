@@ -68,6 +68,7 @@ public final class McVersionLookup {
 	private static final Pattern INDEV_PATTERN = Pattern.compile("(?:inf-|Inf?dev )(?:0\\.31 )?(\\d+(-\\d+)?)");
 	private static final String STRING_DESC = "Ljava/lang/String;";
 
+	// FIXME: "Really upstream, this could have just been a short lived class visitor" - i509
 	public static McVersion getVersion(Path gameJar, List<String> entrypointClasses, @Nullable String versionName) {
 		McVersion.Builder builder = new McVersion.Builder();
 
