@@ -11,7 +11,7 @@ public final class VersionConstraintImpl implements VersionConstraint {
 	private final Type type;
 
 
-	public static VersionConstraintImpl ofRaw(String raw) {
+	public static VersionConstraintImpl parse(String raw) {
 		if (raw.equals("*")) {
 			return ANY;
 		}
@@ -50,7 +50,10 @@ public final class VersionConstraintImpl implements VersionConstraint {
 
 	@Override
 	public boolean equals(Object o) {
-		throw new UnsupportedOperationException("Implement me!");
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		VersionConstraintImpl that = (VersionConstraintImpl) o;
+		return version.equals(that.version) && type == that.type;
 	}
 
 	@Override

@@ -339,7 +339,7 @@ final class V1ModMetadataReader {
 			String url = requiredString(object, "url");
 			@Nullable String description = string(object, "description");
 
-			return new ModLicenseImpl(name, id, url, description != null ? description : "");
+			return new ModLicenseImpl(name, id, url, description);
 		}
 		case STRING: {
 			@Nullable ModLicense license = spdxLicenses.get(licenseValue.getString());
@@ -452,11 +452,11 @@ final class V1ModMetadataReader {
 
 	private static Collection<VersionConstraint> readConstraints(JsonLoaderValue value) {
 		if (value.type() == LoaderValue.LType.STRING) {
-			return Collections.singleton(VersionConstraintImpl.ofRaw(value.getString()));
+			return Collections.singleton(VersionConstraintImpl.parse(value.getString()));
 		} else if (value.type() == LoaderValue.LType.ARRAY) {
 			Collection<VersionConstraint> ret = new ArrayList<>(value.getArray().size());
 			for (LoaderValue s : value.getArray()) {
-				ret.add(VersionConstraintImpl.ofRaw(s.getString()));
+				ret.add(VersionConstraintImpl.parse(s.getString()));
 			}
 			return ret;
 		} else {
