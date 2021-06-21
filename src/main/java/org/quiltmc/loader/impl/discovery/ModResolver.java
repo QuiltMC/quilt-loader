@@ -127,7 +127,7 @@ public class ModResolver {
 	 * @return A valid list of mods.
 	 * @throws ModResolutionException if that is impossible. */
 	// TODO: Find a way to sort versions of mods by suggestions and conflicts (not crucial, though)
-	public Map<String, ModCandidate> findCompatibleSet(Logger logger, Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
+	public ModResolveResult findCompatibleSet(Logger logger, Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
 
 		/*
 		 * Implementation notes:
@@ -195,14 +195,20 @@ public class ModResolver {
 			throw ex;
 		}
 
-		Map<String, ModCandidate> result;
+		Map<String, ModCandidate> resultingModMap;
+		Map<String, ModCandidate> providedModMap;
 
 		isAdvanced = true; // TODO: Weirdo hardsetting?
 
 		if (!isAdvanced) {
-			result = new HashMap<>();
-			for (String s : modCandidateMap.keySet()) {
-				result.put(s, modCandidateMap.get(s).iterator().next());
+			resultingModMap = new HashMap<>();
+			providedModMap = new HashMap<>();
+			for (Map.Entry<String, List<ModCandidate>> entry : modCandidateMap.entrySet()) {
+				ModCandidate candidate = entry.getValue().iterator().next();
+				resultingModMap.put(entry.getKey(), candidate);
+				for (String provided : candidate.getInfo().getProvides()) {
+					providedModMap.put(provided, candidate);
+				}
 			}
 		} else {
 			Map<String, ModIdDefinition> modDefs = new HashMap<>();
@@ -381,7 +387,8 @@ public class ModResolver {
 			}
 
 			Collection<LoadOption> solution = helper.getASolution();
-			result = new HashMap<>();
+			resultingModMap = new HashMap<>();
+			providedModMap = new HashMap<>();
 
 			for (LoadOption option : solution) {
 				
@@ -394,9 +401,27 @@ public class ModResolver {
 					if (!negated) {
 						ModLoadOption modOption = (ModLoadOption) option;
 
-						ModCandidate previous = result.put(modOption.modId(), modOption.candidate);
+						ModCandidate previous = resultingModMap.put(modOption.modId(), modOption.candidate);
 						if (previous != null) {
 							throw new ModResolutionException("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
+						}
+
+						if (providedModMap.containsKey(modOption.modId())) {
+							throw new ModResolutionException(modOption.modId() + " is already provided by " + providedModMap.get(modOption.modId())
+									+ " - something has gone wrong internally!");
+						}
+
+						for (String provided : modOption.candidate.getInfo().getProvides()) {
+
+							if (resultingModMap.containsKey(provided)) {
+								throw new ModResolutionException(provided + " is already provided by " + resultingModMap.get(provided)
+										+ " - something has gone wrong internally!");
+							}
+
+							previous = providedModMap.put(provided, modOption.candidate);
+							if (previous != null) {
+								throw new ModResolutionException("Duplicate provided ModCandidate for " + provided + " - something has gone wrong internally!");
+							}
 						}
 					}
 				} else {
@@ -408,7 +433,7 @@ public class ModResolver {
 		// verify result: all mandatory mods
 		Set<String> missingMods = new HashSet<>();
 		for (String m : mandatoryMods.keySet()) {
-			if (!result.keySet().contains(m)) {
+			if (!resultingModMap.keySet().contains(m)) {
 				missingMods.add(m);
 			}
 		}
@@ -421,21 +446,21 @@ public class ModResolver {
 			errorsHard.append("\n - Missing mods: ").append(String.join(", ", missingMods));
 		} else {
 			// verify result: dependencies
-			for (ModCandidate candidate : result.values()) {
+			for (ModCandidate candidate : resultingModMap.values()) {
 				for (ModDependency dependency : candidate.getInfo().getDepends()) {
-					addErrorToList(logger, candidate, dependency, result, errorsHard, "requires", true);
+					addErrorToList(logger, candidate, dependency, resultingModMap, providedModMap, errorsHard, "requires", true);
 				}
 
 				for (ModDependency dependency : candidate.getInfo().getRecommends()) {
-					addErrorToList(logger, candidate, dependency, result, errorsSoft, "recommends", true);
+					addErrorToList(logger, candidate, dependency, resultingModMap, providedModMap, errorsSoft, "recommends", true);
 				}
 
 				for (ModDependency dependency : candidate.getInfo().getBreaks()) {
-					addErrorToList(logger, candidate, dependency, result, errorsHard, "is incompatible with", false);
+					addErrorToList(logger, candidate, dependency, resultingModMap, providedModMap, errorsHard, "is incompatible with", false);
 				}
 
 				for (ModDependency dependency : candidate.getInfo().getConflicts()) {
-					addErrorToList(logger, candidate, dependency, result, errorsSoft, "conflicts with", false);
+					addErrorToList(logger, candidate, dependency, resultingModMap, providedModMap, errorsSoft, "conflicts with", false);
 				}
 
 				Version version = candidate.getInfo().getVersion();
@@ -475,7 +500,7 @@ public class ModResolver {
 			throw new ModResolutionException("Errors were found!" + errHardStr + errSoftStr);
 		}
 
-		return result;
+		return new ModResolveResult(resultingModMap, providedModMap);
 	}
 
 	void processDependencies(Logger logger, Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
@@ -507,7 +532,7 @@ public class ModResolver {
 	}
 
 	// TODO: Convert all these methods to new error syntax
-	private void addErrorToList(Logger logger, ModCandidate candidate, ModDependency dependency, Map<String, ModCandidate> result, StringBuilder errors, String errorType, boolean cond) {
+	private void addErrorToList(Logger logger, ModCandidate candidate, ModDependency dependency, Map<String, ModCandidate> result, Map<String, ModCandidate> provided, StringBuilder errors, String errorType, boolean cond) {
 		String depModId = dependency.getModId();
 
 		List<String> errorList = new ArrayList<>();
@@ -526,13 +551,10 @@ public class ModResolver {
 		ModCandidate depCandidate = result.get(depModId);
 		// attempt searching provides
 		if(depCandidate == null) {
-			for (ModCandidate value : result.values()) {
-				if (value.getInfo().getProvides().contains(depModId)) {
-					if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
-						logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + value.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
-					}
-					depCandidate = value;
-					break;
+			depCandidate = provided.get(depModId);
+			if (depCandidate != null) {
+				if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
+					logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + depCandidate.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
 				}
 			}
 		}
@@ -1098,7 +1120,7 @@ public class ModResolver {
 	 * @param loader
 	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
 	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
-	public Map<String, ModCandidate> resolve(QuiltLoaderImpl loader) throws ModResolutionException {
+	public ModResolveResult resolve(QuiltLoaderImpl loader) throws ModResolutionException {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
 		long time1 = System.currentTimeMillis();
@@ -1159,13 +1181,13 @@ public class ModResolver {
 		}
 
 		long time2 = System.currentTimeMillis();
-		Map<String, ModCandidate> result = findCompatibleSet(loader.getLogger(), candidatesById);
+		ModResolveResult result = findCompatibleSet(loader.getLogger(), candidatesById);
 
 		long time3 = System.currentTimeMillis();
 		loader.getLogger().debug("Mod resolution detection time: " + (time2 - time1) + "ms");
 		loader.getLogger().debug("Mod resolution time: " + (time3 - time2) + "ms");
 
-		for (ModCandidate candidate : result.values()) {
+		for (ModCandidate candidate : result.modMap.values()) {
 			if (candidate.getInfo().getSchemaVersion() < ModMetadataParser.LATEST_VERSION) {
 				loader.getLogger().warn("Mod ID " + candidate.getInfo().getId() + " uses outdated schema version: " + candidate.getInfo().getSchemaVersion() + " < " + ModMetadataParser.LATEST_VERSION);
 			}
@@ -1183,6 +1205,16 @@ public class ModResolver {
 
 	public static FileSystem getInMemoryFs() {
 		return inMemoryFs;
+	}
+
+	public static class ModResolveResult {
+		public final Map<String, ModCandidate> modMap;
+		public final Map<String, ModCandidate> providedMap;
+
+		ModResolveResult(Map<String, ModCandidate> modMap, Map<String, ModCandidate> providedMap) {
+			this.modMap = modMap;
+			this.providedMap = providedMap;
+		}
 	}
 
 	// Classes used for dependency comparison
