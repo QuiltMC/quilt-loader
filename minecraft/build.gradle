@@ -1,0 +1,22 @@
+plugins {
+	id "java-library"
+	id "maven-publish"
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+repositories {
+	mavenCentral()
+
+	maven {
+		name = 'Quilt'
+		url = 'https://maven.quiltmc.org/repository/release'
+	}
+}
+
+archivesBaseName = "quilt-loader-minecraft"
+version = rootProject.version
+dependencies {
+	api rootProject
+
+}

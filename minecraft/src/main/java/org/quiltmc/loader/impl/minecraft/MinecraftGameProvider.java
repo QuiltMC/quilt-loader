@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.game;
+package org.quiltmc.loader.impl.minecraft;
 
 import net.fabricmc.api.EnvType;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
-import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchBranding;
-import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchHook;
+import org.quiltmc.loader.impl.launch.GameProvider;
+import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.knot.KnotClassLoader;
+import org.quiltmc.loader.impl.launch.knot.KnotClassLoaderInterface;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
-import org.quiltmc.loader.impl.minecraft.McVersionLookup;
 import org.quiltmc.loader.impl.minecraft.McVersionLookup.McVersion;
+import org.quiltmc.loader.impl.minecraft.entrypoint.EntrypointPatchBranding;
+import org.quiltmc.loader.impl.minecraft.entrypoint.EntrypointPatchHook;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
@@ -45,7 +49,6 @@ public class MinecraftGameProvider implements GameProvider {
 	private Arguments arguments;
 	private Path gameJar, realmsJar;
 	private McVersion versionData;
-	private boolean hasModLoader = false;
 
 	public static final EntrypointTransformer TRANSFORMER = new EntrypointTransformer(it -> Arrays.asList(
 			new EntrypointPatchHook(it),
@@ -53,27 +56,27 @@ public class MinecraftGameProvider implements GameProvider {
 			));
 
 	@Override
-	public String getGameId() {
+	public String id() {
 		return "minecraft";
 	}
 
 	@Override
-	public String getGameName() {
+	public String name() {
 		return "Minecraft";
 	}
 
 	@Override
-	public String getRawGameVersion() {
+	public String rawVersion() {
 		return versionData.raw;
 	}
 
 	@Override
-	public String getNormalizedGameVersion() {
+	public String normalizedVersion() {
 		return versionData.normalized;
 	}
 
 	@Override
-	public Collection<BuiltinMod> getBuiltinMods() {
+	public Collection<BuiltinMod> builtinMods() {
 		URL url;
 
 		try {
@@ -83,8 +86,8 @@ public class MinecraftGameProvider implements GameProvider {
 		}
 
 		return Arrays.asList(
-				new BuiltinMod(url, new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
-						.setName(getGameName())
+				new BuiltinMod(url, new BuiltinModMetadata.Builder(id(), normalizedVersion())
+						.setName(name())
 						.build())
 				);
 	}
@@ -94,12 +97,12 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public String getEntrypoint() {
+	public String entrypoint() {
 		return entrypoint;
 	}
 
 	@Override
-	public Path getLaunchDirectory() {
+	public Path launchDirectory() {
 		if (arguments == null) {
 			return new File(".").toPath();
 		}
@@ -108,17 +111,12 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean isObfuscated() {
+	public boolean obfuscated() {
 		return true; // generally yes...
 	}
 
 	@Override
-	public boolean requiresUrlClassLoader() {
-		return hasModLoader;
-	}
-
-	@Override
-	public List<Path> getGameContextJars() {
+	public List<Path> contextJars() {
 		List<Path> list = new ArrayList<>();
 		list.add(gameJar);
 		if (realmsJar != null) {
@@ -150,7 +148,6 @@ public class MinecraftGameProvider implements GameProvider {
 		entrypoint = entrypointResult.get().entrypointName;
 		gameJar = entrypointResult.get().entrypointPath;
 		realmsJar = GameProviderHelper.getSource(loader, "realmsVersion").orElse(null);
-		hasModLoader = GameProviderHelper.getSource(loader, "ModLoader.class").isPresent();
 
 		String version = arguments.remove(Arguments.GAME_VERSION);
 		if (version == null) version = System.getProperty(SystemProperties.GAME_VERSION);
@@ -162,7 +159,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public String[] getLaunchArguments(boolean sanitize) {
+	public String[] launchArguments(boolean sanitize) {
 		if (arguments != null) {
 			List<String> list = new ArrayList<>(Arrays.asList(arguments.toArray()));
 
@@ -191,7 +188,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public EntrypointTransformer getEntrypointTransformer() {
+	public EntrypointTransformer entrypointTransformer() {
 		return TRANSFORMER;
 	}
 
@@ -220,5 +217,10 @@ public class MinecraftGameProvider implements GameProvider {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public KnotClassLoaderInterface knotClassLoaderInterface() {
+		return new KnotClassLoader(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment(), this.envType, this);
 	}
 }

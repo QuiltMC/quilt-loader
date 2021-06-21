@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.game;
+package org.quiltmc.loader.impl.launch;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.launch.knot.Knot;
+import org.quiltmc.loader.impl.launch.knot.KnotClassLoaderInterface;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -26,23 +28,22 @@ import java.util.Collection;
 import java.util.List;
 
 public interface GameProvider {
-	String getGameId();
-	String getGameName();
-	String getRawGameVersion();
-	String getNormalizedGameVersion();
-	Collection<BuiltinMod> getBuiltinMods();
-
-	String getEntrypoint();
-	Path getLaunchDirectory();
-	boolean isObfuscated();
-	boolean requiresUrlClassLoader();
-	List<Path> getGameContextJars();
+	String id();
+	String name();
+	String rawVersion();
+	String normalizedVersion();
+	Collection<BuiltinMod> builtinMods();
+	KnotClassLoaderInterface knotClassLoaderInterface();
+	String entrypoint();
+	Path launchDirectory();
+	boolean obfuscated();
+	List<Path> contextJars();
 
 	boolean locateGame(EnvType envType, String[] args, ClassLoader loader);
-	EntrypointTransformer getEntrypointTransformer();
+	EntrypointTransformer entrypointTransformer();
 	void launch(ClassLoader loader);
 
-	String[] getLaunchArguments(boolean sanitize);
+	String[] launchArguments(boolean sanitize);
 
 	default boolean canOpenErrorGui() {
 		return true;

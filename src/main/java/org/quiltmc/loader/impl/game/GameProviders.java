@@ -16,13 +16,24 @@
 
 package org.quiltmc.loader.impl.game;
 
-import java.util.Collections;
+import org.quiltmc.loader.impl.launch.GameProvider;
+
+import java.util.ArrayList;
 import java.util.List;
+import java.util.ServiceLoader;
 
 public final class GameProviders {
 	private GameProviders() { }
 
+	private static final ServiceLoader<GameProvider> PROVIDERS = ServiceLoader.load(GameProvider.class);
+
 	public static List<GameProvider> create() {
-		return Collections.singletonList(new MinecraftGameProvider());
+		PROVIDERS.reload();
+		List<GameProvider> providers = new ArrayList<>();
+		for (GameProvider provider : PROVIDERS) {
+			providers.add(provider);
+		}
+
+		return providers;
 	}
 }

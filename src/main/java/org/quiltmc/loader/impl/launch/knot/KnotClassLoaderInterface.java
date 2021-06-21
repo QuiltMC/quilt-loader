@@ -16,13 +16,19 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 
-interface KnotClassLoaderInterface {
+public interface KnotClassLoaderInterface {
 	KnotClassDelegate getDelegate();
 	boolean isClassLoaded(String name);
 	void addURL(URL url);
 	InputStream getResourceAsStream(String filename, boolean skipOriginalLoader) throws IOException;
+
+	interface Constructor {
+		KnotClassLoaderInterface create(Path gameJar, String... args);
+	}
 }

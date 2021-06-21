@@ -25,7 +25,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 
-final class GameProviderHelper {
+public final class GameProviderHelper {
 	public static class EntrypointResult {
 		public final String entrypointName;
 		public final Path entrypointPath;
@@ -40,7 +40,7 @@ final class GameProviderHelper {
 
 	}
 
-	static Optional<Path> getSource(ClassLoader loader, String filename) {
+	public static Optional<Path> getSource(ClassLoader loader, String filename) {
 		URL url;
 		if ((url = loader.getResource(filename)) != null) {
 			try {
@@ -81,7 +81,7 @@ final class GameProviderHelper {
 		}
 	}
 
-	static Optional<EntrypointResult> findFirstClass(ClassLoader loader, List<String> classNames) {
+	public static Optional<EntrypointResult> findFirstClass(ClassLoader loader, List<String> classNames) {
 		List<String> entrypointFilenames = classNames.stream()
 			.map((ep) -> ep.replace('.', '/') + ".class")
 			.collect(Collectors.toList());

@@ -17,9 +17,9 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.GameProvider;
+import org.quiltmc.loader.impl.launch.Transformer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
@@ -38,9 +38,12 @@ import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.jar.Manifest;
 
 class KnotClassDelegate {
+	private static final ServiceLoader<Transformer> transformers = ServiceLoader.load(Transformer.class);
+
 	static class Metadata {
 		static final Metadata EMPTY = new Metadata(null, null);
 
@@ -172,7 +175,7 @@ class KnotClassDelegate {
 			}
 		}
 
-		byte[] input = provider.getEntrypointTransformer().transform(name);
+		byte[] input = provider.entrypointTransformer().transform(name);
 		if (input == null) {
 			try {
 				input = getRawClassByteArray(name, skipOriginalLoader);
@@ -182,7 +185,11 @@ class KnotClassDelegate {
 		}
 
 		if (input != null) {
-			return QuiltTransformer.transform(isDevelopment, envType, name, input);
+			for (Transformer transformer : transformers) {
+				input = transformer.transform(name, input);
+			}
+
+			return input;
 		}
 
 		return null;

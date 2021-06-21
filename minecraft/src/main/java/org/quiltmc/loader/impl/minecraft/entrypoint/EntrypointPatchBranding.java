@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.minecraft;
+package org.quiltmc.loader.impl.minecraft.entrypoint;
 
 import org.quiltmc.loader.impl.entrypoint.EntrypointPatch;
 import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
@@ -65,7 +65,7 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 				while (it.hasNext()) {
 					if (it.next().getOpcode() == Opcodes.ARETURN) {
 						it.previous();
-						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/minecraft/hooks/EntrypointBranding", "brand", "(Ljava/lang/String;)Ljava/lang/String;", false));
+						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/minecraft/entrypoint/hooks/EntrypointBranding", "brand", "(Ljava/lang/String;)Ljava/lang/String;", false));
 						it.next();
 					}
 				}

@@ -8,6 +8,7 @@ pluginManagement {
 	}
 }
 
+include("minecraft")
 include("minecraft-test")
 
 rootProject.name = "quilt-loader"

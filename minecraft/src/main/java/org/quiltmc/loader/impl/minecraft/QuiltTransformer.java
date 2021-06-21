@@ -14,36 +14,24 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.transformer;
+package org.quiltmc.loader.impl.minecraft;
 
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.api.EnvType;
+import org.quiltmc.loader.impl.launch.Transformer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.quiltmc.loader.impl.transformer.ClassStripper;
+import org.quiltmc.loader.impl.transformer.EnvironmentStrippingData;
+import org.quiltmc.loader.impl.transformer.PackageAccessFixer;
 
-public final class QuiltTransformer {
-	public static byte[] lwTransformerHook(String name, String transformedName, byte[] bytes) {
-		boolean isDevelopment = QuiltLauncherBase.getLauncher().isDevelopment();
-		EnvType envType = QuiltLauncherBase.getLauncher().getEnvironmentType();
-
-		byte[] input = MinecraftGameProvider.TRANSFORMER.transform(name);
-		if (input != null) {
-			return QuiltTransformer.transform(isDevelopment, envType, name, input);
-		} else {
-			if (bytes != null) {
-				return QuiltTransformer.transform(isDevelopment, envType, name, bytes);
-			} else {
-				return null;
-			}
-		}
-
-	}
-
-	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
+public final class QuiltTransformer implements Transformer {
+	public byte[] transform(String name, byte[] bytes) {
+		boolean isDevelopment = QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment();
+		EnvType envType = QuiltLoaderImpl.INSTANCE.getEnvironmentType();
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.indexOf('.') < 0;
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;

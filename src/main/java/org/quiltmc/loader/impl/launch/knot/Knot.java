@@ -17,10 +17,10 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint;
-import org.quiltmc.loader.impl.entrypoint.minecraft.hooks.EntrypointUtils;
-import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.GameProvider;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProviders;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -54,7 +54,7 @@ public final class Knot extends QuiltLauncherBase {
 	protected ClassLoader init(String[] args) {
 		setProperties(properties);
 
-		// configure fabric vars
+		// configure vars
 		if (envType == null) {
 			String side = System.getProperty(SystemProperties.SIDE);
 			if (side == null) {
@@ -87,11 +87,11 @@ public final class Knot extends QuiltLauncherBase {
 		}
 
 		if (provider != null) {
-			LOGGER.info("Loading for game " + provider.getGameName() + " " + provider.getRawGameVersion());
+			LOGGER.info("Loading for game " + provider.name() + " " + provider.rawVersion());
 		} else {
 			LOGGER.error("Could not find valid game provider!");
 			for (GameProvider p : providers) {
-				LOGGER.error("- " + p.getGameName());
+				LOGGER.error("- " + p.name());
 			}
 			throw new RuntimeException("Could not find valid game provider!");
 		}
@@ -100,15 +100,14 @@ public final class Knot extends QuiltLauncherBase {
 
 		// Setup classloader
 		// TODO: Provide KnotCompatibilityClassLoader in non-exclusive-Fabric pre-1.13 environments?
-		boolean useCompatibility = provider.requiresUrlClassLoader() || Boolean.parseBoolean(System.getProperty("fabric.loader.useCompatibilityClassLoader", "false"));
-		classLoader = useCompatibility ? new KnotCompatibilityClassLoader(isDevelopment(), envType, provider) : new KnotClassLoader(isDevelopment(), envType, provider);
+		classLoader = provider.knotClassLoaderInterface();
 		ClassLoader cl = (ClassLoader) classLoader;
 
-		if (provider.isObfuscated()) {
-			for (Path path : provider.getGameContextJars()) {
+		if (provider.obfuscated()) {
+			for (Path path : provider.contextJars()) {
 				QuiltLauncherBase.deobfuscate(
-						provider.getGameId(), provider.getNormalizedGameVersion(),
-						provider.getLaunchDirectory(),
+						provider.id(), provider.normalizedVersion(),
+						provider.launchDirectory(),
 						path,
 						this
 						);
@@ -116,7 +115,7 @@ public final class Knot extends QuiltLauncherBase {
 		}
 
 		// Locate entrypoints before switching class loaders
-		provider.getEntrypointTransformer().locateEntrypoints(this);
+		provider.entrypointTransformer().locateEntrypoints(this);
 
 		Thread.currentThread().setContextClassLoader(cl);
 
@@ -223,7 +222,7 @@ public final class Knot extends QuiltLauncherBase {
 
 	@Override
 	public String getEntrypoint() {
-		return provider.getEntrypoint();
+		return provider.entrypoint();
 	}
 
 	public static void main(String[] args) {

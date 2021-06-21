@@ -39,7 +39,7 @@ import java.util.zip.GZIPOutputStream;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
 

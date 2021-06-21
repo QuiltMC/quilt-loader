@@ -21,11 +21,6 @@ repositories {
 		name = 'Quilt'
 		url = 'https://maven.quiltmc.org/repository/release'
 	}
-
-	maven {
-		name = 'Mojang'
-		url = 'https://libraries.minecraft.net/'
-	}
 }
 
 dependencies {
@@ -33,14 +28,14 @@ dependencies {
 	api("com.google.code.gson:gson:2.8.0")
 
 	// FIXME: Match logger from MC for now until we detach from it
-	implementation("org.apache.logging.log4j:log4j-api:2.14.1")
-	implementation("org.apache.logging.log4j:log4j-core:2.14.1")
+	api("org.apache.logging.log4j:log4j-api:2.14.1")
+	api("org.apache.logging.log4j:log4j-core:2.14.1")
 
-	implementation("org.ow2.asm:asm:$project.asmVersion")
-	implementation("org.ow2.asm:asm-analysis:$project.asmVersion")
-	implementation("org.ow2.asm:asm-commons:$project.asmVersion")
-	implementation("org.ow2.asm:asm-tree:$project.asmVersion")
-	implementation("org.ow2.asm:asm-util:$project.asmVersion")
+	api("org.ow2.asm:asm:$project.asmVersion")
+	api("org.ow2.asm:asm-analysis:$project.asmVersion")
+	api("org.ow2.asm:asm-commons:$project.asmVersion")
+	api("org.ow2.asm:asm-tree:$project.asmVersion")
+	api("org.ow2.asm:asm-util:$project.asmVersion")
 
 	// ASM is required for the mixin annotation processor
 	annotationProcessor("org.ow2.asm:asm:$project.asmVersion")
@@ -49,31 +44,26 @@ dependencies {
 	annotationProcessor("org.ow2.asm:asm-tree:$project.asmVersion")
 	annotationProcessor("org.ow2.asm:asm-util:$project.asmVersion")
 
-	implementation("org.quiltmc:sponge-mixin:$project.mixinVersion") {
+	api("org.quiltmc:sponge-mixin:$project.mixinVersion") {
 		exclude module: "launchwrapper"
 		exclude module: "guava"
 	}
 
-	implementation("org.quiltmc:quilt-json5:$project.json5Version") // TODO: shadow me
-	implementation("org.quiltmc:tiny-mappings-parser:$project.tinyMappingsParserVersion")
-	implementation("org.quiltmc:tiny-remapper:$project.tinyRemapperVersion")
-	implementation("org.quiltmc:access-widener:$project.accessWidenerVersion")
+	api("org.quiltmc:quilt-json5:$project.json5Version") // TODO: shadow me
+	api("org.quiltmc:tiny-mappings-parser:$project.tinyMappingsParserVersion")
+	api("org.quiltmc:tiny-remapper:$project.tinyRemapperVersion")
+	api("org.quiltmc:access-widener:$project.accessWidenerVersion")
 
-	implementation("com.google.jimfs:jimfs:$project.jimfsVersion") {
+	api("com.google.jimfs:jimfs:$project.jimfsVersion") {
 		exclude module: "guava"
 	}
 
 	// FIXME: Shadow this in jimfs
-	implementation("com.google.guava:guava:21.0")
+	api("com.google.guava:guava:21.0")
 
-	implementation("org.quiltmc:quilt-loader-sat4j:$project.sat4jVersion")
+	api("org.quiltmc:quilt-loader-sat4j:$project.sat4jVersion")
 
-	// launchwrapper + dependencies
-	implementation("net.minecraft:launchwrapper:$project.launchwrapperVersion") {
-		transitive = false
-	}
-
-	implementation("net.sf.jopt-simple:jopt-simple:$project.joptsimpleVersion")
+	api("net.sf.jopt-simple:jopt-simple:$project.joptsimpleVersion")
 
 	testCompileOnly("org.jetbrains:annotations:$project.jbAnnotationsVersions")
 

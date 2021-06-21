@@ -26,7 +26,7 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 import org.quiltmc.json5.exception.ParseException;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
+import org.quiltmc.loader.impl.launch.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -1113,7 +1113,7 @@ public class ModResolver {
 		}
 
 		// add builtin mods
-		for (BuiltinMod mod : loader.getGameProvider().getBuiltinMods()) {
+		for (BuiltinMod mod : loader.getGameProvider().builtinMods()) {
 			addBuiltinMod(candidatesById, mod);
 		}
 

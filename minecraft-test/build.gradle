@@ -14,8 +14,9 @@ dependencies {
 	mappings "org.quiltmc:yarn:1.16.5+build.5:v2"
 
 	// loader
-	implementation(rootProject)
 
+	implementation project(path: ":minecraft")
+	implementation rootProject
 	// This is not typical for a buildscript
 	// ASM is required for the mixin annotation processor
 	annotationProcessor("org.ow2.asm:asm:$project.asmVersion")

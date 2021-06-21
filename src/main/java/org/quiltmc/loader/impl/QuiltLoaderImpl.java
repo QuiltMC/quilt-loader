@@ -47,7 +47,7 @@ import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
-import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -116,7 +116,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 	public void setGameProvider(GameProvider provider) {
 		this.provider = provider;
 
-		setGameDir(provider.getLaunchDirectory());
+		setGameDir(provider.launchDirectory());
 	}
 
 	private void setGameDir(Path gameDir) {
@@ -536,6 +536,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	@Override
 	public String[] getLaunchArguments(boolean sanitize) {
-		return getGameProvider().getLaunchArguments(sanitize);
+		return getGameProvider().launchArguments(sanitize);
 	}
 }
