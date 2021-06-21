@@ -3,6 +3,7 @@ package org.quiltmc.loader.impl.solver;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -18,6 +19,7 @@ import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
@@ -112,6 +114,7 @@ public final class ModSolver {
 
 		Map<String, ModCandidate> resultingModMap;
 		Map<String, ModCandidate> providedModMap;
+		Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults;
 
 		isAdvanced = true; // TODO: Weirdo hardsetting?
 
@@ -125,6 +128,7 @@ public final class ModSolver {
 					providedModMap.put(provided, candidate);
 				}
 			}
+			extraResults = Collections.emptyMap();
 		} else {
 			Map<String, ModIdDefinition> modDefs = new HashMap<>();
 			DependencyHelper<LoadOption, ModLink> helper = new DependencyHelper<>(org.quiltmc.loader.util.sat4j.pb.SolverFactory.newLight());
@@ -305,12 +309,19 @@ public final class ModSolver {
 			resultingModMap = new HashMap<>();
 			providedModMap = new HashMap<>();
 
+			Map<Class<? extends LoadOption>, Map<LoadOption, Boolean>> optionMap = new HashMap<>();
+
 			for (LoadOption option : solution) {
-				
-				boolean negated = option instanceof NegatedLoadOption;
+
+			    boolean negated = option instanceof NegatedLoadOption;
 				if (negated) {
 					option = ((NegatedLoadOption) option).not;
 				}
+
+				Class<?> cls = option.getClass();
+				do {
+	                optionMap.computeIfAbsent(cls.asSubclass(LoadOption.class), c -> new HashMap<>()).put(option, !negated);
+				} while (LoadOption.class.isAssignableFrom((cls = cls.getSuperclass())));
 
 				if (option instanceof ModLoadOption) {
 					if (!negated) {
@@ -339,10 +350,17 @@ public final class ModSolver {
 							}
 						}
 					}
-				} else {
-					throw new IllegalStateException("Unknown LoadOption " + option);
 				}
 			}
+
+			extraResults = new HashMap<>();
+
+			for (Map.Entry<Class<? extends LoadOption>, Map<LoadOption, Boolean>> entry : optionMap.entrySet()) {
+			    Class<? extends LoadOption> cls = entry.getKey();
+			    Map<LoadOption, Boolean> map = entry.getValue();
+			    extraResults.put(cls, createLoadOptionResult(cls, map));
+			}
+			extraResults = Collections.unmodifiableMap(extraResults);
 		}
 
 		// verify result: all mandatory mods
@@ -415,10 +433,18 @@ public final class ModSolver {
 			throw new ModResolutionException("Errors were found!" + errHardStr + errSoftStr);
 		}
 
-		return new ModSolveResult(resultingModMap, providedModMap);
+		return new ModSolveResult(resultingModMap, providedModMap, extraResults);
 	}
 
-	void processDependencies(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
+	private <O extends LoadOption> LoadOptionResult<O> createLoadOptionResult(Class<O> cls, Map<LoadOption, Boolean> map) {
+        Map<O, Boolean> resultMap = new HashMap<>();
+        for (Entry<LoadOption, Boolean> entry : map.entrySet()) {
+            resultMap.put(cls.cast(entry.getKey()), entry.getValue());
+        }
+        return new LoadOptionResult<>(Collections.unmodifiableMap(resultMap));
+	}
+
+    void processDependencies(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
 		ModLink> helper, ModCandidate mc, ModLoadOption option)
 		throws ContradictionException {
 

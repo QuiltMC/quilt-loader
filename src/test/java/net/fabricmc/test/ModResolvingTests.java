@@ -154,7 +154,9 @@ final class ModResolvingTests {
 			depth++;
 		}
 
-		return new ModSolver(LOGGER).findCompatibleSet(candidateMap);
+		ModSolver solver = new ModSolver(LOGGER);
+        ModSolveResult result = solver.findCompatibleSet(candidateMap);
+        return result;
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
