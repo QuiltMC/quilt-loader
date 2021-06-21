@@ -1,6 +1,5 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import org.apache.commons.lang3.CharUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.Version;
@@ -159,9 +158,11 @@ public class SemanticVersionImpl implements Version.Semantic {
 
 	private static void checkAllowedChars(String str) throws VersionFormatException {
 		for (char c : str.toCharArray()) {
-			if (!CharUtils.isAsciiAlphanumeric(c) && c != '-' && c != '+') {
-				throw new VersionFormatException("Illegal char " + c + " in string " + str);
-			}
+		    if (c == '-' || c == '+') continue;
+		    if ('A' <= c && c <= 'Z') continue;
+		    if ('a' <= c && c <= 'z') continue;
+		    if ('0' <= c && c <= '9') continue;
+			throw new VersionFormatException("Illegal char " + c + " in string " + str);
 		}
 	}
 	private static int parsePositiveIntSafe(String bit) throws VersionFormatException {
