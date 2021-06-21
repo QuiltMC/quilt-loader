@@ -18,8 +18,8 @@ abstract class ModLink implements Comparable<ModLink> {
 	static {
 		LINK_ORDER.add(MandatoryModIdDefinition.class);
 		LINK_ORDER.add(OptionalModIdDefintion.class);
-		LINK_ORDER.add(ModDep.class);
-		LINK_ORDER.add(ModBreakage.class);
+		LINK_ORDER.add(FabricModDependencyLink.class);
+		LINK_ORDER.add(FabricModBreakLink.class);
 	}
 
 	abstract ModLink put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException;

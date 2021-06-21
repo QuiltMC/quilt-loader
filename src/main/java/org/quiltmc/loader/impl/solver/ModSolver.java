@@ -1,8 +1,6 @@
 package org.quiltmc.loader.impl.solver;
 
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -21,8 +19,6 @@ import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.UrlConversionException;
-import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
@@ -257,15 +253,15 @@ public final class ModSolver {
 						// Remove dependences and conflicts first
 						for (ModLink link : causes) {
 
-							if (link instanceof ModDep) {
-								ModDep dep = (ModDep) link;
+							if (link instanceof FabricModDependencyLink) {
+								FabricModDependencyLink dep = (FabricModDependencyLink) link;
 
 								if (!dep.validOptions.isEmpty()) {
 									continue;
 								}
 							}
 
-							if (link instanceof ModDep || link instanceof ModBreakage) {
+							if (link instanceof FabricModDependencyLink || link instanceof FabricModBreakLink) {
 								if (helper.quilt_removeConstraint(link)) {
 									removedAny = true;
 									break;
@@ -434,7 +430,7 @@ public final class ModSolver {
 				def.put(helper);
 			}
 
-			new ModDep(logger, option, dep, def).put(helper);
+			new FabricModDependencyLink(logger, option, dep, def).put(helper);
 		}
 
 		for (ModDependency conflict : mc.getInfo().getBreaks()) {
@@ -446,7 +442,7 @@ public final class ModSolver {
 				def.put(helper);
 			}
 
-			new ModBreakage(logger, option, conflict, def).put(helper);
+			new FabricModBreakLink(logger, option, conflict, def).put(helper);
 		}
 	}
 
@@ -647,8 +643,8 @@ public final class ModSolver {
 		for (ModLink cause : causes) {
 			errors.append('\n');
 
-			if (cause instanceof ModDep) {
-				ModDep dep = (ModDep) cause;
+			if (cause instanceof FabricModDependencyLink) {
+				FabricModDependencyLink dep = (FabricModDependencyLink) cause;
 				errors.append(dep.validOptions.isEmpty() ? "x" : "-");
 				errors.append(" Mod ").append(getLoadOptionDescription(dep.source))
 						.append(" requires ").append(getDependencyVersionRequirements(dep.publicDep))
@@ -679,8 +675,8 @@ public final class ModSolver {
 						}
 					}
 				}
-			} else if (cause instanceof ModBreakage) {
-				ModBreakage breakage = (ModBreakage) cause;
+			} else if (cause instanceof FabricModBreakLink) {
+				FabricModBreakLink breakage = (FabricModBreakLink) cause;
 				errors.append(breakage.invalidOptions.isEmpty() ? "-" : "x");
 				errors.append(" Mod ").append(getLoadOptionDescription(breakage.source))
 						.append(" conflicts with ").append(getDependencyVersionRequirements(breakage.publicDep))
@@ -728,10 +724,10 @@ public final class ModSolver {
 		}
 
 		for (ModLink involvedLink : causes) {
-			if (involvedLink instanceof ModDep) {
-				appendLoadSourceInfo(errors, listedSources, ((ModDep) involvedLink).on);
-			} else if (involvedLink instanceof ModBreakage) {
-				appendLoadSourceInfo(errors, listedSources, ((ModBreakage) involvedLink).with);
+			if (involvedLink instanceof FabricModDependencyLink) {
+				appendLoadSourceInfo(errors, listedSources, ((FabricModDependencyLink) involvedLink).on);
+			} else if (involvedLink instanceof FabricModBreakLink) {
+				appendLoadSourceInfo(errors, listedSources, ((FabricModBreakLink) involvedLink).with);
 			}
 		}
 

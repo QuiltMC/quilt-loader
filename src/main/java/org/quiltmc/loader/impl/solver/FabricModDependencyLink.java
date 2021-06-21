@@ -11,71 +11,69 @@ import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 import net.fabricmc.loader.api.metadata.ModDependency;
 
-final class ModBreakage extends ModLink {
+/** A {@link ModLink} that implements fabric.mod.json "depends" clause. */
+final class FabricModDependencyLink extends ModLink {
 	final ModLoadOption source;
 	final ModDependency publicDep;
-	final ModIdDefinition with;
-
-	/** Every mod option that this does NOT conflict with - as such it can be loaded at the same time as {@link #source}. */
+	final ModIdDefinition on;
 	final List<ModLoadOption> validOptions;
-
-	/** Every mod option that this DOES conflict with - as such it must not be loaded at the same time as
-	 * {@link #source}. */
 	final List<ModLoadOption> invalidOptions;
-
-	/** Every option. (This is just {@link #validOptions} plus {@link #invalidOptions} */
 	final List<ModLoadOption> allOptions;
 
-	public ModBreakage(Logger logger, ModLoadOption source, ModDependency publicDep, ModIdDefinition with) {
+	public FabricModDependencyLink(Logger logger, ModLoadOption source, ModDependency publicDep, ModIdDefinition on) {
 		this.source = source;
 		this.publicDep = publicDep;
-		this.with = with;
+		this.on = on;
 		validOptions = new ArrayList<>();
 		invalidOptions = new ArrayList<>();
 		allOptions = new ArrayList<>();
 
 		if (ModSolver.DEBUG_PRINT_STATE) {
-			logger.info("[ModSolver] Adding a mod breakage:");
+			logger.info("[ModSolver] Adding a mod depencency from " + source + " to " + on.getModId());
 			logger.info("[ModSolver]   from " + source.fullString());
-			logger.info("[ModSolver]   with " + with.getModId());
 		}
 
-		for (ModLoadOption option : with.sources()) {
+		for (ModLoadOption option : on.sources()) {
 			allOptions.add(option);
 
 			if (publicDep.matches(option.candidate.getInfo().getVersion())) {
-				invalidOptions.add(option);
-
-				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  +  breaking option: " + option.fullString());
-				}
-			} else {
 				validOptions.add(option);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  x  non-conflicting option: " + option.fullString());
+					logger.info("[ModSolver]  +  valid option: " + option.fullString());
+				}
+			} else {
+				invalidOptions.add(option);
+
+				if (ModSolver.DEBUG_PRINT_STATE) {
+					logger.info("[ModSolver]  x  mismatching option: " + option.fullString());
 				}
 			}
 		}
 	}
 
 	@Override
-	ModBreakage put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-		LoadOption[] disallowed = new LoadOption[invalidOptions.size()];
-		for (int i = 0; i < invalidOptions.size(); i++) {
+	FabricModDependencyLink put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+		LoadOption[] allowed = new LoadOption[validOptions.size() + 1];
+		int i = 0;
+
+		for (; i < validOptions.size(); i++) {
 			// We don't want to have multiple "variables" for a single mod, since a provided mod is always present
 			// if the providing mod is present and vice versa. Calling getRoot means we depend on the provider and
 			// therefore solve properly rather than potentially saying the provided mod is present but the provide
 			// isn't and vice versa.
-			disallowed[i] = invalidOptions.get(i).getRoot();
+			allowed[i] = validOptions.get(i).getRoot();
 		}
-		helper.halfOr(this, new NegatedLoadOption(source), disallowed);
+
+		// i is incremented when we exit the for loop, so this is fine.
+		allowed[i] = new NegatedLoadOption(source);
+		helper.clause(this, allowed);
 		return this;
 	}
 
 	@Override
 	public String toString() {
-		return source + " breaks " + with + " version " + publicDep;
+		return source + " depends on " + on + " version " + publicDep;
 	}
 
 	/**
@@ -98,7 +96,7 @@ final class ModBreakage extends ModLink {
 
 	@Override
 	protected int compareToSelf(ModLink o) {
-		ModBreakage other = (ModBreakage) o;
+		FabricModDependencyLink other = (FabricModDependencyLink) o;
 
 		if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
 			return validOptions.isEmpty() ? -1 : 1;
@@ -111,6 +109,6 @@ final class ModBreakage extends ModLink {
 			return c;
 		}
 
-		return with.compareTo(other.with);
+		return on.compareTo(other.on);
 	}
 }
