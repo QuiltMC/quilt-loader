@@ -33,8 +33,12 @@ public class SemanticVersionImpl implements SemanticVersion {
 	private final String build;
 	private String friendlyName;
 
+	public final String originalVersion;
+
 	public SemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
-		int buildDelimPos = version.indexOf('+');
+	    this.originalVersion = version;
+
+	    int buildDelimPos = version.indexOf('+');
 		if (buildDelimPos >= 0) {
 			build = version.substring(buildDelimPos + 1);
 			version = version.substring(0, buildDelimPos);

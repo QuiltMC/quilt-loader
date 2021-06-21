@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.api.ModDependency.Only;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
@@ -215,7 +216,14 @@ public final class ModSolver {
 
 					Map<MainModLoadOption, MandatoryModIdDefinition> roots = new HashMap<>();
 					List<ModLink> causes = new ArrayList<>();
-					causes.addAll(why);
+					for (ModLink link : why) {
+						if (link instanceof MultiModLink) {
+							link = ((MultiModLink) link).real;
+						}
+						if (!causes.contains(link)) {
+							causes.add(link);
+						}
+					}
 
 					// Separate out mandatory mods (roots) from other causes
 					for (Iterator<ModLink> iterator = causes.iterator(); iterator.hasNext();) {
@@ -266,20 +274,18 @@ public final class ModSolver {
 							}
 
 							if (link instanceof FabricModDependencyLink || link instanceof FabricModBreakLink) {
-								if (helper.quilt_removeConstraint(link)) {
-									removedAny = true;
-									break;
-								}
+								link.remove(helper);
+								removedAny = true;
+								break;
 							}
 						}
 
 						// If that failed... try removing anything else
 						if (!removedAny) {
 							for (ModLink link : causes) {
-								if (helper.quilt_removeConstraint(link)) {
-									removedAny = true;
-									break;
-								}
+								link.remove(helper);
+								removedAny = true;
+								break;
 							}
 						}
 
@@ -448,6 +454,22 @@ public final class ModSolver {
 		ModLink> helper, ModCandidate mc, ModLoadOption option)
 		throws ContradictionException {
 
+    	// NEW - Quilt
+
+    	for (org.quiltmc.loader.api.ModDependency dep : mc.getMetadata().depends()) {
+
+    		if (dep.shouldIgnore()) {
+    			continue;
+    		}
+
+    		createModDepLink(logger, modDefs, helper, option, dep).put(helper);
+    	}
+
+    	if (1 + 1 == 2) {
+    		return;
+    	}
+    	// OLD - Fabric
+
 		for (ModDependency dep : mc.getInfo().getDepends()) {
 			ModIdDefinition def = modDefs.get(dep.getModId());
 			if (def == null) {
@@ -470,6 +492,32 @@ public final class ModSolver {
 
 			new FabricModBreakLink(logger, option, conflict, def).put(helper);
 		}
+	}
+
+	public static QuiltModLinkDep createModDepLink(Logger logger, Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption, ModLink> helper,
+		LoadOption option, org.quiltmc.loader.api.ModDependency dep) throws Error, ContradictionException {
+
+		if (dep instanceof org.quiltmc.loader.api.ModDependency.Any) {
+			org.quiltmc.loader.api.ModDependency.Any any = (org.quiltmc.loader.api.ModDependency.Any) dep;
+
+			return new QuiltModLinkDepAny(logger, option, any, modDefs, helper);
+		} else {
+			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
+
+			return new QuiltModLinkDepOnly(logger, option, only, modDefs, helper);
+		}
+	}
+
+	public static ModIdDefinition getOrCreateMod(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
+		ModLink> helper, String id) throws ContradictionException {
+
+		ModIdDefinition def = modDefs.get(id);
+		if (def == null) {
+			def = new OptionalModIdDefintion(id, new ModLoadOption[0]);
+			modDefs.put(id, def);
+			def.put(helper);
+		}
+		return def;
 	}
 
 	// TODO: Convert all these methods to new error syntax
@@ -595,15 +643,15 @@ public final class ModSolver {
         return ModResolver.getSourceURL(originUrl);
     }
 
-	private static String getCandidateName(ModCandidate candidate) {
+	static String getCandidateName(ModCandidate candidate) {
 		return "'" + candidate.getInfo().getName() + "' (" + candidate.getInfo().getId() + ")";
 	}
 
-	private static String getCandidateFriendlyVersion(ModCandidate candidate) {
+	static String getCandidateFriendlyVersion(ModCandidate candidate) {
 		return candidate.getInfo().getVersion().getFriendlyString();
 	}
 
-	private static String getDependencyVersionRequirements(ModDependency dependency) {
+	static String getDependencyVersionRequirements(ModDependency dependency) {
 		return dependency.getVersionRequirements().stream().map(predicate -> {
 			String version = predicate.getVersion();
 			String[] parts;
@@ -669,78 +717,7 @@ public final class ModSolver {
 		for (ModLink cause : causes) {
 			errors.append('\n');
 
-			if (cause instanceof FabricModDependencyLink) {
-				FabricModDependencyLink dep = (FabricModDependencyLink) cause;
-				errors.append(dep.validOptions.isEmpty() ? "x" : "-");
-				errors.append(" Mod ").append(getLoadOptionDescription(dep.source))
-						.append(" requires ").append(getDependencyVersionRequirements(dep.publicDep))
-						.append(" of ");
-				ModIdDefinition def = dep.on;
-				ModLoadOption[] sources = def.sources();
-
-				if (sources.length == 0) {
-					errors.append("unknown mod '").append(def.getModId()).append("'\n")
-							.append("\t- You must install ").append(getDependencyVersionRequirements(dep.publicDep))
-							.append(" of '").append(def.getModId()).append("'.");
-				} else {
-					errors.append(def.getFriendlyName());
-
-					if (dep.validOptions.isEmpty()) {
-						errors.append("\n\t- You must install ").append(getDependencyVersionRequirements(dep.publicDep))
-								.append(" of ").append(def.getFriendlyName()).append('.');
-					}
-
-					if (sources.length == 1) {
-						errors.append("\n\t- Your current version of ").append(getCandidateName(sources[0].candidate))
-							.append(" is ").append(getCandidateFriendlyVersion(sources[0].candidate)).append(".");
-					} else {
-						errors.append("\n\t- You have the following versions available:");
-
-						for (ModLoadOption source : sources) {
-							errors.append("\n\t\t- ").append(getCandidateFriendlyVersion(source)).append(".");
-						}
-					}
-				}
-			} else if (cause instanceof FabricModBreakLink) {
-				FabricModBreakLink breakage = (FabricModBreakLink) cause;
-				errors.append(breakage.invalidOptions.isEmpty() ? "-" : "x");
-				errors.append(" Mod ").append(getLoadOptionDescription(breakage.source))
-						.append(" conflicts with ").append(getDependencyVersionRequirements(breakage.publicDep))
-						.append(" of ");
-
-				ModIdDefinition def = breakage.with;
-				ModLoadOption[] sources = def.sources();
-
-				if (sources.length == 0) {
-					errors.append("unknown mod '").append(def.getModId()).append("'\n")
-							.append("\t- You must remove ").append(getDependencyVersionRequirements(breakage.publicDep))
-							.append(" of '").append(def.getModId()).append("'.");
-				} else {
-					errors.append(def.getFriendlyName());
-
-					if (breakage.invalidOptions.isEmpty()) {
-						errors.append("\n\t- You must remove ").append(getDependencyVersionRequirements(breakage.publicDep))
-								.append(" of ").append(def.getFriendlyName()).append('.');
-					}
-
-					if (sources.length == 1) {
-						errors.append("\n\t- Your current version of ").append(getCandidateName(sources[0].candidate))
-							.append(" is ").append(getCandidateFriendlyVersion(sources[0].candidate)).append(".");
-					} else {
-						errors.append("\n\t- You have the following versions available:");
-
-						for (ModLoadOption source : sources) {
-							errors.append("\n\t\t- ").append(getCandidateFriendlyVersion(source)).append(".");
-						}
-					}
-				}
-			} else {
-				errors.append("x Unknown error type?")
-						.append("\n\t+ cause.getClass() =>")
-						.append("\n\t\t").append(cause.getClass().getName())
-						.append("\n\t+ cause.toString() =>")
-						.append("\n\t\t").append(cause.toString());
-			}
+			cause.fallbackErrorDescription(errors);
 		}
 
 		// TODO: See if I can get results similar to appendJiJInfo (which requires a complete "mod ID -> candidate" map)
@@ -811,7 +788,7 @@ public final class ModSolver {
 		}
 	}
 
-	private static String getLoadOptionDescription(ModLoadOption loadOption) {
+	static String getLoadOptionDescription(ModLoadOption loadOption) {
 		return getCandidateName(loadOption) + " v" + getCandidateFriendlyVersion(loadOption);
 	}
 
@@ -819,7 +796,7 @@ public final class ModSolver {
 		return getCandidateName(candidate.candidate);
 	}
 
-	private static String getCandidateFriendlyVersion(ModLoadOption candidate) {
+	static String getCandidateFriendlyVersion(ModLoadOption candidate) {
 		return getCandidateFriendlyVersion(candidate.candidate);
 	}
 

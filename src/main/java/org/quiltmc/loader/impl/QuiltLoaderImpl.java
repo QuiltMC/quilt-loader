@@ -216,7 +216,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 	}
 
 	private void setup() throws ModResolutionException {
-		ModResolver resolver = new ModResolver();
+		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
 		ModSolveResult result = resolver.resolve(this);

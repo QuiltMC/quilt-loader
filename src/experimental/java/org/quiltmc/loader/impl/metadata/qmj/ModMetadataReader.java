@@ -44,7 +44,7 @@ public final class ModMetadataReader {
 			value = JsonLoaderValue.read(reader);
 
 			// Make sure we don't have anything else lurking at the bottom of the document
-			if (reader.peek() == JsonToken.END_DOCUMENT) {
+			if (reader.peek() != JsonToken.END_DOCUMENT) {
 				throw new ParseException(reader, "Encountered additional data at end of document");
 			}
 		}
@@ -87,6 +87,17 @@ public final class ModMetadataReader {
 	 */
 	static ParseException parseException(JsonLoaderValue value, String message) {
 		return new ParseException(String.format("%s %s", value.location(), message));
+	}
+
+	/**
+	 * Creates a parse exception that also includes the location of a json loader value.
+	 *
+	 * @param value the value to get the location of
+	 * @param message the error message
+	 * @return a new parse exception
+	 */
+	static ParseException parseException(JsonLoaderValue value, String message, Throwable cause) {
+		return new ParseException(String.format("%s %s", value.location(), message), cause);
 	}
 
 	private ModMetadataReader() {

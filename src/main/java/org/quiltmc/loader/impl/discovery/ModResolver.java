@@ -28,13 +28,14 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.util.SystemProperties;
-
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.ModMetadataParser;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
+import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -84,24 +85,34 @@ public class ModResolver {
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
 
+	private final Logger logger;
+	private final boolean isDevelopment;
+	private final Path gameDir;
 	private final List<ModCandidateFinder> candidateFinders = new ArrayList<>();
 
-	public ModResolver() {
+	public ModResolver(QuiltLoaderImpl loader) {
+		this.logger = loader.getLogger();
+		this.isDevelopment = loader.isDevelopmentEnvironment();
+		this.gameDir = loader.getGameDir();
+	}
+
+	public ModResolver(Logger logger, boolean isDevelopment, Path gameDir) {
+		this.logger = logger;
+		this.isDevelopment = isDevelopment;
+		this.gameDir = gameDir;
 	}
 
 	public void addCandidateFinder(ModCandidateFinder f) {
 		candidateFinders.add(f);
 	}
 
-	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
+	private static String getReadablePath(Path gameDir, URL url) {
 		Path path;
 		try {
-			path = UrlUtil.asPath(c.getOriginUrl());
+			path = UrlUtil.asPath(url);
 		} catch (UrlConversionException e) {
 			throw new RuntimeException(e);
 		}
-
-		Path gameDir = loader.getGameDir();
 
 		if (gameDir != null) {
 			gameDir = gameDir.normalize();
@@ -111,25 +122,33 @@ public class ModResolver {
 			}
 		}
 
-		return readableNestedJarPaths.getOrDefault(c.getOriginUrl().toString(), path.toString());
+		return readableNestedJarPaths.getOrDefault(url.toString(), path.toString());
 	}
 
-    /** Only exposed for {@link ModSolver}. This is also intended to be temporary. */
+	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
+		return getReadablePath(loader.getGameDir(), c.getOriginUrl());
+	}
+
+	public String getReadablePath(URL url) {
+		return getReadablePath(gameDir, url);
+	}
+
+	/** Only exposed for {@link ModSolver}. This is also intended to be temporary. */
 	public static URL getSourceURL(URL originUrl) {
-        // FIXME: Make ModSolver use a different method to get the source URL from an original URL - perhaps via the ModCandidate?
-        try {
-            for (Map.Entry<String, List<Path>> entry : inMemoryCache.entrySet()) {
-                for (Path path : entry.getValue()) {
-                    URL url = UrlUtil.asUrl(path.normalize());
-                    if (originUrl.equals(url)) {
-                        return new URL(entry.getKey());
-                    }
-                }
-            }
-        } catch (UrlConversionException | MalformedURLException e) {
-            e.printStackTrace();
-        }
-        return null;
+		// FIXME: Make ModSolver use a different method to get the source URL from an original URL - perhaps via the ModCandidate?
+		try {
+			for (Map.Entry<String, List<Path>> entry : inMemoryCache.entrySet()) {
+				for (Path path : entry.getValue()) {
+					URL url = UrlUtil.asUrl(path.normalize());
+					if (originUrl.equals(url)) {
+						return new URL(entry.getKey());
+					}
+				}
+			}
+		} catch (UrlConversionException | MalformedURLException e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	/** @param errorList The list of errors. The returned list of errors all need to be prefixed with "it " in order to make sense. */
@@ -182,15 +201,13 @@ public class ModResolver {
 	 * if it contains a fabric.mod.json file, and as such if it can be loaded. Instances of this are created by
 	 * {@link ModResolver#resolve(FabricLoader)} and recursively if the scanned mod contains other jar files. */
 	@SuppressWarnings("serial")
-	static class UrlProcessAction extends RecursiveAction {
-		private final QuiltLoaderImpl loader;
+	class UrlProcessAction extends RecursiveAction {
 		private final Map<String, ModCandidateSet> candidatesById;
 		private final URL url;
 		private final int depth;
 		private final boolean requiresRemap;
 
-		UrlProcessAction(QuiltLoaderImpl loader, Map<String, ModCandidateSet> candidatesById, URL url, int depth, boolean requiresRemap) {
-			this.loader = loader;
+		UrlProcessAction(Map<String, ModCandidateSet> candidatesById, URL url, int depth, boolean requiresRemap) {
 			this.candidatesById = candidatesById;
 			this.url = url;
 			this.depth = depth;
@@ -200,10 +217,10 @@ public class ModResolver {
 		@Override
 		protected void compute() {
 			FileSystemUtil.FileSystemDelegate jarFs;
-			Path path, modJson, rootDir;
+			final Path path, fabricModJson, quiltModJson, rootDir;
 			URL normalizedUrl;
 
-			loader.getLogger().debug("Testing " + url);
+			logger.debug("Testing " + url);
 
 			try {
 				path = UrlUtil.asPath(url).normalize();
@@ -215,20 +232,25 @@ public class ModResolver {
 
 			if (Files.isDirectory(path)) {
 				// Directory
-				modJson = path.resolve("fabric.mod.json");
+				fabricModJson = path.resolve("fabric.mod.json");
+				quiltModJson = path.resolve("quilt.mod.json");
 				rootDir = path;
 
-				if (loader.isDevelopmentEnvironment() && !Files.exists(modJson)) {
-					loader.getLogger().warn("Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
+				if (isDevelopment && !Files.exists(fabricModJson)) {
+					logger.warn("Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
 					synchronized (launcherSyncObject) {
-						QuiltLauncherBase.getLauncher().propose(url);
+						QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+						if (launcher != null) {
+							launcher.propose(url);
+						}
 					}
 				}
 			} else {
 				// JAR file
 				try {
 					jarFs = FileSystemUtil.getJarFileSystem(path, false);
-					modJson = jarFs.get().getPath("fabric.mod.json");
+					fabricModJson = jarFs.get().getPath("fabric.mod.json");
+					quiltModJson = jarFs.get().getPath("quilt.mod.json");
 					rootDir = jarFs.get().getRootDirectories().iterator().next();
 				} catch (IOException e) {
 					throw new RuntimeException("Failed to open mod JAR at " + path + "!");
@@ -240,16 +262,28 @@ public class ModResolver {
 			LoaderModMetadata[] info;
 
 			try {
-				info = new LoaderModMetadata[] { ModMetadataParser.parseMetadata(loader.getLogger(), modJson) };
-			} catch (ParseMetadataException.MissingRequired e){
-				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
-			} catch (ParseException | ParseMetadataException e) {
-				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file!", path), e);
-			} catch (NoSuchFileException e) {
-				loader.getLogger().warn(String.format("Non-Fabric mod JAR at \"%s\", ignoring", path));
-				info = new LoaderModMetadata[0];
+				info = new LoaderModMetadata[] { (LoaderModMetadata) ModMetadataReader.read(logger, quiltModJson, Collections.emptyMap()).asFabricModMetadata() };
+			} catch (ParseException e) {
+				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid quilt.mod.json file!", path), e);
+			} catch (NoSuchFileException notQuilt) {
+
+				try {
+					info = new LoaderModMetadata[] { ModMetadataParser.parseMetadata(logger, fabricModJson) };
+				} catch (ParseMetadataException.MissingRequired e){
+					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
+				} catch (ParseException | ParseMetadataException e) {
+					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file!", path), e);
+				} catch (NoSuchFileException e) {
+					logger.warn(String.format("Neither a fabric nor a quilt JAR at \"%s\", ignoring", path));
+					info = new LoaderModMetadata[0];
+				} catch (IOException e) {
+					throw new RuntimeException(String.format("Failed to open fabric.mod.json for mod at \"%s\"!", path), e);
+				} catch (Throwable t) {
+					throw new RuntimeException(String.format("Failed to parse mod metadata for mod at \"%s\"", path), t);
+				}
+
 			} catch (IOException e) {
-				throw new RuntimeException(String.format("Failed to open fabric.mod.json for mod at \"%s\"!", path), e);
+				throw new RuntimeException(String.format("Failed to open quilt.mod.json for mod at \"%s\"!", path), e);
 			} catch (Throwable t) {
 				throw new RuntimeException(String.format("Failed to parse mod metadata for mod at \"%s\"", path), t);
 			}
@@ -303,22 +337,29 @@ public class ModResolver {
 				added = candidatesById.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
 
 				if (!added) {
-					loader.getLogger().debug(candidate.getOriginUrl() + " already present as " + candidate);
+					logger.debug(candidate.getOriginUrl() + " already present as " + candidate);
 				} else {
-					loader.getLogger().debug("Adding " + candidate.getOriginUrl() + " as " + candidate);
+					logger.debug("Adding " + candidate.getOriginUrl() + " as " + candidate);
 
 					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getOriginUrl().toString(), (u) -> {
-						loader.getLogger().debug("Searching for nested JARs in " + candidate);
-						loader.getLogger().debug(u);
+						logger.debug("Searching for nested JARs in " + candidate);
+						logger.debug(u);
 						Collection<NestedJarEntry> jars = candidate.getInfo().getJars();
 						List<Path> list = new ArrayList<>(jars.size());
 
 						jars.stream()
 							.map((j) -> rootDir.resolve(j.getFile().replace("/", rootDir.getFileSystem().getSeparator())))
 							.forEach((modPath) -> {
-								if (!Files.isDirectory(modPath) && modPath.toString().endsWith(".jar")) {
+								if (!modPath.toString().endsWith(".jar")) {
+									logger.warn("Found nested jar entry that didn't end with '.jar': " + modPath);
+									return;
+								}
+
+								if (Files.isDirectory(modPath)) {
+									list.add(modPath);
+								} else {
 									// TODO: pre-check the JAR before loading it, if possible
-									loader.getLogger().debug("Found nested JAR: " + modPath);
+									logger.debug("Found nested JAR: " + modPath);
 									Path dest = inMemoryFs.getPath(UUID.randomUUID() + ".jar");
 
 									try {
@@ -330,7 +371,7 @@ public class ModResolver {
 									list.add(dest);
 
 									try {
-										readableNestedJarPaths.put(UrlUtil.asUrl(dest).toString(), String.format("%s!%s", getReadablePath(loader, candidate), modPath));
+										readableNestedJarPaths.put(UrlUtil.asUrl(dest).toString(), String.format("%s!%s", getReadablePath(candidate.getOriginUrl()), modPath));
 									} catch (UrlConversionException e) {
 										e.printStackTrace();
 									}
@@ -345,7 +386,7 @@ public class ModResolver {
 							jarInJars.stream()
 								.map((p) -> {
 									try {
-										return new UrlProcessAction(loader, candidatesById, UrlUtil.asUrl(p.normalize()), depth + 1, requiresRemap);
+										return new UrlProcessAction(candidatesById, UrlUtil.asUrl(p.normalize()), depth + 1, requiresRemap);
 									} catch (UrlConversionException e) {
 										throw new RuntimeException("Failed to turn path '" + p.normalize() + "' into URL!", e);
 									}
@@ -363,7 +404,8 @@ public class ModResolver {
 
 	/** The main entry point for finding mods from both the classpath, the game provider, and the filesystem.
 	 * 
-	 * @param loader
+	 * @param loader The loader. If this is null then none of the builtin mods will be added. (Primarily useful during
+	 *            tests).
 	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
 	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
 	public ModSolveResult resolve(QuiltLoaderImpl loader) throws ModResolutionException {
@@ -374,27 +416,29 @@ public class ModResolver {
 		ForkJoinPool pool = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1));
 		for (ModCandidateFinder f : candidateFinders) {
 			f.findCandidates(loader, (u, requiresRemap) -> {
-				UrlProcessAction action = new UrlProcessAction(loader, candidatesById, u, 0, requiresRemap);
+				UrlProcessAction action = new UrlProcessAction(candidatesById, u, 0, requiresRemap);
 				allActions.add(action);
 				pool.execute(action);
 			});
 		}
 
 		// add builtin mods
-		for (BuiltinMod mod : loader.getGameProvider().getBuiltinMods()) {
-			addBuiltinMod(candidatesById, mod);
-		}
-
-		// Add the current Java version
-		try {
-			addBuiltinMod(candidatesById, new BuiltinMod(
-					new File(System.getProperty("java.home")).toURI().toURL(),
-					new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
-						.setName(System.getProperty("java.vm.name"))
-						.build()));
-		} catch (MalformedURLException e) {
-			throw new ModResolutionException("Could not add Java to the dependency constraints", e);
-		}
+		if (loader != null) {
+			for (BuiltinMod mod : loader.getGameProvider().getBuiltinMods()) {
+				addBuiltinMod(candidatesById, mod);
+			}
+	
+	    	// Add the current Java version
+	    	try {
+	    		addBuiltinMod(candidatesById, new BuiltinMod(
+	    				new File(System.getProperty("java.home")).toURI().toURL(),
+	    				new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
+	    					.setName(System.getProperty("java.vm.name"))
+	    					.build()));
+	    	} catch (MalformedURLException e) {
+	    		throw new ModResolutionException("Could not add Java to the dependency constraints", e);
+	    	}
+	    }
 
 		boolean tookTooLong = false;
 		Throwable exception = null;
@@ -427,19 +471,19 @@ public class ModResolver {
 		}
 
 		long time2 = System.currentTimeMillis();
-		ModSolver solver = new ModSolver(loader.getLogger());
+		ModSolver solver = new ModSolver(logger);
 		ModSolveResult result = solver.findCompatibleSet(candidatesById);
 
 		long time3 = System.currentTimeMillis();
-		loader.getLogger().debug("Mod resolution detection time: " + (time2 - time1) + "ms");
-		loader.getLogger().debug("Mod resolution time: " + (time3 - time2) + "ms");
+		logger.debug("Mod resolution detection time: " + (time2 - time1) + "ms");
+		logger.debug("Mod resolution time: " + (time3 - time2) + "ms");
 
 		for (ModCandidate candidate : result.modMap.values()) {
 			if (candidate.getInfo().getSchemaVersion() < ModMetadataParser.LATEST_VERSION) {
-				loader.getLogger().warn("Mod ID " + candidate.getInfo().getId() + " uses outdated schema version: " + candidate.getInfo().getSchemaVersion() + " < " + ModMetadataParser.LATEST_VERSION);
+				logger.warn("Mod ID " + candidate.getInfo().getId() + " uses outdated schema version: " + candidate.getInfo().getSchemaVersion() + " < " + ModMetadataParser.LATEST_VERSION);
 			}
 
-			candidate.getInfo().emitFormatWarnings(loader.getLogger());
+			candidate.getInfo().emitFormatWarnings(logger);
 		}
 
 		return result;

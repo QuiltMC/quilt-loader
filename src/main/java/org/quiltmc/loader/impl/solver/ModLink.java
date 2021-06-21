@@ -15,14 +15,35 @@ abstract class ModLink implements Comparable<ModLink> {
 	 * matters is we get a consistent comparison. */
 	static final List<Class<? extends ModLink>> LINK_ORDER = new ArrayList<>();
 
-	static {
-		LINK_ORDER.add(MandatoryModIdDefinition.class);
-		LINK_ORDER.add(OptionalModIdDefintion.class);
-		LINK_ORDER.add(FabricModDependencyLink.class);
-		LINK_ORDER.add(FabricModBreakLink.class);
+	final List<MultiModLink> multiLinks;
+
+	public ModLink() {
+		multiLinks = new ArrayList<>();
+	}
+
+	/** Special constructor, solely for {@link MultiModLink}. */
+	ModLink(ModLink real) {
+		if (getClass() != MultiModLink.class) {
+			throw new IllegalStateException("This constructor is only meant to be used by MultiModLink!");
+		}
+		this.multiLinks = real.multiLinks;
 	}
 
 	abstract ModLink put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException;
+
+	public final void remove(DependencyHelper<LoadOption,ModLink> helper) {
+		helper.quilt_removeConstraint(this);
+		for (MultiModLink link : multiLinks) {
+			 helper.quilt_removeConstraint(link);
+		}
+		multiLinks.clear();
+	}
+
+	protected final MultiModLink createAdditional() {
+		MultiModLink link = new MultiModLink(this);
+		multiLinks.add(link);
+		return link;
+	}
 
 	/** @return A description of the link. */
 	@Override
@@ -62,14 +83,18 @@ abstract class ModLink implements Comparable<ModLink> {
 			int i0 = LINK_ORDER.indexOf(getClass());
 			int i1 = LINK_ORDER.indexOf(o.getClass());
 			if (i0 < 0) {
-				throw new IllegalStateException("Unknown " + getClass() + " (It's not registered in ModLink.LINK_ORDER!)");
+				i0 = LINK_ORDER.size();
+				LINK_ORDER.add(getClass());
 			}
 			if (i1 < 0) {
-				throw new IllegalStateException("Unknown " + o.getClass() + " (It's not registered in ModLink.LINK_ORDER!)");
+				i1 = LINK_ORDER.size();
+				LINK_ORDER.add(o.getClass());
 			}
 			return Integer.compare(i1, i0);
 		}
 	}
 
 	protected abstract int compareToSelf(ModLink o);
+
+	public abstract void fallbackErrorDescription(StringBuilder errors);
 }

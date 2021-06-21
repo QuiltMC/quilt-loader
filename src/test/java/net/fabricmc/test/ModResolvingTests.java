@@ -31,6 +31,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolver;
@@ -110,53 +111,64 @@ final class ModResolvingTests {
 		assertNoMoreMods(modSet);
 	}
 
-	private static ModSolveResult resolveModSet(String type, String subpath) throws Exception {
+    @Test
+    public void quilt() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt");
 
-		Map<String, ModCandidateSet> candidateMap = new HashMap<>();
+        assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+	private static ModSolveResult resolveModSet(String type, String subpath) throws Exception {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 
-		List<Path> subFolders = Files.list(modRoot)//
-			.filter(p -> p.getFileName().toString().endsWith(".jar") && Files.isDirectory(p))//
-			.collect(Collectors.toCollection(ArrayList::new));
+		ModResolver resolver = new ModResolver(LOGGER, true, modRoot);
+		resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
+		return resolver.resolve(null);
 
-		List<Path> loadFrom = new ArrayList<>();
-		int depth = 0;
-
-		loadFrom.addAll(subFolders);
-
-		while (!loadFrom.isEmpty()) {
-			subFolders.clear();
-
-			for (Path modPath : loadFrom) {
-
-				URL url = modPath.toUri().toURL();
-				LoaderModMetadata[] metas = { ModMetadataParser.parseMetadata(LOGGER, modPath.resolve("fabric.mod.json")) };
-
-				for (LoaderModMetadata meta : metas) {
-					ModCandidate candidate = new ModCandidate(meta, url, depth, false);
-					candidateMap.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
-
-					for (NestedJarEntry jar : meta.getJars()) {
-						Path sub = modPath;
-
-						for (String part : jar.getFile().split("/")) {
-							sub = sub.resolve(part);
-						}
-
-						subFolders.add(sub);
-					}
-				}
-			}
-
-			loadFrom.clear();
-			loadFrom.addAll(subFolders);
-			depth++;
-		}
-
-		ModSolver solver = new ModSolver(LOGGER);
-        ModSolveResult result = solver.findCompatibleSet(candidateMap);
-        return result;
+//        Map<String, ModCandidateSet> candidateMap = new HashMap<>();
+//		List<Path> subFolders = Files.list(modRoot)//
+//			.filter(p -> p.getFileName().toString().endsWith(".jar") && Files.isDirectory(p))//
+//			.collect(Collectors.toCollection(ArrayList::new));
+//
+//		List<Path> loadFrom = new ArrayList<>();
+//		int depth = 0;
+//
+//		loadFrom.addAll(subFolders);
+//
+//		while (!loadFrom.isEmpty()) {
+//			subFolders.clear();
+//
+//			for (Path modPath : loadFrom) {
+//
+//				URL url = modPath.toUri().toURL();
+//				LoaderModMetadata[] metas = { ModMetadataParser.parseMetadata(LOGGER, modPath.resolve("fabric.mod.json")) };
+//
+//				for (LoaderModMetadata meta : metas) {
+//					ModCandidate candidate = new ModCandidate(meta, url, depth, false);
+//					candidateMap.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
+//
+//					for (NestedJarEntry jar : meta.getJars()) {
+//						Path sub = modPath;
+//
+//						for (String part : jar.getFile().split("/")) {
+//							sub = sub.resolve(part);
+//						}
+//
+//						subFolders.add(sub);
+//					}
+//				}
+//			}
+//
+//			loadFrom.clear();
+//			loadFrom.addAll(subFolders);
+//			depth++;
+//		}
+//
+//		ModSolver solver = new ModSolver(LOGGER);
+//        ModSolveResult result = solver.findCompatibleSet(candidateMap);
+//        return result;
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also

@@ -26,6 +26,11 @@ public interface VersionConstraint {
 	String toString();
 
 	/**
+	 * Checks if this version constraint matches the given version.
+	 */
+	boolean matches(Version version);
+
+	/**
 	 * Checks if this version constraint matches another version constraint.
 	 *
 	 * @param o the other version constraint
