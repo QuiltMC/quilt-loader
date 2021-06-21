@@ -102,15 +102,10 @@ java {
 // For now we have put the new Quilt logic in it's own source set for the time being.
 // We will move things over to the main source set as we stablize things
 sourceSets {
-	// Allow both source sets to access each other
-	experimental {
-		compileClasspath += sourceSets.main.compileClasspath
-		runtimeClasspath += sourceSets.main.runtimeClasspath
-	}
-
 	main {
-		compileClasspath += sourceSets.experimental.compileClasspath
-		runtimeClasspath += sourceSets.experimental.runtimeClasspath
+	   java { 
+	       srcDir "src/experimental/java"
+	   }
 	}
 }
 
