@@ -89,9 +89,7 @@ public final class VersionConstraintImpl implements VersionConstraint {
 		}
 
 		if (version.isSemantic()) {
-			Version.Semantic semantic = version.semantic();
-			int[] components = { semantic.major(), semantic.minor(), semantic.patch() };
-			version = new FabricSemanticVersionImpl(components, semantic.preRelease(), semantic.buildMetadata());
+			version = new FabricSemanticVersionImpl(version.semantic());
 		}
 
 		if (version instanceof FabricSemanticVersionImpl && semanticVersion != null) {

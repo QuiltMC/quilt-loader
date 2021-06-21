@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
+import org.quiltmc.loader.api.Version;
+
 public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.loader.api.Version {
 	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");
 	private static final Pattern UNSIGNED_INTEGER = Pattern.compile("0|[1-9][0-9]*");
@@ -112,6 +114,14 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		this.components = components;
 		this.prerelease = prerelease;
 		this.build = build;
+
+		buildFriendlyName();
+	}
+
+	public FabricSemanticVersionImpl(Version.Semantic quiltVersion) {
+		this.components = new int[] { quiltVersion.major(), quiltVersion.minor(), quiltVersion.patch() };
+		this.prerelease = quiltVersion.preRelease();
+		this.build = quiltVersion.buildMetadata();
 
 		buildFriendlyName();
 	}

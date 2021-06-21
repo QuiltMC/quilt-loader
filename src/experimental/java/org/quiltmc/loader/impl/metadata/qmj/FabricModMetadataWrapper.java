@@ -135,7 +135,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 							net.fabricmc.loader.api.Version fVersion;
 
 							if (version.isSemantic()) {
-								fVersion = new FabricSemanticVersionImpl(version.raw(), true);
+								fVersion = new FabricSemanticVersionImpl(version.semantic());
 							} else {
 								fVersion = new StringVersion(version.raw());
 							}
