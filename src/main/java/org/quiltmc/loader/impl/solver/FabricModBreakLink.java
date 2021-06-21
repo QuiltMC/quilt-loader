@@ -11,7 +11,9 @@ import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 import net.fabricmc.loader.api.metadata.ModDependency;
 
-/** A {@link ModLink} that implements fabric.mod.json "break" clause */
+/** A {@link ModLink} that implements fabric.mod.json "break" clause
+ *  @deprecated since we wrap fabric mod metadata in a quilt wrapper, so this shouldn't be used anymore. */
+@Deprecated
 final class FabricModBreakLink extends ModLink {
 	final ModLoadOption source;
 	final ModDependency publicDep;

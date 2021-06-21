@@ -11,7 +11,10 @@ import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 import net.fabricmc.loader.api.metadata.ModDependency;
 
-/** A {@link ModLink} that implements fabric.mod.json "depends" clause. */
+/** A {@link ModLink} that implements fabric.mod.json "depends" clause.
+ * 
+ * @deprecated since we wrap fabric mod metadata in a quilt wrapper, so this shouldn't be used anymore. */
+@Deprecated
 final class FabricModDependencyLink extends ModLink {
 	final ModLoadOption source;
 	final ModDependency publicDep;
