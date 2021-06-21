@@ -15,7 +15,7 @@ import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
+import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.StringVersion;
 import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
@@ -55,7 +55,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 			if (fabricVersion instanceof StringVersion) {
 				this.version = Version.of(fabricVersion.getFriendlyString());
 			} else {
-				this.version = Version.of(((org.quiltmc.loader.impl.util.version.SemanticVersionImpl) fabricVersion).originalVersion);
+				this.version = (FabricSemanticVersionImpl) fabricVersion;
 			}
 		}
 		return version;
@@ -122,7 +122,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 					public String version() {
 						return predicate.getVersion();
 					}
-					
+
 					@Override
 					public Type type() {
 						return type;
@@ -135,7 +135,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 							net.fabricmc.loader.api.Version fVersion;
 
 							if (version.isSemantic()) {
-								fVersion = new SemanticVersionImpl(version.raw(), true);
+								fVersion = new FabricSemanticVersionImpl(version.raw(), true);
 							} else {
 								fVersion = new StringVersion(version.raw());
 							}

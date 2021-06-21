@@ -23,11 +23,11 @@ import java.util.function.Predicate;
 import net.fabricmc.loader.api.VersionParsingException;
 
 public final class SemanticVersionPredicateParser {
-	private static final Map<String, Function<SemanticVersionImpl, Predicate<SemanticVersionImpl>>> PREFIXES;
+	private static final Map<String, Function<FabricSemanticVersionImpl, Predicate<FabricSemanticVersionImpl>>> PREFIXES;
 
-	public static Predicate<SemanticVersionImpl> create(String text) throws VersionParsingException {
-		List<Predicate<SemanticVersionImpl>> predicateList = new ArrayList<>();
-		List<SemanticVersionImpl> prereleaseVersions = new ArrayList<>();
+	public static Predicate<FabricSemanticVersionImpl> create(String text) throws VersionParsingException {
+		List<Predicate<FabricSemanticVersionImpl>> predicateList = new ArrayList<>();
+		List<FabricSemanticVersionImpl> prereleaseVersions = new ArrayList<>();
 
 		for (String s : text.split(" ")) {
 			s = s.trim();
@@ -35,7 +35,7 @@ public final class SemanticVersionPredicateParser {
 				continue;
 			}
 
-			Function<SemanticVersionImpl, Predicate<SemanticVersionImpl>> factory = null;
+			Function<FabricSemanticVersionImpl, Predicate<FabricSemanticVersionImpl>> factory = null;
 			for (String prefix : PREFIXES.keySet()) {
 				if (s.startsWith(prefix)) {
 					factory = PREFIXES.get(prefix);
@@ -44,7 +44,7 @@ public final class SemanticVersionPredicateParser {
 				}
 			}
 
-			SemanticVersionImpl version = new SemanticVersionImpl(s, true);
+			FabricSemanticVersionImpl version = new FabricSemanticVersionImpl(s, true);
 			if (version.isPrerelease()) {
 				prereleaseVersions.add(version);
 			}
@@ -63,7 +63,7 @@ public final class SemanticVersionPredicateParser {
 		}
 
 		return (s) -> {
-			for (Predicate<SemanticVersionImpl> p : predicateList) {
+			for (Predicate<FabricSemanticVersionImpl> p : predicateList) {
 				if (!p.test(s)) {
 					return false;
 				}

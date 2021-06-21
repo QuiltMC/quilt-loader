@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-public class SemanticVersionImpl implements SemanticVersion {
+public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.loader.api.Version {
 	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");
 	private static final Pattern UNSIGNED_INTEGER = Pattern.compile("0|[1-9][0-9]*");
 	private final int[] components;
@@ -33,11 +33,7 @@ public class SemanticVersionImpl implements SemanticVersion {
 	private final String build;
 	private String friendlyName;
 
-	public final String originalVersion;
-
-	public SemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
-	    this.originalVersion = version;
-
+	public FabricSemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
 	    int buildDelimPos = version.indexOf('+');
 		if (buildDelimPos >= 0) {
 			build = version.substring(buildDelimPos + 1);
@@ -112,6 +108,14 @@ public class SemanticVersionImpl implements SemanticVersion {
 		buildFriendlyName();
 	}
 
+	public FabricSemanticVersionImpl(int[] components, String prerelease, String build) {
+		this.components = components;
+		this.prerelease = prerelease;
+		this.build = build;
+
+		buildFriendlyName();
+	}
+
 	private void buildFriendlyName() {
 		StringBuilder fnBuilder = new StringBuilder();
 		boolean first = true;
@@ -175,10 +179,10 @@ public class SemanticVersionImpl implements SemanticVersion {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof SemanticVersionImpl)) {
+		if (!(o instanceof FabricSemanticVersionImpl)) {
 			return false;
 		} else {
-			SemanticVersionImpl other = (SemanticVersionImpl) o;
+			FabricSemanticVersionImpl other = (FabricSemanticVersionImpl) o;
 			if (!equalsComponentsExactly(other)) {
 				return false;
 			}
@@ -208,7 +212,7 @@ public class SemanticVersionImpl implements SemanticVersion {
 		return false;
 	}
 
-	public boolean equalsComponentsExactly(SemanticVersionImpl other) {
+	public boolean equalsComponentsExactly(FabricSemanticVersionImpl other) {
 		for (int i = 0; i < Math.max(getVersionComponentCount(), other.getVersionComponentCount()); i++) {
 			if (getVersionComponent(i) != other.getVersionComponent(i)) {
 				return false;
@@ -282,5 +286,10 @@ public class SemanticVersionImpl implements SemanticVersion {
 		} else {
 			return 0;
 		}
+	}
+
+	@Override
+	public String raw() {
+		return getFriendlyString();
 	}
 }

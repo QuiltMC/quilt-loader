@@ -12,9 +12,6 @@ import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
-/**
- * 
- */
 class QuiltModLinkDepOnly extends QuiltModLinkDep {
 	final ModDependency.Only publicDep;
 	final ModIdDefinition on;

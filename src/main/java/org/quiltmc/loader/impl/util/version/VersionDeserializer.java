@@ -26,7 +26,7 @@ public final class VersionDeserializer {
 			throw new VersionParsingException("Version must be a non-empty string!");
 		}
 
-		return new SemanticVersionImpl(s, false);
+		return new FabricSemanticVersionImpl(s, false);
 	}
 
 	public static Version deserialize(String s) throws VersionParsingException {
@@ -37,7 +37,7 @@ public final class VersionDeserializer {
 		Version version;
 
 		try {
-			version = new SemanticVersionImpl(s, false);
+			version = new FabricSemanticVersionImpl(s, false);
 		} catch (VersionParsingException e) {
 			version = new StringVersion(s);
 		}

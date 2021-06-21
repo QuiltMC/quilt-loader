@@ -4,19 +4,19 @@ import java.util.Objects;
 
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
-import org.quiltmc.loader.api.VersionFormatException;
-import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
+import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.VersionParsingException;
 
 public final class VersionConstraintImpl implements VersionConstraint {
 	public static final VersionConstraintImpl ANY = new VersionConstraintImpl();
 	private final String version;
-	private final Version.Semantic semanticVersion;
+	private final FabricSemanticVersionImpl semanticVersion;
 	private final Type type;
 
 
-	public static VersionConstraintImpl parse(String raw) throws VersionFormatException {
+	public static VersionConstraintImpl parse(String raw) {
 		if (raw.equals("*")) {
 			return ANY;
 		}
@@ -39,22 +39,19 @@ public final class VersionConstraintImpl implements VersionConstraint {
 		this.semanticVersion = null;
 	}
 
-	public VersionConstraintImpl(String version, Type type) throws VersionFormatException {
+	public VersionConstraintImpl(String version, Type type) {
 		if (type == Type.ANY) {
 			throw new UnsupportedOperationException("Use the ANY field, not this constructor!");
 		}
 		this.version = version;
 		this.type = type;
-		this.semanticVersion = SemanticVersionImpl.of(version);
-	}
-
-	public VersionConstraintImpl(Version.Semantic version, Type type) {
-		if (type == Type.ANY) {
-			throw new UnsupportedOperationException("Use the ANY field, not this constructor!");
+		FabricSemanticVersionImpl semVer = null;
+		try {
+			semVer = new FabricSemanticVersionImpl(version, true);
+		} catch (VersionParsingException e) {
+			// Ignored
 		}
-		this.version = version.raw();
-		this.type = type;
-		this.semanticVersion = version;
+		this.semanticVersion = semVer;
 	}
 
 	@Override
@@ -93,22 +90,28 @@ public final class VersionConstraintImpl implements VersionConstraint {
 
 		if (version.isSemantic()) {
 			Version.Semantic semantic = version.semantic();
+			int[] components = { semantic.major(), semantic.minor(), semantic.patch() };
+			version = new FabricSemanticVersionImpl(components, semantic.preRelease(), semantic.buildMetadata());
+		}
+
+		if (version instanceof FabricSemanticVersionImpl && semanticVersion != null) {
+			FabricSemanticVersionImpl fVersion = (FabricSemanticVersionImpl) version;
 			switch (type) {
 				case EQUALS:
-					return semanticVersion.compareTo(semantic) == 0;
+					return semanticVersion.compareTo(fVersion) == 0;
 				case GREATER_THAN:
-					return semanticVersion.compareTo(semantic) > 0;
+					return semanticVersion.compareTo(fVersion) > 0;
 				case GREATER_THAN_OR_EQUAL:
-					return semanticVersion.compareTo(semantic) >= 0;
+					return semanticVersion.compareTo(fVersion) >= 0;
 				case LESSER_THAN:
-					return semanticVersion.compareTo(semantic) < 0;
+					return semanticVersion.compareTo(fVersion) < 0;
 				case LESSER_THAN_OR_EQUAL:
-					return semanticVersion.compareTo(semantic) <= 0;
+					return semanticVersion.compareTo(fVersion) <= 0;
 				case SAME_MAJOR:
-					return semanticVersion.major() == semantic.major();
+					return semanticVersion.getVersionComponent(0) == fVersion.getVersionComponent(0);
 				case SAME_MAJOR_AND_MINOR:
-					return semanticVersion.major() == semantic.major()
-						&& semanticVersion.minor() == semantic.minor();
+					return semanticVersion.getVersionComponent(0) == fVersion.getVersionComponent(0)
+						&& semanticVersion.getVersionComponent(1) == fVersion.getVersionComponent(1);
 				default:
 					throw new IllegalStateException("Unknown VersionConstraint.Type " + type);
 			}
@@ -117,7 +120,11 @@ public final class VersionConstraintImpl implements VersionConstraint {
 				// Special cased by QMJ
 				return true;
 			}
-			return false;
+
+			if (semanticVersion != null) {
+				return false;
+			}
+			return type == Type.EQUALS && version.raw().equals(this.version);
 		}
 	}
 }

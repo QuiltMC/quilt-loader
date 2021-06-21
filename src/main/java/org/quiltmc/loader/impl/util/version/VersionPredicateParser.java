@@ -32,8 +32,8 @@ public interface VersionPredicateParser<E extends Version> {
 	Predicate<E> create(String s);
 
 	static boolean matches(Version version, String s) throws VersionParsingException {
-		if (version instanceof SemanticVersionImpl) {
-			return SemanticVersionPredicateParser.create(s).test((SemanticVersionImpl) version);
+		if (version instanceof FabricSemanticVersionImpl) {
+			return SemanticVersionPredicateParser.create(s).test((FabricSemanticVersionImpl) version);
 		} else if (version instanceof StringVersion) {
 			return StringVersionPredicateParser.create(s).test((StringVersion) version);
 		} else {
