@@ -33,8 +33,8 @@ class ProvidedModOption extends ModLoadOption implements AliasedLoadOption {
 		return provider;
 	}
 
-    @Override
-    public LoadOption getTarget() {
-        return getRoot();
-    }
+	@Override
+	public LoadOption getTarget() {
+		return getRoot();
+	}
 }

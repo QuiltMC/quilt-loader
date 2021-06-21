@@ -18,5 +18,5 @@ public interface ModDependencyIdentifier {
 	 * if <code>mavenGroup</code> is an empty string.
 	 */
 	@Override
-    String toString();
+	String toString();
 }

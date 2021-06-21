@@ -405,7 +405,7 @@ public class ModResolver {
 	/** The main entry point for finding mods from both the classpath, the game provider, and the filesystem.
 	 * 
 	 * @param loader The loader. If this is null then none of the builtin mods will be added. (Primarily useful during
-	 *            tests).
+	 *			tests).
 	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
 	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
 	public ModSolveResult resolve(QuiltLoaderImpl loader) throws ModResolutionException {
@@ -428,17 +428,17 @@ public class ModResolver {
 				addBuiltinMod(candidatesById, mod);
 			}
 	
-	    	// Add the current Java version
-	    	try {
-	    		addBuiltinMod(candidatesById, new BuiltinMod(
-	    				new File(System.getProperty("java.home")).toURI().toURL(),
-	    				new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
-	    					.setName(System.getProperty("java.vm.name"))
-	    					.build()));
-	    	} catch (MalformedURLException e) {
-	    		throw new ModResolutionException("Could not add Java to the dependency constraints", e);
-	    	}
-	    }
+			// Add the current Java version
+			try {
+				addBuiltinMod(candidatesById, new BuiltinMod(
+						new File(System.getProperty("java.home")).toURI().toURL(),
+						new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
+							.setName(System.getProperty("java.vm.name"))
+							.build()));
+			} catch (MalformedURLException e) {
+				throw new ModResolutionException("Could not add Java to the dependency constraints", e);
+			}
+		}
 
 		boolean tookTooLong = false;
 		Throwable exception = null;

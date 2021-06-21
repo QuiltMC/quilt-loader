@@ -158,10 +158,10 @@ public class SemanticVersionImpl implements Version.Semantic {
 
 	private static void checkAllowedChars(String str) throws VersionFormatException {
 		for (char c : str.toCharArray()) {
-		    if (c == '-' || c == '+') continue;
-		    if ('A' <= c && c <= 'Z') continue;
-		    if ('a' <= c && c <= 'z') continue;
-		    if ('0' <= c && c <= '9') continue;
+			if (c == '-' || c == '+') continue;
+			if ('A' <= c && c <= 'Z') continue;
+			if ('a' <= c && c <= 'z') continue;
+			if ('0' <= c && c <= '9') continue;
 			throw new VersionFormatException("Illegal char " + c + " in string " + str);
 		}
 	}
