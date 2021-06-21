@@ -31,7 +31,7 @@ public final class ModMetadataReader {
 	 * @throws IOException if there are any issues reading the json file
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
-	public static ModMetadata read(Logger logger, Path json, Map<String, ModLicense> spdxLicenses) throws IOException, ParseException {
+	public static InternalModMetadata read(Logger logger, Path json, Map<String, ModLicense> spdxLicenses) throws IOException, ParseException {
 		JsonLoaderValue value;
 
 		try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {

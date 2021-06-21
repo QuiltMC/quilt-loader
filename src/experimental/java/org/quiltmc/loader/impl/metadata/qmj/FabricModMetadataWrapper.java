@@ -11,21 +11,16 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
-import org.quiltmc.loader.api.VersionConstraint.Type;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.StringVersion;
 import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
-import org.spongepowered.asm.mixin.injection.Constant;
 
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.VersionPredicate;
-import net.fabricmc.loader.api.metadata.ModMetadata;
 
 public class FabricModMetadataWrapper implements InternalModMetadata {
 	public static final String GROUP = "loader.fabric";
@@ -39,7 +34,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public ModMetadata asFabricModMetadata() {
+	public LoaderModMetadata asFabricModMetadata() {
 		return fabricMeta;
 	}
 

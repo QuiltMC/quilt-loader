@@ -23,8 +23,8 @@ import java.util.Optional;
 import com.google.gson.JsonElement;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.ConvertibleModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 
 import net.fabricmc.loader.api.Version;
@@ -32,7 +32,7 @@ import net.fabricmc.loader.api.Version;
 /**
  * The metadata of a mod.
  */
-public interface ModMetadata extends ConvertibleModMetadata {
+public interface ModMetadata {
 	/**
 	 * Returns the type of the mod.
 	 *
@@ -184,14 +184,4 @@ public interface ModMetadata extends ConvertibleModMetadata {
 	@ApiStatus.ScheduledForRemoval
 	@Deprecated
 	JsonElement getCustomElement(String key);
-
-	@Override
-	default ModMetadata asFabricModMetadata() {
-	    return this;
-	}
-
-	@Override
-	default org.quiltmc.loader.api.ModMetadata asQuiltModMetadata() {
-	    return new FabricModMetadataWrapper((LoaderModMetadata) this);
-	}
 }

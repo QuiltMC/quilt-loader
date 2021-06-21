@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltModMetadataWrapper;
@@ -13,7 +14,7 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltModMetadataWrapper;
  * Representation of a mod's metadata.
  */
 @ApiStatus.NonExtendable
-public interface ModMetadata extends ConvertibleModMetadata {
+public interface ModMetadata {
 	// Required fields
 
 	/**
@@ -139,14 +140,4 @@ public interface ModMetadata extends ConvertibleModMetadata {
 	 * @throws IllegalArgumentException if the type of value is not supported
 	 */
 	<T> T get(Class<T> type) throws IllegalArgumentException;
-
-	@Override
-	default net.fabricmc.loader.api.metadata.ModMetadata asFabricModMetadata() {
-	    return new QuiltModMetadataWrapper((InternalModMetadata) this);
-	}
-
-	@Override
-	default ModMetadata asQuiltModMetadata() {
-	    return this;
-	}
 }

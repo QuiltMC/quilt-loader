@@ -7,6 +7,8 @@ import org.quiltmc.loader.api.VersionConstraint;
 import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 
+import net.fabricmc.loader.api.FabricLoader;
+
 public final class VersionConstraintImpl implements VersionConstraint {
 	public static final VersionConstraintImpl ANY = new VersionConstraintImpl();
 	private final String version;
@@ -111,7 +113,7 @@ public final class VersionConstraintImpl implements VersionConstraint {
 					throw new IllegalStateException("Unknown VersionConstraint.Type " + type);
 			}
 		} else {
-			if (version.raw().equals("${version}")) {
+			if (version.raw().equals("${version}") && FabricLoader.getInstance().isDevelopmentEnvironment()) {
 				// Special cased by QMJ
 				return true;
 			}

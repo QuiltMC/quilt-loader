@@ -21,7 +21,6 @@ import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
-import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.Person;
 
 import net.fabricmc.api.EnvType;
@@ -35,12 +34,7 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	}
 
 	@Override
-	public ModMetadata asFabricModMetadata() {
-		return this;
-	}
-
-	@Override
-	public org.quiltmc.loader.api.ModMetadata asQuiltModMetadata() {
+	public InternalModMetadata asQuiltModMetadata() {
 		return quiltMeta;
 	}
 
