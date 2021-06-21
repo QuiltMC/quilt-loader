@@ -3,6 +3,7 @@ package org.quiltmc.loader.impl.solver;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 
 abstract class ModLoadOption extends LoadOption {
 	final ModCandidate candidate;
@@ -12,8 +13,11 @@ abstract class ModLoadOption extends LoadOption {
 	}
 
 	String getSourceIcon() {
-		// TODO: Base this on whether the candidate was loaded from a fabric.mod.json or quilt.mod.json
-		return "$jar+fabric$";
+		if (FabricModMetadataWrapper.GROUP.equals(candidate.getMetadata().group())) {
+			return "$jar+fabric$";
+		} else {
+			return "$jar+quilt$";
+		}
 	}
 
 	String modId() {

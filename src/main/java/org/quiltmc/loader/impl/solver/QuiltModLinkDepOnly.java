@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
@@ -121,8 +120,51 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 
 	@Override
 	protected int compareToSelf(ModLink o) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		QuiltModLinkDepOnly other = (QuiltModLinkDepOnly) o;
+
+		if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
+			return validOptions.isEmpty() ? -1 : 1;
+		}
+
+		return on.compareTo(other.on);
 	}
 
+	@Override
+	public void fallbackErrorDescription(StringBuilder errors) {
+
+		errors.append("x Mod /* TODO: Fetch the Mod ID */ depends on /* FIXME: Implement this!*/");
+
+		/*
+		errors.append(this.validOptions.isEmpty() ? "x" : "-");
+		errors.append(" Mod ").append(ModSolver.getLoadOptionDescription(this.source))
+				.append(" requires ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
+				.append(" of ");
+		ModIdDefinition def = this.on;
+		ModLoadOption[] sources = def.sources();
+	
+		if (sources.length == 0) {
+			errors.append("unknown mod '").append(def.getModId()).append("'\n")
+					.append("\t- You must install ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
+					.append(" of '").append(def.getModId()).append("'.");
+		} else {
+			errors.append(def.getFriendlyName());
+	
+			if (this.validOptions.isEmpty()) {
+				errors.append("\n\t- You must install ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
+						.append(" of ").append(def.getFriendlyName()).append('.');
+			}
+	
+			if (sources.length == 1) {
+				errors.append("\n\t- Your current version of ").append(ModSolver.getCandidateName(sources[0].candidate))
+					.append(" is ").append(ModSolver.getCandidateFriendlyVersion(sources[0].candidate)).append(".");
+			} else {
+				errors.append("\n\t- You have the following versions available:");
+	
+				for (ModLoadOption source : sources) {
+					errors.append("\n\t\t- ").append(ModSolver.getCandidateFriendlyVersion(source)).append(".");
+				}
+			}
+		}
+		*/
+	}
 }
