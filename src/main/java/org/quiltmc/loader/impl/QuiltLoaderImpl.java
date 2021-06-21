@@ -47,7 +47,6 @@ import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
-import org.quiltmc.loader.impl.discovery.ModResolver.ModResolveResult;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -55,6 +54,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import net.fabricmc.accesswidener.AccessWidener;
@@ -219,7 +219,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 		ModResolver resolver = new ModResolver();
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-		ModResolveResult result = resolver.resolve(this);
+		ModSolveResult result = resolver.resolve(this);
 		Map<String, ModCandidate> candidateMap = result.modMap;
 
 		String modText;
