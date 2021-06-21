@@ -46,15 +46,10 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
-				Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
 				Set<URL> modsList = new HashSet<>();
-				while (mods.hasMoreElements()) {
-					try {
-						modsList.add(UrlUtil.getSource("fabric.mod.json", mods.nextElement()));
-					} catch (UrlConversionException e) {
-						loader.getLogger().debug(e);
-					}
-				}
+
+				addModSources(loader, modsList, "quilt.mod.json");
+				addModSources(loader, modsList, "fabric.mod.json");
 
 				// Many development environments will provide classes and resources as separate directories to the classpath.
 				// As such, we're adding them to the classpath here and now.
@@ -115,5 +110,16 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 				}
 			}
 		});
+	}
+
+	protected void addModSources(QuiltLoaderImpl loader, Set<URL> modsList, String name) throws IOException {
+		Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources(name);
+		while (mods.hasMoreElements()) {
+			try {
+				modsList.add(UrlUtil.getSource(name, mods.nextElement()));
+			} catch (UrlConversionException e) {
+				loader.getLogger().debug(e);
+			}
+		}
 	}
 }
