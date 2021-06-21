@@ -19,26 +19,26 @@ public final class ModSolveResult {
 	}
 
 	public <O extends LoadOption> LoadOptionResult<O> getResult(Class<O> optionClass) {
-        LoadOptionResult<?> result = extraResults.get(optionClass);
-        if (result == null) {
-            return new LoadOptionResult<>(Collections.emptyMap());
-        }
-        return (LoadOptionResult<O>) result;
+		LoadOptionResult<?> result = extraResults.get(optionClass);
+		if (result == null) {
+			return new LoadOptionResult<>(Collections.emptyMap());
+		}
+		return (LoadOptionResult<O>) result;
 	}
 
 	public static final class LoadOptionResult<O extends LoadOption> {
-	    private final Map<O, Boolean> result;
+		private final Map<O, Boolean> result;
 
-        LoadOptionResult(Map<O, Boolean> result) {
-            this.result = result;
-        }
+		LoadOptionResult(Map<O, Boolean> result) {
+			this.result = result;
+		}
 
-        public Collection<O> getOptions() {
-            return result.keySet();
-        }
+		public Collection<O> getOptions() {
+			return result.keySet();
+		}
 
-        public boolean isPresent(O option) {
-            return result.getOrDefault(option, false);
-        }
+		public boolean isPresent(O option) {
+			return result.getOrDefault(option, false);
+		}
 	}
 }

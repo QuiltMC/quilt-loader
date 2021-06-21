@@ -31,12 +31,12 @@ import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.ModDependency;
 
 public final class ModSolver {
-    static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
+	static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
 
-    private final Logger logger;
+	private final Logger logger;
 
-    public ModSolver(Logger logger) {
-        this.logger = logger;
+	public ModSolver(Logger logger) {
+		this.logger = logger;
 	}
 
 	/** Primarily used by {@link ModResolver#resolve(QuiltLoaderImpl)} to find a valid map of mod ids to a single mod candidate, where
@@ -319,14 +319,14 @@ public final class ModSolver {
 
 			for (LoadOption option : solution) {
 
-			    boolean negated = option instanceof NegatedLoadOption;
+				boolean negated = option instanceof NegatedLoadOption;
 				if (negated) {
 					option = ((NegatedLoadOption) option).not;
 				}
 
 				Class<?> cls = option.getClass();
 				do {
-	                optionMap.computeIfAbsent(cls.asSubclass(LoadOption.class), c -> new HashMap<>()).put(option, !negated);
+					optionMap.computeIfAbsent(cls.asSubclass(LoadOption.class), c -> new HashMap<>()).put(option, !negated);
 				} while (LoadOption.class.isAssignableFrom((cls = cls.getSuperclass())));
 
 				if (option instanceof ModLoadOption) {
@@ -362,9 +362,9 @@ public final class ModSolver {
 			extraResults = new HashMap<>();
 
 			for (Map.Entry<Class<? extends LoadOption>, Map<LoadOption, Boolean>> entry : optionMap.entrySet()) {
-			    Class<? extends LoadOption> cls = entry.getKey();
-			    Map<LoadOption, Boolean> map = entry.getValue();
-			    extraResults.put(cls, createLoadOptionResult(cls, map));
+				Class<? extends LoadOption> cls = entry.getKey();
+				Map<LoadOption, Boolean> map = entry.getValue();
+				extraResults.put(cls, createLoadOptionResult(cls, map));
 			}
 			extraResults = Collections.unmodifiableMap(extraResults);
 		}
@@ -443,32 +443,32 @@ public final class ModSolver {
 	}
 
 	private <O extends LoadOption> LoadOptionResult<O> createLoadOptionResult(Class<O> cls, Map<LoadOption, Boolean> map) {
-        Map<O, Boolean> resultMap = new HashMap<>();
-        for (Entry<LoadOption, Boolean> entry : map.entrySet()) {
-            resultMap.put(cls.cast(entry.getKey()), entry.getValue());
-        }
-        return new LoadOptionResult<>(Collections.unmodifiableMap(resultMap));
+		Map<O, Boolean> resultMap = new HashMap<>();
+		for (Entry<LoadOption, Boolean> entry : map.entrySet()) {
+			resultMap.put(cls.cast(entry.getKey()), entry.getValue());
+		}
+		return new LoadOptionResult<>(Collections.unmodifiableMap(resultMap));
 	}
 
-    void processDependencies(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
+	void processDependencies(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
 		ModLink> helper, ModCandidate mc, ModLoadOption option)
 		throws ContradictionException {
 
-    	// NEW - Quilt
+		// NEW - Quilt
 
-    	for (org.quiltmc.loader.api.ModDependency dep : mc.getMetadata().depends()) {
+		for (org.quiltmc.loader.api.ModDependency dep : mc.getMetadata().depends()) {
 
-    		if (dep.shouldIgnore()) {
-    			continue;
-    		}
+			if (dep.shouldIgnore()) {
+				continue;
+			}
 
-    		createModDepLink(logger, modDefs, helper, option, dep).put(helper);
-    	}
+			createModDepLink(logger, modDefs, helper, option, dep).put(helper);
+		}
 
-    	if (1 + 1 == 2) {
-    		return;
-    	}
-    	// OLD - Fabric
+		if (1 + 1 == 2) {
+			return;
+		}
+		// OLD - Fabric
 
 		for (ModDependency dep : mc.getInfo().getDepends()) {
 			ModIdDefinition def = modDefs.get(dep.getModId());
@@ -639,9 +639,9 @@ public final class ModSolver {
 				.append('.');
 	}
 
-    private URL getSourceURL(URL originUrl) {
-        return ModResolver.getSourceURL(originUrl);
-    }
+	private URL getSourceURL(URL originUrl) {
+		return ModResolver.getSourceURL(originUrl);
+	}
 
 	static String getCandidateName(ModCandidate candidate) {
 		return "'" + candidate.getInfo().getName() + "' (" + candidate.getInfo().getId() + ")";
@@ -692,7 +692,7 @@ public final class ModSolver {
 
 	/** @param errorList The list of errors. The returned list of errors all need to be prefixed with "it " in order to make sense. */
 	private static boolean isModIdValid(String modId, List<String> errorList) {
-	    return ModResolver.isModIdValid(modId, errorList);
+		return ModResolver.isModIdValid(modId, errorList);
 	}
 
 	/** @return A {@link ModResolutionException} describing the error in a readable format, or null if this is unable to
