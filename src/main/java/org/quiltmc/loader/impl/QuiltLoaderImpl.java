@@ -198,11 +198,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 		return modsDir;
 	}
 
-	@Deprecated
-	public File getModsDirectory() {
-		return getModsDir().toFile();
-	}
-
 	public void load() {
 		if (provider == null) throw new IllegalStateException("game provider not set");
 		if (frozen) throw new IllegalStateException("Frozen - cannot load additional mods!");
@@ -322,20 +317,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 			return true;
 		}
 		return launcher.isDevelopment();
-	}
-
-	/**
-	 * @return A list of all loaded mods, as ModContainers.
-	 * @deprecated Use {@link net.fabricmc.loader.api.FabricLoader#getAllMods()}
-	 */
-	@Deprecated
-	public Collection<ModContainer> getModContainers() {
-		return Collections.unmodifiableList(mods);
-	}
-
-	@Deprecated
-	public List<ModContainer> getMods() {
-		return Collections.unmodifiableList(mods);
 	}
 
 	protected void addMod(ModCandidate candidate) throws ModResolutionException {
