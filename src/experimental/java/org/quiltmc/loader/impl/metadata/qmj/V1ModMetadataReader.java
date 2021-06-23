@@ -466,20 +466,16 @@ final class V1ModMetadataReader {
 	}
 
 	private static Collection<VersionConstraint> readConstraints(JsonLoaderValue value) {
-		try {
-			if (value.type() == LoaderValue.LType.STRING) {
-				return Collections.singleton(VersionConstraintImpl.parse(value.getString()));
-			} else if (value.type() == LoaderValue.LType.ARRAY) {
-				Collection<VersionConstraint> ret = new ArrayList<>(value.getArray().size());
-				for (LoaderValue s : value.getArray()) {
-					ret.add(VersionConstraintImpl.parse(s.getString()));
-				}
-				return ret;
-			} else {
-				throw parseException(value, "Version constraint must be a string or array of strings");
+		if (value.type() == LoaderValue.LType.STRING) {
+			return Collections.singleton(VersionConstraintImpl.parse(value.getString()));
+		} else if (value.type() == LoaderValue.LType.ARRAY) {
+			Collection<VersionConstraint> ret = new ArrayList<>(value.getArray().size());
+			for (LoaderValue s : value.getArray()) {
+				ret.add(VersionConstraintImpl.parse(s.getString()));
 			}
-		} catch (VersionFormatException e) {
-			throw parseException(value, "Version constraint didn't match!", e);
+			return ret;
+		} else {
+			throw parseException(value, "Version constraint must be a string or array of strings");
 		}
 	}
 

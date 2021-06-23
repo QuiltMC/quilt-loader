@@ -10,5 +10,8 @@ public class QuiltModDepOption extends LoadOption {
 		this.dep = dep;
 	}
 
-	// TODO: Path / where this dep came from.
+	@Override
+	public String toString() {
+		return "QuiltModDep { " + dep + " }";
+	}
 }

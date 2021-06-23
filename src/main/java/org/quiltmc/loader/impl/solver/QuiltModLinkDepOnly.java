@@ -72,6 +72,11 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 
 		boolean optional = publicDep.optional();
 		List<ModLoadOption> options = optional ? invalidOptions : validOptions;
+
+		if (optional && options.isEmpty()) {
+			return this;
+		}
+
 		LoadOption[] array = new LoadOption[options.size() + (unless == null ? 1 : 2)];
 		int i = 0;
 
@@ -128,6 +133,9 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
+
+		errors.append("x Dependency for " +  source + ":\n");
+		errors.append("\t-");
 
 		errors.append("x Mod /* TODO: Fetch the Mod ID */ depends on /* FIXME: Implement this!*/");
 
