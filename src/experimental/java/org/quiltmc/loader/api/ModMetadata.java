@@ -5,6 +5,10 @@ import java.util.Map;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.QuiltModMetadataWrapper;
 
 /**
  * Representation of a mod's metadata.

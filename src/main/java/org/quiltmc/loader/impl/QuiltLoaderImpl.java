@@ -54,6 +54,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import net.fabricmc.accesswidener.AccessWidener;
@@ -215,10 +216,11 @@ public class QuiltLoaderImpl implements FabricLoader {
 	}
 
 	private void setup() throws ModResolutionException {
-		ModResolver resolver = new ModResolver();
+		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-		Map<String, ModCandidate> candidateMap = resolver.resolve(this);
+		ModSolveResult result = resolver.resolve(this);
+		Map<String, ModCandidate> candidateMap = result.modMap;
 
 		String modText;
 		switch (candidateMap.values().size()) {

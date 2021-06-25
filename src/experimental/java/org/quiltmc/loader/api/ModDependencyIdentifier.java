@@ -17,5 +17,6 @@ public interface ModDependencyIdentifier {
 	 * @return a string in the form <code>{@link #mavenGroup()}:{@link #id()}</code>, or simply {@link #id()}
 	 * if <code>mavenGroup</code> is an empty string.
 	 */
+	@Override
 	String toString();
 }

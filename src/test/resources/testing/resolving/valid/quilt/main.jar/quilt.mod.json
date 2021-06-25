@@ -1,0 +1,11 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "org.quiltmc.test",
+        "id": "mod-resolving-tests-quilt",
+        "version": "1.0.0",
+        "depends": [
+            "buildcraft"
+        ]
+    }
+}

@@ -41,7 +41,7 @@ import org.objectweb.asm.Opcodes;
 
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.version.SemanticVersionImpl;
+import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.SemanticVersionPredicateParser;
 
 public final class McVersionLookup {
@@ -327,7 +327,7 @@ public final class McVersionLookup {
 					boolean legacyVersion;
 
 					try {
-						legacyVersion = SemanticVersionPredicateParser.create("<=1.16").test(new SemanticVersionImpl(release, false));
+						legacyVersion = SemanticVersionPredicateParser.create("<=1.16").test(new FabricSemanticVersionImpl(release, false));
 					} catch (VersionParsingException e) {
 						throw new RuntimeException("Failed to parse version: " + release);
 					}

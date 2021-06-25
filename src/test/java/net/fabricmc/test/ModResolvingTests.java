@@ -31,13 +31,15 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
+import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.ModMetadataParser;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.solver.ModSolver;
 
 final class ModResolvingTests {
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -56,7 +58,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void single() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "single");
+		ModSolveResult modSet = resolveModSet("valid", "single");
 
 		assertModPresent(modSet, "mod-resolving-tests-single", "1.0.0");
 		assertNoMoreMods(modSet);
@@ -64,7 +66,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void duel() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "duel");
+		ModSolveResult modSet = resolveModSet("valid", "duel");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
@@ -73,26 +75,26 @@ final class ModResolvingTests {
 
 	@Test
 	public void depends() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "depends");
+		ModSolveResult modSet = resolveModSet("valid", "depends");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
-	// @Test // FIXME: Broken, findCompatibleSet no longer returns provided mods.
+	@Test
 	public void providedDepends() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "provided_depends");
+		ModSolveResult modSet = resolveModSet("valid", "provided_depends");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library-but-renamed", "1.0.0");
+		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
 	@Test
 	public void includedDep() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "included_dep");
+		ModSolveResult modSet = resolveModSet("valid", "included_dep");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
@@ -101,7 +103,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void altDep() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "alt_deps");
+		ModSolveResult modSet = resolveModSet("valid", "alt_deps");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
@@ -109,78 +111,114 @@ final class ModResolvingTests {
 		assertNoMoreMods(modSet);
 	}
 
-	private static Map<String, ModCandidate> resolveModSet(String type, String subpath) throws Exception {
+    @Test
+    public void quilt() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt");
 
-		ModResolver resolver = new ModResolver();
-		Map<String, ModCandidateSet> candidateMap = new HashMap<>();
+        assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+	private static ModSolveResult resolveModSet(String type, String subpath) throws Exception {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 
-		List<Path> subFolders = Files.list(modRoot)//
-			.filter(p -> p.getFileName().toString().endsWith(".jar") && Files.isDirectory(p))//
-			.collect(Collectors.toCollection(ArrayList::new));
+		ModResolver resolver = new ModResolver(LOGGER, true, modRoot);
+		resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
+		return resolver.resolve(null);
 
-		List<Path> loadFrom = new ArrayList<>();
-		int depth = 0;
-
-		loadFrom.addAll(subFolders);
-
-		while (!loadFrom.isEmpty()) {
-			subFolders.clear();
-
-			for (Path modPath : loadFrom) {
-
-				URL url = modPath.toUri().toURL();
-				LoaderModMetadata[] metas = { ModMetadataParser.parseMetadata(LOGGER, modPath.resolve("fabric.mod.json")) };
-
-				for (LoaderModMetadata meta : metas) {
-					ModCandidate candidate = new ModCandidate(meta, url, depth, false);
-					candidateMap.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
-
-					for (NestedJarEntry jar : meta.getJars()) {
-						Path sub = modPath;
-
-						for (String part : jar.getFile().split("/")) {
-							sub = sub.resolve(part);
-						}
-
-						subFolders.add(sub);
-					}
-				}
-			}
-
-			loadFrom.clear();
-			loadFrom.addAll(subFolders);
-			depth++;
-		}
-
-		return resolver.findCompatibleSet(LOGGER, candidateMap);
+//        Map<String, ModCandidateSet> candidateMap = new HashMap<>();
+//		List<Path> subFolders = Files.list(modRoot)//
+//			.filter(p -> p.getFileName().toString().endsWith(".jar") && Files.isDirectory(p))//
+//			.collect(Collectors.toCollection(ArrayList::new));
+//
+//		List<Path> loadFrom = new ArrayList<>();
+//		int depth = 0;
+//
+//		loadFrom.addAll(subFolders);
+//
+//		while (!loadFrom.isEmpty()) {
+//			subFolders.clear();
+//
+//			for (Path modPath : loadFrom) {
+//
+//				URL url = modPath.toUri().toURL();
+//				LoaderModMetadata[] metas = { ModMetadataParser.parseMetadata(LOGGER, modPath.resolve("fabric.mod.json")) };
+//
+//				for (LoaderModMetadata meta : metas) {
+//					ModCandidate candidate = new ModCandidate(meta, url, depth, false);
+//					candidateMap.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
+//
+//					for (NestedJarEntry jar : meta.getJars()) {
+//						Path sub = modPath;
+//
+//						for (String part : jar.getFile().split("/")) {
+//							sub = sub.resolve(part);
+//						}
+//
+//						subFolders.add(sub);
+//					}
+//				}
+//			}
+//
+//			loadFrom.clear();
+//			loadFrom.addAll(subFolders);
+//			depth++;
+//		}
+//
+//		ModSolver solver = new ModSolver(LOGGER);
+//        ModSolveResult result = solver.findCompatibleSet(candidateMap);
+//        return result;
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
 	 * removes the mod entry from the map. */
-	private static void assertModPresent(Map<String, ModCandidate> map, String modid, String version) {
-		ModCandidate mod = map.remove(modid);
+	private static void assertModPresent(ModSolveResult result, String modid, String version) {
+		ModCandidate mod = result.modMap.remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + map);
+			Assertions.fail(modid + " is missing from " + result.modMap);
 		} else {
 			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
 		}
 	}
 
 	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
-	private static void assertModMissing(Map<String, ModCandidate> map, String modid) {
-		ModCandidate mod = map.remove(modid);
+	private static void assertModMissing(ModSolveResult result, String modid) {
+		ModCandidate mod = result.modMap.remove(modid);
 
 		if (mod != null) {
 			Assertions.fail(modid + " is not missing, and instead is loaded: " + mod);
 		}
 	}
 
-	private static void assertNoMoreMods(Map<String, ModCandidate> modSet) {
-		if (!modSet.isEmpty()) {
-			Assertions.fail("Expected to find no more mods loaded, but found: " + modSet);
+	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
+	 * removes the mod entry from the map. */
+	private static void assertProvidedPresent(ModSolveResult result, String modid, String version) {
+		ModCandidate mod = result.providedMap.remove(modid);
+
+		if (mod == null) {
+			Assertions.fail(modid + " is missing from " + result.providedMap);
+		} else {
+			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
+		}
+	}
+
+	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
+	private static void assertProvidedMissing(ModSolveResult result, String modid) {
+		ModCandidate mod = result.providedMap.remove(modid);
+
+		if (mod != null) {
+			Assertions.fail(modid + " is not missing, and instead is provided by: " + mod);
+		}
+	}
+
+	private static void assertNoMoreMods(ModSolveResult result) {
+		if (!result.modMap.isEmpty()) {
+			Assertions.fail("Expected to find no more mods loaded, but found: " + result.modMap);
+		}
+		if (!result.providedMap.isEmpty()) {
+			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.modMap);
 		}
 	}
 }

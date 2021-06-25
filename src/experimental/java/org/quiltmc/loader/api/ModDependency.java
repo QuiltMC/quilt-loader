@@ -10,6 +10,12 @@ import org.jetbrains.annotations.Nullable;
  */
 @ApiStatus.NonExtendable
 public interface ModDependency {
+
+	/** Checks if this dependency should apply in the current system. This only checks static values, and doesn't
+	 * check anything from the current modset. For example the minecraft loader plugin would check the "environment"
+	 * field here, and if it doesn't match the current envrionment, return true. */
+	boolean shouldIgnore();
+
 	/**
 	 * A mod dependency where there is only one condition that must be satisfied.
 	 */
@@ -37,33 +43,43 @@ public interface ModDependency {
 		@Nullable
 		ModDependency unless();
 
-		/**
-		 * Checks if the mod dependency is currently active and is used in dependency resolution.
-		 * This correlates to the {@code optional} field in a dependency object.
+		/** Checks if the mod dependency is considered optional.
 		 *
-		 * @return if this mod dependency is active and used.
-		 */
-		boolean active();
+		 * @return if this mod dependency can be ignored if the target mod is not present or cannot load. */
+		boolean optional();
 
 		/**
-		 * Checks if this dependency matches a specific version.
-		 *
-		 * <p>This will only return true if
-		 * <ul>
-		 * <li> the dependency is active
-		 * <li> no dependency exceptions matched in {@link #unless()}
-		 * <li> any version constraint is matched
-		 * </ul>
+		 * Checks if {@link #versions()} matches a specific version.
 		 *
 		 * @param version the version to check
 		 * @return true if the version matches or else false
 		 */
-		boolean matches(Version version);
+		default boolean matches(Version version) {
+			for (VersionConstraint constraint : versions()) {
+				if (constraint.matches(version)) {
+					return true;
+				}
+			}
+			return false;
+		}
 	}
 
 	/**
-	 * A mod dependency where only one condition must be satisfied.
+	 * A mod dependency where at least one condition must be satisfied.
 	 */
-	interface Any extends Collection<ModDependency>, ModDependency {
+	interface Any extends Collection<ModDependency.Only>, ModDependency {
+
+		/**
+		 * Checks to see if all of the conditions are ignored.
+		 */
+		@Override
+		default boolean shouldIgnore() {
+			for (ModDependency.Only dep : this) {
+				if (!dep.shouldIgnore()) {
+					return false;
+				}
+			}
+			return true;
+		}
 	}
 }

@@ -21,6 +21,9 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 
 import java.util.Collection;
 import java.util.List;
@@ -29,7 +32,7 @@ import java.util.Map;
 /**
  * Internal variant of the ModMetadata interface.
  */
-public interface LoaderModMetadata extends ModMetadata {
+public interface LoaderModMetadata extends ModMetadata, ConvertibleModMetadata {
 	int getSchemaVersion();
 	default String getOldStyleLanguageAdapter() {
 		return "org.quiltmc.loader.impl.language.JavaLanguageAdapter";
@@ -46,4 +49,14 @@ public interface LoaderModMetadata extends ModMetadata {
 	Collection<String> getEntrypointKeys();
 
 	void emitFormatWarnings(Logger logger);
+
+	@Override
+	default LoaderModMetadata asFabricModMetadata() {
+		return this;
+	}
+
+	@Override
+	default InternalModMetadata asQuiltModMetadata() {
+		return new FabricModMetadataWrapper(this);
+	}
 }
