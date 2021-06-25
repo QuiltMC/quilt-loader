@@ -1332,6 +1332,7 @@ public class ModResolver {
 		static {
 			LINK_ORDER.add(MandatoryModIdDefinition.class);
 			LINK_ORDER.add(OptionalModIdDefintion.class);
+			LINK_ORDER.add(OverridenModIdDefintion.class);
 			LINK_ORDER.add(ModDep.class);
 			LINK_ORDER.add(ModBreakage.class);
 		}
