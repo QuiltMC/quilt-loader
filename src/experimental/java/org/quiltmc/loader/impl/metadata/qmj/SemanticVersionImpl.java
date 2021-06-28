@@ -7,6 +7,7 @@ import org.quiltmc.loader.api.VersionFormatException;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -158,14 +159,17 @@ public class SemanticVersionImpl implements Version.Semantic {
 		}
 	}
 
-	private static void checkAllowedChars(String str) throws VersionFormatException {
-		for (char c : str.toCharArray()) {
-			if (c == '-' || c == '+') continue;
-			if ('A' <= c && c <= 'Z') continue;
-			if ('a' <= c && c <= 'z') continue;
-			if ('0' <= c && c <= '9') continue;
-			throw new VersionFormatException("Illegal char " + c + " in string " + str);
-		}
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		SemanticVersionImpl that = (SemanticVersionImpl) o;
+		return major == that.major && minor == that.minor && patch == that.patch && raw.equals(that.raw) && preRelease.equals(that.preRelease) && buildMeta.equals(that.buildMeta);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(raw, major, minor, patch, preRelease, buildMeta);
 	}
 
 	private static @Nullable Integer parsePositiveIntNullable(String bit) {
