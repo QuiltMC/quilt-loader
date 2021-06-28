@@ -39,4 +39,10 @@ final class MandatoryModIdDefinition extends ModIdDefinition {
 	public String toString() {
 		return "mandatory " + candidate.fullString();
 	}
+
+	@Override
+	public void fallbackErrorDescription(StringBuilder errors) {
+		errors.append("Implement me!");
+	}
+
 }

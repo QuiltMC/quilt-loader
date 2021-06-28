@@ -39,4 +39,10 @@ final class OverridenModIdDefintion extends ModIdDefinition {
 	public String toString() {
 		return "overriden mods '" + overrider.getModId() + "' of " + sources.length + " by " + overrider;
 	}
+
+	@Override
+	public void fallbackErrorDescription(StringBuilder errors) {
+		errors.append("Implement me!");
+	}
+
 }

@@ -328,7 +328,7 @@ final class V1ModMetadataReader {
 		if (licensesValue != null) {
 			switch (licensesValue.type()) {
 			case ARRAY:
-				for (LoaderValue license : ((JsonLoaderValue.ArrayImpl) licenses)) {
+				for (LoaderValue license : licensesValue.getArray()) {
 					licenses.add(readLicenseObject((JsonLoaderValue) license, spdxLicenses));
 				}
 

@@ -55,4 +55,10 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 			default: return "optional mod '" + modid + "' (" + sources.length + " sources)";
 		}
 	}
+
+	@Override
+	public void fallbackErrorDescription(StringBuilder errors) {
+		errors.append("Implement me!");
+	}
+
 }
