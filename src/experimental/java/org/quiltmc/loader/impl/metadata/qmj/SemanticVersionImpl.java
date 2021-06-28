@@ -7,6 +7,8 @@ import org.quiltmc.loader.api.VersionFormatException;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 // TODO: investigate regex and StringTokenizer once we're able to actually test this code
 public class SemanticVersionImpl implements Version.Semantic {
@@ -17,35 +19,39 @@ public class SemanticVersionImpl implements Version.Semantic {
 	private final String preRelease;
 	private final String buildMeta;
 
+	/**
+	 * Capture groups 1, 2, 3: Major, minor, patch. Must be between 0 and 9 and of any length.
+	 * Non-capturing group 1: Matches the start of build metadata
+	 * Capture group 4:
+	 */
+	private static final Pattern SEMVER_MATCHER = Pattern.compile("^(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)(?:-(?<pre>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+(?<meta>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$");
+
 	public static SemanticVersionImpl of(String raw) throws VersionFormatException {
 		int major;
 		int minor;
 		int patch;
-		String preRelease = "";
-		String buildMeta = "";
-
-		// TODO: clean up logic
-		int metaIndex = raw.indexOf('+');
-		int preIndex = raw.indexOf('-');
-		if (metaIndex != -1) {
-			buildMeta = raw.substring(metaIndex);
-			if (preIndex != -1) {
-				preRelease = raw.substring(preIndex, metaIndex);
-			}
-		} else if (preIndex != -1) {
-			preRelease = raw.substring(preIndex);
+		String preRelease;
+		String buildMeta;
+		Matcher matcher = SEMVER_MATCHER.matcher(raw);
+		if (!matcher.matches()) {
+			throw new VersionFormatException("Invalid SemVer string " + raw);
 		}
-
-		if (preIndex != -1) {
-			raw = raw.substring(0, 1);
+		try {
+			major = Integer.parseInt(matcher.group("major"));
+			minor = Integer.parseInt(matcher.group("minor"));
+			patch = Integer.parseInt(matcher.group("patch"));
+		} catch (NumberFormatException ex) {
+			// The regex doesn't catch having a number greater than Integer.MAX_INT
+			throw new VersionFormatException("Invalid SemVer string " + raw);
 		}
-		String[] versions = raw.split("\\.");
-		if (versions.length != 3) {
-			throw new VersionFormatException("Expected version to have 3 dot-separated numbers, got " + versions.length);
+		preRelease = matcher.group("pre");
+		buildMeta = matcher.group("meta");
+		if (buildMeta == null) {
+			buildMeta = "";
 		}
-		major = parsePositiveIntSafe(versions[0]);
-		minor = parsePositiveIntSafe(versions[1]);
-		patch = parsePositiveIntSafe(versions[2]);
+		if (preRelease == null) {
+			preRelease = "";
+		}
 		return new SemanticVersionImpl(raw, major, minor, patch, preRelease, buildMeta);
 	}
 
@@ -62,16 +68,12 @@ public class SemanticVersionImpl implements Version.Semantic {
 		return new SemanticVersionImpl(sb.toString(), major, minor, patch, preRelease, buildMeta);
 	}
 
-	public SemanticVersionImpl(String raw, int major, int minor, int patch, String preRelease, String buildMeta) throws VersionFormatException {
-		if (major < 0) {
-			throw new VersionFormatException("Expected positive major version, got " + major);
-		} else if (minor < 0) {
-			throw new VersionFormatException("Expected positive minor version, got " + minor);
-		} else if (patch < 0) {
-			throw new VersionFormatException("Expected positive patch version, got " + patch);
+	private SemanticVersionImpl(String raw, int major, int minor, int patch, String preRelease, String buildMeta) throws VersionFormatException {
+		if (!SEMVER_MATCHER.matcher(raw).matches()) {
+			throw new VersionFormatException("SemVer string " + raw + " is invalid!");
 		}
-		checkAllowedChars(preRelease);
-		checkAllowedChars(buildMeta);
+
+		// Since this is a private constructor it's safe to assume if the raw is valid the split up parts are valid
 		this.raw = raw;
 		this.major = major;
 		this.minor = minor;
@@ -164,14 +166,6 @@ public class SemanticVersionImpl implements Version.Semantic {
 			if ('0' <= c && c <= '9') continue;
 			throw new VersionFormatException("Illegal char " + c + " in string " + str);
 		}
-	}
-	private static int parsePositiveIntSafe(String bit) throws VersionFormatException {
-		Integer ret = parsePositiveIntNullable(bit);
-		if (ret == null) {
-			throw new VersionFormatException("String " + bit + " is not a positive number!");
-		}
-
-		return ret;
 	}
 
 	private static @Nullable Integer parsePositiveIntNullable(String bit) {
