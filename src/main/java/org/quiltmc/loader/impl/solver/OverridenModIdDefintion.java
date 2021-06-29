@@ -42,7 +42,6 @@ final class OverridenModIdDefintion extends ModIdDefinition {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		errors.append("Implement me!");
+		throw new AbstractMethodError("// TODO: Implement this!");
 	}
-
 }
