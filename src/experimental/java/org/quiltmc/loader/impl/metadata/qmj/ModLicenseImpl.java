@@ -21,8 +21,7 @@ public final class ModLicenseImpl implements ModLicense {
 	private static final Map<String, ModLicense> licenses = new HashMap<>();
 	private static final Logger LOGGER = LogManager.getLogger(ModLicenseImpl.class);
 	static {
-		try {
-			JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getResourceAsStream("quilt_loader/licenses.json")));
+		try (JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getResourceAsStream("quilt_loader/licenses.json")))){
 			reader.beginObject();
 			reader.skipValue(); // licensesListVersion
 			JsonLoaderValue.ArrayImpl licenseData = JsonLoaderValue.read(reader).getArray();
@@ -36,7 +35,7 @@ public final class ModLicenseImpl implements ModLicense {
 				// TODO: description
 				licenses.put(id, new ModLicenseImpl(name, id, url, ""));
 			}
-			reader.close(); // we can just throw everything else out
+			 // we can just throw everything else out
 		} catch (IOException e) {
 			LOGGER.error("Unable to parse license metadata");
 			LOGGER.throwing(e);
