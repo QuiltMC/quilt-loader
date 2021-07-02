@@ -126,18 +126,4 @@ public interface ModMetadata {
 	 * @return all the values
 	 */
 	Map<String, LoaderValue> values();
-
-	/**
-	 * Gets the value associated with a class in this mod metadata.
-	 * This is typically used to provide game specific api.
-	 *
-	 * <p>At the moment these values can only be added by the game provider.
-	 * In the future loader plugins will be able to offer additional values.
-	 *
-	 * @param type the class representing the type of object
-	 * @param <T> the type
-	 * @return the value
-	 * @throws IllegalArgumentException if the type of value is not supported
-	 */
-	<T> T get(Class<T> type) throws IllegalArgumentException;
 }

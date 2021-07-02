@@ -14,7 +14,7 @@ import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseExcept
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 final class V1ModMetadataReader {
-	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root, Map<String, ModLicense> spdxLicenses) {
+	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -26,10 +26,10 @@ final class V1ModMetadataReader {
 			throw parseException(quiltLoader, "quilt_loader field must be an object");
 		}
 
-		return readFields(logger, root, spdxLicenses);
+		return readFields(logger, root);
 	}
 
-	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root, Map<String, ModLicense> spdxLicenses) {
+	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root) {
 		/* Required fields */
 		String id;
 		String group;
@@ -169,7 +169,7 @@ final class V1ModMetadataReader {
 					readStringMap((JsonLoaderValue.ObjectImpl) contact, "contact", contactInformation);
 				}
 
-				readLicenses(metadata, licenses, spdxLicenses);
+				readLicenses(metadata, licenses);
 				// TODO: icon
 			}
 		}
@@ -322,20 +322,20 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static void readLicenses(JsonLoaderValue.ObjectImpl metadata, List<ModLicense> licenses, Map<String, ModLicense> spdxLicenses) {
+	private static void readLicenses(JsonLoaderValue.ObjectImpl metadata, List<ModLicense> licenses) {
 		JsonLoaderValue licensesValue = metadata.get("license");
 
 		if (licensesValue != null) {
 			switch (licensesValue.type()) {
 			case ARRAY:
 				for (LoaderValue license : licensesValue.getArray()) {
-					licenses.add(readLicenseObject((JsonLoaderValue) license, spdxLicenses));
+					licenses.add(readLicenseObject((JsonLoaderValue) licenses));
 				}
 
 				break;
 			case OBJECT:
 			case STRING:
-				licenses.add(readLicenseObject(licensesValue, spdxLicenses));
+				licenses.add(readLicenseObject(licensesValue));
 				break;
 			default:
 				throw parseException(licensesValue, "license field must be a string, an array or an object");
@@ -343,7 +343,7 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static ModLicense readLicenseObject(JsonLoaderValue licenseValue, Map<String, ModLicense> spdxLicenses) {
+	private static ModLicense readLicenseObject(JsonLoaderValue licenseValue) {
 		switch (licenseValue.type()) {
 		case OBJECT: {
 			JsonLoaderValue.ObjectImpl object = licenseValue.getObject();
@@ -356,18 +356,12 @@ final class V1ModMetadataReader {
 			return new ModLicenseImpl(name, id, url, description);
 		}
 		case STRING: {
-			@Nullable ModLicense license = spdxLicenses.get(licenseValue.getString());
-
-			// TODO: Emit dev time warning
-			if (license == null) {
-				// No entry in the reference?
-				// Fill in the data the best we can.
-				String id = licenseValue.getString();
-
-				return new ModLicenseImpl(id, id, String.format("https://spdx.org/licenses/%s.html", id), "");
+			ModLicense ret = ModLicenseImpl.fromIdentifier(licenseValue.getString());
+			if (ret == null) {
+				// QMJ specification says this *must* be a valid identifier if it doesn't want to use the long-form version
+				throw new ParseException("A string license must be a valid SPDX identifier");
 			}
-
-			return license;
+			return ret;
 		}
 		default:
 			throw parseException(licenseValue, "License entry must be an object or string");

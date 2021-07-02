@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
@@ -26,11 +27,22 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	public static final String GROUP = "loader.fabric";
 
 	private final LoaderModMetadata fabricMeta;
-	private Version version;
-	private Collection<ModDependency> depends, breaks;
-
+	private final Version version;
+	private final Collection<ModDependency> depends, breaks;
+	private final Collection<ModLicense> licenses;
+	private final Collection<ModContributor> contributors;
 	public FabricModMetadataWrapper(LoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
+		net.fabricmc.loader.api.Version fabricVersion = fabricMeta.getVersion();
+		if (fabricVersion instanceof StringVersion) {
+			this.version = Version.of(fabricVersion.getFriendlyString());
+		} else {
+			this.version = (FabricSemanticVersionImpl) fabricVersion;
+		}
+		this.depends = genDepends(fabricMeta.getDepends());
+		this.breaks = genDepends(fabricMeta.getBreaks());
+		this.licenses = Collections.unmodifiableCollection(fabricMeta.getLicense().stream().map(ModLicenseImpl::fromIdentifierOrDefault).collect(Collectors.toList()));
+		this.contributors = convertContributors(fabricMeta);
 	}
 
 	@Override
@@ -50,14 +62,6 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Version version() {
-		if (version == null) {
-			net.fabricmc.loader.api.Version fabricVersion = fabricMeta.getVersion();
-			if (fabricVersion instanceof StringVersion) {
-				this.version = Version.of(fabricVersion.getFriendlyString());
-			} else {
-				this.version = (FabricSemanticVersionImpl) fabricVersion;
-			}
-		}
 		return version;
 	}
 
@@ -73,14 +77,12 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Collection<ModLicense> licenses() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return licenses;
 	}
 
 	@Override
 	public Collection<ModContributor> contributors() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return contributors;
 	}
 
 	@Override
@@ -97,17 +99,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Collection<ModDependency> depends() {
-		if (depends == null) {
-			depends = genDepends(fabricMeta.getDepends());
-		}
 		return depends;
 	}
 
 	@Override
 	public Collection<ModDependency> breaks() {
-		if (breaks == null) {
-			breaks = genDepends(fabricMeta.getBreaks());
-		}
 		return breaks;
 	}
 
@@ -159,6 +155,17 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		}
 	}
 
+	private static Collection<ModContributor> convertContributors(LoaderModMetadata metadata) {
+		List<ModContributor> contributors = new ArrayList<>();
+		for (Person author : metadata.getAuthors()) {
+			contributors.add(new ModContributorImpl(author.getName(), "Author"));
+		}
+		for (Person contributor : metadata.getContributors()) {
+			contributors.add(new ModContributorImpl(contributor.getName(), "Contributor"));
+		}
+		return Collections.unmodifiableList(contributors);
+	}
+
 	@Override
 	public @Nullable String getIcon(int size) {
 		return fabricMeta.getIconPath(size).orElse(null);
@@ -180,11 +187,6 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	public Map<String, LoaderValue> values() {
 		// TODO Auto-generated method stub
 		throw new AbstractMethodError("// TODO: Implement this!");
-	}
-
-	@Override
-	public <T> T get(Class<T> type) throws IllegalArgumentException {
-		return null;
 	}
 
 	@Override

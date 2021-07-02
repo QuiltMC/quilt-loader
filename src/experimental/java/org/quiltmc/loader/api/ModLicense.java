@@ -19,7 +19,7 @@ public interface ModLicense {
 	String id();
 
 	/**
-	 * @return the url to view the text of the license
+	 * @return the url to view the text of the license. May be empty.
 	 */
 	String url();
 

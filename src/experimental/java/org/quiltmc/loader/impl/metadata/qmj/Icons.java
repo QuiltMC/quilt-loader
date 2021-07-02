@@ -1,5 +1,8 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.SortedMap;
 
 import org.jetbrains.annotations.Nullable;
@@ -8,6 +11,9 @@ import org.jetbrains.annotations.Nullable;
  * Implementation of an icon lookup.
  */
 interface Icons {
+	/**
+	 * @see org.quiltmc.loader.api.ModMetadata#getIcon(int) 
+	 */
 	@Nullable
 	String getIcon(int size);
 
@@ -51,7 +57,6 @@ interface Icons {
 					break;
 				}
 			}
-
 			return this.icons.get(iconValue);
 		}
 	}

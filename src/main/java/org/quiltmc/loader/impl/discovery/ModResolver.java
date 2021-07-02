@@ -262,7 +262,7 @@ public class ModResolver {
 			LoaderModMetadata[] info;
 
 			try {
-				info = new LoaderModMetadata[] { ModMetadataReader.read(logger, quiltModJson, Collections.emptyMap()).asFabricModMetadata() };
+				info = new LoaderModMetadata[] { ModMetadataReader.read(logger, quiltModJson).asFabricModMetadata() };
 			} catch (ParseException e) {
 				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid quilt.mod.json file!", path), e);
 			} catch (NoSuchFileException notQuilt) {

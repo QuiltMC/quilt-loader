@@ -44,7 +44,6 @@ public final class ModSolver {
 	 * 
 	 * @return A valid list of mods.
 	 * @throws ModResolutionException if that is impossible. */
-	// TODO: Find a way to sort versions of mods by suggestions and conflicts (not crucial, though)
 	public ModSolveResult findCompatibleSet(Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
 
 		/*
@@ -262,7 +261,7 @@ public final class ModSolver {
 
 						boolean removedAny = false;
 
-						// Remove dependences and conflicts first
+						// Remove dependencies and conflicts first
 						for (ModLink link : causes) {
 
 							if (link instanceof FabricModDependencyLink) {

@@ -187,11 +187,6 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		return this.root;
 	}
 
-	@Override
-	public <T> T get(Class<T> type) throws IllegalArgumentException {
-		throw new UnsupportedOperationException("Implement me!");
-	}
-
 	// Internal
 
 	@Override
