@@ -246,6 +246,9 @@ final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetada
 
 	@Override
 	public void emitFormatWarnings(Logger logger) {
+		if (getSchemaVersion() < ModMetadataParser.LATEST_VERSION) {
+			logger.warn("Mod ID " + getId() + " uses outdated schema version: " + getSchemaVersion() + " < " + ModMetadataParser.LATEST_VERSION);
+		}
 	}
 
 	@Override

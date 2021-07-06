@@ -1,22 +1,28 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.google.gson.JsonElement;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.ModDependency.Only;
+import org.quiltmc.loader.api.VersionConstraint;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.api.VersionPredicate;
 import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
@@ -28,6 +34,7 @@ import net.fabricmc.api.EnvType;
 public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	private final InternalModMetadata quiltMeta;
 	private Version version;
+	private Collection<ModDependency> depends, breaks;
 
 	public QuiltModMetadataWrapper(InternalModMetadata quiltMeta) {
 		this.quiltMeta = quiltMeta;
@@ -74,7 +81,10 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getDepends() {
-		throw new UnsupportedOperationException("// TODO: Implement this!");
+		if (depends == null) {
+			depends = genDeps(quiltMeta.depends());
+		}
+		return depends;
 	}
 
 	@Override
@@ -94,7 +104,51 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getBreaks() {
-		throw new UnsupportedOperationException("// TODO: Implement this!");
+		if (breaks == null) {
+			breaks = genDeps(quiltMeta.breaks());
+		}
+		return breaks;
+	}
+
+	private static Collection<ModDependency> genDeps(Collection<org.quiltmc.loader.api.ModDependency> from) {
+		List<ModDependency> to = new ArrayList<>();
+
+		for (org.quiltmc.loader.api.ModDependency qDep : from) {
+
+			if (qDep instanceof org.quiltmc.loader.api.ModDependency.Any) {
+				// Literally nothing we can do about this
+				continue;
+			}
+
+			org.quiltmc.loader.api.ModDependency.Only on = (org.quiltmc.loader.api.ModDependency.Only) qDep;
+
+			to.add(new ModDependency() {
+				@Override
+				public boolean matches(Version version) {
+					org.quiltmc.loader.api.Version quiltVer;
+
+					if (version instanceof org.quiltmc.loader.api.Version) {
+						quiltVer = (org.quiltmc.loader.api.Version) version;
+					} else {
+						quiltVer = org.quiltmc.loader.api.Version.of(version.getFriendlyString());
+					}
+
+					return on.matches(quiltVer);
+				}
+
+				@Override
+				public Set<VersionPredicate> getVersionRequirements() {
+					throw new UnsupportedOperationException("// TODO: Implement this!");
+				}
+
+				@Override
+				public String getModId() {
+					return on.id().id();
+				}
+			});
+		}
+
+		return to;
 	}
 
 	@Override
@@ -167,56 +221,55 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 		throw new AbstractMethodError("// TODO: Implement this!");
 	}
 
+	// Fabric's internal ModMetadata
+
+	private static UnsupportedOperationException internalError() {
+		throw new UnsupportedOperationException("Fabric-internal metadata is not exposed for quilt mods - since only quilt loader itself may use this.");
+	}
+
 	@Override
 	public int getSchemaVersion() {
-		return 1;
+		throw internalError();
 	}
 
 	@Override
 	public Map<String, String> getLanguageAdapterDefinitions() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override
 	public Collection<NestedJarEntry> getJars() {
-		return quiltMeta.jars().stream().map(j -> (NestedJarEntry) () -> j).collect(Collectors.toList());
+		throw internalError();
 	}
 
 	@Override
 	public Collection<String> getMixinConfigs(EnvType type) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override
 	public @Nullable String getAccessWidener() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override
 	public boolean loadsInEnvironment(EnvType type) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override
 	public Collection<String> getOldInitializers() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override
 	public Collection<String> getEntrypointKeys() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		throw internalError();
 	}
 
 	@Override

@@ -53,7 +53,8 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 				invalidOptions.add(option);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  x  mismatching option: " + option.fullString());
+					String reason = groupMatches ? "mismatched group" : "wrong version";
+					logger.info("[ModSolver]  x  mismatching option: " + option.fullString() + " because " + reason);
 				}
 			}
 		}

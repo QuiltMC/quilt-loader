@@ -44,7 +44,7 @@ public class ModCandidate {
 	}
 
 	public InternalModMetadata getMetadata() {
-	    return (InternalModMetadata) info.asQuiltModMetadata();
+	    return info.asQuiltModMetadata();
 	}
 
 	public int getDepth() {

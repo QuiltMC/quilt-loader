@@ -344,11 +344,11 @@ public class ModResolver {
 					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getOriginUrl().toString(), (u) -> {
 						logger.debug("Searching for nested JARs in " + candidate);
 						logger.debug(u);
-						Collection<NestedJarEntry> jars = candidate.getInfo().getJars();
+						Collection<String> jars = candidate.getMetadata().jars();
 						List<Path> list = new ArrayList<>(jars.size());
 
 						jars.stream()
-							.map((j) -> rootDir.resolve(j.getFile().replace("/", rootDir.getFileSystem().getSeparator())))
+							.map((j) -> rootDir.resolve(j.replace("/", rootDir.getFileSystem().getSeparator())))
 							.forEach((modPath) -> {
 								if (!modPath.toString().endsWith(".jar")) {
 									logger.warn("Found nested jar entry that didn't end with '.jar': " + modPath);
@@ -479,10 +479,6 @@ public class ModResolver {
 		logger.debug("Mod resolution time: " + (time3 - time2) + "ms");
 
 		for (ModCandidate candidate : result.modMap.values()) {
-			if (candidate.getInfo().getSchemaVersion() < ModMetadataParser.LATEST_VERSION) {
-				logger.warn("Mod ID " + candidate.getInfo().getId() + " uses outdated schema version: " + candidate.getInfo().getSchemaVersion() + " < " + ModMetadataParser.LATEST_VERSION);
-			}
-
 			candidate.getInfo().emitFormatWarnings(logger);
 		}
 
