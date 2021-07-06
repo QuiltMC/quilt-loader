@@ -22,6 +22,7 @@ import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.VersionPredicate;
+import net.fabricmc.loader.api.metadata.Person;
 
 public class FabricModMetadataWrapper implements InternalModMetadata {
 	public static final String GROUP = "loader.fabric";
@@ -105,6 +106,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	@Override
 	public Collection<ModDependency> breaks() {
 		return breaks;
+	}
+
+	@Override
+	public ModLoadType loadType() {
+		return ModLoadType.IF_POSSIBLE;
 	}
 
 	private static Collection<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from) {

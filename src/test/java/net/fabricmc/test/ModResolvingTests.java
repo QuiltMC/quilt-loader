@@ -119,6 +119,14 @@ final class ModResolvingTests {
         assertNoMoreMods(modSet);
     }
 
+    @Test
+    public void extraLibs() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "extra_libs");
+
+        assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
 	private static ModSolveResult resolveModSet(String type, String subpath) throws Exception {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);

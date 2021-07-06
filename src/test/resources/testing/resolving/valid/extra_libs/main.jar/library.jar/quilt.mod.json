@@ -1,0 +1,8 @@
+{
+    "schemaVersion": 1,
+    "quilt_loader": {
+        "id": "mod-resolving-tests-library",
+        "version": "1.0.0",
+        "load_type": "if_required"
+    }
+}

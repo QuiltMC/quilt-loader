@@ -20,6 +20,7 @@ import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
@@ -157,7 +158,14 @@ public final class ModSolver {
 						} else {
 							cOption = new MainModLoadOption(m, candidates.size() == 1 ? -1 : index);
 							modToLoadOption.put(m, cOption);
-							helper.addToObjectiveFunction(cOption, -1000 + index++);
+							// IF_REQUIRED uses a positive weight to discourage it from being chosen
+							// IF_POSSIBLE uses a negative weight to encourage it to be chosen
+							// ALWAYS... does something else
+							int weight = 1000 - index++;
+							if (m.getMetadata().loadType() == ModLoadType.IF_POSSIBLE) {
+								weight = -weight;
+							}
+							helper.addToObjectiveFunction(cOption, weight);
 						}
 
 						cOptions.add(cOption);

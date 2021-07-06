@@ -1,6 +1,7 @@
 package org.quiltmc.loader.impl.solver;
 
 import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
@@ -43,7 +44,21 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 
 	@Override
 	OptionalModIdDefintion put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-		helper.atMost(this, 1, processSources(sources));
+		boolean anyAreAlways = false;
+		MainModLoadOption[] mainOnly = processSources(sources);
+
+		for (MainModLoadOption mod : mainOnly) {
+			if (mod.candidate.getMetadata().loadType() == ModLoadType.ALWAYS) {
+				anyAreAlways = true;
+				break;
+			}
+		}
+
+		helper.atMost(this, 1, mainOnly);
+		if (anyAreAlways) {
+			helper.atLeast(this, 1, mainOnly);
+		}
+
 		return this;
 	}
 

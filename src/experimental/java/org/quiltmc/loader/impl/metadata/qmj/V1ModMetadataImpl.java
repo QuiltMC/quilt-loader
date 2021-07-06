@@ -29,6 +29,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<ModDependency> breaks;
 	private final Icons icons;
 	/* Internal fields */
+	private final ModLoadType loadType;
 	private final Collection<?> provides;
 	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
 	private final Collection<AdapterLoadableClassEntry> plugins;
@@ -54,6 +55,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			Collection<ModDependency> breaks,
 			@Nullable Icons icons,
 			/* Internal fields */
+			ModLoadType loadType,
 			Collection<?> provides, // TODO: Data type
 			Map<String, List<AdapterLoadableClassEntry>> entrypoints,
 			Collection<AdapterLoadableClassEntry> plugins,
@@ -97,6 +99,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		}
 
 		// Internal fields
+		this.loadType = loadType;
 		this.provides = Collections.unmodifiableCollection(provides);
 		this.entrypoints = Collections.unmodifiableMap(entrypoints);
 		this.plugins = Collections.unmodifiableCollection(plugins);
@@ -188,6 +191,11 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	// Internal
+
+	@Override
+	public ModLoadType loadType() {
+		return loadType;
+	}
 
 	@Override
 	public Collection<?> provides() {
