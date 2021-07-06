@@ -16,6 +16,7 @@ import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.StringVersion;
 import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
@@ -32,6 +33,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final Collection<ModDependency> depends, breaks;
 	private final Collection<ModLicense> licenses;
 	private final Collection<ModContributor> contributors;
+	private final List<String> jars;
+
 	public FabricModMetadataWrapper(LoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
 		net.fabricmc.loader.api.Version fabricVersion = fabricMeta.getVersion();
@@ -44,6 +47,10 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		this.breaks = genDepends(fabricMeta.getBreaks());
 		this.licenses = Collections.unmodifiableCollection(fabricMeta.getLicense().stream().map(ModLicenseImpl::fromIdentifierOrDefault).collect(Collectors.toList()));
 		this.contributors = convertContributors(fabricMeta);
+		this.jars = new ArrayList<>();
+		for (NestedJarEntry entry : fabricMeta.getJars()) {
+			jars.add(entry.getFile());
+		}
 	}
 
 	@Override
@@ -127,6 +134,10 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 					@Override
 					public boolean matches(Version version) {
+						if (type() == Type.ANY) {
+							return true;
+						}
+
 						try {
 
 							net.fabricmc.loader.api.Version fVersion;
@@ -222,8 +233,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Collection<String> jars() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return jars;
 	}
 
 	@Override
