@@ -94,11 +94,7 @@ public class ModCandidateSet {
 		if (depthZeroCandidates.size() > 1) {
 			StringBuilder sb = new StringBuilder("Duplicate mandatory mods found for '" + modId + "':");
 			for (ModCandidate mc : depthZeroCandidates) {
-				sb.append(
-					"\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(
-						QuiltLoaderImpl.INSTANCE, mc
-					)
-				);
+				sb.append("\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, mc));
 			}
 			throw new ModResolutionException(sb.toString());
 		} else if (candidates.size() > 1) {
