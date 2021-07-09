@@ -5,6 +5,7 @@ import java.util.Collection;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 
 /** Base definition of a link between one or more {@link LoadOption}s, that */
+// TODO: Rename this (and subclasses) to "Rule"
 abstract class ModLink {
 
 	public ModLink() {}
