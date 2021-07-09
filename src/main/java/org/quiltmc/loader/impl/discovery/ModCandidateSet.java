@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.discovery;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class ModCandidateSet {
 	private final String modId;
 	private final List<String> modProvides = new ArrayList<>();
 	private final Set<ModCandidate> depthZeroCandidates = new HashSet<>();
-	private final Map<String, ModCandidate> candidates = new ConcurrentHashMap<>();
+	private final Map<String, ModCandidate> candidates = new HashMap<>();
 
 	private static int compare(ModCandidate a, ModCandidate b) {
 		Version av = a.getInfo().getVersion();
@@ -60,7 +61,7 @@ public class ModCandidateSet {
 		return modProvides;
 	}
 
-	public boolean add(ModCandidate candidate) {
+	public synchronized boolean add(ModCandidate candidate) {
 		String version = candidate.getInfo().getVersion().getFriendlyString();
 		ModCandidate oldCandidate = candidates.get(version);
 		if (oldCandidate != null) {
