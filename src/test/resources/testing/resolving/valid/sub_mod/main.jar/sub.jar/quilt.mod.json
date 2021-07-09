@@ -2,9 +2,8 @@
     "schema_version": 1,
     "quilt_loader": {
         "group": "org.quiltmc",
-        "id": "mod-resolving-tests-main",
+        "id": "mod-resolving-tests-sub",
         "version": "1.0.0",
-        "depends": [],
-        "jars": [ "library.jar" ]
+        "load_type": "always"
     }
 }

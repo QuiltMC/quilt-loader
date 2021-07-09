@@ -16,8 +16,7 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 	final QuiltModLinkDepOnly[] options;
 	final ModDependency.Any publicDep;
 
-	public QuiltModLinkDepAny(Logger logger, LoadOption option, ModDependency.Any any, Map<String,
-		ModIdDefinition> modDefs, DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+	public QuiltModLinkDepAny(Logger logger, RuleContext ctx, LoadOption option, ModDependency.Any any) {
 
 		super(option);
 		this.publicDep = any;
@@ -25,7 +24,11 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 
 		for (ModDependency.Only only : any) {
 			if (!only.shouldIgnore()) {
-				optionList.add(new QuiltModLinkDepOnly(logger, new QuiltModDepOption(only), only, modDefs, helper));
+				QuiltModDepOption sub = new QuiltModDepOption(only);
+				ctx.addOption(sub);
+				QuiltModLinkDepOnly dep = new QuiltModLinkDepOnly(logger, ctx, sub, only);
+				ctx.addRule(dep);
+				optionList.add(dep);
 			}
 		}
 
@@ -33,16 +36,25 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 	}
 
 	@Override
-	ModLink put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+	boolean onLoadOptionAdded(LoadOption option) {
+		return false;
+	}
+
+	@Override
+	boolean onLoadOptionRemoved(LoadOption option) {
+		return false;
+	}
+
+	@Override
+	void define(RuleDefiner definer) {
 		LoadOption[] array = new LoadOption[options.length + 1];
 		int i = 0;
 
 		for (; i < options.length; i++) {
 			array[i] = options[i].source;
 		}
-		array[i] = new NegatedLoadOption(source);
-		helper.clause(this, array);
-		return this;
+		array[i] = definer.negate(source);
+		definer.atLeastOneOf(array);
 	}
 
 	@Override
@@ -63,12 +75,6 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 			list.add(on.source);
 		}
 		return list;
-	}
-
-	@Override
-	protected int compareToSelf(ModLink o) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
 	}
 
 	@Override

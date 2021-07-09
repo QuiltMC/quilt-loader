@@ -1,18 +1,18 @@
 package org.quiltmc.loader.impl.solver;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 /** A concrete definition that allows the modid to be loaded from any of a set of {@link ModCandidate}s. */
 final class OptionalModIdDefintion extends ModIdDefinition {
 	final String modid;
-	final ModLoadOption[] sources;
+	final List<ModLoadOption> sources = new ArrayList<>();
 
-	public OptionalModIdDefintion(String modid, ModLoadOption[] sources) {
+	public OptionalModIdDefintion(String modid) {
 		this.modid = modid;
-		this.sources = sources;
 	}
 
 	@Override
@@ -22,7 +22,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 
 	@Override
 	ModLoadOption[] sources() {
-		return sources;
+		return sources.toArray(new ModLoadOption[0]);
 	}
 
 	@Override
@@ -30,7 +30,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 		String name = null;
 
 		for (ModLoadOption option : sources) {
-			String opName = option.candidate.getInfo().getName();
+			String opName = option.candidate.getMetadata().name();
 
 			if (name == null) {
 				name = opName;
@@ -39,35 +39,56 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 			}
 		}
 
-		return ModSolver.getCandidateName(sources[0]);
+		return modid;
 	}
 
 	@Override
-	OptionalModIdDefintion put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-		boolean anyAreAlways = false;
-		MainModLoadOption[] mainOnly = processSources(sources);
+	boolean onLoadOptionAdded(LoadOption option) {
+		if (option instanceof ModLoadOption) {
+			ModLoadOption mod = (ModLoadOption) option;
+			if (mod.modId().equals(modid)) {
+				sources.add(mod);
+				return true;
+			}
+		}
 
-		for (MainModLoadOption mod : mainOnly) {
+		return false;
+	}
+
+	@Override
+	boolean onLoadOptionRemoved(LoadOption option) {
+		return sources.remove(option);
+	}
+
+	@Override
+	void define(RuleDefiner definer) {
+		boolean anyAreAlways = false;
+
+		for (ModLoadOption mod : sources) {
 			if (mod.candidate.getMetadata().loadType() == ModLoadType.ALWAYS) {
 				anyAreAlways = true;
 				break;
 			}
 		}
 
-		helper.atMost(this, 1, mainOnly);
-		if (anyAreAlways) {
-			helper.atLeast(this, 1, mainOnly);
-		}
+		ModLoadOption[] array = sources.toArray(new ModLoadOption[0]);
 
-		return this;
+		if (anyAreAlways) {
+			definer.exactly(1, array);
+		} else {
+			definer.atMost(1, array);
+		}
 	}
 
 	@Override
 	public String toString() {
-		switch (sources.length) {
-			case 0: return "unknown mod '" + modid + "'";
-			case 1: return "optional mod '" + modid + "' (1 source)";
-			default: return "optional mod '" + modid + "' (" + sources.length + " sources)";
+		switch (sources.size()) {
+			case 0:
+				return "unknown mod '" + modid + "'";
+			case 1:
+				return "optional mod '" + modid + "' (1 source)";
+			default:
+				return "optional mod '" + modid + "' (" + sources.size() + " sources)";
 		}
 	}
 
@@ -75,5 +96,4 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	public void fallbackErrorDescription(StringBuilder errors) {
 		throw new AbstractMethodError("// TODO: Implement this!");
 	}
-
 }

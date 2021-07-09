@@ -5,6 +5,6 @@
         "id": "mod-resolving-tests-main",
         "version": "1.0.0",
         "depends": [],
-        "jars": [ "library.jar" ]
+        "jars": [ "sub.jar" ]
     }
 }

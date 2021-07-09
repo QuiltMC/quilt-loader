@@ -16,16 +16,24 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import net.fabricmc.loader.api.Version;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
+import net.fabricmc.loader.api.Version;
 
 public class ModCandidateSet {
 	private final String modId;
 	private final List<String> modProvides = new ArrayList<>();
 	private final Set<ModCandidate> depthZeroCandidates = new HashSet<>();
-	private final Map<String, ModCandidate> candidates = new HashMap<>();
+	private final Map<String, ModCandidate> candidates = new ConcurrentHashMap<>();
 
 	private static int compare(ModCandidate a, ModCandidate b) {
 		Version av = a.getInfo().getVersion();
@@ -33,7 +41,7 @@ public class ModCandidateSet {
 
 		if (av instanceof Comparable && bv instanceof Comparable) {
 			@SuppressWarnings("unchecked")
-			Comparable<? super Version> cv = (Comparable<? super Version>) bv; 
+			Comparable<? super Version> cv = (Comparable<? super Version>) bv;
 			return (cv.compareTo(av));
 		} else {
 			return 0;
@@ -86,7 +94,11 @@ public class ModCandidateSet {
 		if (depthZeroCandidates.size() > 1) {
 			StringBuilder sb = new StringBuilder("Duplicate mandatory mods found for '" + modId + "':");
 			for (ModCandidate mc : depthZeroCandidates) {
-				sb.append("\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, mc));
+				sb.append(
+					"\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(
+						QuiltLoaderImpl.INSTANCE, mc
+					)
+				);
 			}
 			throw new ModResolutionException(sb.toString());
 		} else if (candidates.size() > 1) {

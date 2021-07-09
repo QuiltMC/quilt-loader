@@ -13,69 +13,89 @@ import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 class QuiltModLinkDepOnly extends QuiltModLinkDep {
+	final Logger logger;
+
 	final ModDependency.Only publicDep;
-	final ModIdDefinition on;
 	final List<ModLoadOption> validOptions;
 	final List<ModLoadOption> invalidOptions;
 	final List<ModLoadOption> allOptions;
 
 	final QuiltModLinkDep unless;
 
-	public QuiltModLinkDepOnly(Logger logger, LoadOption source, ModDependency.Only publicDep, Map<String,
-		ModIdDefinition> modDefs, DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-
+	public QuiltModLinkDepOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
+		this.logger = logger;
 		this.publicDep = publicDep;
-		this.on = ModSolver.getOrCreateMod(modDefs, helper, publicDep.id().id());
 		validOptions = new ArrayList<>();
 		invalidOptions = new ArrayList<>();
 		allOptions = new ArrayList<>();
 
 		if (ModSolver.DEBUG_PRINT_STATE) {
-			logger.info("[ModSolver] Adding a mod depencency from " + source + " to " + on.getModId());
-		}
-
-		for (ModLoadOption option : on.sources()) {
-			allOptions.add(option);
-
-			InternalModMetadata oMeta = option.candidate.getMetadata();
-
-			String maven = publicDep.id().mavenGroup();
-			boolean groupMatches = maven.isEmpty() || maven.equals(oMeta.group());
-
-			if (groupMatches && publicDep.matches(oMeta.version())) {
-				validOptions.add(option);
-
-				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  +  valid option: " + option.fullString());
-				}
-			} else {
-				invalidOptions.add(option);
-
-				if (ModSolver.DEBUG_PRINT_STATE) {
-					String reason = groupMatches ? "mismatched group" : "wrong version";
-					logger.info("[ModSolver]  x  mismatching option: " + option.fullString() + " because " + reason);
-				}
-			}
+			logger.info("[ModSolver] Adding a mod depencency from " + source + " to " + publicDep.id().id());
 		}
 
 		ModDependency except = publicDep.unless();
 		if (except != null && !except.shouldIgnore()) {
 			QuiltModDepOption option = new QuiltModDepOption(except);
-			this.unless = ModSolver.createModDepLink(logger, modDefs, helper, option, except);
+			ctx.addOption(option);
+			this.unless = ModSolver.createModDepLink(logger, ctx, option, except);
+			ctx.addRule(unless);
 		} else {
 			this.unless = null;
 		}
 	}
 
 	@Override
-	ModLink put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
+	boolean onLoadOptionAdded(LoadOption option) {
+		if (option instanceof ModLoadOption) {
+			ModLoadOption mod = (ModLoadOption) option;
+
+			if (!mod.modId().equals(publicDep.id().id())) {
+				return false;
+			}
+
+			allOptions.add(mod);
+
+			InternalModMetadata oMeta = mod.candidate.getMetadata();
+
+			String maven = publicDep.id().mavenGroup();
+			boolean groupMatches = maven.isEmpty() || maven.equals(oMeta.group());
+
+			if (groupMatches && publicDep.matches(oMeta.version())) {
+				validOptions.add(mod);
+
+				if (ModSolver.DEBUG_PRINT_STATE) {
+					logger.info("[ModSolver]  +  valid option: " + mod.fullString());
+				}
+			} else {
+				invalidOptions.add(mod);
+
+				if (ModSolver.DEBUG_PRINT_STATE) {
+					String reason = groupMatches ? "mismatched group" : "wrong version";
+					logger.info("[ModSolver]  x  mismatching option: " + mod.fullString() + " because " + reason);
+				}
+			}
+
+		}
+		return false;
+	}
+
+	@Override
+	boolean onLoadOptionRemoved(LoadOption option) {
+		boolean changed = validOptions.remove(option);
+		changed |= invalidOptions.remove(option);
+		allOptions.remove(option);
+		return changed;
+	}
+
+	@Override
+	void define(RuleDefiner definer) {
 
 		boolean optional = publicDep.optional();
 		List<ModLoadOption> options = optional ? invalidOptions : validOptions;
 
 		if (optional && options.isEmpty()) {
-			return this;
+			return;
 		}
 
 		LoadOption[] array = new LoadOption[options.size() + (unless == null ? 1 : 2)];
@@ -88,22 +108,17 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 			// isn't and vice versa.
 			array[i] = options.get(i).getRoot();
 			if (optional) {
-				array[i] = new NegatedLoadOption(array[i]);
+				array[i] = definer.negate(array[i]);
 			}
 		}
 
 		// i is incremented when we exit the for loop, so this is fine.
-		array[i++] = new NegatedLoadOption(source);
+		array[i++] = definer.negate(source);
 		if (unless != null) {
 			array[i] = unless.source;
 		}
-		helper.clause(this, array);
 
-		if (unless != null) {
-			unless.put(helper);
-		}
-
-		return this;
+		definer.atLeastOneOf(array);
 	}
 
 	@Override
@@ -119,17 +134,6 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 	@Override
 	public Collection<? extends LoadOption> getNodesTo() {
 		return allOptions;
-	}
-
-	@Override
-	protected int compareToSelf(ModLink o) {
-		QuiltModLinkDepOnly other = (QuiltModLinkDepOnly) o;
-
-		if (validOptions.isEmpty() != other.validOptions.isEmpty()) {
-			return validOptions.isEmpty() ? -1 : 1;
-		}
-
-		return on.compareTo(other.on);
 	}
 
 	@Override
