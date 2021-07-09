@@ -225,7 +225,7 @@ public final class ModSolver {
 
 					boolean removedAny = false;
 
-					// Remove dependencies and conflicts first
+					// FIXME: Remove dependencies and conflicts first
 //						for (ModLink link : causes) {
 //
 //							if (link instanceof QuiltModLinkDep) {
