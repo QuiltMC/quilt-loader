@@ -21,9 +21,11 @@ public final class ModLicenseImpl implements ModLicense {
 	private static final Map<String, ModLicense> licenses = new HashMap<>();
 	private static final Logger LOGGER = LogManager.getLogger(ModLicenseImpl.class);
 	static {
-		try (JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getResourceAsStream("quilt_loader/licenses.json")))){
+		try (JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getResourceAsStream("/quilt_loader/licenses.json")))){
 			reader.beginObject();
-			reader.skipValue(); // licensesListVersion
+			reader.nextName();// licensesListVersion
+			reader.skipValue();
+			reader.nextName();// licenses
 			JsonLoaderValue.ArrayImpl licenseData = JsonLoaderValue.read(reader).getArray();
 			// Technically this wastes memory on holding the things we don't need,
 			// but this code is much easier to read and understand than the long-form reader
