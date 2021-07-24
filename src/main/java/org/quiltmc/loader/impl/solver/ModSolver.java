@@ -317,6 +317,8 @@ public final class ModSolver {
 		}
 		extraResults = Collections.unmodifiableMap(extraResults);
 
+		// TODO: Warn on suspiciously similar versions!
+
 		return new ModSolveResult(resultingModMap, providedModMap, extraResults);
 	}
 
