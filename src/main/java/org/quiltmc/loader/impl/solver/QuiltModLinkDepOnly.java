@@ -122,6 +122,11 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 	}
 
 	@Override
+	boolean hasAnyValidOptions() {
+		return !validOptions.isEmpty();
+	}
+
+	@Override
 	public String toString() {
 		return publicDep.toString();
 	}

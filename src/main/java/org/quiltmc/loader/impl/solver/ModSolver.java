@@ -169,7 +169,14 @@ public final class ModSolver {
 					createModDepLink(logger, sat, cOption, dep);
 				}
 
-				// TODO: breaks!
+				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().breaks()) {
+
+					if (dep.shouldIgnore()) {
+						continue;
+					}
+
+					createModBreaks(logger, sat, cOption, dep);
+				}
 			}
 		}
 
@@ -223,34 +230,7 @@ public final class ModSolver {
 					break;
 				} else {
 
-					boolean removedAny = false;
-
-					// FIXME: Remove dependencies and conflicts first
-//						for (ModLink link : causes) {
-//
-//							if (link instanceof QuiltModLinkDep) {
-//								QuiltModLinkDep dep = (QuiltModLinkDep) link;
-//
-//								if (!dep.validOptions.isEmpty()) {
-//									continue;
-//								}
-//							}
-//
-//							if (link instanceof FabricModDependencyLink || link instanceof FabricModBreakLink) {
-//								link.remove(helper);
-//								removedAny = true;
-//								break;
-//							}
-//						}
-
-					// If that failed... try removing anything else
-					if (!removedAny) {
-						for (ModLink link : causes) {
-							sat.removeRule(link);
-							removedAny = true;
-							break;
-						}
-					}
+					boolean removedAny = blameSingleRule(sat, causes);
 
 					// If that failed... stop finding more errors
 					if (!removedAny) {
@@ -410,56 +390,38 @@ public final class ModSolver {
 		return new ModSolveResult(resultingModMap, providedModMap, extraResults);
 	}
 
+	private boolean blameSingleRule(Sat4jWrapper sat, List<ModLink> causes) {
+
+		// Remove dependencies and conflicts first
+		for (ModLink link : causes) {
+
+			if (link instanceof QuiltModLinkDep) {
+				QuiltModLinkDep dep = (QuiltModLinkDep) link;
+
+				if (dep.hasAnyValidOptions()) {
+					continue;
+				}
+			}
+
+			sat.removeRule(link);
+			return true;
+		}
+
+		// If that failed... try removing anything else
+		for (ModLink link : causes) {
+			sat.removeRule(link);
+			return true;
+		}
+
+		return false;
+	}
+
 	private <O extends LoadOption> LoadOptionResult<O> createLoadOptionResult(Class<O> cls, Map<LoadOption, Boolean> map) {
 		Map<O, Boolean> resultMap = new HashMap<>();
 		for (Entry<LoadOption, Boolean> entry : map.entrySet()) {
 			resultMap.put(cls.cast(entry.getKey()), entry.getValue());
 		}
 		return new LoadOptionResult<>(Collections.unmodifiableMap(resultMap));
-	}
-
-	void processDependencies(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
-		ModLink> helper, ModCandidate mc, ModLoadOption option)
-		throws ContradictionException {
-
-		// NEW - Quilt
-
-		for (org.quiltmc.loader.api.ModDependency dep : mc.getMetadata().depends()) {
-
-			if (dep.shouldIgnore()) {
-				continue;
-			}
-
-			createModDepLink(logger, ctx, option, dep);
-		}
-
-		if (1 + 1 == 2) {
-			return;
-		}
-		// OLD - Fabric
-
-		for (ModDependency dep : mc.getInfo().getDepends()) {
-			ModIdDefinition def = modDefs.get(dep.getModId());
-			if (def == null) {
-				def = new OptionalModIdDefintion(dep.getModId(), new ModLoadOption[0]);
-				modDefs.put(dep.getModId(), def);
-				def.put(helper);
-			}
-
-			new FabricModDependencyLink(logger, option, dep, def).put(helper);
-		}
-
-		for (ModDependency conflict : mc.getInfo().getBreaks()) {
-			ModIdDefinition def = modDefs.get(conflict.getModId());
-			if (def == null) {
-				def = new OptionalModIdDefintion(conflict.getModId(), new ModLoadOption[0]);
-				modDefs.put(conflict.getModId(), def);
-
-				def.put(helper);
-			}
-
-			new FabricModBreakLink(logger, option, conflict, def).put(helper);
-		}
 	}
 
 	public static QuiltModLinkDep createModDepLink(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
@@ -475,16 +437,8 @@ public final class ModSolver {
 		}
 	}
 
-	public static ModIdDefinition getOrCreateMod(Map<String, ModIdDefinition> modDefs, DependencyHelper<LoadOption,
-		ModLink> helper, String id) throws ContradictionException {
-
-		ModIdDefinition def = modDefs.get(id);
-		if (def == null) {
-			def = new OptionalModIdDefintion(id, new ModLoadOption[0]);
-			modDefs.put(id, def);
-			def.put(helper);
-		}
-		return def;
+	public static void createModBreaks(Logger logger, Sat4jWrapper sat, MainModLoadOption cOption, org.quiltmc.loader.api.ModDependency dep) {
+		// FIXME: Implement mod breaks!
 	}
 
 	// TODO: Convert all these methods to new error syntax
@@ -688,18 +642,18 @@ public final class ModSolver {
 		}
 
 		// TODO: See if I can get results similar to appendJiJInfo (which requires a complete "mod ID -> candidate" map)
-		HashSet<String> listedSources = new HashSet<>();
-		for (ModLoadOption involvedMod : roots.keySet()) {
-			appendLoadSourceInfo(errors, listedSources, involvedMod);
-		}
-
-		for (ModLink involvedLink : causes) {
-			if (involvedLink instanceof FabricModDependencyLink) {
-				appendLoadSourceInfo(errors, listedSources, ((FabricModDependencyLink) involvedLink).on);
-			} else if (involvedLink instanceof FabricModBreakLink) {
-				appendLoadSourceInfo(errors, listedSources, ((FabricModBreakLink) involvedLink).with);
-			}
-		}
+//		HashSet<String> listedSources = new HashSet<>();
+//		for (ModLoadOption involvedMod : roots.keySet()) {
+//			appendLoadSourceInfo(errors, listedSources, involvedMod);
+//		}
+//
+//		for (ModLink involvedLink : causes) {
+//			if (involvedLink instanceof FabricModDependencyLink) {
+//				appendLoadSourceInfo(errors, listedSources, ((FabricModDependencyLink) involvedLink).on);
+//			} else if (involvedLink instanceof FabricModBreakLink) {
+//				appendLoadSourceInfo(errors, listedSources, ((FabricModBreakLink) involvedLink).with);
+//			}
+//		}
 
 		return new ModResolutionException(errors.toString());
 	}

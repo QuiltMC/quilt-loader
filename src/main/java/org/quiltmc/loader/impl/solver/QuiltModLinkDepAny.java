@@ -4,12 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 public class QuiltModLinkDepAny extends QuiltModLinkDep {
 
@@ -55,6 +52,16 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 		}
 		array[i] = definer.negate(source);
 		definer.atLeastOneOf(array);
+	}
+
+	@Override
+	boolean hasAnyValidOptions() {
+		for (QuiltModLinkDepOnly on : options) {
+			if (on.hasAnyValidOptions()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
