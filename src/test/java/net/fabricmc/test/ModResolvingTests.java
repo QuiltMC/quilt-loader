@@ -103,12 +103,19 @@ final class ModResolvingTests {
 
 	@Test
 	public void altDep() throws Exception {
-		ModSolveResult modSet = resolveModSet("valid", "alt_deps");
+		// Run the test multiple times to ensure we always pick the right dep
+		// (and also makes sure we never mess up)
+		for (int i = 0; i < 1000; i++) {
+			if (i % 100 == 0) {
+				System.out.println("ModResolvingTests.altDep iteration " + i);
+			}
+			ModSolveResult modSet = resolveModSet("valid", "alt_deps");
 
-		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
-		assertNoMoreMods(modSet);
+			assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+			assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
+			assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
+			assertNoMoreMods(modSet);
+		}
 	}
 
     @Test
@@ -116,6 +123,24 @@ final class ModResolvingTests {
         ModSolveResult modSet = resolveModSet("valid", "quilt");
 
         assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void extraLibs() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "extra_libs");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModMissing(modSet, "mod-resolving-tests-library");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void subMod() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "sub_mod");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-sub", "1.0.0");
         assertNoMoreMods(modSet);
     }
 

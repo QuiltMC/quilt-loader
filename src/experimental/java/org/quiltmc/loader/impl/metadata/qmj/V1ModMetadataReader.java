@@ -9,6 +9,7 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
+import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.StringImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
@@ -44,6 +45,7 @@ final class V1ModMetadataReader {
 		List<ModDependency> breaks = new ArrayList<>();
 		Icons icons = null;
 		/* Internal fields */
+		ModLoadType loadType = ModLoadType.IF_REQUIRED;
 		List<?> provides = new ArrayList<>();
 		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
 		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
@@ -144,6 +146,17 @@ final class V1ModMetadataReader {
 				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, "repositories", repositories);
 			}
 
+			@Nullable
+			JsonLoaderValue loadTypeValue = quiltLoader.get("load_type");
+
+			if (loadTypeValue != null) {
+				if (loadTypeValue.type() != LoaderValue.LType.STRING) {
+					throw parseException(repositoriesValue, "load_type must be a string");
+				}
+
+				loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
+			}
+
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
 
@@ -210,6 +223,7 @@ final class V1ModMetadataReader {
 				depends,
 				breaks,
 				icons,
+				loadType,
 				provides,
 				entrypoints,
 				plugins,
@@ -287,6 +301,19 @@ final class V1ModMetadataReader {
 		}
 
 		return value;
+	}
+
+	private static ModLoadType readLoadType(JsonLoaderValue.StringImpl value) {
+		switch (value.getString()) {
+			case "always":
+				return ModLoadType.ALWAYS;
+			case "if_possible": 
+				return ModLoadType.IF_POSSIBLE;
+			case "if_required":
+				return ModLoadType.IF_REQUIRED;
+			default:
+				throw parseException(value, "load_type must be either 'always', 'if_possible', or 'if_required', but got '" + value.getString() + "'");
+		}
 	}
 
 	/**

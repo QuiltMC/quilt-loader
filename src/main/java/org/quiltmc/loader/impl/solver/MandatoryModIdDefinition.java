@@ -4,9 +4,9 @@ import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
-/** A concrete definition that mandates that the modid must be loaded by the given singular {@link ModCandidate},
- * and no others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid
- * by the time this is used). */
+/** A concrete definition that mandates that the modid must be loaded by the given singular {@link ModCandidate}, and no
+ * others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid by the time
+ * this is used). */
 final class MandatoryModIdDefinition extends ModIdDefinition {
 	final MainModLoadOption candidate;
 
@@ -25,9 +25,18 @@ final class MandatoryModIdDefinition extends ModIdDefinition {
 	}
 
 	@Override
-	MandatoryModIdDefinition put(DependencyHelper<LoadOption, ModLink> helper) throws ContradictionException {
-		helper.clause(this, candidate);
-		return this;
+	void define(RuleDefiner definer) {
+		definer.atLeastOneOf(candidate);
+	}
+
+	@Override
+	boolean onLoadOptionAdded(LoadOption option) {
+		return false;
+	}
+
+	@Override
+	boolean onLoadOptionRemoved(LoadOption option) {
+		return false;
 	}
 
 	@Override
@@ -44,5 +53,4 @@ final class MandatoryModIdDefinition extends ModIdDefinition {
 	public void fallbackErrorDescription(StringBuilder errors) {
 		throw new AbstractMethodError("// TODO: Implement this!");
 	}
-
 }

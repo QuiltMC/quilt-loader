@@ -10,11 +10,14 @@ import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 abstract class ModIdDefinition extends ModLink {
 	abstract String getModId();
 
-	/** @return An array of all the possible {@link LoadOption} instances that can define this modid. May be empty,
-	 *		 but will never be null. */
+	/** @return An array of all the possible {@link LoadOption} instances that can define this modid. May be empty, but
+	 *         will never be null. */
 	abstract ModLoadOption[] sources();
 
-	/** Utility for {@link #put(DependencyHelper)} which returns only {@link ModLoadOption#getRoot()} */
+	/** Utility for {@link #put(DependencyHelper)} which returns only {@link ModLoadOption#getRoot()}
+	 * 
+	 * @deprecated Since {@link RuleDefiner} should handle this. */
+	@Deprecated
 	protected static MainModLoadOption[] processSources(ModLoadOption[] array) {
 		MainModLoadOption[] dst = new MainModLoadOption[array.length];
 		for (int i = 0; i < dst.length; i++) {
@@ -25,36 +28,24 @@ abstract class ModIdDefinition extends ModLink {
 
 	abstract String getFriendlyName();
 
-	/**
-	 * @deprecated Not used yet. In the future this will be used for better error message generation.
-	 */
+	/** @deprecated Not used yet. In the future this will be used for better error message generation. */
 	@Deprecated
 	@Override
 	public boolean isNode() {
 		return false;
 	}
 
-	/**
-	 * @deprecated Not used yet. In the future this will be used for better error message generation.
-	 */
+	/** @deprecated Not used yet. In the future this will be used for better error message generation. */
 	@Deprecated
 	@Override
 	public Collection<? extends LoadOption> getNodesFrom() {
 		return Collections.emptySet();
 	}
 
-	/**
-	 * @deprecated Not used yet. In the future this will be used for better error message generation.
-	 */
+	/** @deprecated Not used yet. In the future this will be used for better error message generation. */
 	@Deprecated
 	@Override
 	public Collection<? extends LoadOption> getNodesTo() {
 		return Collections.emptySet();
-	}
-
-	@Override
-	protected int compareToSelf(ModLink o) {
-		ModIdDefinition other = (ModIdDefinition) o;
-		return getModId().compareTo(other.getModId());
 	}
 }

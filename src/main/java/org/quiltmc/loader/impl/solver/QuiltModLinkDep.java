@@ -6,4 +6,6 @@ abstract class QuiltModLinkDep extends ModLink {
 	public QuiltModLinkDep(LoadOption source) {
 		this.source = source;
 	}
+
+	abstract boolean hasAnyValidOptions();
 }

@@ -16,10 +16,19 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import net.fabricmc.loader.api.Version;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
+import net.fabricmc.loader.api.Version;
 
 public class ModCandidateSet {
 	private final String modId;
@@ -33,7 +42,7 @@ public class ModCandidateSet {
 
 		if (av instanceof Comparable && bv instanceof Comparable) {
 			@SuppressWarnings("unchecked")
-			Comparable<? super Version> cv = (Comparable<? super Version>) bv; 
+			Comparable<? super Version> cv = (Comparable<? super Version>) bv;
 			return (cv.compareTo(av));
 		} else {
 			return 0;
@@ -52,7 +61,7 @@ public class ModCandidateSet {
 		return modProvides;
 	}
 
-	public boolean add(ModCandidate candidate) {
+	public synchronized boolean add(ModCandidate candidate) {
 		String version = candidate.getInfo().getVersion().getFriendlyString();
 		ModCandidate oldCandidate = candidates.get(version);
 		if (oldCandidate != null) {
