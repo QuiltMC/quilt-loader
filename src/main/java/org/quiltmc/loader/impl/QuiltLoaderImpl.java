@@ -54,6 +54,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -341,20 +342,21 @@ public class QuiltLoaderImpl implements FabricLoader {
 	}
 
 	protected void addMod(ModCandidate candidate) throws ModResolutionException {
+		InternalModMetadata meta = candidate.getMetadata();
 		LoaderModMetadata info = candidate.getInfo();
 		URL originUrl = candidate.getOriginUrl();
 
 		if (modMap.containsKey(info.getId())) {
-			throw new ModResolutionException("Duplicate mod ID: " + info.getId() + "! (" + modMap.get(info.getId()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
+			throw new ModResolutionException("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
 		}
 
 		if (!info.loadsInEnvironment(getEnvironmentType())) {
 			return;
 		}
 
-		ModContainer container = new ModContainer(info, originUrl);
+		ModContainer container = new ModContainer(meta, originUrl);
 		mods.add(container);
-		modMap.put(info.getId(), container);
+		modMap.put(meta.id(), container);
 		for (String provides : info.getProvides()) {
 			if(modMap.containsKey(provides)) {
 				throw new ModResolutionException("Duplicate provided alias: " + provides + "! (" + modMap.get(info.getId()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
