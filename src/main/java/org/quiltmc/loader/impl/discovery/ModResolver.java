@@ -20,20 +20,15 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.PathType;
 
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.metadata.ModDependency;
-
 import org.quiltmc.json5.exception.ParseException;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
-import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.ModMetadataParser;
-import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
@@ -41,10 +36,6 @@ import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
-import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
-import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import org.apache.logging.log4j.Logger;
 
@@ -57,7 +48,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -268,7 +258,7 @@ public class ModResolver {
 			} catch (NoSuchFileException notQuilt) {
 
 				try {
-					info = new LoaderModMetadata[] { ModMetadataParser.parseMetadata(logger, fabricModJson) };
+					info = new LoaderModMetadata[] { FabricModMetadataReader.parseMetadata(logger, fabricModJson) };
 				} catch (ParseMetadataException.MissingRequired e){
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
 				} catch (ParseException | ParseMetadataException e) {

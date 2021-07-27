@@ -227,7 +227,7 @@ final class V1ModMetadataParser {
 			throw new ParseMetadataException.MissingRequired("version");
 		}
 
-		ModMetadataParser.logWarningMessages(logger, id, warnings);
+		FabricModMetadataReader.logWarningMessages(logger, id, warnings);
 
 		return new V1ModMetadata(id, version, provides, environment, entrypoints, jars, mixins, accessWidener, depends, recommends, suggests, conflicts, breaks, requires, name, description, authors, contributors, contact, license, icon, languageAdapters, customValues);
 	}
