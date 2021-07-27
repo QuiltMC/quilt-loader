@@ -1,0 +1,14 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "two",
+        "id": "mod_two",
+        "version": "1.0.0",
+        "breaks": [
+            {
+                "id": "dep",
+                "unless": "two:dep"
+            }
+        ]
+    }
+}

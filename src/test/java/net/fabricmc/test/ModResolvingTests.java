@@ -83,6 +83,14 @@ final class ModResolvingTests {
 	}
 
 	@Test
+	public void mavenGroups() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "groups");
+		assertModPresent(modSet, "dep", "1.0.0");
+		assertModPresent(modSet, "mod_one", "1.0.0");
+		assertModPresent(modSet, "mod_two", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+	@Test
 	public void providedDepends() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "provided_depends");
 

@@ -456,7 +456,7 @@ final class V1ModMetadataReader {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.getObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
-			Collection<VersionConstraint> versions = readConstraints(requiredField(obj, "versions"));
+			Collection<VersionConstraint> versions = readConstraints(obj.get("versions"));
 			String reason = string(obj, "reason");
 			boolean optional = bool(obj, "optional", false);
 			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
@@ -486,7 +486,10 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static Collection<VersionConstraint> readConstraints(JsonLoaderValue value) {
+	private static Collection<VersionConstraint> readConstraints(@Nullable JsonLoaderValue value) {
+		if (value == null) {
+			return Collections.singleton(VersionConstraintImpl.ANY);
+		}
 		if (value.type() == LoaderValue.LType.STRING) {
 			return Collections.singleton(VersionConstraintImpl.parse(value.getString()));
 		} else if (value.type() == LoaderValue.LType.ARRAY) {
