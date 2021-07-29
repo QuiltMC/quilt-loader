@@ -99,29 +99,28 @@ public interface ModMetadata {
 	 * @return the icon path, null if no applicable icon was found
 	 */
 	@Nullable
-	String getIcon(int size);
+	String icon(int size);
 
 	/**
-	 * Checks for values from a mod's metadata.
+	 * Checks for values from a mod's metadata. See {@link #values()} for the specific limitations of this API.
 	 *
-	 * @return true if a value if the value exists, or falsew
+	 * @return true if a value if the value exists, or false otherwise.
 	 */
-	boolean containsRootValue(String key);
+	boolean containsValue(String key);
 
 	/**
-	 * Gets a values from a mod's metadata.
-	 *
-	 * <p>This can be used to access custom elements that are present in a {@code quilt.mod.json}.
-	 *
+	 * Gets a value from a mod's metadata. See {@link #values()} for the specific limitations of this API.
 	 * @return a value from a mod's metadata or null if the value does not exist
 	 */
 	@Nullable
-	LoaderValue getValue(String key);
+	LoaderValue value(String key);
 
 	/**
-	 * Gets all values from a mod's metadata.
+	 * Gets all available values in a mod's metadata.
 	 *
-	 * <p>This can be used to access custom elements that are present in a {@code quilt.mod.json}.
+	 * <p>This can be used to access a place in a mod's metadata where custom values may be defined.
+	 * Depending on the format of the underlying implementation, this might include all of the data in the
+	 * original metadata file (such as a {@code quilt.mod.json}), or only custom values, or nothing at all.
 	 *
 	 * @return all the values
 	 */

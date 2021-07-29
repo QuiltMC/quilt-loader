@@ -170,18 +170,18 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Nullable
 	@Override
-	public String getIcon(int size) {
+	public String icon(int size) {
 		return this.icons.getIcon(size);
 	}
 
 	@Override
-	public boolean containsRootValue(String key) {
+	public boolean containsValue(String key) {
 		return this.root.containsKey(key);
 	}
 
 	@Nullable
 	@Override
-	public LoaderValue getValue(String key) {
+	public LoaderValue value(String key) {
 		return this.root.get(key);
 	}
 

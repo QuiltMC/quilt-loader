@@ -1,8 +1,5 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.SortedMap;
 
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +9,7 @@ import org.jetbrains.annotations.Nullable;
  */
 interface Icons {
 	/**
-	 * @see org.quiltmc.loader.api.ModMetadata#getIcon(int) 
+	 * @see org.quiltmc.loader.api.ModMetadata#icon(int)
 	 */
 	@Nullable
 	String getIcon(int size);

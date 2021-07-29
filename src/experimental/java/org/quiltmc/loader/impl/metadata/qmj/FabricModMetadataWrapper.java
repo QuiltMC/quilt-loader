@@ -1,13 +1,9 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import net.fabricmc.loader.api.metadata.CustomValue;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
@@ -27,13 +23,14 @@ import net.fabricmc.loader.api.metadata.Person;
 
 public class FabricModMetadataWrapper implements InternalModMetadata {
 	public static final String GROUP = "loader.fabric";
-
+	private static final String NO_LOCATION = "location not supported";
 	private final LoaderModMetadata fabricMeta;
 	private final Version version;
 	private final Collection<ModDependency> depends, breaks;
 	private final Collection<ModLicense> licenses;
 	private final Collection<ModContributor> contributors;
 	private final List<String> jars;
+	private final Map<String, LoaderValue> customValues;
 
 	public FabricModMetadataWrapper(LoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
@@ -47,9 +44,43 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		this.breaks = genDepends(fabricMeta.getBreaks());
 		this.licenses = Collections.unmodifiableCollection(fabricMeta.getLicense().stream().map(ModLicenseImpl::fromIdentifierOrDefault).collect(Collectors.toList()));
 		this.contributors = convertContributors(fabricMeta);
-		this.jars = new ArrayList<>();
+		List<String> jars = new ArrayList<>();
 		for (NestedJarEntry entry : fabricMeta.getJars()) {
 			jars.add(entry.getFile());
+		}
+		this.jars = Collections.unmodifiableList(jars);
+		HashMap<String, LoaderValue> customValues = new HashMap<>();
+		fabricMeta.getCustomValues().forEach((key, value) -> customValues.put(key, convertCustomValue(value)));
+		this.customValues = Collections.unmodifiableMap(customValues);
+	}
+
+	private LoaderValue convertCustomValue(CustomValue customValue) {
+		switch (customValue.getType()) {
+			case OBJECT:
+				Map<String, LoaderValue> map = new HashMap<>();
+
+				for (Map.Entry<String, CustomValue> cvEntry : customValue.getAsObject()) {
+					map.put(cvEntry.getKey(), convertCustomValue(cvEntry.getValue()));
+				}
+
+				return new JsonLoaderValue.ObjectImpl(NO_LOCATION, map);
+			case ARRAY:
+				CustomValue.CvArray arr = customValue.getAsArray();
+				List<LoaderValue> values = new ArrayList<>(arr.size());
+				for (CustomValue value : arr) {
+					values.add(convertCustomValue(value));
+				}
+				return new JsonLoaderValue.ArrayImpl(NO_LOCATION, values);
+			case STRING:
+				return new JsonLoaderValue.StringImpl(NO_LOCATION, customValue.getAsString());
+			case NUMBER:
+				return new JsonLoaderValue.NumberImpl(NO_LOCATION, customValue.getAsNumber());
+			case BOOLEAN:
+				return new JsonLoaderValue.BooleanImpl(NO_LOCATION, customValue.getAsBoolean());
+			case NULL:
+				return new JsonLoaderValue.NullImpl(NO_LOCATION);
+			default:
+				throw new IllegalStateException("Unexpected custom value type " + customValue.getType());
 		}
 	}
 
@@ -184,26 +215,23 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public @Nullable String getIcon(int size) {
+	public @Nullable String icon(int size) {
 		return fabricMeta.getIconPath(size).orElse(null);
 	}
 
 	@Override
-	public boolean containsRootValue(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+	public boolean containsValue(String key) {
+		return customValues.containsKey(key);
 	}
 
 	@Override
-	public @Nullable LoaderValue getValue(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+	public @Nullable LoaderValue value(String key) {
+		return customValues.get(key);
 	}
 
 	@Override
 	public Map<String, LoaderValue> values() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return customValues;
 	}
 
 	@Override
