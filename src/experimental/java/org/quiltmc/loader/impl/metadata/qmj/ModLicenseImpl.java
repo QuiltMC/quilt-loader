@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModLicense;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,14 +25,14 @@ public final class ModLicenseImpl implements ModLicense {
 			reader.nextName();// licensesListVersion
 			reader.skipValue();
 			reader.nextName();// licenses
-			JsonLoaderValue.ArrayImpl licenseData = JsonLoaderValue.read(reader).getArray();
+			JsonLoaderValue.ArrayImpl licenseData = JsonLoaderValue.read(reader).asArray();
 			// Technically this wastes memory on holding the things we don't need,
 			// but this code is much easier to read and understand than the long-form reader
 			for (LoaderValue value : licenseData) {
-				LoaderValue.LObject obj = value.getObject();
-				String name = obj.get("name").getString();
-				String id = obj.get("licenseId").getString();
-				String url = obj.get("reference").getString();
+				LoaderValue.LObject obj = value.asObject();
+				String name = obj.get("name").asString();
+				String id = obj.get("licenseId").asString();
+				String url = obj.get("reference").asString();
 				// TODO: description
 				licenses.put(id, new ModLicenseImpl(name, id, url, ""));
 			}

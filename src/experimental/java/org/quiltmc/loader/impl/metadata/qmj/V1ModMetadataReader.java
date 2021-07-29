@@ -9,7 +9,6 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
-import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.StringImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
@@ -71,7 +70,7 @@ final class V1ModMetadataReader {
 				throw new ParseException("version is a required field");
 			}
 
-			version = Version.of(versionValue.getString());
+			version = Version.of(versionValue.asString());
 			// Now we reach optional fields
 			// TODO: provides
 
@@ -94,7 +93,7 @@ final class V1ModMetadataReader {
 					throw parseException(pluginsValue, "plugins must be an array");
 				}
 
-				for (LoaderValue entry : pluginsValue.getArray()) {
+				for (LoaderValue entry : pluginsValue.asArray()) {
 					plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
 				}
 			}
@@ -123,14 +122,14 @@ final class V1ModMetadataReader {
 
 			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
 			if (dependsValue != null) {
-				for (LoaderValue v : dependsValue.getArray()) {
+				for (LoaderValue v : dependsValue.asArray()) {
 					depends.add(readDependencyObject((JsonLoaderValue) v));
 				}
 			}
 
 			@Nullable JsonLoaderValue breaksValue = assertType(quiltLoader, "breaks", LoaderValue.LType.ARRAY);
 			if (breaksValue != null) {
-				for (LoaderValue v : breaksValue.getArray()) {
+				for (LoaderValue v : breaksValue.asArray()) {
 					breaks.add(readDependencyObject((JsonLoaderValue) v));
 				}
 			}
@@ -199,7 +198,7 @@ final class V1ModMetadataReader {
 					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", mixins);
 					break;
 				case STRING:
-					mixins.add(mixinValue.getString());
+					mixins.add(mixinValue.asString());
 					break;
 				default:
 					throw parseException(mixinValue, "mixin value must be an array of strings or a string");
@@ -246,7 +245,7 @@ final class V1ModMetadataReader {
 			throw parseException(value, String.format("%s must be a string", field));
 		}
 
-		return value.getString();
+		return value.asString();
 	}
 
 	private static JsonLoaderValue requiredField(JsonLoaderValue.ObjectImpl object, String field) {
@@ -271,7 +270,7 @@ final class V1ModMetadataReader {
 			throw parseException(value, String.format("%s must be a string", field));
 		}
 
-		return value.getString();
+		return value.asString();
 	}
 
 	private static boolean bool(ObjectImpl object, String field, boolean _default) {
@@ -285,7 +284,7 @@ final class V1ModMetadataReader {
 			throw parseException(value, String.format("%s must be a boolean", field));
 		}
 		
-		return value.getBoolean();
+		return value.asBoolean();
 	}
 
 	@Nullable
@@ -304,7 +303,7 @@ final class V1ModMetadataReader {
 	}
 
 	private static ModLoadType readLoadType(JsonLoaderValue.StringImpl value) {
-		switch (value.getString()) {
+		switch (value.asString()) {
 			case "always":
 				return ModLoadType.ALWAYS;
 			case "if_possible": 
@@ -312,7 +311,7 @@ final class V1ModMetadataReader {
 			case "if_required":
 				return ModLoadType.IF_REQUIRED;
 			default:
-				throw parseException(value, "load_type must be either 'always', 'if_possible', or 'if_required', but got '" + value.getString() + "'");
+				throw parseException(value, "load_type must be either 'always', 'if_possible', or 'if_required', but got '" + value.asString() + "'");
 		}
 	}
 
@@ -330,7 +329,7 @@ final class V1ModMetadataReader {
 				throw parseException((JsonLoaderValue) value, String.format("Entry inside %s must be a string", inside));
 			}
 
-			destination.add(value.getString());
+			destination.add(value.asString());
 		}
 	}
 
@@ -343,7 +342,7 @@ final class V1ModMetadataReader {
 				throw parseException((JsonLoaderValue) value, String.format("entry with key %s inside \"%s\" must be a string", key, inside));
 			}
 
-			if (destination.put(key, value.getString()) != null) {
+			if (destination.put(key, value.asString()) != null) {
 				// TODO: Warn in dev environment about duplicate keys
 			}
 		}
@@ -355,7 +354,7 @@ final class V1ModMetadataReader {
 		if (licensesValue != null) {
 			switch (licensesValue.type()) {
 			case ARRAY:
-				for (LoaderValue license : licensesValue.getArray()) {
+				for (LoaderValue license : licensesValue.asArray()) {
 					licenses.add(readLicenseObject((JsonLoaderValue) licenses));
 				}
 
@@ -373,7 +372,7 @@ final class V1ModMetadataReader {
 	private static ModLicense readLicenseObject(JsonLoaderValue licenseValue) {
 		switch (licenseValue.type()) {
 		case OBJECT: {
-			JsonLoaderValue.ObjectImpl object = licenseValue.getObject();
+			JsonLoaderValue.ObjectImpl object = licenseValue.asObject();
 
 			String name = requiredString(object, "name");
 			String id = requiredString(object, "id");
@@ -383,7 +382,7 @@ final class V1ModMetadataReader {
 			return new ModLicenseImpl(name, id, url, description);
 		}
 		case STRING: {
-			ModLicense ret = ModLicenseImpl.fromIdentifier(licenseValue.getString());
+			ModLicense ret = ModLicenseImpl.fromIdentifier(licenseValue.asString());
 			if (ret == null) {
 				// QMJ specification says this *must* be a valid identifier if it doesn't want to use the long-form version
 				throw new ParseException("A string license must be a valid SPDX identifier");
@@ -406,7 +405,7 @@ final class V1ModMetadataReader {
 
 			switch (value.type()) {
 			case ARRAY:
-				for (LoaderValue entrypoint : value.getArray()) {
+				for (LoaderValue entrypoint : value.asArray()) {
 					entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) entrypoint, inside));
 				}
 
@@ -422,7 +421,7 @@ final class V1ModMetadataReader {
 	private static AdapterLoadableClassEntry readAdapterLoadableClassEntry(JsonLoaderValue entry, String inside) {
 		switch (entry.type()) {
 		case OBJECT:
-			LoaderValue.LObject entryObject = entry.getObject();
+			LoaderValue.LObject entryObject = entry.asObject();
 			LoaderValue adapter = entryObject.get("adapter");
 			LoaderValue value = entryObject.get("value");
 
@@ -442,10 +441,10 @@ final class V1ModMetadataReader {
 				throw parseException((JsonLoaderValue) value, String.format("adapter field inside \"%s\" must be a string", inside));
 			}
 
-			return new AdapterLoadableClassEntry(adapter.getString(), value.getString());
+			return new AdapterLoadableClassEntry(adapter.asString(), value.asString());
 		case STRING:
 			// Assume `default` as language adapter
-			return new AdapterLoadableClassEntry("default", entry.getString());
+			return new AdapterLoadableClassEntry("default", entry.asString());
 		default:
 			throw parseException(entry, String.format("value inside \"%s\" must be a string or object", inside));
 		}
@@ -454,7 +453,7 @@ final class V1ModMetadataReader {
 	private static ModDependency readDependencyObject(JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
-			JsonLoaderValue.ObjectImpl obj = value.getObject();
+			JsonLoaderValue.ObjectImpl obj = value.asObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
 			Collection<VersionConstraint> versions = readConstraints(obj.get("versions"));
 			String reason = string(obj, "reason");
@@ -467,10 +466,10 @@ final class V1ModMetadataReader {
 			return new ModDependencyImpl.OnlyImpl(id, versions, reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
-			return new ModDependencyImpl.OnlyImpl(new ModDependencyIdentifierImpl(value.getString()));
+			return new ModDependencyImpl.OnlyImpl(new ModDependencyIdentifierImpl(value.asString()));
 		case ARRAY:
 			// OR or all sub dependencies
-			JsonLoaderValue.ArrayImpl array = value.getArray();
+			JsonLoaderValue.ArrayImpl array = value.asArray();
 			Collection<ModDependency> dependencies = new ArrayList<>(array.size());
 
 			for (LoaderValue loaderValue : array) {
@@ -491,11 +490,11 @@ final class V1ModMetadataReader {
 			return Collections.singleton(VersionConstraintImpl.ANY);
 		}
 		if (value.type() == LoaderValue.LType.STRING) {
-			return Collections.singleton(VersionConstraintImpl.parse(value.getString()));
+			return Collections.singleton(VersionConstraintImpl.parse(value.asString()));
 		} else if (value.type() == LoaderValue.LType.ARRAY) {
-			Collection<VersionConstraint> ret = new ArrayList<>(value.getArray().size());
-			for (LoaderValue s : value.getArray()) {
-				ret.add(VersionConstraintImpl.parse(s.getString()));
+			Collection<VersionConstraint> ret = new ArrayList<>(value.asArray().size());
+			for (LoaderValue s : value.asArray()) {
+				ret.add(VersionConstraintImpl.parse(s.asString()));
 			}
 			return ret;
 		} else {

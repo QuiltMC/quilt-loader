@@ -5,7 +5,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -13,8 +12,6 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.ModLicense;
-import org.quiltmc.loader.api.ModMetadata;
 
 /**
  * The central class used to read a quilt.mod.json.
@@ -50,7 +47,7 @@ public final class ModMetadataReader {
 		}
 
 		// We have asserted above we have an object
-		JsonLoaderValue.ObjectImpl root = value.getObject();
+		JsonLoaderValue.ObjectImpl root = value.asObject();
 		@Nullable JsonLoaderValue schemaVersion = root.get(SCHEMA_VERSION);
 
 		if (schemaVersion == null) {
@@ -61,7 +58,7 @@ public final class ModMetadataReader {
 			throw parseException(schemaVersion, "schema_version must be a number");
 		}
 
-		int version = schemaVersion.getNumber().intValue();
+		int version = schemaVersion.asNumber().intValue();
 
 		//noinspection SwitchStatementWithTooFewBranches
 		switch (version) {

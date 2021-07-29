@@ -88,7 +88,7 @@ interface JsonLoaderValue extends LoaderValue {
 	String location();
 
 	@Override
-	default ObjectImpl getObject() {
+	default ObjectImpl asObject() {
 		if (this instanceof ObjectImpl) {
 			return (ObjectImpl) this;
 		}
@@ -97,7 +97,7 @@ interface JsonLoaderValue extends LoaderValue {
 	}
 
 	@Override
-	default ArrayImpl getArray() {
+	default ArrayImpl asArray() {
 		if (this instanceof ArrayImpl) {
 			return ((ArrayImpl) this);
 		}
@@ -106,7 +106,7 @@ interface JsonLoaderValue extends LoaderValue {
 	}
 
 	@Override
-	default String getString() {
+	default String asString() {
 		if (this instanceof StringImpl) {
 			return ((StringImpl) this).value;
 		}
@@ -115,7 +115,7 @@ interface JsonLoaderValue extends LoaderValue {
 	}
 
 	@Override
-	default Number getNumber() {
+	default Number asNumber() {
 		if (this instanceof NumberImpl) {
 			return ((NumberImpl) this).value;
 		}
@@ -124,7 +124,7 @@ interface JsonLoaderValue extends LoaderValue {
 	}
 
 	@Override
-	default boolean getBoolean() {
+	default boolean asBoolean() {
 		if (this instanceof BooleanImpl) {
 			return ((BooleanImpl) this).value;
 		}

@@ -22,7 +22,7 @@ public interface LoaderValue {
 	 * @return this value
 	 * @throws ClassCastException if this value is not an object
 	 */
-	LObject getObject();
+	LObject asObject();
 
 	/**
 	 * Coerces this custom value to an {@link LType#ARRAY}.
@@ -30,7 +30,7 @@ public interface LoaderValue {
 	 * @return this value
 	 * @throws ClassCastException if this value is not an array
 	 */
-	LArray getArray();
+	LArray asArray();
 
 	/**
 	 * Coerces this custom value to a {@link LType#STRING}.
@@ -38,7 +38,7 @@ public interface LoaderValue {
 	 * @return this value
 	 * @throws ClassCastException if this value is not a string
 	 */
-	String getString();
+	String asString();
 
 	/**
 	 * Coerces this custom value to a {@link LType#NUMBER}.
@@ -46,7 +46,7 @@ public interface LoaderValue {
 	 * @return this value
 	 * @throws ClassCastException if this value is not a number
 	 */
-	Number getNumber();
+	Number asNumber();
 
 	/**
 	 * Coerces this custom value to a {@link LType#BOOLEAN}.
@@ -54,7 +54,7 @@ public interface LoaderValue {
 	 * @return this value
 	 * @throws ClassCastException if this value is not a boolean
 	 */
-	boolean getBoolean();
+	boolean asBoolean();
 
 	/**
 	 * Represents an {@link LType#OBJECT} value.
@@ -98,17 +98,17 @@ public interface LoaderValue {
 		ARRAY,
 		/**
 		 * Represents a {@link String} value.
-		 * @see LoaderValue#getString()
+		 * @see LoaderValue#asString()
 		 */
 		STRING,
 		/**
 		 * Represents a {@link Number} value.
-		 * @see LoaderValue#getNumber()
+		 * @see LoaderValue#asNumber()
 		 */
 		NUMBER,
 		/**
 		 * Represents a {@code boolean} value.
-		 * @see LoaderValue#getBoolean()
+		 * @see LoaderValue#asBoolean()
 		 */
 		BOOLEAN,
 		/**
