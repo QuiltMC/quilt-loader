@@ -2,6 +2,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.*;
 
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -54,6 +55,7 @@ final class V1ModMetadataReader {
 		/* TODO: Move to plugins */
 		List<String> mixins = new ArrayList<>();
 		List<String> accessWideners = new ArrayList<>();
+		ModEnvironment environment = ModEnvironment.UNIVERSAL;
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
 
@@ -205,8 +207,24 @@ final class V1ModMetadataReader {
 				}
 			}
 
+			@Nullable JsonLoaderValue mcValue = root.get("minecraft");
+			if (mcValue != null) {
+				ObjectImpl object = mcValue.asObject();
+				String env = string(object, "environment");
+				switch (env) {
+					case "client":
+						environment = ModEnvironment.CLIENT;
+						break;
+					case "server":
+						environment = ModEnvironment.SERVER;
+						break;
+					case "*":
+					case "":
+						environment = ModEnvironment.UNIVERSAL;
+						break;
+				}
+			}
 			// TODO: Access wideners
-			// TODO: Minecraft game metadata
 		}
 
 		return new V1ModMetadataImpl(
@@ -230,7 +248,8 @@ final class V1ModMetadataReader {
 				languageAdapters,
 				repositories,
 				mixins,
-				accessWideners
+				accessWideners,
+				environment
 		);
 	}
 

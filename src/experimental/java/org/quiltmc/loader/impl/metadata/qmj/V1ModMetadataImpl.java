@@ -5,13 +5,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.ModContributor;
-import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModLicense;
-import org.quiltmc.loader.api.ModMetadata;
-import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.*;
 
 final class V1ModMetadataImpl implements InternalModMetadata {
 	private final JsonLoaderValue.ObjectImpl root;
@@ -38,7 +34,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<String> repositories;
 	private final Collection<String> mixins;
 	private final Collection<String> accessWideners;
-
+	private final ModEnvironment environment;
 	V1ModMetadataImpl(
 			JsonLoaderValue.ObjectImpl root,
 			/* Required fields */
@@ -64,7 +60,8 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			Collection<String> repositories,
 			/* TODO: Move to plugins */
 			Collection<String> mixins,
-			Collection<String> accessWideners
+			Collection<String> accessWideners,
+			ModEnvironment env
 			// TODO: Custom objects - long term
 	) {
 		this.root = root;
@@ -110,6 +107,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		// Move to plugins
 		this.mixins = Collections.unmodifiableCollection(mixins);
 		this.accessWideners = Collections.unmodifiableCollection(accessWideners);
+		this.environment = env;
 	}
 
 	@Override
@@ -236,5 +234,10 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public Collection<String> accessWideners() {
 		return this.accessWideners;
+	}
+
+	@Override
+	public ModEnvironment environment() {
+		return environment;
 	}
 }

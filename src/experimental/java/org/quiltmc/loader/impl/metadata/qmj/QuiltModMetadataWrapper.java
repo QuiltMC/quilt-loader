@@ -3,22 +3,18 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.gson.JsonElement;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.ModDependency.Only;
-import org.quiltmc.loader.api.VersionConstraint;
-import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.impl.metadata.*;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
@@ -34,10 +30,30 @@ import net.fabricmc.api.EnvType;
 public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	private final InternalModMetadata quiltMeta;
 	private Version version;
-	private Collection<ModDependency> depends, breaks;
-
+	private final Collection<Person> authors;
+	private final Collection<Person> contributors;
+	private final ContactInformation contact;
+	private final Collection<String> licenses;
 	public QuiltModMetadataWrapper(InternalModMetadata quiltMeta) {
 		this.quiltMeta = quiltMeta;
+		ArrayList<Person> authors = new ArrayList<>();
+		ArrayList<Person> contributors = new ArrayList<>();
+		for (ModContributor contributor : quiltMeta.contributors()) {
+			// "Owner" is the only defined role in the QMJ spec
+			if (contributor.role().equals("Owner")) {
+				authors.add(new SimplePerson(contributor.name()));
+			} else {
+				contributors.add(new SimplePerson(contributor.name()));
+			}
+		}
+		this.authors = Collections.unmodifiableCollection(authors);
+		this.contributors = Collections.unmodifiableCollection(contributors);
+		this.contact = new MapBackedContactInformation(quiltMeta.contactInfo());
+		ArrayList<String> licenses = new ArrayList<>();
+		for (ModLicense license : this.quiltMeta.licenses()) {
+			licenses.add(license.id()); // Convention seems to be to use the IDs in fabric metadata
+		}
+		this.licenses = Collections.unmodifiableCollection(licenses);
 	}
 
 	@Override
@@ -57,8 +73,7 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public Collection<String> getProvides() {
-		// FIXME: Implement provides properly!
-		return Collections.emptySet();
+		throw new UnsupportedOperationException("Provides cannot be represented as a Fabric construct");
 	}
 
 	@Override
@@ -75,16 +90,22 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public ModEnvironment getEnvironment() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		switch (quiltMeta.environment()) {
+			case CLIENT:
+				return ModEnvironment.CLIENT;
+			case SERVER:
+				return ModEnvironment.SERVER;
+			case UNIVERSAL:
+				return ModEnvironment.UNIVERSAL;
+			default:
+				throw new AssertionError();
+		}
 	}
 
 	@Override
 	public Collection<ModDependency> getDepends() {
-		if (depends == null) {
-			depends = genDeps(quiltMeta.depends());
-		}
-		return depends;
+		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
+		throw new UnsupportedOperationException("Quilt dependencies can not be represented as a Fabric construct!");
 	}
 
 	@Override
@@ -104,51 +125,8 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getBreaks() {
-		if (breaks == null) {
-			breaks = genDeps(quiltMeta.breaks());
-		}
-		return breaks;
-	}
-
-	private static Collection<ModDependency> genDeps(Collection<org.quiltmc.loader.api.ModDependency> from) {
-		List<ModDependency> to = new ArrayList<>();
-
-		for (org.quiltmc.loader.api.ModDependency qDep : from) {
-
-			if (qDep instanceof org.quiltmc.loader.api.ModDependency.Any) {
-				// Literally nothing we can do about this
-				continue;
-			}
-
-			org.quiltmc.loader.api.ModDependency.Only on = (org.quiltmc.loader.api.ModDependency.Only) qDep;
-
-			to.add(new ModDependency() {
-				@Override
-				public boolean matches(Version version) {
-					org.quiltmc.loader.api.Version quiltVer;
-
-					if (version instanceof org.quiltmc.loader.api.Version) {
-						quiltVer = (org.quiltmc.loader.api.Version) version;
-					} else {
-						quiltVer = org.quiltmc.loader.api.Version.of(version.getFriendlyString());
-					}
-
-					return on.matches(quiltVer);
-				}
-
-				@Override
-				public Set<VersionPredicate> getVersionRequirements() {
-					throw new UnsupportedOperationException("// TODO: Implement this!");
-				}
-
-				@Override
-				public String getModId() {
-					return on.id().id();
-				}
-			});
-		}
-
-		return to;
+		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
+		throw new UnsupportedOperationException("Quilt dependencies can not be represented as a Fabric construct!");
 	}
 
 	@Override
@@ -163,32 +141,27 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public Collection<Person> getAuthors() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return authors;
 	}
 
 	@Override
 	public Collection<Person> getContributors() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return contributors;
 	}
 
 	@Override
 	public ContactInformation getContact() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return contact;
 	}
 
 	@Override
 	public Collection<String> getLicense() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return licenses;
 	}
 
 	@Override
 	public Optional<String> getIconPath(int size) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return Optional.ofNullable(quiltMeta.icon(size));
 	}
 
 	@Override

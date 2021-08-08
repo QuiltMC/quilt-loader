@@ -3,8 +3,8 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.Collection;
 import java.util.Map;
 
-import org.apache.logging.log4j.core.util.Loader;
 import org.quiltmc.loader.api.ModMetadata;
+import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 
 /**

@@ -4,13 +4,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import net.fabricmc.loader.api.metadata.CustomValue;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.ModContributor;
-import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModLicense;
-import org.quiltmc.loader.api.Version;
-import org.quiltmc.loader.api.VersionConstraint;
+import org.quiltmc.loader.api.*;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
@@ -244,6 +240,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	public Collection<String> accessWideners() {
 		// TODO Auto-generated method stub
 		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	@Override
+	public ModEnvironment environment() {
+		return fabricMeta.getEnvironment();
 	}
 
 	@Override
