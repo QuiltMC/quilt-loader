@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import net.fabricmc.loader.api.FabricLoader;
@@ -54,6 +55,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
@@ -434,9 +436,9 @@ public class QuiltLoaderImpl implements FabricLoader {
 					entrypointStorage.addDeprecated(mod, adapter, in);
 				}
 
-				for (String key : mod.getInfo().getEntrypointKeys()) {
-					for (EntrypointMetadata in : mod.getInfo().getEntrypoints(key)) {
-						entrypointStorage.add(mod, key, in, adapterMap);
+				for (Map.Entry<String, Collection<AdapterLoadableClassEntry>> entry : mod.getInternalMeta().getEntrypoints().entrySet()) {
+					for (AdapterLoadableClassEntry e : entry.getValue()) {
+						entrypointStorage.add(mod, entry.getKey(), e, adapterMap);
 					}
 				}
 			} catch (Exception e) {

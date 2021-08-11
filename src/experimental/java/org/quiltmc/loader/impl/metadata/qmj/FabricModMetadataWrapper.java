@@ -7,6 +7,7 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.*;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
@@ -27,6 +28,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final Collection<ModContributor> contributors;
 	private final List<String> jars;
 	private final Map<String, LoaderValue> customValues;
+	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
 
 	public FabricModMetadataWrapper(LoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
@@ -45,9 +47,20 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 			jars.add(entry.getFile());
 		}
 		this.jars = Collections.unmodifiableList(jars);
+
 		HashMap<String, LoaderValue> customValues = new HashMap<>();
 		fabricMeta.getCustomValues().forEach((key, value) -> customValues.put(key, convertCustomValue(value)));
 		this.customValues = Collections.unmodifiableMap(customValues);
+
+		Map<String, Collection<AdapterLoadableClassEntry>> e = new HashMap<>();
+		for (String key : fabricMeta.getEntrypointKeys()) {
+			Collection<AdapterLoadableClassEntry> c = new ArrayList<>();
+			for (EntrypointMetadata entrypoint : fabricMeta.getEntrypoints(key)) {
+				c.add(new AdapterLoadableClassEntry(entrypoint.getAdapter(), entrypoint.getValue()));
+			}
+			e.put(key, Collections.unmodifiableCollection(c));
+		}
+		this.entrypoints = Collections.unmodifiableMap(e);
 	}
 
 	private LoaderValue convertCustomValue(CustomValue customValue) {
@@ -238,8 +251,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Collection<String> accessWideners() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		String acc = fabricMeta.getAccessWidener();
+		return acc == null ? Collections.emptyList() : Collections.singleton(acc);
 	}
 
 	@Override
@@ -254,9 +267,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
+		return entrypoints;
 	}
 
 	@Override

@@ -202,7 +202,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Nullable
 	@Override
-	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints(String key) {
+	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
 		return this.entrypoints;
 	}
 

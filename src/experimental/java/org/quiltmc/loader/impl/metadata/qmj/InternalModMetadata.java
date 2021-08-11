@@ -16,7 +16,7 @@ public interface InternalModMetadata extends ModMetadata, ModMetadataToBeMovedTo
 
 	ModLoadType loadType();
 
-	Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints(String key);
+	Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints();
 
 	Collection<AdapterLoadableClassEntry> getPlugins();
 
