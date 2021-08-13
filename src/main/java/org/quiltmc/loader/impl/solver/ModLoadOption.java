@@ -1,5 +1,6 @@
 package org.quiltmc.loader.impl.solver;
 
+import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolver;
@@ -19,9 +20,17 @@ abstract class ModLoadOption extends LoadOption {
 			return "$jar+quilt$";
 		}
 	}
+	
+	String group() {
+		return candidate.getMetadata().group();
+	}
 
 	String modId() {
-		return candidate.getInfo().getId();
+		return candidate.getMetadata().id();
+	}
+
+	Version version() {
+		return candidate.getMetadata().version();
 	}
 
 	@Override

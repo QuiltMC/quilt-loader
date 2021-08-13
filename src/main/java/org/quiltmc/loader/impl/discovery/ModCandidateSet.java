@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 
 import net.fabricmc.loader.api.Version;
 
@@ -79,7 +80,9 @@ public class ModCandidateSet {
 		}
 
 		candidates.put(version, candidate);
-		modProvides.addAll(candidate.getInfo().getProvides());
+		for (ModProvided provided : candidate.getMetadata().provides()) {
+			modProvides.add(provided.id);
+		}
 		if (candidate.getDepth() == 0) {
 			depthZeroCandidates.add(candidate);
 		}

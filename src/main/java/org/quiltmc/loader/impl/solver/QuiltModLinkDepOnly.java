@@ -56,12 +56,10 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 
 			allOptions.add(mod);
 
-			InternalModMetadata oMeta = mod.candidate.getMetadata();
-
 			String maven = publicDep.id().mavenGroup();
-			boolean groupMatches = maven.isEmpty() || maven.equals(oMeta.group());
+			boolean groupMatches = maven.isEmpty() || maven.equals(mod.group());
 
-			if (groupMatches && publicDep.matches(oMeta.version())) {
+			if (groupMatches && publicDep.matches(mod.version())) {
 				validOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {

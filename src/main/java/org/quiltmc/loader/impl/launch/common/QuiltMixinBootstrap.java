@@ -28,6 +28,7 @@ import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -45,12 +46,11 @@ public final class QuiltMixinBootstrap {
 	}
 
 	static Set<String> getMixinConfigs(QuiltLoaderImpl loader, EnvType type) {
-		return loader.getAllMods().stream()
-			.map(ModContainer::getMetadata)
-			.filter((m) -> m instanceof LoaderModMetadata)
-			.flatMap((m) -> ((LoaderModMetadata) m).getMixinConfigs(type).stream())
-			.filter(s -> s != null && !s.isEmpty())
-			.collect(Collectors.toSet());
+		Set<String> set = new HashSet<>();
+		for (org.quiltmc.loader.impl.ModContainer mod : loader.getMods()) {
+			set.addAll(mod.getInternalMeta().mixins(type));
+		}
+		return set;
 	}
 
 	public static void init(EnvType side, QuiltLoaderImpl loader) {

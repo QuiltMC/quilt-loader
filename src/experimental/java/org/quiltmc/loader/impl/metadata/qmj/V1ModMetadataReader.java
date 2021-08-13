@@ -46,7 +46,7 @@ final class V1ModMetadataReader {
 		Icons icons = null;
 		/* Internal fields */
 		ModLoadType loadType = ModLoadType.IF_REQUIRED;
-		List<?> provides = new ArrayList<>();
+		Collection<ModProvided> provides = new ArrayList<>();
 		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
 		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
 		List<String> jars = new ArrayList<>();

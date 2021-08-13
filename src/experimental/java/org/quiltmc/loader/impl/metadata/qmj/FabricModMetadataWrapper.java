@@ -18,6 +18,8 @@ import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.VersionPredicate;
 import net.fabricmc.loader.api.metadata.Person;
 
+import net.fabricmc.api.EnvType;
+
 public class FabricModMetadataWrapper implements InternalModMetadata {
 	public static final String GROUP = "loader.fabric";
 	private static final String NO_LOCATION = "location not supported";
@@ -29,6 +31,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final List<String> jars;
 	private final Map<String, LoaderValue> customValues;
 	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
+	private final List<ModProvided> provides;
 
 	public FabricModMetadataWrapper(LoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
@@ -61,6 +64,12 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 			e.put(key, Collections.unmodifiableCollection(c));
 		}
 		this.entrypoints = Collections.unmodifiableMap(e);
+
+		List<ModProvided> p = new ArrayList<>();
+		for (String provided : fabricMeta.getProvides()) {
+			p.add(new ModProvided("", provided, this.version));
+		}
+		this.provides = Collections.unmodifiableList(p);
 	}
 
 	private LoaderValue convertCustomValue(CustomValue customValue) {
@@ -244,9 +253,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<String> mixins() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+	public Collection<String> mixins(EnvType env) {
+		return fabricMeta.getMixinConfigs(env);
 	}
 
 	@Override
@@ -261,9 +269,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<?> provides() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+	public Collection<ModProvided> provides() {
+		return provides;
 	}
 
 	@Override
@@ -284,8 +291,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Map<String, String> languageAdapters() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return fabricMeta.getLanguageAdapterDefinitions();
 	}
 
 	@Override

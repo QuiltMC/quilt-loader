@@ -57,6 +57,7 @@ import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -345,25 +346,24 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	protected void addMod(ModCandidate candidate) throws ModResolutionException {
 		InternalModMetadata meta = candidate.getMetadata();
-		LoaderModMetadata info = candidate.getInfo();
 		URL originUrl = candidate.getOriginUrl();
 
-		if (modMap.containsKey(info.getId())) {
+		if (modMap.containsKey(meta.id())) {
 			throw new ModResolutionException("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
 		}
 
-		if (!info.loadsInEnvironment(getEnvironmentType())) {
+		if (!meta.environment().matches(getEnvironmentType())) {
 			return;
 		}
 
 		ModContainer container = new ModContainer(meta, originUrl);
 		mods.add(container);
 		modMap.put(meta.id(), container);
-		for (String provides : info.getProvides()) {
-			if(modMap.containsKey(provides)) {
-				throw new ModResolutionException("Duplicate provided alias: " + provides + "! (" + modMap.get(info.getId()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
+		for (ModProvided provided : meta.provides()) {
+			if(modMap.containsKey(provided.id)) {
+				throw new ModResolutionException("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
 			}
-			modMap.put(provides, container);
+			modMap.put(provided.id, container);
 		}
 	}
 
@@ -414,7 +414,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 		for (ModContainer mod : mods) {
 			// add language adapters
-			for (Map.Entry<String, String> laEntry : mod.getInfo().getLanguageAdapterDefinitions().entrySet()) {
+			for (Map.Entry<String, String> laEntry : mod.getInternalMeta().languageAdapters().entrySet()) {
 				if (adapterMap.containsKey(laEntry.getKey())) {
 					throw new RuntimeException("Duplicate language adapter key: " + laEntry.getKey() + "! (" + laEntry.getValue() + ", " + adapterMap.get(laEntry.getKey()).getClass().getName() + ")");
 				}
@@ -449,17 +449,15 @@ public class QuiltLoaderImpl implements FabricLoader {
 
 	public void loadAccessWideners() {
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
-		for (net.fabricmc.loader.api.ModContainer modContainer : getAllMods()) {
-			LoaderModMetadata modMetadata = (LoaderModMetadata) modContainer.getMetadata();
-			String accessWidener = modMetadata.getAccessWidener();
+		for (ModContainer mod : mods) {
+			for (String accessWidener : mod.getInternalMeta().accessWideners()) {
 
-			if (accessWidener != null) {
-				Path path = modContainer.getPath(accessWidener);
+				Path path = mod.getPath(accessWidener);
 
 				try (BufferedReader reader = Files.newBufferedReader(path)) {
 					accessWidenerReader.read(reader, getMappingResolver().getCurrentRuntimeNamespace());
 				} catch (Exception e) {
-					throw new RuntimeException("Failed to read accessWidener file from mod " + modMetadata.getId(), e);
+					throw new RuntimeException("Failed to read accessWidener file from mod " + mod.getInternalMeta().id(), e);
 				}
 			}
 		}

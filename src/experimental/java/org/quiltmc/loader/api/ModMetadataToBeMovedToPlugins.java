@@ -3,6 +3,9 @@ package org.quiltmc.loader.api;
 import java.util.Collection;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
+
+import net.fabricmc.api.EnvType;
+
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -13,7 +16,10 @@ import org.jetbrains.annotations.ApiStatus;
 @Deprecated
 @ApiStatus.ScheduledForRemoval
 public interface ModMetadataToBeMovedToPlugins extends ModMetadata {
-	Collection<String> mixins();
+	/**
+	 * @param env The environment. Only used by fabric meta.
+	 */
+	Collection<String> mixins(EnvType env);
 
 	Collection<String> accessWideners();
 

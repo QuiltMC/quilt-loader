@@ -20,6 +20,7 @@ import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.pb.IPBSolver;
@@ -155,7 +156,7 @@ public final class ModSolver {
 					sat.setWeight(cOption, weight);
 				}
 
-				for (String provided : m.getInfo().getProvides()) {
+				for (ModProvided provided : m.getMetadata().provides()) {
 					// Add provided mods as an available option for other dependencies to select from.
 					sat.addOption(new ProvidedModOption(cOption, provided));
 				}
@@ -292,14 +293,14 @@ public final class ModSolver {
 								+ " - something has gone wrong internally!");
 					}
 
-					for (String provided : modOption.candidate.getInfo().getProvides()) {
+					for (ModProvided provided : modOption.candidate.getMetadata().provides()) {
 
-						if (resultingModMap.containsKey(provided)) {
-							throw new ModResolutionException(provided + " is already provided by " + resultingModMap.get(provided)
+						if (resultingModMap.containsKey(provided.id)) {
+							throw new ModResolutionException(provided + " is already provided by " + resultingModMap.get(provided.id)
 									+ " - something has gone wrong internally!");
 						}
 
-						previous = providedModMap.put(provided, modOption.candidate);
+						previous = providedModMap.put(provided.id, modOption.candidate);
 						if (previous != null) {
 							throw new ModResolutionException("Duplicate provided ModCandidate for " + provided + " - something has gone wrong internally!");
 						}

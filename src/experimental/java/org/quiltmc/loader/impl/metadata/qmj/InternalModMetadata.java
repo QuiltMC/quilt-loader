@@ -11,8 +11,7 @@ import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
  * Internal mod metadata interface which stores implementation detail.
  */
 public interface InternalModMetadata extends ModMetadata, ModMetadataToBeMovedToPlugins, ConvertibleModMetadata {
-	// TODO: Data type
-	Collection<?> provides();
+	Collection<ModProvided> provides();
 
 	ModLoadType loadType();
 

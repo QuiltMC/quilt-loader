@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Map;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
+
+import net.fabricmc.api.EnvType;
+
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.*;
 
@@ -26,7 +29,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Icons icons;
 	/* Internal fields */
 	private final ModLoadType loadType;
-	private final Collection<?> provides;
+	private final Collection<ModProvided> provides;
 	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
 	private final Collection<AdapterLoadableClassEntry> plugins;
 	private final Collection<String> jars;
@@ -52,7 +55,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			@Nullable Icons icons,
 			/* Internal fields */
 			ModLoadType loadType,
-			Collection<?> provides, // TODO: Data type
+			Collection<ModProvided> provides,
 			Map<String, List<AdapterLoadableClassEntry>> entrypoints,
 			Collection<AdapterLoadableClassEntry> plugins,
 			Collection<String> jars,
@@ -196,7 +199,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<?> provides() {
+	public Collection<ModProvided> provides() {
 		return this.provides;
 	}
 
@@ -227,7 +230,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<String> mixins() {
+	public Collection<String> mixins(EnvType env) {
 		return this.mixins;
 	}
 

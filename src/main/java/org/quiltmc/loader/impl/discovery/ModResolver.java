@@ -31,6 +31,7 @@ import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -226,7 +227,7 @@ public class ModResolver {
 				quiltModJson = path.resolve("quilt.mod.json");
 				rootDir = path;
 
-				if (isDevelopment && !Files.exists(fabricModJson)) {
+				if (isDevelopment && !Files.exists(fabricModJson) && !Files.exists(quiltModJson)) {
 					logger.warn("Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
 					synchronized (launcherSyncObject) {
 						QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
@@ -304,12 +305,13 @@ public class ModResolver {
 					throw new RuntimeException(fullError.toString());
 				}
 
-				for(String provides : candidate.getInfo().getProvides()) {
-					if (!MOD_ID_PATTERN.matcher(provides).matches()) {
+				for(ModProvided provides : candidate.getMetadata().provides()) {
+					String id = provides.id;
+					if (!MOD_ID_PATTERN.matcher(id).matches()) {
 						List<String> errorList = new ArrayList<>();
-						isModIdValid(provides, errorList);
+						isModIdValid(id, errorList);
 						StringBuilder fullError = new StringBuilder("Mod id provides `");
-						fullError.append(provides).append("` does not match the requirements because");
+						fullError.append(id).append("` does not match the requirements because");
 
 						if (errorList.size() == 1) {
 							fullError.append(" it ").append(errorList.get(0));
