@@ -125,14 +125,14 @@ final class V1ModMetadataReader {
 			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
 			if (dependsValue != null) {
 				for (LoaderValue v : dependsValue.asArray()) {
-					depends.add(readDependencyObject((JsonLoaderValue) v));
+					depends.add(readDependencyObject(true, (JsonLoaderValue) v));
 				}
 			}
 
 			@Nullable JsonLoaderValue breaksValue = assertType(quiltLoader, "breaks", LoaderValue.LType.ARRAY);
 			if (breaksValue != null) {
 				for (LoaderValue v : breaksValue.asArray()) {
-					breaks.add(readDependencyObject((JsonLoaderValue) v));
+					breaks.add(readDependencyObject(false, (JsonLoaderValue) v));
 				}
 			}
 
@@ -469,7 +469,7 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static ModDependency readDependencyObject(JsonLoaderValue value) {
+	private static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
@@ -480,7 +480,7 @@ final class V1ModMetadataReader {
 			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
 			ModDependency unless = null;
 			if (unlessObj != null) {
-				unless = readDependencyObject(unlessObj);
+				unless = readDependencyObject(true, unlessObj);
 			}
 			return new ModDependencyImpl.OnlyImpl(id, versions, reason, optional, unless);
 		case STRING:
@@ -492,10 +492,10 @@ final class V1ModMetadataReader {
 			Collection<ModDependency> dependencies = new ArrayList<>(array.size());
 
 			for (LoaderValue loaderValue : array) {
-				dependencies.add(readDependencyObject((JsonLoaderValue) loaderValue));
+				dependencies.add(readDependencyObject(isAny, (JsonLoaderValue) loaderValue));
 			}
 
-			return new ModDependencyImpl.AnyImpl(dependencies);
+			return isAny ? new ModDependencyImpl.AnyImpl(dependencies) : new ModDependencyImpl.AllImpl(dependencies);
 		default:
 			throw parseException(
 					value,

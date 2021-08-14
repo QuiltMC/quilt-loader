@@ -100,11 +100,7 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 		int i = 0;
 
 		for (; i < options.size(); i++) {
-			// We don't want to have multiple "variables" for a single mod, since a provided mod is always present
-			// if the providing mod is present and vice versa. Calling getRoot means we depend on the provider and
-			// therefore solve properly rather than potentially saying the provided mod is present but the provide
-			// isn't and vice versa.
-			array[i] = options.get(i).getRoot();
+			array[i] = options.get(i);
 			if (optional) {
 				array[i] = definer.negate(array[i]);
 			}

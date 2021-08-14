@@ -370,8 +370,16 @@ public final class ModSolver {
 		}
 	}
 
-	public static void createModBreaks(Logger logger, Sat4jWrapper sat, MainModLoadOption cOption, org.quiltmc.loader.api.ModDependency dep) {
-		// FIXME: Implement mod breaks!
+	public static QuiltModLinkBreak createModBreaks(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
+		if (dep instanceof org.quiltmc.loader.api.ModDependency.All) {
+			org.quiltmc.loader.api.ModDependency.All any = (org.quiltmc.loader.api.ModDependency.All) dep;
+
+			return new QuiltModLinkBreakAll(logger, ctx, option, any);
+		} else {
+			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
+
+			return new QuiltModLinkBreakOnly(logger, ctx, option, only);
+		}
 	}
 
 	// TODO: Convert all these methods to new error syntax

@@ -2,6 +2,7 @@ package org.quiltmc.loader.impl.solver;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -461,26 +462,53 @@ class Sat4jWrapper implements RuleContext {
 
 		@Override
 		public void atLeastOneOf(LoadOption... options) {
+			if (options.length == 0) {
+				throw new IllegalArgumentException("Cannot define 'atLeastOneOf' with an empty options array!");
+			}
 			rule(new RuleDefinition.AtLeastOneOf(rule, options));
 		}
 
 		@Override
 		public void atLeast(int count, LoadOption... options) {
+			if (options.length < count) {
+				throw new IllegalArgumentException(
+					"Cannot define 'atLeast(" + count + ")' with a smaller options array!\n" + Arrays.toString(options)
+				);
+			}
 			rule(new RuleDefinition.AtLeast(rule, count, options));
 		}
 
 		@Override
 		public void atMost(int count, LoadOption... options) {
+			if (count < 0) {
+				throw new IllegalArgumentException("Cannot define 'atMost(" + count + ")' with a negative count!");
+			}
 			rule(new RuleDefinition.AtMost(rule, count, options));
 		}
 
 		@Override
 		public void exactly(int count, LoadOption... options) {
+			if (options.length < count) {
+				throw new IllegalArgumentException(
+					"Cannot define 'exactly(" + count + ")' with a smaller options array!\n" + Arrays.toString(options)
+				);
+			}
 			rule(new RuleDefinition.Exactly(rule, count, options));
 		}
 
 		@Override
 		public void between(int min, int max, LoadOption... options) {
+			if (options.length < min) {
+				throw new IllegalArgumentException(
+					"Cannot define 'between(" + min + ", " + max + ")' with a smaller options array!\n" + Arrays
+						.toString(options)
+				);
+			}
+			if (max < min) {
+				throw new IllegalArgumentException(
+					"Cannot define 'between(" + min + ", " + max + ")' with a max lower than min!"
+				);
+			}
 			rule(new RuleDefinition.Between(rule, min, max, options));
 		}
 	}

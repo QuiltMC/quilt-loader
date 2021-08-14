@@ -18,17 +18,20 @@ final class ModDependencyImpl {
 	ModDependencyImpl() {
 	}
 
-	static final class AnyImpl extends AbstractCollection<ModDependency.Only> implements ModDependency.Any {
+	static abstract class CollectionImpl extends AbstractCollection<ModDependency.Only> implements ModDependency {
 		private final Collection<ModDependency.Only> conditions;
 
-		AnyImpl(Collection<ModDependency> conditions) {
+		CollectionImpl(Collection<ModDependency> conditions) {
 			// For simplicities sake we flatten here
 			List<ModDependency.Only> flattened = new ArrayList<>();
 			for (ModDependency dep : conditions) {
 				if (dep instanceof ModDependency.Only) {
 					flattened.add((ModDependency.Only) dep);
 				} else {
-					flattened.addAll((ModDependency.Any) dep);
+					if (getClass() != dep.getClass()) {
+						throw new IllegalArgumentException("You cannot mix any with all!");
+					}
+					flattened.addAll((CollectionImpl) dep);
 				}
 			}
 			ModDependency.Only[] array = flattened.toArray(new ModDependency.Only[0]);
@@ -43,6 +46,18 @@ final class ModDependencyImpl {
 		@Override
 		public int size() {
 			return this.conditions.size();
+		}
+	}
+
+	static final class AnyImpl extends CollectionImpl implements ModDependency.Any {
+		AnyImpl(Collection<ModDependency> conditions) {
+			super(conditions);
+		}
+	}
+
+	static final class AllImpl extends CollectionImpl  implements ModDependency.All {
+		AllImpl(Collection<ModDependency> conditions) {
+			super(conditions);
 		}
 	}
 
