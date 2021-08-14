@@ -297,7 +297,7 @@ public final class ModSolver {
 
 					for (ModProvided provided : modOption.candidate.getMetadata().provides()) {
 
-						previous = resultingModMap.put(provided.id, modOption.candidate);
+						previous = resultingModMap.get(provided.id);
 						if (previous != null && previous != modOption.candidate) {
 							throw new ModSolvingError(provided + " is already provided by " + previous
 									+ " - something has gone wrong internally!");

@@ -189,7 +189,7 @@ final class V1ModMetadataReader {
 							providedGroup = providedId.substring(0, colon);
 							providedId = providedId.substring(colon + 1);
 						}
-						
+
 						Version providedVersion = version;
 
 						if (providedObj.containsKey("version")) {

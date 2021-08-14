@@ -7,6 +7,8 @@ import java.util.Map;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 
 public final class ModSolveResult {
+
+	/** This doesn't include the provided mods. */
 	public final Map<String, ModCandidate> modMap;
 	public final Map<String, ModCandidate> providedMap;
 

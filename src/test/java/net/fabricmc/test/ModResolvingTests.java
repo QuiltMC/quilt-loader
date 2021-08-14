@@ -88,7 +88,6 @@ final class ModResolvingTests {
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library-but-renamed", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
@@ -168,7 +167,6 @@ final class ModResolvingTests {
 
         assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
         assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
-        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
         assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
         assertNoMoreMods(modSet);
     }
