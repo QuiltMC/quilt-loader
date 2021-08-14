@@ -79,6 +79,7 @@ final class ModResolvingTests {
 		assertModPresent(modSet, "dep", "1.0.0");
 		assertModPresent(modSet, "mod_one", "1.0.0");
 		assertModPresent(modSet, "mod_two", "1.0.0");
+		assertProvidedPresent(modSet, "dep", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 	@Test
@@ -87,6 +88,7 @@ final class ModResolvingTests {
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library-but-renamed", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
@@ -140,6 +142,34 @@ final class ModResolvingTests {
 
         assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
         assertModPresent(modSet, "mod-resolving-tests-sub", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void quiltLoadType() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt_load_type");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void quiltIncludedDep() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt_included_dep");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void quiltIncludedProvided() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt_included_provided");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+        assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
         assertNoMoreMods(modSet);
     }
 
@@ -227,7 +257,7 @@ final class ModResolvingTests {
 			Assertions.fail("Expected to find no more mods loaded, but found: " + result.modMap);
 		}
 		if (!result.providedMap.isEmpty()) {
-			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.modMap);
+			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.providedMap);
 		}
 	}
 }

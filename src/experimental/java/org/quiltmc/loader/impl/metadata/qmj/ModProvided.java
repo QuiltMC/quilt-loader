@@ -12,4 +12,9 @@ public class ModProvided {
 		this.id = id;
 		this.version = version;
 	}
+
+	@Override
+	public String toString() {
+		return "ModProvided { " + group + ":" + id + " v " + version + " }";
+	}
 }

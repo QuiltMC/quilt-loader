@@ -286,7 +286,7 @@ public final class ModSolver {
 					ModLoadOption modOption = (ModLoadOption) option;
 
 					ModCandidate previous = resultingModMap.put(modOption.modId(), modOption.candidate);
-					if (previous != null) {
+					if (previous != null && previous != modOption.candidate) {
 						throw new ModSolvingError("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
 					}
 
@@ -297,13 +297,14 @@ public final class ModSolver {
 
 					for (ModProvided provided : modOption.candidate.getMetadata().provides()) {
 
-						if (resultingModMap.containsKey(provided.id)) {
-							throw new ModSolvingError(provided + " is already provided by " + resultingModMap.get(provided.id)
+						previous = resultingModMap.put(provided.id, modOption.candidate);
+						if (previous != null && previous != modOption.candidate) {
+							throw new ModSolvingError(provided + " is already provided by " + previous
 									+ " - something has gone wrong internally!");
 						}
 
 						previous = providedModMap.put(provided.id, modOption.candidate);
-						if (previous != null) {
+						if (previous != null && previous != modOption.candidate) {
 							throw new ModSolvingError("Duplicate provided ModCandidate for " + provided + " - something has gone wrong internally!");
 						}
 					}

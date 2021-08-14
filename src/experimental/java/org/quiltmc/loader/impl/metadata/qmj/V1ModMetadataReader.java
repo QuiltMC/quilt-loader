@@ -8,7 +8,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
+import org.quiltmc.loader.api.LoaderValue.LObject;
+import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
+import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ArrayImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
@@ -156,6 +159,48 @@ final class V1ModMetadataReader {
 				}
 
 				loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
+			}
+
+			@Nullable
+			JsonLoaderValue providesValue = quiltLoader.get("provides");
+
+			if (providesValue != null) {
+				if (providesValue.type() != LoaderValue.LType.ARRAY) {
+					throw parseException(providesValue, "provides must be an array");
+				}
+
+				for (LoaderValue provided : providesValue.asArray()) {
+					if (provided.type() == LoaderValue.LType.STRING) {
+						String providedId = provided.asString();
+						String providedGroup = group;
+						int colon = providedId.indexOf(':');
+						if (colon > 0) {
+							providedGroup = providedId.substring(0, colon);
+							providedId = providedId.substring(colon + 1);
+						}
+						provides.add(new ModProvided(providedGroup, providedId, version));
+					} else if (provided.type() == LType.OBJECT) {
+						JsonLoaderValue.ObjectImpl providedObj = (JsonLoaderValue.ObjectImpl) provided.asObject();
+
+						String providedId = requiredString(providedObj, "id");
+						String providedGroup = group;
+						int colon = providedId.indexOf(':');
+						if (colon > 0) {
+							providedGroup = providedId.substring(0, colon);
+							providedId = providedId.substring(colon + 1);
+						}
+						
+						Version providedVersion = version;
+
+						if (providedObj.containsKey("version")) {
+							providedVersion = Version.of(requiredString(providedObj, "version"));
+						}
+
+						provides.add(new ModProvided(providedGroup, providedId, providedVersion));
+					} else {
+						throw parseException((JsonLoaderValue) provided, "provides must be an array containing only objects and/or strings");
+					}
+				}
 			}
 
 			// Metadata
