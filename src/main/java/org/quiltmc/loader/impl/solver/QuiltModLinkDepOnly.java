@@ -73,7 +73,7 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 					logger.info("[ModSolver]  x  mismatching option: " + mod.fullString() + " because " + reason);
 				}
 			}
-
+			return true;
 		}
 		return false;
 	}
