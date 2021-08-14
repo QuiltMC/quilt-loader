@@ -1,5 +1,4 @@
 {
-  "schema_version": 1,
   "quilt_loader": {
     "group": "org.example",
     "id": "some_id",

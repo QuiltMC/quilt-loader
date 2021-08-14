@@ -39,11 +39,11 @@ public class ModJsonParsingTests {
 		Path loc = testLocation.resolve("auto");
 		Stream<DynamicTest> spec = DynamicTest.stream(Files.walk(loc.resolve("spec")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
 				p -> p.getFileName().toString(), p -> ModMetadataReader.read(LOGGER, p));
-		Stream<DynamicTest> error =	DynamicTest.stream(Files.walk(loc.resolve("spec")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
+		Stream<DynamicTest> error =	DynamicTest.stream(Files.walk(loc.resolve("error")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
 				p -> p.getFileName().toString(), p -> {
 					try {
 						ModMetadataReader.read(LOGGER, p);
-						Assertions.fail("Erroneous quilt.mod.json was parsed successfully");
+						Assertions.fail("Erroneous quilt.mod.json was parsed successfully (" + p + ")");
 					} catch (Exception ex) {
 						// do nothing
 					}
