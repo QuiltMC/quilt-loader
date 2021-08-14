@@ -18,6 +18,7 @@ package net.fabricmc.test;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Map.Entry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,7 +27,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 
 final class ModResolvingTests {
@@ -140,56 +143,41 @@ final class ModResolvingTests {
         assertNoMoreMods(modSet);
     }
 
-	private static ModSolveResult resolveModSet(String type, String subpath) throws Exception {
+    @Test
+    public void breaksError() {
+    	resolveErrorSet("breaks");
+    }
+
+    private static void resolveErrorSet(String subpath) {
+    	try {
+    		ModSolveResult result = resolveModSet("error", subpath);
+
+    		StringBuilder sb = new StringBuilder();
+    		sb.append("Incorrectly resolved an invalid mod set!\n");
+
+    		for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
+    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginUrl() + "\n");
+    		}
+
+    		for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
+    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginUrl() + "\n");
+    		}
+
+    		Assertions.fail(sb.toString());
+    	} catch (ModSolvingException ignored) {
+    		// Correct
+    	} catch (ModResolutionException setupError) {
+    		Assertions.fail("Failed to read the mod set!", setupError);
+    	}
+    }
+
+	private static ModSolveResult resolveModSet(String type, String subpath) throws ModResolutionException {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 
 		ModResolver resolver = new ModResolver(LOGGER, true, modRoot);
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
 		return resolver.resolve(null);
-
-//        Map<String, ModCandidateSet> candidateMap = new HashMap<>();
-//		List<Path> subFolders = Files.list(modRoot)//
-//			.filter(p -> p.getFileName().toString().endsWith(".jar") && Files.isDirectory(p))//
-//			.collect(Collectors.toCollection(ArrayList::new));
-//
-//		List<Path> loadFrom = new ArrayList<>();
-//		int depth = 0;
-//
-//		loadFrom.addAll(subFolders);
-//
-//		while (!loadFrom.isEmpty()) {
-//			subFolders.clear();
-//
-//			for (Path modPath : loadFrom) {
-//
-//				URL url = modPath.toUri().toURL();
-//				LoaderModMetadata[] metas = { ModMetadataParser.parseMetadata(LOGGER, modPath.resolve("fabric.mod.json")) };
-//
-//				for (LoaderModMetadata meta : metas) {
-//					ModCandidate candidate = new ModCandidate(meta, url, depth, false);
-//					candidateMap.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
-//
-//					for (NestedJarEntry jar : meta.getJars()) {
-//						Path sub = modPath;
-//
-//						for (String part : jar.getFile().split("/")) {
-//							sub = sub.resolve(part);
-//						}
-//
-//						subFolders.add(sub);
-//					}
-//				}
-//			}
-//
-//			loadFrom.clear();
-//			loadFrom.addAll(subFolders);
-//			depth++;
-//		}
-//
-//		ModSolver solver = new ModSolver(LOGGER);
-//        ModSolveResult result = solver.findCompatibleSet(candidateMap);
-//        return result;
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also

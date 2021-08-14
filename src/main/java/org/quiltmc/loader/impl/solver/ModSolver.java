@@ -19,6 +19,8 @@ import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
@@ -78,7 +80,7 @@ public final class ModSolver {
 		Map<String, List<ModCandidate>> fullCandidateMap = new HashMap<>();
 
 		Map<String, ModCandidate> mandatoryMods = new HashMap<>();
-		List<ModResolutionException> errors = new ArrayList<>();
+		List<ModSolvingException> errors = new ArrayList<>();
 
 		for (ModCandidateSet mcs : modCandidateSetMap.values()) {
 			try {
@@ -92,7 +94,7 @@ public final class ModSolver {
 				if (mcs.isUserProvided()) {
 					mandatoryMods.put(mcs.getModId(), s.iterator().next());
 				}
-			} catch (ModResolutionException e) {
+			} catch (ModSolvingException e) {
 				// Only thrown by "ModCandidateSet.toSortedSet" when there are duplicate mandatory mods.
 				// We collect them in a list so we can display all of the errors.
 				errors.add(e);
@@ -103,8 +105,8 @@ public final class ModSolver {
 			if (errors.size() == 1) {
 				throw errors.get(0);
 			}
-			ModResolutionException ex = new ModResolutionException("Found " + errors.size() + " duplicated mandatory mods!");
-			for (ModResolutionException error : errors) {
+			ModSolvingException ex = new ModSolvingException("Found " + errors.size() + " duplicated mandatory mods!");
+			for (ModSolvingException error : errors) {
 				ex.addSuppressed(error);
 			}
 			throw ex;
@@ -167,7 +169,7 @@ public final class ModSolver {
 						continue;
 					}
 
-					createModDepLink(logger, sat, cOption, dep);
+					sat.addRule(createModDepLink(logger, sat, cOption, dep));
 				}
 
 				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().breaks()) {
@@ -176,7 +178,7 @@ public final class ModSolver {
 						continue;
 					}
 
-					createModBreaks(logger, sat, cOption, dep);
+					sat.addRule(createModBreaks(logger, sat, cOption, dep));
 				}
 			}
 		}
@@ -220,7 +222,7 @@ public final class ModSolver {
 				 * dependencies, provides, etc of that mod related to all others). 
 				 */
 
-				ModResolutionException ex = describeError(roots, causes);
+				ModSolvingException ex = describeError(roots, causes);
 				if (ex == null) {
 					ex = fallbackErrorDescription(roots, causes);
 				}
@@ -244,22 +246,22 @@ public final class ModSolver {
 				if (errors.size() == 1) {
 					throw errors.get(0);
 				}
-				ModResolutionException ex = new ModResolutionException("Found " + errors.size() + " errors while resolving mods!");
-				for (ModResolutionException error : errors) {
+				ModSolvingException ex = new ModSolvingException("Found " + errors.size() + " errors while resolving mods!");
+				for (ModSolvingException error : errors) {
 					ex.addSuppressed(error);
 				}
 				throw ex;
 			}
 
 		} catch (TimeoutException e) {
-			throw new ModResolutionException("Mod collection took too long to be resolved", e);
+			throw new ModSolvingError("Mod collection took too long to be resolved", e);
 		}
 
 		Collection<LoadOption> solution;
 		try {
 			solution = sat.getSolution();
 		} catch (TimeoutException e) {
-			throw new ModResolutionException("Mod collection took too long to be optimised", e);
+			throw new ModSolvingError("Mod collection took too long to be optimised", e);
 		}
 
 		resultingModMap = new HashMap<>();
@@ -285,24 +287,24 @@ public final class ModSolver {
 
 					ModCandidate previous = resultingModMap.put(modOption.modId(), modOption.candidate);
 					if (previous != null) {
-						throw new ModResolutionException("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
+						throw new ModSolvingError("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
 					}
 
 					if (providedModMap.containsKey(modOption.modId())) {
-						throw new ModResolutionException(modOption.modId() + " is already provided by " + providedModMap.get(modOption.modId())
+						throw new ModSolvingError(modOption.modId() + " is already provided by " + providedModMap.get(modOption.modId())
 								+ " - something has gone wrong internally!");
 					}
 
 					for (ModProvided provided : modOption.candidate.getMetadata().provides()) {
 
 						if (resultingModMap.containsKey(provided.id)) {
-							throw new ModResolutionException(provided + " is already provided by " + resultingModMap.get(provided.id)
+							throw new ModSolvingError(provided + " is already provided by " + resultingModMap.get(provided.id)
 									+ " - something has gone wrong internally!");
 						}
 
 						previous = providedModMap.put(provided.id, modOption.candidate);
 						if (previous != null) {
-							throw new ModResolutionException("Duplicate provided ModCandidate for " + provided + " - something has gone wrong internally!");
+							throw new ModSolvingError("Duplicate provided ModCandidate for " + provided + " - something has gone wrong internally!");
 						}
 					}
 				}
@@ -559,12 +561,12 @@ public final class ModSolver {
 
 	/** @return A {@link ModResolutionException} describing the error in a readable format, or null if this is unable to
 	 *		 do so. (In which case {@link #fallbackErrorDescription(Map, List)} will be used instead). */
-	private static ModResolutionException describeError(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
+	private static ModSolvingException describeError(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
 		// TODO: Create a graph from roots to each other and then build the error through that!
 		return null;
 	}
 
-	private static ModResolutionException fallbackErrorDescription(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
+	private static ModSolvingException fallbackErrorDescription(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
 		StringBuilder errors = new StringBuilder("Unhandled error involving mod");
 
 		if (roots.size() > 1) {
@@ -596,7 +598,7 @@ public final class ModSolver {
 //			}
 //		}
 
-		return new ModResolutionException(errors.toString());
+		return new ModSolvingException(errors.toString());
 	}
 
 	private static void appendLoadSourceInfo(StringBuilder errors, HashSet<String> listedSources, ModIdDefinition def) {

@@ -1,0 +1,6 @@
+{
+    "schemaVersion": 1,
+    "id": "mod-resolving-tests-normal",
+    "version": "1.0.0",
+    "breaks": { "mod-resolving-tests-broken": "*" }
+}

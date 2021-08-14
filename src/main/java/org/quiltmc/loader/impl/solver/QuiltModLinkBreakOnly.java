@@ -61,6 +61,7 @@ class QuiltModLinkBreakOnly extends QuiltModLinkBreak {
 				if (ModSolver.DEBUG_PRINT_STATE) {
 					logger.info("[ModSolver]  x  conflicting option: " + mod.fullString());
 				}
+				return true;
 			} else {
 				okayOptions.add(mod);
 

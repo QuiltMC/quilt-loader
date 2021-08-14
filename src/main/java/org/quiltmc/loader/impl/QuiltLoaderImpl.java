@@ -48,6 +48,7 @@ import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -349,7 +350,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 		URL originUrl = candidate.getOriginUrl();
 
 		if (modMap.containsKey(meta.id())) {
-			throw new ModResolutionException("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
+			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
 		}
 
 		if (!meta.environment().matches(getEnvironmentType())) {
@@ -361,7 +362,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 		modMap.put(meta.id(), container);
 		for (ModProvided provided : meta.provides()) {
 			if(modMap.containsKey(provided.id)) {
-				throw new ModResolutionException("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
+				throw new ModSolvingError("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
 			}
 			modMap.put(provided.id, container);
 		}

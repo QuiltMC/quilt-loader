@@ -94,13 +94,13 @@ public class ModCandidateSet {
 		return !depthZeroCandidates.isEmpty();
 	}
 
-	public Collection<ModCandidate> toSortedSet() throws ModResolutionException {
+	public Collection<ModCandidate> toSortedSet() throws ModSolvingException {
 		if (depthZeroCandidates.size() > 1) {
 			StringBuilder sb = new StringBuilder("Duplicate mandatory mods found for '" + modId + "':");
 			for (ModCandidate mc : depthZeroCandidates) {
 				sb.append("\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, mc));
 			}
-			throw new ModResolutionException(sb.toString());
+			throw new ModSolvingException(sb.toString());
 		} else if (candidates.size() > 1) {
 			List<ModCandidate> out = new ArrayList<>(candidates.values());
 			out.sort(ModCandidateSet::compare);
