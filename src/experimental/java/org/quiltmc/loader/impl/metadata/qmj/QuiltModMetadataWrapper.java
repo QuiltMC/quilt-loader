@@ -1,17 +1,12 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import com.google.gson.JsonElement;
 
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.impl.metadata.*;
@@ -34,6 +29,8 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	private final Collection<Person> contributors;
 	private final ContactInformation contact;
 	private final Collection<String> licenses;
+	private final Map<String, CustomValue> customValues;
+
 	public QuiltModMetadataWrapper(InternalModMetadata quiltMeta) {
 		this.quiltMeta = quiltMeta;
 		ArrayList<Person> authors = new ArrayList<>();
@@ -54,6 +51,33 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 			licenses.add(license.id()); // Convention seems to be to use the IDs in fabric metadata
 		}
 		this.licenses = Collections.unmodifiableCollection(licenses);
+
+		HashMap<String, CustomValue> cvs = new HashMap<>();
+		quiltMeta.values().forEach((k, v) -> cvs.put(k, convertToCv(v)));
+		this.customValues = Collections.unmodifiableMap(cvs);
+	}
+
+	private static CustomValue convertToCv(LoaderValue value) {
+		switch (value.type()) {
+			case OBJECT:
+				Map<String, CustomValue> cvMap = new HashMap<>();
+				value.asObject().forEach((k, v) -> cvMap.put(k, convertToCv(v)));
+				return new CustomValueImpl.ObjectImpl(cvMap);
+			case ARRAY:
+				List<CustomValue> cvList = new ArrayList<>();
+				value.asArray().forEach((v) -> cvList.add(convertToCv(v)));
+				return new CustomValueImpl.ArrayImpl(cvList);
+			case STRING:
+				return new CustomValueImpl.StringImpl(value.asString());
+			case NUMBER:
+				return new CustomValueImpl.NumberImpl(value.asNumber());
+			case BOOLEAN:
+				return new CustomValueImpl.BooleanImpl(value.asBoolean());
+			case NULL:
+				return CustomValueImpl.NULL;
+			default:
+				throw new IllegalStateException("Unexpected LoaderValue type " + value.type());
+		}
 	}
 
 	@Override
@@ -166,32 +190,27 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 
 	@Override
 	public boolean containsCustomValue(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return customValues.containsKey(key);
 	}
 
 	@Override
 	public @Nullable CustomValue getCustomValue(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return customValues.get(key);
 	}
 
 	@Override
 	public Map<String, CustomValue> getCustomValues() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return customValues;
 	}
 
 	@Override
 	public boolean containsCustomElement(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return containsCustomValue(key);
 	}
 
 	@Override
 	public JsonElement getCustomElement(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return AbstractModMetadata.convert(getCustomValue(key));
 	}
 
 	// Fabric's internal ModMetadata

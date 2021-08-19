@@ -26,6 +26,7 @@ import com.google.gson.JsonPrimitive;
 
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractModMetadata implements ModMetadata {
 	@Override
@@ -58,7 +59,11 @@ public abstract class AbstractModMetadata implements ModMetadata {
 	 * @return a json element
 	 */
 	@Deprecated
-	private static JsonElement convert(CustomValue value) {
+	public static JsonElement convert(@Nullable CustomValue value) {
+		if (value == null) {
+			return null;
+		}
+
 		switch (value.getType()) {
 		case ARRAY: {
 			JsonArray ret = new JsonArray();

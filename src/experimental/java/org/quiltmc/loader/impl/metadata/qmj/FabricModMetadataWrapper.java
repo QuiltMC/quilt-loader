@@ -144,14 +144,12 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public @Nullable String getContactInfo(String key) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return fabricMeta.getContact().get(key).orElse(null);
 	}
 
 	@Override
 	public Map<String, String> contactInfo() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return fabricMeta.getContact().asMap();
 	}
 
 	@Override
@@ -280,8 +278,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public Collection<AdapterLoadableClassEntry> getPlugins() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		// fabric mods can't use the quilt plugin system
+		return Collections.emptyList();
 	}
 
 	@Override
