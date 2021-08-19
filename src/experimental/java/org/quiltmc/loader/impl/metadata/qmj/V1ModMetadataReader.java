@@ -61,7 +61,9 @@ final class V1ModMetadataReader {
 		ModEnvironment environment = ModEnvironment.UNIVERSAL;
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
-
+		if (quiltLoader == null) {
+			throw parseException(root, "quilt_loader is a required field");
+		}
 		// Loader metadata
 		{
 			// Check if our required fields are here
@@ -155,7 +157,7 @@ final class V1ModMetadataReader {
 
 			if (loadTypeValue != null) {
 				if (loadTypeValue.type() != LoaderValue.LType.STRING) {
-					throw parseException(repositoriesValue, "load_type must be a string");
+					throw parseException(loadTypeValue, "load_type must be a string");
 				}
 
 				loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
@@ -215,7 +217,17 @@ final class V1ModMetadataReader {
 
 				name = string(metadata, "name");
 				description = string(metadata, "description");
-				// TODO: contributors
+
+				@Nullable
+				JsonLoaderValue contributorsValue = metadata.get("contributors");
+				if (contributorsValue != null) {
+					if (contributorsValue.type() != LType.OBJECT) {
+						throw parseException(contributorsValue, "contributors must be an object");
+					}
+					Map<String, String> intermediate = new HashMap<>();
+					readStringMap(contributorsValue.asObject(), "contributors", intermediate);
+					intermediate.forEach((k, v) -> contributors.add(new ModContributorImpl(k, v)));
+				}
 
 				@Nullable
 				JsonLoaderValue contact = metadata.get("contact");
@@ -225,11 +237,22 @@ final class V1ModMetadataReader {
 						throw parseException(contact, "contact must be an object");
 					}
 
-					readStringMap((JsonLoaderValue.ObjectImpl) contact, "contact", contactInformation);
+					readStringMap(contact.asObject(), "contact", contactInformation);
 				}
 
 				readLicenses(metadata, licenses);
-				// TODO: icon
+
+				@Nullable
+				JsonLoaderValue iconValue = metadata.get("icon");
+				if (iconValue != null) {
+					if (iconValue.type() == LType.STRING) {
+						icons = new Icons.Single(iconValue.asString());
+					} else if (iconValue.type() == LType.OBJECT) {
+						SortedMap<Integer, String> map = new TreeMap<>();
+						readIntToStringMap(iconValue.asObject(), "icon", map);
+						icons = new Icons.Multiple(map);
+					}
+				}
 			}
 		}
 
@@ -269,7 +292,22 @@ final class V1ModMetadataReader {
 						break;
 				}
 			}
-			// TODO: Access wideners
+
+			@Nullable
+			JsonLoaderValue awValue = root.get("access_widener");
+			if (awValue != null) {
+				switch (awValue.type()) {
+					case ARRAY:
+						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", accessWideners);
+						break;
+					case STRING:
+						accessWideners.add(awValue.asString());
+						break;
+					default:
+						throw parseException(awValue, "mixin value must be an array of strings or a string");
+				}
+			}
+
 		}
 
 		return new V1ModMetadataImpl(
@@ -410,6 +448,25 @@ final class V1ModMetadataReader {
 				// TODO: Warn in dev environment about duplicate keys
 			}
 		}
+	}
+
+	private static void readIntToStringMap(JsonLoaderValue.ObjectImpl object, String inside, Map<Integer, String> destination) {
+		object.forEach((key, value) -> {
+			int keyInt;
+			try {
+				keyInt = Integer.parseInt(key);
+			} catch (NumberFormatException ex) {
+				throw parseException(object, "Key " + key + " must be an integer");
+			}
+
+			if (value.type() != LoaderValue.LType.STRING) {
+				throw parseException((JsonLoaderValue) value, String.format("entry with key %s inside \"%s\" must be a string", key, inside));
+			}
+
+			if (destination.put(keyInt, value.asString()) != null) {
+				// TODO: warn in dev env
+			}
+		});
 	}
 
 	private static void readLicenses(JsonLoaderValue.ObjectImpl metadata, List<ModLicense> licenses) {
