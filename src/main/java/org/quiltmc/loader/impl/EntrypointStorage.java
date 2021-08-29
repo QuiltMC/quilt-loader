@@ -78,13 +78,13 @@ class EntrypointStorage {
 		}
 	}
 
-	private static class NewEntry implements Entry {
+	private static final class NewEntry implements Entry {
 		private final ModContainer mod;
 		private final LanguageAdapter adapter;
 		private final String value;
-		private final Map<Class<?>, Object> instanceMap = new IdentityHashMap<>();
+		private final Map<Class<?>, Object> instanceMap = new HashMap<>(1);
 
-		private NewEntry(ModContainer mod, LanguageAdapter adapter, String value) {
+		NewEntry(ModContainer mod, LanguageAdapter adapter, String value) {
 			this.mod = mod;
 			this.adapter = adapter;
 			this.value = value;
@@ -97,13 +97,15 @@ class EntrypointStorage {
 
 		@Override
 		public <T> T getOrCreate(Class<T> type) throws Exception {
-			Object o = instanceMap.get(type);
-			if (o == null) {
-				o = create(type);
-				instanceMap.put(type, o);
-			}
 			@SuppressWarnings("unchecked")
-			T tmp = (T) o;
+			T tmp = (T) instanceMap.computeIfAbsent(type, t -> {
+				try {
+					return adapter.create(mod, value, t);
+				} catch (LanguageAdapterException ex) {
+					throw sneakyThrows(ex);
+				}
+			});
+
 			return tmp;
 		}
 
@@ -112,9 +114,6 @@ class EntrypointStorage {
 			return mod;
 		}
 
-		private <T> T create(Class<T> type) throws Exception {
-			return adapter.create(mod, value, type);
-		}
 	}
 
 	private final Map<String, List<Entry>> entryMap = new HashMap<>();
@@ -195,5 +194,10 @@ class EntrypointStorage {
 		}
 
 		return results;
+	}
+
+	@SuppressWarnings("unchecked") // return value allows "throw" declaration to end method
+	static <E extends Throwable> RuntimeException sneakyThrows(Throwable ex) throws E {
+		throw (E) ex;
 	}
 }
