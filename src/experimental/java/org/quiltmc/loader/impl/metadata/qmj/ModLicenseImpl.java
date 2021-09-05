@@ -25,15 +25,15 @@ public final class ModLicenseImpl implements ModLicense {
 			JsonLoaderValue object = JsonLoaderValue.read(reader);
 
 			if (object.type() == LoaderValue.LType.OBJECT) {
-				JsonLoaderValue.ArrayImpl licenseData = object.getObject().get("licenses").getArray();
+				JsonLoaderValue.ArrayImpl licenseData = object.asObject().get("licenses").asArray();
 
 				// Technically this wastes memory on holding the things we don't need,
 				// but this code is much easier to read and understand than the long-form reader
 				for (LoaderValue value : licenseData) {
-					LoaderValue.LObject obj = value.getObject();
-					String name = obj.get("name").getString();
-					String id = obj.get("licenseId").getString();
-					String url = obj.get("reference").getString();
+					LoaderValue.LObject obj = value.asObject();
+					String name = obj.get("name").asString();
+					String id = obj.get("licenseId").asString();
+					String url = obj.get("reference").asString();
 					// TODO: description
 					LICENSES.put(id, new ModLicenseImpl(name, id, url, ""));
 				}
