@@ -61,14 +61,29 @@ final class V1ModMetadataReader {
 		ModEnvironment environment = ModEnvironment.UNIVERSAL;
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
+
 		if (quiltLoader == null) {
 			throw parseException(root, "quilt_loader is a required field");
 		}
+
 		// Loader metadata
 		{
 			// Check if our required fields are here
 			id = requiredString(quiltLoader, "id");
+
+			if (!Patterns.VALID_MOD_ID.matcher(id).matches()) {
+				// id must be non-null
+				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod id, likely one of the following errors:\n" +
+						"- Mod id contains invalid characters, the allowed characters are a-z 0-9 _-\n" +
+						"- The mod id is too short or long, the mod id must be between 2 and 63 characters");
+			}
+
 			group = requiredString(quiltLoader, "group");
+
+			if (!Patterns.VALID_MAVEN_GROUP.matcher(group).matches()) {
+				// group must be non-null
+				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod maven group; the allowed characters are a-z A-Z 0-9 - _ and .");
+			}
 
 			// Versions
 			@Nullable JsonLoaderValue versionValue = quiltLoader.get("version");
@@ -76,6 +91,8 @@ final class V1ModMetadataReader {
 			if (versionValue == null) {
 				throw new ParseException("version is a required field");
 			}
+
+			// TODO: Here we would check if the version is a placeholder in dev.
 
 			version = Version.of(versionValue.asString());
 			// Now we reach optional fields

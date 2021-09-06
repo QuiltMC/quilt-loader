@@ -1,7 +1,5 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.StringJoiner;
-
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 
 public final class ModDependencyIdentifierImpl implements ModDependencyIdentifier {
