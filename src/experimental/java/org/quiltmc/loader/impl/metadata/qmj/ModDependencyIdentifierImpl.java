@@ -1,5 +1,7 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.StringJoiner;
+
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 
 public final class ModDependencyIdentifierImpl implements ModDependencyIdentifier {
@@ -30,5 +32,14 @@ public final class ModDependencyIdentifierImpl implements ModDependencyIdentifie
 	@Override
 	public String id() {
 		return id;
+	}
+
+	@Override
+	public String toString() {
+		if (!this.mavenGroup.isEmpty()) {
+			return this.mavenGroup + ":" + this.id;
+		}
+
+		return this.id;
 	}
 }
