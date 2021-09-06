@@ -17,7 +17,9 @@ public interface Version {
 			return new GenericVersionImpl(raw);
 		}
 	}
+
 	String raw();
+
 	default boolean isSemantic() {
 		return this instanceof Version.Semantic;
 	}
@@ -33,9 +35,11 @@ public interface Version {
 		static Semantic of(String raw) throws VersionFormatException {
 			return SemanticVersionImpl.of(raw);
 		}
+
 		static Semantic of(int major, int minor, int patch, String preRelease, String buildMetadata) throws VersionFormatException {
 			return SemanticVersionImpl.of(major, minor, patch, preRelease, buildMetadata);
 		}
+
 		// TODO: maybe allow returning negative when ${version} is provided?
 		/**
 		 * Must be a positive integer.
