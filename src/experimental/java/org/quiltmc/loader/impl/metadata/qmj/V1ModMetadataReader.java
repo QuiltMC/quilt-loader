@@ -504,10 +504,12 @@ final class V1ModMetadataReader {
 		}
 		case STRING: {
 			ModLicense ret = ModLicenseImpl.fromIdentifier(licenseValue.asString());
+
 			if (ret == null) {
 				// QMJ specification says this *must* be a valid identifier if it doesn't want to use the long-form version
-				throw new ParseException("A string license must be a valid SPDX identifier");
+				throw new ParseException("A license declared as a string id must be a valid SPDX identifier");
 			}
+
 			return ret;
 		}
 		default:
@@ -581,9 +583,11 @@ final class V1ModMetadataReader {
 			boolean optional = bool(obj, "optional", false);
 			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
 			ModDependency unless = null;
+
 			if (unlessObj != null) {
 				unless = readDependencyObject(true, unlessObj);
 			}
+
 			return new ModDependencyImpl.OnlyImpl(id, versions, reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
@@ -610,17 +614,20 @@ final class V1ModMetadataReader {
 		if (value == null) {
 			return Collections.singleton(VersionConstraintImpl.ANY);
 		}
+
 		if (value.type() == LoaderValue.LType.STRING) {
 			return Collections.singleton(VersionConstraintImpl.parse(value.asString()));
 		} else if (value.type() == LoaderValue.LType.ARRAY) {
 			Collection<VersionConstraint> ret = new ArrayList<>(value.asArray().size());
+
 			for (LoaderValue s : value.asArray()) {
 				ret.add(VersionConstraintImpl.parse(s.asString()));
 			}
+
 			return ret;
-		} else {
-			throw parseException(value, "Version constraint must be a string or array of strings");
 		}
+
+		throw parseException(value, "Version constraint must be a string or array of strings");
 	}
 
 	private V1ModMetadataReader() {
