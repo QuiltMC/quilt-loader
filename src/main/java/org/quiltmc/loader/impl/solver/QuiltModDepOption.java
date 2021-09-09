@@ -12,6 +12,6 @@ public class QuiltModDepOption extends LoadOption {
 
 	@Override
 	public String toString() {
-		return "QuiltModDep { " + dep + " }";
+		return dep.toString();
 	}
 }

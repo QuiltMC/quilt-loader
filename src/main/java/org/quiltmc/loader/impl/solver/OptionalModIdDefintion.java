@@ -94,6 +94,10 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		throw new AbstractMethodError("// TODO: Implement this!");
+		errors.append(toString());
+		for (ModLoadOption option : sources) {
+			errors.append("\n\t - v");
+			errors.append(option.getSpecificInfo());
+		}
 	}
 }

@@ -205,9 +205,14 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 							return false;
 						}
 					}
+
+					@Override
+					public String toString() {
+						return type.prefix() + predicate.getVersion();
+					}
 				});
 			}
-			out.add(new ModDependencyImpl.OnlyImpl(new ModDependencyIdentifierImpl(f.getModId()), constraints, null, false, null));
+			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dep 1", new ModDependencyIdentifierImpl(f.getModId()), constraints, null, false, null));
 		}
 		return Collections.unmodifiableList(Arrays.asList(out.toArray(new ModDependency[0])));
 	}

@@ -86,7 +86,13 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		errors.append("Depencency for ");
+		errors.append(source);
+		errors.append(" on any of: ");
+
+		for (QuiltModLinkDepOnly on : options) {
+			errors.append(on.source);
+			errors.append(" ");
+		}
 	}
 }

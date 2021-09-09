@@ -87,7 +87,13 @@ public class QuiltModLinkBreakAll extends QuiltModLinkBreak {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		errors.append("Breakage for ");
+		errors.append(source);
+		errors.append(" on all of: ");
+
+		for (QuiltModLinkBreakOnly on : options) {
+			errors.append(on.source);
+			errors.append(" ");
+		}
 	}
 }

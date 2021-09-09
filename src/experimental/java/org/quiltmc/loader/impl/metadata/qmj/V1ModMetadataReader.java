@@ -605,10 +605,10 @@ final class V1ModMetadataReader {
 				unless = readDependencyObject(true, unlessObj);
 			}
 
-			return new ModDependencyImpl.OnlyImpl(id, versions, reason, optional, unless);
+			return new ModDependencyImpl.OnlyImpl(value.location(), id, versions, reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
-			return new ModDependencyImpl.OnlyImpl(new ModDependencyIdentifierImpl(value.asString()));
+			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
 		case ARRAY:
 			// OR or all sub dependencies
 			JsonLoaderValue.ArrayImpl array = value.asArray();
@@ -618,7 +618,7 @@ final class V1ModMetadataReader {
 				dependencies.add(readDependencyObject(isAny, (JsonLoaderValue) loaderValue));
 			}
 
-			return isAny ? new ModDependencyImpl.AnyImpl(dependencies) : new ModDependencyImpl.AllImpl(dependencies);
+			return isAny ? new ModDependencyImpl.AnyImpl(value.location(), dependencies) : new ModDependencyImpl.AllImpl(value.location(), dependencies);
 		default:
 			throw parseException(
 					value,

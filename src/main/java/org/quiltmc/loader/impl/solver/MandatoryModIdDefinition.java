@@ -51,6 +51,9 @@ final class MandatoryModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		throw new AbstractMethodError("// TODO: Implement this!");
+		errors.append("Mandatory mod ");
+		errors.append(getFriendlyName());
+		errors.append(" v");
+		errors.append(candidate.candidate.getMetadata().version());
 	}
 }
