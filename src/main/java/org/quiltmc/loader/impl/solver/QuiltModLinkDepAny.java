@@ -91,6 +91,7 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 		errors.append(" on any of: ");
 
 		for (QuiltModLinkDepOnly on : options) {
+			errors.append("\n\t-");
 			errors.append(on.source);
 			errors.append(" ");
 		}

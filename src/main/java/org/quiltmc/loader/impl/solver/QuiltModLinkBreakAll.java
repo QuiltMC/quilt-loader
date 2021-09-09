@@ -48,7 +48,7 @@ public class QuiltModLinkBreakAll extends QuiltModLinkBreak {
 		int i = 0;
 
 		for (; i < options.length; i++) {
-			array[i] = options[i].source;
+			array[i] = definer.negate(options[i].source);
 		}
 
 		array[i] = source;
@@ -92,6 +92,7 @@ public class QuiltModLinkBreakAll extends QuiltModLinkBreak {
 		errors.append(" on all of: ");
 
 		for (QuiltModLinkBreakOnly on : options) {
+			errors.append("\n\t-");
 			errors.append(on.source);
 			errors.append(" ");
 		}

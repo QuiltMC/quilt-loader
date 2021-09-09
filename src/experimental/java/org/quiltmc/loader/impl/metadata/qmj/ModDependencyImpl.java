@@ -49,6 +49,11 @@ final class ModDependencyImpl {
 		public int size() {
 			return this.conditions.size();
 		}
+
+		@Override
+		public String toString() {
+			return location;
+		}
 	}
 
 	static final class AnyImpl extends CollectionImpl implements ModDependency.Any {
@@ -120,6 +125,11 @@ final class ModDependencyImpl {
 		public boolean shouldIgnore() {
 			// TODO: Read fields for loader plugins, and check them earlier and store the result in a field!
 			return false;
+		}
+
+		@Override
+		public String toString() {
+			return location;
 		}
 	}
 }

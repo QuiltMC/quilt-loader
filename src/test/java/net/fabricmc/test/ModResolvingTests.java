@@ -176,6 +176,11 @@ final class ModResolvingTests {
     	resolveErrorSet("breaks");
     }
 
+    @Test
+    public void multiBreaksError() {
+        resolveErrorSet("multi_breaks");
+    }
+
     private static void resolveErrorSet(String subpath) {
     	try {
     		ModSolveResult result = resolveModSet("error", subpath);
