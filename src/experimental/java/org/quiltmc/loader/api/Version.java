@@ -1,9 +1,12 @@
 package org.quiltmc.loader.api;
 
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.VersionParsingException;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.impl.metadata.qmj.GenericVersionImpl;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
+import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 /**
  * Representation of a version.
@@ -14,7 +17,12 @@ public interface Version {
 		try {
 			return Semantic.of(raw);
 		} catch (VersionFormatException ex) {
-			return new GenericVersionImpl(raw);
+			try {
+				// this will be removed when we remove fabric support from quilt-loader
+				return new FabricSemanticVersionImpl(raw, false);
+			} catch (VersionParsingException e) {
+				return new GenericVersionImpl(raw);
+			}
 		}
 	}
 

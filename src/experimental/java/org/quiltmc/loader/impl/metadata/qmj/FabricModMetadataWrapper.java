@@ -194,13 +194,14 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 							net.fabricmc.loader.api.Version fVersion;
 
-							if (version.isSemantic()) {
-								fVersion = new FabricSemanticVersionImpl(version.semantic());
-							} else {
+							try {
+								// fabric's semantic versioning is not spec-compliant (it adds arbitrary amounts of dot-separated versions)
+								// so we can't use version.isSemantic for conversion
+								fVersion = new FabricSemanticVersionImpl(version.raw(), false);
+							} catch (VersionParsingException ignored) {
 								fVersion = new StringVersion(version.raw());
 							}
-
-							return VersionPredicateParser.matches(fVersion, version());
+							return VersionPredicateParser.matches(fVersion, predicate.toString());
 						} catch (VersionParsingException e) {
 							return false;
 						}
