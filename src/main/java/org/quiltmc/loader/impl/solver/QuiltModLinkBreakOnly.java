@@ -129,24 +129,25 @@ class QuiltModLinkBreakOnly extends QuiltModLinkBreak {
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
 
-		errors.append("x Break for " + source + ":\n");
-		errors.append("\t-");
+		errors.append("Breakage for ");
 
-		errors.append("x Mod /* TODO: Fetch the Mod ID */ depends on /* FIXME: Implement this!*/");
+		errors.append(source);
+		errors.append(" on ");
+		errors.append(publicDep.id());
+		errors.append(" versions ");
+		errors.append(publicDep.versions());
+		errors.append(" (");
+		errors.append(conflictingOptions.size());
+		errors.append(" breaking options, ");
+		errors.append(okayOptions.size());
+		errors.append(" okay options)");
 
-		/* errors.append(this.validOptions.isEmpty() ? "x" : "-");
-		 * errors.append(" Mod ").append(ModSolver.getLoadOptionDescription(this.source))
-		 * .append(" requires ").append(ModSolver.getDependencyVersionRequirements(this.publicDep)) .append(" of ");
-		 * ModIdDefinition def = this.on; ModLoadOption[] sources = def.sources(); if (sources.length == 0) {
-		 * errors.append("unknown mod '").append(def.getModId()).append("'\n")
-		 * .append("\t- You must install ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
-		 * .append(" of '").append(def.getModId()).append("'."); } else { errors.append(def.getFriendlyName()); if
-		 * (this.validOptions.isEmpty()) {
-		 * errors.append("\n\t- You must install ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
-		 * .append(" of ").append(def.getFriendlyName()).append('.'); } if (sources.length == 1) {
-		 * errors.append("\n\t- Your current version of ").append(ModSolver.getCandidateName(sources[0].candidate))
-		 * .append(" is ").append(ModSolver.getCandidateFriendlyVersion(sources[0].candidate)).append("."); } else {
-		 * errors.append("\n\t- You have the following versions available:"); for (ModLoadOption source : sources) {
-		 * errors.append("\n\t\t- ").append(ModSolver.getCandidateFriendlyVersion(source)).append("."); } } } */
+		for (ModLoadOption option : conflictingOptions) {
+			errors.append("\n\tx " + option.fullString());
+		}
+
+		for (ModLoadOption option : okayOptions) {
+			errors.append("\n\t+ " + option.fullString());
+		}
 	}
 }

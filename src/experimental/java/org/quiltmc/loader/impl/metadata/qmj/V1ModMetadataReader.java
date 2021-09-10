@@ -61,14 +61,29 @@ final class V1ModMetadataReader {
 		ModEnvironment environment = ModEnvironment.UNIVERSAL;
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
+
 		if (quiltLoader == null) {
 			throw parseException(root, "quilt_loader is a required field");
 		}
+
 		// Loader metadata
 		{
 			// Check if our required fields are here
 			id = requiredString(quiltLoader, "id");
+
+			if (!Patterns.VALID_MOD_ID.matcher(id).matches()) {
+				// id must be non-null
+				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod id, likely one of the following errors:\n" +
+						"- Mod id contains invalid characters, the allowed characters are a-z 0-9 _-\n" +
+						"- The mod id is too short or long, the mod id must be between 2 and 63 characters");
+			}
+
 			group = requiredString(quiltLoader, "group");
+
+			if (!Patterns.VALID_MAVEN_GROUP.matcher(group).matches()) {
+				// group must be non-null
+				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod maven group; the allowed characters are a-z A-Z 0-9 - _ and .");
+			}
 
 			// Versions
 			@Nullable JsonLoaderValue versionValue = quiltLoader.get("version");
@@ -76,6 +91,8 @@ final class V1ModMetadataReader {
 			if (versionValue == null) {
 				throw new ParseException("version is a required field");
 			}
+
+			// TODO: Here we would check if the version is a placeholder in dev.
 
 			version = Version.of(versionValue.asString());
 			// Now we reach optional fields
@@ -476,7 +493,7 @@ final class V1ModMetadataReader {
 			switch (licensesValue.type()) {
 			case ARRAY:
 				for (LoaderValue license : licensesValue.asArray()) {
-					licenses.add(readLicenseObject((JsonLoaderValue) licenses));
+					licenses.add(readLicenseObject((JsonLoaderValue) license));
 				}
 
 				break;
@@ -504,10 +521,12 @@ final class V1ModMetadataReader {
 		}
 		case STRING: {
 			ModLicense ret = ModLicenseImpl.fromIdentifier(licenseValue.asString());
+
 			if (ret == null) {
 				// QMJ specification says this *must* be a valid identifier if it doesn't want to use the long-form version
-				throw new ParseException("A string license must be a valid SPDX identifier");
+				throw new ParseException("A license declared as a string id must be a valid SPDX identifier");
 			}
+
 			return ret;
 		}
 		default:
@@ -581,13 +600,15 @@ final class V1ModMetadataReader {
 			boolean optional = bool(obj, "optional", false);
 			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
 			ModDependency unless = null;
+
 			if (unlessObj != null) {
 				unless = readDependencyObject(true, unlessObj);
 			}
-			return new ModDependencyImpl.OnlyImpl(id, versions, reason, optional, unless);
+
+			return new ModDependencyImpl.OnlyImpl(value.location(), id, versions, reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
-			return new ModDependencyImpl.OnlyImpl(new ModDependencyIdentifierImpl(value.asString()));
+			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
 		case ARRAY:
 			// OR or all sub dependencies
 			JsonLoaderValue.ArrayImpl array = value.asArray();
@@ -597,7 +618,7 @@ final class V1ModMetadataReader {
 				dependencies.add(readDependencyObject(isAny, (JsonLoaderValue) loaderValue));
 			}
 
-			return isAny ? new ModDependencyImpl.AnyImpl(dependencies) : new ModDependencyImpl.AllImpl(dependencies);
+			return isAny ? new ModDependencyImpl.AnyImpl(value.location(), dependencies) : new ModDependencyImpl.AllImpl(value.location(), dependencies);
 		default:
 			throw parseException(
 					value,
@@ -610,17 +631,20 @@ final class V1ModMetadataReader {
 		if (value == null) {
 			return Collections.singleton(VersionConstraintImpl.ANY);
 		}
+
 		if (value.type() == LoaderValue.LType.STRING) {
 			return Collections.singleton(VersionConstraintImpl.parse(value.asString()));
 		} else if (value.type() == LoaderValue.LType.ARRAY) {
 			Collection<VersionConstraint> ret = new ArrayList<>(value.asArray().size());
+
 			for (LoaderValue s : value.asArray()) {
 				ret.add(VersionConstraintImpl.parse(s.asString()));
 			}
+
 			return ret;
-		} else {
-			throw parseException(value, "Version constraint must be a string or array of strings");
 		}
+
+		throw parseException(value, "Version constraint must be a string or array of strings");
 	}
 
 	private V1ModMetadataReader() {

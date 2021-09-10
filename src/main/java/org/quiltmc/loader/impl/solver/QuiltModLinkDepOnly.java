@@ -4,13 +4,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 class QuiltModLinkDepOnly extends QuiltModLinkDep {
 	final Logger logger;
@@ -138,42 +134,29 @@ class QuiltModLinkDepOnly extends QuiltModLinkDep {
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
 
-		errors.append("x Dependency for " +  source + ":\n");
-		errors.append("\t-");
-
-		errors.append("x Mod /* TODO: Fetch the Mod ID */ depends on /* FIXME: Implement this!*/");
-
-		/*
-		errors.append(this.validOptions.isEmpty() ? "x" : "-");
-		errors.append(" Mod ").append(ModSolver.getLoadOptionDescription(this.source))
-				.append(" requires ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
-				.append(" of ");
-		ModIdDefinition def = this.on;
-		ModLoadOption[] sources = def.sources();
-	
-		if (sources.length == 0) {
-			errors.append("unknown mod '").append(def.getModId()).append("'\n")
-					.append("\t- You must install ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
-					.append(" of '").append(def.getModId()).append("'.");
+		if (publicDep.optional()) {
+			errors.append("Optional depencency for ");
 		} else {
-			errors.append(def.getFriendlyName());
-	
-			if (this.validOptions.isEmpty()) {
-				errors.append("\n\t- You must install ").append(ModSolver.getDependencyVersionRequirements(this.publicDep))
-						.append(" of ").append(def.getFriendlyName()).append('.');
-			}
-	
-			if (sources.length == 1) {
-				errors.append("\n\t- Your current version of ").append(ModSolver.getCandidateName(sources[0].candidate))
-					.append(" is ").append(ModSolver.getCandidateFriendlyVersion(sources[0].candidate)).append(".");
-			} else {
-				errors.append("\n\t- You have the following versions available:");
-	
-				for (ModLoadOption source : sources) {
-					errors.append("\n\t\t- ").append(ModSolver.getCandidateFriendlyVersion(source)).append(".");
-				}
-			}
+			errors.append("Depencency for ");
 		}
-		*/
+
+		errors.append(source);
+		errors.append(" on ");
+		errors.append(publicDep.id());
+		errors.append(" versions ");
+		errors.append(publicDep.versions());
+		errors.append(" (");
+		errors.append(validOptions.size());
+		errors.append(" valid options, ");
+		errors.append(invalidOptions.size());
+		errors.append(" invalid options)");
+
+		for (ModLoadOption option : validOptions) {
+			errors.append("\n\t+ " + option.fullString());
+		}
+
+		for (ModLoadOption option : invalidOptions) {
+			errors.append("\n\tx " + option.fullString());
+		}
 	}
 }

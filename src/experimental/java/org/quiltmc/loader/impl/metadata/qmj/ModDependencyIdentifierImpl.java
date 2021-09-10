@@ -31,4 +31,13 @@ public final class ModDependencyIdentifierImpl implements ModDependencyIdentifie
 	public String id() {
 		return id;
 	}
+
+	@Override
+	public String toString() {
+		if (!this.mavenGroup.isEmpty()) {
+			return this.mavenGroup + ":" + this.id;
+		}
+
+		return this.id;
+	}
 }

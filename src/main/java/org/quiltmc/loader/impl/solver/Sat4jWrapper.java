@@ -65,6 +65,8 @@ class Sat4jWrapper implements RuleContext {
 	 * {@link Sat4jSolveStep#OPTIMISE}. */
 	private IPBSolver solver;
 
+	private boolean rulesChanged = false;
+
 	private volatile boolean cancelled = false;
 
 	private final Map<LoadOption, Integer> optionToWeight = new HashMap<>();
@@ -72,9 +74,6 @@ class Sat4jWrapper implements RuleContext {
 
 	private final Map<LoadOption, Integer> optionToIndex = new HashMap<>();
 	private final Map<Integer, LoadOption> indexToOption = new HashMap<>();
-
-	/** Only available during {@link Sat4jSolveStep#SOLVE}. */
-	private Map<ModLink, List<IConstr>> ruleToConstraints = null;
 
 	/** Only available during {@link Sat4jSolveStep#SOLVE}. */
 	private Map<IConstr, ModLink> constraintToRule = null;
@@ -160,7 +159,7 @@ class Sat4jWrapper implements RuleContext {
 	public void removeRule(ModLink rule) {
 		validateCanAdd();
 		ruleToDefinitions.remove(rule);
-		clearRuleConstraints(rule);
+		rulesChanged = true;
 	}
 
 	/** Clears any current definitions this rule is associated with, and calls {@link ModLink#define(RuleDefiner)} */
@@ -168,19 +167,8 @@ class Sat4jWrapper implements RuleContext {
 	public void redefine(ModLink rule) {
 		validateCanAdd();
 		ruleToDefinitions.put(rule, new ArrayList<>(1));
-		clearRuleConstraints(rule);
+		rulesChanged = true;
 		rule.define(new RuleDefinerInternal(rule));
-	}
-
-	private void clearRuleConstraints(ModLink rule) {
-		if (ruleToConstraints != null) {
-			List<IConstr> list = ruleToConstraints.remove(rule);
-			if (list != null) {
-				for (IConstr c : list) {
-					solver.removeConstr(c);
-				}
-			}
-		}
 	}
 
 	private void validateCanAdd() {
@@ -201,9 +189,11 @@ class Sat4jWrapper implements RuleContext {
 
 		checkCancelled();
 
-		if (step == Sat4jSolveStep.DEFINE) {
+		if (step == Sat4jSolveStep.DEFINE || (step == Sat4jSolveStep.SOLVE && rulesChanged)) {
 
-			ruleToConstraints = new HashMap<>();
+			rulesChanged = false;
+			optionToIndex.clear();
+			indexToOption.clear();
 			constraintToRule = new HashMap<>();
 			solver = SolverFactory.newDefault();
 			solver = explainer = new XplainPB(solver);
@@ -236,7 +226,6 @@ class Sat4jWrapper implements RuleContext {
 					step = Sat4jSolveStep.OPTIMISE;
 				}
 			});
-			ruleToConstraints = null;
 			constraintToRule = null;
 			putDefinitions();
 			return true;
@@ -372,8 +361,7 @@ class Sat4jWrapper implements RuleContext {
 	}
 
 	private void putDefinitions() {
-		if (ruleToConstraints != null) {
-			ruleToConstraints.clear();
+		if (constraintToRule != null) {
 			constraintToRule.clear();
 		}
 
@@ -384,14 +372,8 @@ class Sat4jWrapper implements RuleContext {
 		for (Map.Entry<ModLink, List<RuleDefinition>> entry : ruleToDefinitions.entrySet()) {
 			ModLink rule = entry.getKey();
 
-			List<IConstr> constraints = ruleToConstraints == null ? null : new ArrayList<>(entry.getValue().size());
-
 			for (RuleDefinition def : entry.getValue()) {
-				addRuleDefinition(rule, constraints, def);
-			}
-
-			if (constraints != null) {
-				ruleToConstraints.put(rule, constraints);
+				addRuleDefinition(rule, def);
 			}
 		}
 
@@ -413,7 +395,7 @@ class Sat4jWrapper implements RuleContext {
 		}
 	}
 
-	private void addRuleDefinition(ModLink rule, List<IConstr> dest, RuleDefinition def) {
+	private void addRuleDefinition(ModLink rule, RuleDefinition def) {
 
 		IConstr[] added;
 		try {
@@ -423,10 +405,9 @@ class Sat4jWrapper implements RuleContext {
 			throw new IllegalStateException("Failed to add the definition " + def, e);
 		}
 
-		if (dest != null) {
+		if (constraintToRule != null) {
 			for (IConstr c : added) {
 				if (c != null) {
-					dest.add(c);
 					constraintToRule.put(c, rule);
 				}
 			}
@@ -456,7 +437,7 @@ class Sat4jWrapper implements RuleContext {
 			ruleToDefinitions.computeIfAbsent(rule, r -> new ArrayList<>()).add(def);
 
 			if (solver != null) {
-				addRuleDefinition(rule, ruleToConstraints.computeIfAbsent(rule, r -> new ArrayList<>()), def);
+				addRuleDefinition(rule, def);
 			}
 		}
 

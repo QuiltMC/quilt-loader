@@ -17,26 +17,29 @@ public final class ModLicenseImpl implements ModLicense {
 	private final String id;
 	private final String url;
 	private final String description;
-	private static final Map<String, ModLicense> licenses = new HashMap<>();
+	private static final Map<String, ModLicense> LICENSES = new HashMap<>();
 	private static final Logger LOGGER = LogManager.getLogger(ModLicenseImpl.class);
+
 	static {
-		try (JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getResourceAsStream("/quilt_loader/licenses.json")))){
-			reader.beginObject();
-			reader.nextName();// licensesListVersion
-			reader.skipValue();
-			reader.nextName();// licenses
-			JsonLoaderValue.ArrayImpl licenseData = JsonLoaderValue.read(reader).asArray();
-			// Technically this wastes memory on holding the things we don't need,
-			// but this code is much easier to read and understand than the long-form reader
-			for (LoaderValue value : licenseData) {
-				LoaderValue.LObject obj = value.asObject();
-				String name = obj.get("name").asString();
-				String id = obj.get("licenseId").asString();
-				String url = obj.get("reference").asString();
-				// TODO: description
-				licenses.put(id, new ModLicenseImpl(name, id, url, ""));
+		try (JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getClassLoader().getResourceAsStream("quilt_loader/licenses.json")))) {
+			JsonLoaderValue object = JsonLoaderValue.read(reader);
+
+			if (object.type() == LoaderValue.LType.OBJECT) {
+				JsonLoaderValue.ArrayImpl licenseData = object.asObject().get("licenses").asArray();
+
+				// Technically this wastes memory on holding the things we don't need,
+				// but this code is much easier to read and understand than the long-form reader
+				for (LoaderValue value : licenseData) {
+					LoaderValue.LObject obj = value.asObject();
+					String name = obj.get("name").asString();
+					String id = obj.get("licenseId").asString();
+					String url = obj.get("reference").asString();
+					// TODO: description
+					LICENSES.put(id, new ModLicenseImpl(name, id, url, ""));
+				}
+			} else {
+				throw new RuntimeException("License file is malformed?");
 			}
-			 // we can just throw everything else out
 		} catch (IOException e) {
 			LOGGER.error("Unable to parse license metadata");
 			LOGGER.throwing(e);
@@ -44,11 +47,11 @@ public final class ModLicenseImpl implements ModLicense {
 	}
 
 	public static @Nullable ModLicense fromIdentifier(String identifier) {
-		return licenses.get(identifier);
+		return LICENSES.get(identifier);
 	}
 
 	public static ModLicense fromIdentifierOrDefault(String identifier) {
-		ModLicense ret = licenses.get(identifier);
+		ModLicense ret = LICENSES.get(identifier);
 		if (ret == null) {
 			return new ModLicenseImpl(identifier, identifier, "", "");
 		} else {

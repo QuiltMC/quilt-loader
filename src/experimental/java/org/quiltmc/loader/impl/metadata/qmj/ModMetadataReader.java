@@ -14,9 +14,14 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 
 /**
- * The central class used to read a quilt.mod.json.
+ * The central class used to read a {@code quilt.mod.json}.
  */
 public final class ModMetadataReader {
+	/**
+	 * Name of the schema field used to detect what version of the {@code quilt.mod.json} file we are parsing. This
+	 * field name should be used in all future versions of the {@code quilt.mod.json} to ensure past loader versions
+	 * may detect and not load versions of the schema that are not understood.
+	 */
 	private static final String SCHEMA_VERSION = "schema_version";
 
 	/**
@@ -28,6 +33,7 @@ public final class ModMetadataReader {
 	 * @throws IOException if there are any issues reading the json file
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
+	@SuppressWarnings("SwitchStatementWithTooFewBranches") // Switch statement intentionally used for future expandability
 	public static InternalModMetadata read(Logger logger, Path json) throws IOException, ParseException {
 		JsonLoaderValue value;
 
@@ -60,7 +66,6 @@ public final class ModMetadataReader {
 
 		int version = schemaVersion.asNumber().intValue();
 
-		//noinspection SwitchStatementWithTooFewBranches
 		switch (version) {
 		case 1:
 			return V1ModMetadataReader.read(logger, root);

@@ -60,6 +60,7 @@ public interface ModDependency {
 					return true;
 				}
 			}
+
 			return false;
 		}
 	}
@@ -87,7 +88,6 @@ public interface ModDependency {
 	 * A mod breakage where at all conditions must be satisfied in order to conflict.
 	 */
 	interface All extends Collection<ModDependency.Only>, ModDependency {
-
 		/**
 		 * Checks to see if all of the conditions are ignored.
 		 */
@@ -98,6 +98,7 @@ public interface ModDependency {
 					return false;
 				}
 			}
+
 			return true;
 		}
 	}

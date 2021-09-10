@@ -19,9 +19,11 @@ final class ModDependencyImpl {
 	}
 
 	static abstract class CollectionImpl extends AbstractCollection<ModDependency.Only> implements ModDependency {
+		private final String location;
 		private final Collection<ModDependency.Only> conditions;
 
-		CollectionImpl(Collection<ModDependency> conditions) {
+		CollectionImpl(String location, Collection<ModDependency> conditions) {
+			this.location = location;
 			// For simplicities sake we flatten here
 			List<ModDependency.Only> flattened = new ArrayList<>();
 			for (ModDependency dep : conditions) {
@@ -47,22 +49,28 @@ final class ModDependencyImpl {
 		public int size() {
 			return this.conditions.size();
 		}
+
+		@Override
+		public String toString() {
+			return location;
+		}
 	}
 
 	static final class AnyImpl extends CollectionImpl implements ModDependency.Any {
-		AnyImpl(Collection<ModDependency> conditions) {
-			super(conditions);
+		AnyImpl(String location, Collection<ModDependency> conditions) {
+			super(location, conditions);
 		}
 	}
 
 	static final class AllImpl extends CollectionImpl  implements ModDependency.All {
-		AllImpl(Collection<ModDependency> conditions) {
-			super(conditions);
+		AllImpl(String location, Collection<ModDependency> conditions) {
+			super(location, conditions);
 		}
 	}
 
 	static final class OnlyImpl implements ModDependency.Only {
 		private static final Collection<VersionConstraint> ANY = Collections.singleton(VersionConstraint.any());
+		private final String location;
 		private final ModDependencyIdentifier id;
 		private final Collection<VersionConstraint> constraints;
 		private final String reason;
@@ -72,14 +80,15 @@ final class ModDependencyImpl {
 		/**
 		 * Creates a ModDependency that matches any version of a specific mod id.
 		 */
-		OnlyImpl(ModDependencyIdentifier id) {
-			this(id, ANY, "", false, null);
+		OnlyImpl(String location, ModDependencyIdentifier id) {
+			this(location, id, ANY, "", false, null);
 		}
-		OnlyImpl(ModDependencyIdentifier id, Collection<VersionConstraint> constraints, @Nullable String reason, boolean optional, @Nullable ModDependency unless) {
+		OnlyImpl(String location, ModDependencyIdentifier id, Collection<VersionConstraint> constraints, @Nullable String reason, boolean optional, @Nullable ModDependency unless) {
 			// We need to have at least one constraint
 			if (constraints.isEmpty()) {
 				throw new IllegalArgumentException("A ModDependency must have at least one constraint");
 			}
+			this.location = location;
 			this.id = id;
 			this.constraints = Collections.unmodifiableCollection(constraints);
 			this.reason = reason != null ? reason : "";
@@ -116,6 +125,11 @@ final class ModDependencyImpl {
 		public boolean shouldIgnore() {
 			// TODO: Read fields for loader plugins, and check them earlier and store the result in a field!
 			return false;
+		}
+
+		@Override
+		public String toString() {
+			return location;
 		}
 	}
 }
