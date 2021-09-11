@@ -1,0 +1,11 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "org.example",
+        "id": "mod-resolving-tests-main",
+        "version": "1.0.0",
+        "depends": [
+            {"id": "mod-resolving-tests-library", "versions": ">=1.0.0"}
+        ]
+    }
+}

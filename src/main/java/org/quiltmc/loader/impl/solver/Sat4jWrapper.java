@@ -19,10 +19,12 @@ import org.quiltmc.loader.util.sat4j.pb.ObjectiveFunction;
 import org.quiltmc.loader.util.sat4j.pb.OptToPBSATAdapter;
 import org.quiltmc.loader.util.sat4j.pb.PseudoOptDecorator;
 import org.quiltmc.loader.util.sat4j.pb.SolverFactory;
+import org.quiltmc.loader.util.sat4j.pb.core.PBSolver;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.XplainPB;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 import org.quiltmc.loader.util.sat4j.specs.IConstr;
+import org.quiltmc.loader.util.sat4j.specs.IOptimizationProblem;
 import org.quiltmc.loader.util.sat4j.specs.IVec;
 import org.quiltmc.loader.util.sat4j.specs.IVecInt;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
@@ -65,7 +67,7 @@ class Sat4jWrapper implements RuleContext {
 	private XplainPB explainer;
 
 	/** Only available during {@link Sat4jSolveStep#OPTIMISE} */
-	private volatile OptToPBSATAdapter optimiser;
+	private volatile PseudoOptDecorator optimiser;
 
 	/** Set to {@link #explainer} during {@link Sat4jSolveStep#SOLVE}, and {@link #optimiser} during
 	 * {@link Sat4jSolveStep#OPTIMISE}. */
@@ -245,36 +247,12 @@ class Sat4jWrapper implements RuleContext {
 			}
 
 			explainer = null;
-			solver = optimiser = new OptToPBSATAdapter(new PseudoOptDecorator(SolverFactory.newDefault()));
+			solver = new OptToPBSATAdapter(optimiser = new PseudoOptDecorator(SolverFactory.newDefault()));
+//			optimiser.setTimeoutForFindingBetterSolution(2);
 			step = Sat4jSolveStep.RE_SOLVING;
 			optionToIndex.clear();
 			indexToOption.clear();
-			optimiser.setSolutionFoundListener(new SolutionFoundListener() {
-
-				int count = 0;
-
-				@Override
-				public void onUnsatTermination() {/* NO-OP */ }
-
-				@Override
-				public void onSolutionFound(IVecInt model) {
-					step = Sat4jSolveStep.OPTIMISE;
-
-					if (LOG) {
-						onSolutionFound(model.toArray());
-					}
-				}
-
-				@Override
-				public void onSolutionFound(int[] model) {
-					step = Sat4jSolveStep.OPTIMISE;
-
-					if (LOG) {
-						int w = optimiser.getCurrentObjectiveValue().intValue();
-						logger.info("Sat4jWrapper: Solution #" + (++count) + " = " + Arrays.toString(model) + ", weight = " + w);
-					}
-				}
-			});
+			solver.setVerbose(true);
 			constraintToRule = null;
 			putDefinitions();
 			return true;
@@ -312,7 +290,43 @@ class Sat4jWrapper implements RuleContext {
 			logger.info("Sat4jWrapper: Starting optimisation.");
 		}
 
-		boolean success = optimiser.isSatisfiable();
+		int count = 0;
+		boolean success = false;
+
+		optimiser.setTimeoutForFindingBetterSolution(5);
+
+		while (true) {
+
+			try {
+				if (!optimiser.admitABetterSolution()) {
+					break;
+				}
+			} catch (TimeoutException e) {
+				if (success) {
+					if (LOG) {
+						logger.info("Sat4jWrapper: Aborted optimisation due to timeout");
+					}
+					break;
+				}
+			}
+
+			step = Sat4jSolveStep.OPTIMISE;
+			success = true;
+
+			if (LOG) {
+				logger.info("Sat4jWrapper: Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue() + " = " + Arrays.toString(optimiser.model()));
+			}
+
+			try {
+				optimiser.discardCurrentSolution();
+			} catch (ContradictionException e) {
+				// This means we're *already* optimal?
+				if (LOG) {
+					logger.info("Sat4jWrapper: Found optimal solution!");
+				}
+				break;
+			}
+		}
 
 		if (!success) {
 			throw new IllegalStateException(

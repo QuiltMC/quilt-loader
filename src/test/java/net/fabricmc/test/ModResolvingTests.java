@@ -82,6 +82,7 @@ final class ModResolvingTests {
 		assertProvidedPresent(modSet, "dep", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
+
 	@Test
 	public void providedDepends() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "provided_depends");
@@ -123,6 +124,15 @@ final class ModResolvingTests {
         ModSolveResult modSet = resolveModSet("valid", "quilt");
 
         assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void dep_gte() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "dep_gte");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
         assertNoMoreMods(modSet);
     }
 
