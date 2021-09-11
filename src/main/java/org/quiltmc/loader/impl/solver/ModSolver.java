@@ -116,7 +116,7 @@ public final class ModSolver {
 		Map<String, ModCandidate> providedModMap;
 		Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults;
 
-		Sat4jWrapper sat = new Sat4jWrapper();
+		Sat4jWrapper sat = new Sat4jWrapper(logger);
 		Map<String, OptionalModIdDefintion> modDefs = new HashMap<>();
 
 		// Put primary mod (first mod in jar)

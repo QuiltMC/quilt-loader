@@ -86,7 +86,7 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		errors.append("Depencency for ");
+		errors.append("Dependancy for ");
 		errors.append(source);
 		errors.append(" on any of: ");
 
