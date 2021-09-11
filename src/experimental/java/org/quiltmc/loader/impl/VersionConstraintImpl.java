@@ -23,7 +23,7 @@ public final class VersionConstraintImpl implements VersionConstraint {
 
 		for (Type value : Type.values()) {
 			if (raw.startsWith(value.prefix())) {
-				return new VersionConstraintImpl(raw.substring(raw.indexOf(value.prefix())), value);
+				return new VersionConstraintImpl(raw.substring(value.prefix().length()), value);
 			}
 		}
 		// Spec says that 1.0.0 is the same as ^1.0.0

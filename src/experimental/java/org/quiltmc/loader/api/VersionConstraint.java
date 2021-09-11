@@ -55,16 +55,6 @@ public interface VersionConstraint {
 		EQUALS("="),
 
 		/**
-		 * A version constraint where the version must be greater than the constraint's requirement.
-		 */
-		GREATER_THAN(">"),
-
-		/**
-		 * A version constraint where the version must be less than the constraint's requirement.
-		 */
-		LESSER_THAN("<"),
-
-		/**
 		 * A version constraint where the version must be equal to or greater than the constraint's requirement.
 		 */
 		GREATER_THAN_OR_EQUAL(">="),
@@ -73,6 +63,16 @@ public interface VersionConstraint {
 		 * A version constraint where the version must be equal to or less than the constraint's requirement.
 		 */
 		LESSER_THAN_OR_EQUAL("<="),
+
+		/**
+		 * A version constraint where the version must be greater than the constraint's requirement.
+		 */
+		GREATER_THAN(">"),
+
+		/**
+		 * A version constraint where the version must be less than the constraint's requirement.
+		 */
+		LESSER_THAN("<"),
 
 		/**
 		 * A version constraint where the major component of the version must match the constraint's major component.
