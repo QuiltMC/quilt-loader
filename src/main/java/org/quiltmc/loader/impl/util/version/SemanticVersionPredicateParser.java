@@ -52,7 +52,16 @@ public final class SemanticVersionPredicateParser {
 			if (factory == null) {
 				factory = PREFIXES.get("=");
 			} else if (version.hasWildcard()) {
-				throw new VersionParsingException("Prefixed ranges are not allowed to use X-ranges!");
+
+				// A warning:
+				//	In a wonderful twist of events, FabricSemanticVersionImpl.matches(Version)'s behavior does not match
+				//	the same behavior as taking the parsed predicates and using them as toString.
+				//	The behavior is ****almost**** identical, EXCEPT that this code doesn't allow
+				//	=1.16.x to be valid, just 1.16.x, even though the rest of the logic treats them as exactly the same.
+				//	Using the parsed predicate erases this distinction, and causes a bug where the version range 1.16.x
+				//	can never be matched.
+				//	To fix this, I've removed the exception that used to be here.
+				// 	This allows technically illegal fabric.mod.jsons through our parsers, but too bad! - Glitch
 			}
 
 			predicateList.add(factory.apply(version));

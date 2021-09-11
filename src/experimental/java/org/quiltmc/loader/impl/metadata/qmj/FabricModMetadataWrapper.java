@@ -3,6 +3,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import org.jetbrains.annotations.Nullable;
@@ -201,7 +202,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 							} catch (VersionParsingException ignored) {
 								fVersion = new StringVersion(version.raw());
 							}
-							return VersionPredicateParser.matches(fVersion, predicate.toString());
+							return VersionPredicateParser.matches(fVersion, predicate.toString()) ||
+									version.raw().equals("${version}") && FabricLoader.getInstance().isDevelopmentEnvironment();
 						} catch (VersionParsingException e) {
 							return false;
 						}
