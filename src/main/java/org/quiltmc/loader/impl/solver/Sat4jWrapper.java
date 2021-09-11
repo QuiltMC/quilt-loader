@@ -293,6 +293,9 @@ class Sat4jWrapper implements RuleContext {
 		int count = 0;
 		boolean success = false;
 
+		// 5 second timeout - this will regularly be hit by users
+		// as such this needs to be fairly short, but not too short as then there's no time to optimise.
+		// ALSO this happens *every cycle*
 		optimiser.setTimeoutForFindingBetterSolution(5);
 
 		while (true) {
