@@ -67,6 +67,13 @@ public class VersionParsingTests {
 			quiltFails(fail.nextString());
 		}
 		fail.close();
+
+		JsonReader fabricOnly = get("testing/version/fabric-passing-only.json");
+		fabricOnly.beginArray();
+		while (fabricOnly.hasNext()) {
+			quiltFails(fabricOnly.nextString());
+		}
+		fabricOnly.close();
 	}
 
 	@Test
@@ -84,6 +91,13 @@ public class VersionParsingTests {
 			fabricFails(fail.nextString());
 		}
 		fail.close();
+
+		JsonReader fabricOnly = get("testing/version/fabric-passing-only.json");
+		fabricOnly.beginArray();
+		while (fabricOnly.hasNext()) {
+			fabric(fabricOnly.nextString());
+		}
+		fabricOnly.close();
 	}
 
 
