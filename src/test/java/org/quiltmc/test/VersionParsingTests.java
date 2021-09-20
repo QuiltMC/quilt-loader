@@ -8,8 +8,10 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
-import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class VersionParsingTests {
 	static void quilt(String raw) {
@@ -86,7 +88,12 @@ public class VersionParsingTests {
 
 
 	JsonReader get(String s) throws IOException {
-		File f = new File(getClass().getClassLoader().getResource(s).getFile());
-		return JsonReader.json(f.toPath());
+		Path path;
+		try {
+			path = Paths.get(getClass().getClassLoader().getResource(s).toURI());
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+		return JsonReader.json(path);
 	}
 }
