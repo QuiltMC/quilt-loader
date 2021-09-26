@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.core.Vec;
 import org.quiltmc.loader.util.sat4j.core.VecInt;
@@ -283,7 +284,7 @@ class Sat4jWrapper implements RuleContext {
 	 * @throws TimeoutException if the optimisation was cancelled before it completed. This will only be thrown if it
 	 *             hasn't computed any solutions when it is cancelled.
 	 * @throws IllegalStateException if this is not in the {@link Sat4jSolveStep#RE_SOLVING} step. */
-	public List<LoadOption> getSolution() throws TimeoutException {
+	public List<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
 		checkCancelled();
 
 		if (LOG) {
@@ -332,7 +333,7 @@ class Sat4jWrapper implements RuleContext {
 		}
 
 		if (!success) {
-			throw new IllegalStateException(
+			throw new ModSolvingError(
 				"We just solved this! Something must have gone wrong internally..." + ruleToDefinitions
 			);
 		}
@@ -348,7 +349,7 @@ class Sat4jWrapper implements RuleContext {
 
 			LoadOption option = indexToOption.get(value);
 			if (option == null) {
-				throw new IllegalStateException("Unknown value " + value);
+				throw new ModSolvingError("Unknown value " + value);
 			}
 			list.add(option);
 		}
