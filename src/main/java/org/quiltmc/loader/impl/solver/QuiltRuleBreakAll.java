@@ -8,28 +8,28 @@ import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
 
-public class QuiltModLinkDepAny extends QuiltModLinkDep {
+public class QuiltRuleBreakAll extends QuiltRuleBreak {
 
-	final QuiltModLinkDepOnly[] options;
-	final ModDependency.Any publicDep;
+	final QuiltRuleBreakOnly[] options;
+	final ModDependency.All publicDep;
 
-	public QuiltModLinkDepAny(Logger logger, RuleContext ctx, LoadOption option, ModDependency.Any any) {
+	public QuiltRuleBreakAll(Logger logger, RuleContext ctx, LoadOption option, ModDependency.All all) {
 
 		super(option);
-		this.publicDep = any;
-		List<QuiltModLinkDepOnly> optionList = new ArrayList<>();
+		this.publicDep = all;
+		List<QuiltRuleBreakOnly> optionList = new ArrayList<>();
 
-		for (ModDependency.Only only : any) {
+		for (ModDependency.Only only : all) {
 			if (!only.shouldIgnore()) {
 				QuiltModDepOption sub = new QuiltModDepOption(only);
 				ctx.addOption(sub);
-				QuiltModLinkDepOnly dep = new QuiltModLinkDepOnly(logger, ctx, sub, only);
+				QuiltRuleBreakOnly dep = new QuiltRuleBreakOnly(logger, ctx, sub, only);
 				ctx.addRule(dep);
 				optionList.add(dep);
 			}
 		}
 
-		this.options = optionList.toArray(new QuiltModLinkDepOnly[0]);
+		this.options = optionList.toArray(new QuiltRuleBreakOnly[0]);
 	}
 
 	@Override
@@ -48,16 +48,17 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 		int i = 0;
 
 		for (; i < options.length; i++) {
-			array[i] = options[i].source;
+			array[i] = definer.negate(options[i].source);
 		}
-		array[i] = definer.negate(source);
-		definer.atLeastOneOf(array);
+
+		array[i] = source;
+		definer.atMost(array.length - 1, array);
 	}
 
 	@Override
-	boolean hasAnyValidOptions() {
-		for (QuiltModLinkDepOnly on : options) {
-			if (on.hasAnyValidOptions()) {
+	boolean hasAnyConflictingOptions() {
+		for (QuiltRuleBreakOnly on : options) {
+			if (on.hasAnyConflictingOptions()) {
 				return true;
 			}
 		}
@@ -78,7 +79,7 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 	@Override
 	public Collection<? extends LoadOption> getNodesTo() {
 		List<LoadOption> list = new ArrayList<>();
-		for (QuiltModLinkDepOnly on : options) {
+		for (QuiltRuleBreakOnly on : options) {
 			list.add(on.source);
 		}
 		return list;
@@ -86,11 +87,11 @@ public class QuiltModLinkDepAny extends QuiltModLinkDep {
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		errors.append("Dependancy for ");
+		errors.append("Breakage for ");
 		errors.append(source);
-		errors.append(" on any of: ");
+		errors.append(" on all of: ");
 
-		for (QuiltModLinkDepOnly on : options) {
+		for (QuiltRuleBreakOnly on : options) {
 			errors.append("\n\t-");
 			errors.append(on.source);
 			errors.append(" ");

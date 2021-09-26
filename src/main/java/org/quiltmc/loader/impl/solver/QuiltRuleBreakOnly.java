@@ -8,7 +8,7 @@ import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
 
-class QuiltModLinkBreakOnly extends QuiltModLinkBreak {
+class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final Logger logger;
 
 	final ModDependency.Only publicDep;
@@ -16,9 +16,9 @@ class QuiltModLinkBreakOnly extends QuiltModLinkBreak {
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
 
-	final QuiltModLinkDep unless;
+	final QuiltRuleDep unless;
 
-	public QuiltModLinkBreakOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleBreakOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
 		this.logger = logger;
 		this.publicDep = publicDep;

@@ -1,9 +1,9 @@
 package org.quiltmc.loader.impl.solver;
 
-abstract class QuiltModLinkDep extends ModLink {
+abstract class QuiltRuleDep extends Rule {
 	final LoadOption source;
 
-	public QuiltModLinkDep(LoadOption source) {
+	public QuiltRuleDep(LoadOption source) {
 		this.source = source;
 	}
 

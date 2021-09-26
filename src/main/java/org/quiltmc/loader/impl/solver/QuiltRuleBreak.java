@@ -1,9 +1,9 @@
 package org.quiltmc.loader.impl.solver;
 
-abstract class QuiltModLinkBreak extends ModLink {
+abstract class QuiltRuleBreak extends Rule {
 	final LoadOption source;
 
-	public QuiltModLinkBreak(LoadOption source) {
+	public QuiltRuleBreak(LoadOption source) {
 		this.source = source;
 	}
 
