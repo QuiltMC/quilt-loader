@@ -10,7 +10,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
@@ -25,15 +24,9 @@ import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.util.sat4j.pb.IPBSolver;
-import org.quiltmc.loader.util.sat4j.pb.OptToPBSATAdapter;
-import org.quiltmc.loader.util.sat4j.pb.PseudoOptDecorator;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
-import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.ModDependency;
 
 public final class ModSolver {
@@ -188,19 +181,19 @@ public final class ModSolver {
 		try {
 			while (!sat.hasSolution()) {
 
-				Collection<ModLink> why = sat.getError();
+				Collection<Rule> why = sat.getError();
 
 				Map<MainModLoadOption, MandatoryModIdDefinition> roots = new HashMap<>();
-				List<ModLink> causes = new ArrayList<>();
-				for (ModLink link : why) {
+				List<Rule> causes = new ArrayList<>();
+				for (Rule link : why) {
 					if (!causes.contains(link)) {
 						causes.add(link);
 					}
 				}
 
 				// Separate out mandatory mods (roots) from other causes
-				for (Iterator<ModLink> iterator = causes.iterator(); iterator.hasNext();) {
-					ModLink link = iterator.next();
+				for (Iterator<Rule> iterator = causes.iterator(); iterator.hasNext();) {
+					Rule link = iterator.next();
 					if (link instanceof MandatoryModIdDefinition) {
 						MandatoryModIdDefinition mandatoryMod = (MandatoryModIdDefinition) link;
 						roots.put(mandatoryMod.candidate, mandatoryMod);
@@ -326,13 +319,13 @@ public final class ModSolver {
 		return new ModSolveResult(resultingModMap, providedModMap, extraResults);
 	}
 
-	private boolean blameSingleRule(Sat4jWrapper sat, List<ModLink> causes) {
+	private boolean blameSingleRule(Sat4jWrapper sat, List<Rule> causes) {
 
 		// Remove dependencies and conflicts first
-		for (ModLink link : causes) {
+		for (Rule link : causes) {
 
-			if (link instanceof QuiltModLinkDep) {
-				QuiltModLinkDep dep = (QuiltModLinkDep) link;
+			if (link instanceof QuiltRuleDep) {
+				QuiltRuleDep dep = (QuiltRuleDep) link;
 
 				if (dep.hasAnyValidOptions()) {
 					continue;
@@ -344,7 +337,7 @@ public final class ModSolver {
 		}
 
 		// If that failed... try removing anything else
-		for (ModLink link : causes) {
+		for (Rule link : causes) {
 			sat.removeRule(link);
 			return true;
 		}
@@ -360,28 +353,28 @@ public final class ModSolver {
 		return new LoadOptionResult<>(Collections.unmodifiableMap(resultMap));
 	}
 
-	public static QuiltModLinkDep createModDepLink(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
+	public static QuiltRuleDep createModDepLink(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
 
 		if (dep instanceof org.quiltmc.loader.api.ModDependency.Any) {
 			org.quiltmc.loader.api.ModDependency.Any any = (org.quiltmc.loader.api.ModDependency.Any) dep;
 
-			return new QuiltModLinkDepAny(logger, ctx, option, any);
+			return new QuiltRuleDepAny(logger, ctx, option, any);
 		} else {
 			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
 
-			return new QuiltModLinkDepOnly(logger, ctx, option, only);
+			return new QuiltRuleDepOnly(logger, ctx, option, only);
 		}
 	}
 
-	public static QuiltModLinkBreak createModBreaks(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
+	public static QuiltRuleBreak createModBreaks(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
 		if (dep instanceof org.quiltmc.loader.api.ModDependency.All) {
 			org.quiltmc.loader.api.ModDependency.All any = (org.quiltmc.loader.api.ModDependency.All) dep;
 
-			return new QuiltModLinkBreakAll(logger, ctx, option, any);
+			return new QuiltRuleBreakAll(logger, ctx, option, any);
 		} else {
 			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
 
-			return new QuiltModLinkBreakOnly(logger, ctx, option, only);
+			return new QuiltRuleBreakOnly(logger, ctx, option, only);
 		}
 	}
 
@@ -562,12 +555,12 @@ public final class ModSolver {
 
 	/** @return A {@link ModResolutionException} describing the error in a readable format, or null if this is unable to
 	 *		 do so. (In which case {@link #fallbackErrorDescription(Map, List)} will be used instead). */
-	private static ModSolvingException describeError(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
+	private static ModSolvingException describeError(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<Rule> causes) {
 		// TODO: Create a graph from roots to each other and then build the error through that!
 		return null;
 	}
 
-	private static ModSolvingException fallbackErrorDescription(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<ModLink> causes) {
+	private static ModSolvingException fallbackErrorDescription(Map<MainModLoadOption, MandatoryModIdDefinition> roots, List<Rule> causes) {
 		StringBuilder errors = new StringBuilder("Unhandled error involving mod");
 
 		if (roots.size() > 1) {
@@ -579,7 +572,7 @@ public final class ModSolver {
 				.collect(Collectors.joining(", ")))
 				.append(':');
 
-		for (ModLink cause : causes) {
+		for (Rule cause : causes) {
 			errors.append('\n');
 
 			cause.fallbackErrorDescription(errors);

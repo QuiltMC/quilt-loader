@@ -7,7 +7,7 @@ import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 
 /** A concrete definition of a modid. This also maps the modid to the {@link LoadOption} candidates, and so is used
  * instead of {@link LoadOption} in other links. */
-abstract class ModIdDefinition extends ModLink {
+abstract class ModIdDefinition extends Rule {
 	abstract String getModId();
 
 	/** @return An array of all the possible {@link LoadOption} instances that can define this modid. May be empty, but

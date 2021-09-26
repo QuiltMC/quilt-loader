@@ -19,16 +19,13 @@ import org.quiltmc.loader.util.sat4j.pb.ObjectiveFunction;
 import org.quiltmc.loader.util.sat4j.pb.OptToPBSATAdapter;
 import org.quiltmc.loader.util.sat4j.pb.PseudoOptDecorator;
 import org.quiltmc.loader.util.sat4j.pb.SolverFactory;
-import org.quiltmc.loader.util.sat4j.pb.core.PBSolver;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 import org.quiltmc.loader.util.sat4j.pb.tools.XplainPB;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 import org.quiltmc.loader.util.sat4j.specs.IConstr;
-import org.quiltmc.loader.util.sat4j.specs.IOptimizationProblem;
 import org.quiltmc.loader.util.sat4j.specs.IVec;
 import org.quiltmc.loader.util.sat4j.specs.IVecInt;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
-import org.quiltmc.loader.util.sat4j.tools.SolutionFoundListener;
 
 /** A wrapper around sat4j. We use this instead of {@link DependencyHelper} since that's a bit more limited.
  * <p>
@@ -78,13 +75,13 @@ class Sat4jWrapper implements RuleContext {
 	private volatile boolean cancelled = false;
 
 	private final Map<LoadOption, Integer> optionToWeight = new HashMap<>();
-	private final Map<ModLink, List<RuleDefinition>> ruleToDefinitions = new HashMap<>();
+	private final Map<Rule, List<RuleDefinition>> ruleToDefinitions = new HashMap<>();
 
 	private final Map<LoadOption, Integer> optionToIndex = new HashMap<>();
 	private final Map<Integer, LoadOption> indexToOption = new HashMap<>();
 
 	/** Only available during {@link Sat4jSolveStep#SOLVE}. */
-	private Map<IConstr, ModLink> constraintToRule = null;
+	private Map<IConstr, Rule> constraintToRule = null;
 
 	public Sat4jWrapper(Logger logger) {
 		this.logger = logger;
@@ -114,15 +111,15 @@ class Sat4jWrapper implements RuleContext {
 			logger.info("Sat4jWrapper: adding option " + option + " with weight " + weight);
 		}
 
-		List<ModLink> rulesToRedefine = new ArrayList<>();
+		List<Rule> rulesToRedefine = new ArrayList<>();
 
-		for (ModLink rule : ruleToDefinitions.keySet()) {
+		for (Rule rule : ruleToDefinitions.keySet()) {
 			if (rule.onLoadOptionAdded(option)) {
 				rulesToRedefine.add(rule);
 			}
 		}
 
-		for (ModLink rule : rulesToRedefine) {
+		for (Rule rule : rulesToRedefine) {
 			redefine(rule);
 		}
 	}
@@ -144,23 +141,23 @@ class Sat4jWrapper implements RuleContext {
 		indexToOption.remove(optionToIndex.remove(option));
 		optionToWeight.remove(option);
 
-		List<ModLink> rulesToRedefine = new ArrayList<>();
+		List<Rule> rulesToRedefine = new ArrayList<>();
 
-		for (ModLink rule : ruleToDefinitions.keySet()) {
+		for (Rule rule : ruleToDefinitions.keySet()) {
 			if (rule.onLoadOptionRemoved(option)) {
 				rulesToRedefine.add(rule);
 			}
 		}
 
-		for (ModLink rule : rulesToRedefine) {
+		for (Rule rule : rulesToRedefine) {
 			redefine(rule);
 		}
 	}
 
-	/** Adds a new {@link ModLink} to this solver. This calls {@link ModLink#onLoadOptionAdded(LoadOption)} for every
-	 * {@link LoadOption} currently held, and calls {@link ModLink#define(RuleDefiner)} once afterwards. */
+	/** Adds a new {@link Rule} to this solver. This calls {@link Rule#onLoadOptionAdded(LoadOption)} for every
+	 * {@link LoadOption} currently held, and calls {@link Rule#define(RuleDefiner)} once afterwards. */
 	@Override
-	public void addRule(ModLink rule) {
+	public void addRule(Rule rule) {
 		if (LOG) {
 			logger.info("Sat4jWrapper: added rule " + rule);
 		}
@@ -176,7 +173,7 @@ class Sat4jWrapper implements RuleContext {
 		rule.define(new RuleDefinerInternal(rule));
 	}
 
-	public void removeRule(ModLink rule) {
+	public void removeRule(Rule rule) {
 		if (LOG) {
 			logger.info("Sat4jWrapper: removed rule " + rule);
 		}
@@ -186,9 +183,9 @@ class Sat4jWrapper implements RuleContext {
 		rulesChanged = true;
 	}
 
-	/** Clears any current definitions this rule is associated with, and calls {@link ModLink#define(RuleDefiner)} */
+	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
 	@Override
-	public void redefine(ModLink rule) {
+	public void redefine(Rule rule) {
 
 		if (LOG) {
 			logger.info("Sat4jWrapper: redefining rule " + rule);
@@ -264,11 +261,11 @@ class Sat4jWrapper implements RuleContext {
 	/** @return The error that prevented {@link #hasSolution()} from returning true.
 	 * @throws IllegalStateException if the last call to {@link #hasSolution()} didn't return false, or if any other
 	 *             methods have been called since the last call to {@link #hasSolution()}. */
-	public Collection<ModLink> getError() throws TimeoutException {
+	public Collection<Rule> getError() throws TimeoutException {
 		checkCancelled();
 
 		Collection<IConstr> constraints = explainer.explain();
-		Set<ModLink> rules = new HashSet<>();
+		Set<Rule> rules = new HashSet<>();
 
 		for (IConstr c : constraints) {
 			rules.add(constraintToRule.get(c));
@@ -443,8 +440,8 @@ class Sat4jWrapper implements RuleContext {
 			putOptionRaw(option);
 		}
 
-		for (Map.Entry<ModLink, List<RuleDefinition>> entry : ruleToDefinitions.entrySet()) {
-			ModLink rule = entry.getKey();
+		for (Map.Entry<Rule, List<RuleDefinition>> entry : ruleToDefinitions.entrySet()) {
+			Rule rule = entry.getKey();
 
 			for (RuleDefinition def : entry.getValue()) {
 				addRuleDefinition(rule, def);
@@ -469,7 +466,7 @@ class Sat4jWrapper implements RuleContext {
 		}
 	}
 
-	private void addRuleDefinition(ModLink rule, RuleDefinition def) {
+	private void addRuleDefinition(Rule rule, RuleDefinition def) {
 
 		IConstr[] added;
 		try {
@@ -490,9 +487,9 @@ class Sat4jWrapper implements RuleContext {
 
 	class RuleDefinerInternal implements RuleDefiner {
 
-		final ModLink rule;
+		final Rule rule;
 
-		RuleDefinerInternal(ModLink rule) {
+		RuleDefinerInternal(Rule rule) {
 			this.rule = rule;
 		}
 

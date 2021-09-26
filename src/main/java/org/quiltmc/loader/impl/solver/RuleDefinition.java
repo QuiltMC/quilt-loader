@@ -11,10 +11,10 @@ import org.quiltmc.loader.util.sat4j.specs.IVecInt;
  * don't have to double-call rules to make them define themselves in both of the sat4j passes. */
 abstract class RuleDefinition {
 
-	final ModLink rule;
+	final Rule rule;
 	final LoadOption[] options;
 
-	public RuleDefinition(ModLink rule, LoadOption[] options) {
+	public RuleDefinition(Rule rule, LoadOption[] options) {
 		this.rule = rule;
 		options = Arrays.copyOf(options, options.length);
 
@@ -39,7 +39,7 @@ abstract class RuleDefinition {
 
 	static final class AtLeastOneOf extends RuleDefinition {
 
-		public AtLeastOneOf(ModLink rule, LoadOption[] options) {
+		public AtLeastOneOf(Rule rule, LoadOption[] options) {
 			super(rule, options);
 		}
 
@@ -57,7 +57,7 @@ abstract class RuleDefinition {
 	static abstract class CountOf extends RuleDefinition {
 		final int count;
 
-		public CountOf(ModLink rule, int count, LoadOption[] options) {
+		public CountOf(Rule rule, int count, LoadOption[] options) {
 			super(rule, options);
 			this.count = count;
 		}
@@ -70,7 +70,7 @@ abstract class RuleDefinition {
 
 	static final class AtLeast extends CountOf {
 
-		public AtLeast(ModLink rule, int count, LoadOption[] options) {
+		public AtLeast(Rule rule, int count, LoadOption[] options) {
 			super(rule, count, options);
 		}
 
@@ -86,7 +86,7 @@ abstract class RuleDefinition {
 
 	static final class AtMost extends CountOf {
 
-		public AtMost(ModLink rule, int count, LoadOption[] options) {
+		public AtMost(Rule rule, int count, LoadOption[] options) {
 			super(rule, count, options);
 		}
 
@@ -98,7 +98,7 @@ abstract class RuleDefinition {
 
 	static final class Exactly extends CountOf {
 
-		public Exactly(ModLink rule, int count, LoadOption[] options) {
+		public Exactly(Rule rule, int count, LoadOption[] options) {
 			super(rule, count, options);
 		}
 
@@ -114,7 +114,7 @@ abstract class RuleDefinition {
 	static final class Between extends RuleDefinition {
 		final int min, max;
 
-		public Between(ModLink rule, int min, int max, LoadOption[] options) {
+		public Between(Rule rule, int min, int max, LoadOption[] options) {
 			super(rule, options);
 			this.min = min;
 			this.max = max;

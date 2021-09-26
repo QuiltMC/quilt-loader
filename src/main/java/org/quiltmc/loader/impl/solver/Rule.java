@@ -5,10 +5,9 @@ import java.util.Collection;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 
 /** Base definition of a link between one or more {@link LoadOption}s, that */
-// TODO: Rename this (and subclasses) to "Rule"
-abstract class ModLink {
+abstract class Rule {
 
-	public ModLink() {}
+	public Rule() {}
 
 	/** @return true if {@link #define(RuleDefiner)} needs to be called again, or false if the added option had no
 	 *         affect on this rule. */
@@ -21,7 +20,7 @@ abstract class ModLink {
 	abstract void define(RuleDefiner definer);
 
 	@Deprecated
-	public final void remove(DependencyHelper<LoadOption, ModLink> helper) {
+	public final void remove(DependencyHelper<LoadOption, Rule> helper) {
 		helper.quilt_removeConstraint(this);
 	}
 

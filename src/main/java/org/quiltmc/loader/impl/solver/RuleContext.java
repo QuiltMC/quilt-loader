@@ -12,10 +12,10 @@ public interface RuleContext {
 
 	void removeOption(LoadOption option);
 
-	/** Adds a new {@link ModLink} to this solver. This calls {@link ModLink#onLoadOptionAdded(LoadOption)} for every
-	 * {@link LoadOption} currently held, and calls {@link ModLink#define(RuleDefiner)} once afterwards. */
-	void addRule(ModLink rule);
+	/** Adds a new {@link Rule} to this solver. This calls {@link Rule#onLoadOptionAdded(LoadOption)} for every
+	 * {@link LoadOption} currently held, and calls {@link Rule#define(RuleDefiner)} once afterwards. */
+	void addRule(Rule rule);
 
-	/** Clears any current definitions this rule is associated with, and calls {@link ModLink#define(RuleDefiner)} */
-	void redefine(ModLink rule);
+	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
+	void redefine(Rule rule);
 }
