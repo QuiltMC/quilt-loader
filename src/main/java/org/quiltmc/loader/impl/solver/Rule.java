@@ -19,11 +19,6 @@ abstract class Rule {
 
 	abstract void define(RuleDefiner definer);
 
-	@Deprecated
-	public final void remove(DependencyHelper<LoadOption, Rule> helper) {
-		helper.quilt_removeConstraint(this);
-	}
-
 	/** @return A description of the link. */
 	@Override
 	public abstract String toString();
