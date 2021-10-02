@@ -50,3 +50,15 @@ spotless {
 		licenseHeaderFile(rootProject.file("codeformat/HEADER")).yearSeparator(", ")
 	}
 }
+
+loom {
+	runs {
+		client {
+			ideConfigGenerated = true
+		}
+
+		server {
+			ideConfigGenerated = true
+		}
+	}
+}
