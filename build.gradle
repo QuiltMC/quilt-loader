@@ -12,7 +12,7 @@ targetCompatibility = 1.8
 archivesBaseName = "quilt-loader"
 
 def ENV = System.getenv()
-version = version + (ENV.GITHUB_ACTIONS ? "" : "+local")
+version = version + (ENV.GITHUB_ACTIONS ? (ENV.SNAPSHOTS_URL ? "-SNAPSHOT" : "") : "+local")
 
 repositories {
 	mavenCentral()
