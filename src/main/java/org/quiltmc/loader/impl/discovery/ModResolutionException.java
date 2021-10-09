@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.discovery;
 
+/** Thrown to indicate something went wrong while loading mods, in a way that can be displayed to the user. */
 @SuppressWarnings("serial")
 public class ModResolutionException extends Exception {
 	public ModResolutionException(String s) {

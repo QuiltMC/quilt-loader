@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "quilt_loader": {
+    "group": "org.quiltmc",
+    "id": "quilt_loader",
+    "provides": [ "fabricloader" ],
+    "version": "${version}",
+    "metadata": {
+      "name": "Quilt Loader",
+      "description": "The base mod loader.",
+      "contributors": {
+        "QuiltMC": "Owner"
+      },
+      "contact": {
+        "homepage": "https://quiltmc.org",
+        "issues": "https://github.com/QuiltMC/quilt-loader/issues",
+        "sources": "https://github.com/QuiltMC/quilt-loader"
+      },
+      "license": "Apache-2.0",
+      "icon": "assets/quilt-loader/icon.png"
+    }
+  }
+}

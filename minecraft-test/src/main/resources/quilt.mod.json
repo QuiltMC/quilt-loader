@@ -1,0 +1,16 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "org.quiltmc.test",
+        "id": "minecraft-test",
+        "version": "1.0.0",
+        "entrypoints": {
+            "preLaunch": [
+                "org.quiltmc.test.PrelaunchTest"
+            ],
+            "main": [
+                "org.quiltmc.test.TestMod"
+            ]
+        }
+    }
+}

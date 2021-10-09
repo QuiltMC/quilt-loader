@@ -1,0 +1,17 @@
+{
+  "quilt_loader": {
+    "group": "org.example",
+    "id": "some_id",
+    "version": "1.0.0",
+    "provides": [
+      {
+        "id": "another_mod"
+      }
+    ],
+    "depends": [
+      {
+        "id": "mod_two"
+      }
+    ]
+  }
+}

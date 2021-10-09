@@ -99,6 +99,16 @@ java {
 	withSourcesJar()
 }
 
+// For now we have put the new Quilt logic in it's own source set for the time being.
+// We will move things over to the main source set as we stablize things
+sourceSets {
+	main {
+	   java { 
+	       srcDir "src/experimental/java"
+	   }
+	}
+}
+
 jar {
 	manifest {
 		attributes (

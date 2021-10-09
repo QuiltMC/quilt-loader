@@ -29,10 +29,10 @@ import java.util.Map.Entry;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import org.quiltmc.json5.JsonReader;
 
-abstract class CustomValueImpl implements CustomValue {
+public abstract class CustomValueImpl implements CustomValue {
 	static final CustomValue BOOLEAN_TRUE = new BooleanImpl(true);
 	static final CustomValue BOOLEAN_FALSE = new BooleanImpl(false);
-	static final CustomValue NULL = new NullImpl();
+	public static final CustomValue NULL = new NullImpl();
 
 	public static CustomValue readCustomValue(JsonReader reader) throws IOException, ParseMetadataException {
 		switch (reader.peek()) {
@@ -125,7 +125,7 @@ abstract class CustomValueImpl implements CustomValue {
 		}
 	}
 
-	private static final class ObjectImpl extends CustomValueImpl implements CvObject {
+	public static final class ObjectImpl extends CustomValueImpl implements CvObject {
 		private final Map<String, CustomValue> entries;
 
 		public ObjectImpl(Map<String, CustomValue> entries) {
@@ -158,7 +158,7 @@ abstract class CustomValueImpl implements CustomValue {
 		}
 	}
 
-	private static final class ArrayImpl extends CustomValueImpl implements CvArray {
+	public static final class ArrayImpl extends CustomValueImpl implements CvArray {
 		private final List<CustomValue> entries;
 
 		public ArrayImpl(List<CustomValue> entries) {
@@ -186,7 +186,7 @@ abstract class CustomValueImpl implements CustomValue {
 		}
 	}
 
-	private static final class StringImpl extends CustomValueImpl {
+	public static final class StringImpl extends CustomValueImpl {
 		final String value;
 
 		public StringImpl(String value) {
@@ -199,7 +199,7 @@ abstract class CustomValueImpl implements CustomValue {
 		}
 	}
 
-	private static final class NumberImpl extends CustomValueImpl {
+	public static final class NumberImpl extends CustomValueImpl {
 		final Number value;
 
 		public NumberImpl(Number value) {
@@ -212,7 +212,7 @@ abstract class CustomValueImpl implements CustomValue {
 		}
 	}
 
-	private static final class BooleanImpl extends CustomValueImpl {
+	public static final class BooleanImpl extends CustomValueImpl {
 		final boolean value;
 
 		public BooleanImpl(boolean value) {
@@ -225,7 +225,7 @@ abstract class CustomValueImpl implements CustomValue {
 		}
 	}
 
-	private static final class NullImpl extends CustomValueImpl {
+	public static final class NullImpl extends CustomValueImpl {
 		@Override
 		public CvType getType() {
 			return CvType.NULL;
