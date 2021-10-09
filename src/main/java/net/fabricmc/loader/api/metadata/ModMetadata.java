@@ -23,6 +23,9 @@ import java.util.Optional;
 import com.google.gson.JsonElement;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 
 import net.fabricmc.loader.api.Version;
 

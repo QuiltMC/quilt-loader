@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.ModMetadataParser;
+import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 
 final class V1ModJsonParsingTests {
@@ -53,7 +53,7 @@ final class V1ModJsonParsingTests {
 				.resolve("resources")
 				.resolve("testing")
 				.resolve("parsing")
-				.resolve("v1");
+				.resolve("fabric");
 
 		specPath = testLocation.resolve("spec");
 		errorPath = testLocation.resolve("error");
@@ -67,12 +67,12 @@ final class V1ModJsonParsingTests {
 	@DisplayName("Test required values")
 	public void testRequiredValues() throws IOException, ParseMetadataException {
 		// Required fields
-		final LoaderModMetadata metadata = ModMetadataParser.parseMetadata(LOGGER, specPath.resolve("required.json"));
+		final LoaderModMetadata metadata = FabricModMetadataReader.parseMetadata(LOGGER, specPath.resolve("required.json"));
 		assertNotNull(metadata, "Failed to read mod metadata!");
 		this.validateRequiredValues(metadata);
 
 		// Required fields in different order to verify we don't have ordering issues
-		final LoaderModMetadata reversedMetadata = ModMetadataParser.parseMetadata(LOGGER, specPath.resolve("required_reversed.json"));
+		final LoaderModMetadata reversedMetadata = FabricModMetadataReader.parseMetadata(LOGGER, specPath.resolve("required_reversed.json"));
 		assertNotNull(reversedMetadata, "Failed to read mod metadata!");
 		this.validateRequiredValues(reversedMetadata);
 	}
@@ -80,7 +80,7 @@ final class V1ModJsonParsingTests {
 	@Test
 	@DisplayName("Read custom values")
 	public void customValues() throws IOException, ParseMetadataException {
-		final LoaderModMetadata metadata = ModMetadataParser.parseMetadata(LOGGER, specPath.resolve("custom_values.json"));
+		final LoaderModMetadata metadata = FabricModMetadataReader.parseMetadata(LOGGER, specPath.resolve("custom_values.json"));
 
 		final Map<String, CustomValue> customValues = metadata.getCustomValues();
 		// Should be 6 elements in custom values map
@@ -125,7 +125,7 @@ final class V1ModJsonParsingTests {
 	@Test
 	@DisplayName("Test example 1")
 	public void example1() throws IOException, ParseMetadataException {
-		ModMetadataParser.parseMetadata(LOGGER, specPath.resolve("example_1.json"));
+		FabricModMetadataReader.parseMetadata(LOGGER, specPath.resolve("example_1.json"));
 	}
 
 	private void validateRequiredValues(LoaderModMetadata metadata) {
@@ -144,7 +144,7 @@ final class V1ModJsonParsingTests {
 	@Test
 	@DisplayName("Long test file")
 	public void testLongFile() throws IOException, ParseMetadataException {
-		final LoaderModMetadata modMetadata = ModMetadataParser.parseMetadata(LOGGER, specPath.resolve("long.json"));
+		final LoaderModMetadata modMetadata = FabricModMetadataReader.parseMetadata(LOGGER, specPath.resolve("long.json"));
 
 		if (!modMetadata.getAccessWidener().equals("examplemod.accessWidener")) {
 			throw new RuntimeException("Incorrect access widener entry");
@@ -163,14 +163,14 @@ final class V1ModJsonParsingTests {
 	public void verifyMissingVersionFails() {
 		// Missing version should throw an exception
 		assertThrows(ParseMetadataException.MissingRequired.class, () -> {
-			ModMetadataParser.parseMetadata(LOGGER, errorPath.resolve("missing_version.json"));
+			FabricModMetadataReader.parseMetadata(LOGGER, errorPath.resolve("missing_version.json"));
 		}, "Missing version exception was not caught");
 	}
 
 	@Test
 	public void validateDuplicateSchemaVersionMismatchFails() {
 		assertThrows(ParseMetadataException.class, () -> {
-			ModMetadataParser.parseMetadata(LOGGER, errorPath.resolve("missing_version.json"));
+			FabricModMetadataReader.parseMetadata(LOGGER, errorPath.resolve("missing_version.json"));
 		}, "Parser did not fail when the duplicate \"schemaVersion\" mismatches");
 	}
 

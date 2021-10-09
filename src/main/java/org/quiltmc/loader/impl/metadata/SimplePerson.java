@@ -22,10 +22,10 @@ import net.fabricmc.loader.api.metadata.Person;
 /**
  * Represents a simple implementation of person which is only identified by name.
  */
-class SimplePerson implements Person {
+public class SimplePerson implements Person {
 	private final String name;
 
-	SimplePerson(String name) {
+	public SimplePerson(String name) {
 		this.name = name;
 	}
 

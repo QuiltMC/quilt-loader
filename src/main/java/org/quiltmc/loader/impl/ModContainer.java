@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
@@ -28,18 +29,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ModContainer implements net.fabricmc.loader.api.ModContainer {
-	private final LoaderModMetadata info;
+	private final InternalModMetadata meta;
+	private final LoaderModMetadata fabricMeta;
 	private final URL originUrl;
 	private volatile Path root;
 
-	public ModContainer(LoaderModMetadata info, URL originUrl) {
-		this.info = info;
+	public ModContainer(InternalModMetadata meta, URL originUrl) {
+		this.meta = meta;
+		this.fabricMeta = meta.asFabricModMetadata();
 		this.originUrl = originUrl;
 	}
 
 	@Override
 	public ModMetadata getMetadata() {
-		return info;
+		return fabricMeta;
 	}
 
 	@Override
@@ -70,12 +73,17 @@ public class ModContainer implements net.fabricmc.loader.api.ModContainer {
 				// We never close here. It's fine. getJarFileSystem() will handle it gracefully, and so should mods
 			}
 		} catch (IOException | UrlConversionException e) {
-			throw new RuntimeException("Failed to find root directory for mod '" + info.getId() + "'!", e);
+			throw new RuntimeException("Failed to find root directory for mod '" + meta.id() + "'!", e);
 		}
 	}
 
+	@Deprecated
 	public LoaderModMetadata getInfo() {
-		return info;
+		return fabricMeta;
+	}
+
+	public InternalModMetadata getInternalMeta() {
+		return meta;
 	}
 
 	public URL getOriginUrl() {

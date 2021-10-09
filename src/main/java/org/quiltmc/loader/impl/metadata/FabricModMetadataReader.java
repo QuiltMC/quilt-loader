@@ -30,7 +30,7 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 
 
-public final class ModMetadataParser {
+public final class FabricModMetadataReader {
 	private static final Logger LOGGER = LogManager.getLogger();
 	public static final int LATEST_VERSION = 1;
 
@@ -150,6 +150,6 @@ public final class ModMetadataParser {
 		logger.warn(message.toString());
 	}
 
-	private ModMetadataParser() {
+	private FabricModMetadataReader() {
 	}
 }

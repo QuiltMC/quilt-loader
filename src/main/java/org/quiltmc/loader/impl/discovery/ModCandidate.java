@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.discovery;
 
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 
 import java.net.URL;
 
@@ -37,8 +38,13 @@ public class ModCandidate {
 		return originUrl;
 	}
 
+	@Deprecated
 	public LoaderModMetadata getInfo() {
 		return info;
+	}
+
+	public InternalModMetadata getMetadata() {
+	    return info.asQuiltModMetadata();
 	}
 
 	public int getDepth() {

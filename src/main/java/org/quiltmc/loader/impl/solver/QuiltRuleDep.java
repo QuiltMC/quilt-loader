@@ -14,25 +14,14 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
+package org.quiltmc.loader.impl.solver;
 
-/** @deprecated Replaced by {@link net.fabricmc.loader.api.VersionParsingException} */
-@SuppressWarnings("serial")
-@Deprecated
-public class VersionParsingException extends Exception {
-	public VersionParsingException() {
-		super();
+abstract class QuiltRuleDep extends Rule {
+	final LoadOption source;
+
+	public QuiltRuleDep(LoadOption source) {
+		this.source = source;
 	}
 
-	public VersionParsingException(Throwable t) {
-		super(t);
-	}
-
-	public VersionParsingException(String s) {
-		super(s);
-	}
-
-	public VersionParsingException(String s, Throwable t) {
-		super(s, t);
-	}
+	abstract boolean hasAnyValidOptions();
 }

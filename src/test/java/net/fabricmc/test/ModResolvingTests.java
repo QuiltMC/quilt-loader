@@ -17,27 +17,20 @@
 package net.fabricmc.test;
 
 import java.io.File;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Map.Entry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
+import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
-import org.quiltmc.loader.impl.discovery.ModCandidateSet;
+import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.ModMetadataParser;
-import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.discovery.ModSolvingException;
+import org.quiltmc.loader.impl.solver.ModSolveResult;
 
 final class ModResolvingTests {
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -56,7 +49,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void single() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "single");
+		ModSolveResult modSet = resolveModSet("valid", "single");
 
 		assertModPresent(modSet, "mod-resolving-tests-single", "1.0.0");
 		assertNoMoreMods(modSet);
@@ -64,7 +57,7 @@ final class ModResolvingTests {
 
 	@Test
 	public void duel() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "duel");
+		ModSolveResult modSet = resolveModSet("valid", "duel");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
@@ -73,26 +66,36 @@ final class ModResolvingTests {
 
 	@Test
 	public void depends() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "depends");
+		ModSolveResult modSet = resolveModSet("valid", "depends");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
-	// @Test // FIXME: Broken, findCompatibleSet no longer returns provided mods.
+	@Test
+	public void mavenGroups() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "groups");
+		assertModPresent(modSet, "dep", "1.0.0");
+		assertModPresent(modSet, "mod_one", "1.0.0");
+		assertModPresent(modSet, "mod_two", "1.0.0");
+		assertProvidedPresent(modSet, "dep", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void providedDepends() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "provided_depends");
+		ModSolveResult modSet = resolveModSet("valid", "provided_depends");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library-but-renamed", "1.0.0");
+		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
 	@Test
 	public void includedDep() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "included_dep");
+		ModSolveResult modSet = resolveModSet("valid", "included_dep");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
@@ -101,86 +104,173 @@ final class ModResolvingTests {
 
 	@Test
 	public void altDep() throws Exception {
-		Map<String, ModCandidate> modSet = resolveModSet("valid", "alt_deps");
+		// Run the test multiple times to ensure we always pick the right dep
+		// (and also makes sure we never mess up)
+		for (int i = 0; i < 1000; i++) {
+			if (i % 100 == 0) {
+				System.out.println("ModResolvingTests.altDep iteration " + i);
+			}
+			ModSolveResult modSet = resolveModSet("valid", "alt_deps");
 
-		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
-		assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
-		assertNoMoreMods(modSet);
+			assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+			assertModPresent(modSet, "mod-resolving-tests-other", "1.0.0");
+			assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
+			assertNoMoreMods(modSet);
+		}
 	}
 
-	private static Map<String, ModCandidate> resolveModSet(String type, String subpath) throws Exception {
+    @Test
+    public void quilt() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt");
 
-		ModResolver resolver = new ModResolver();
-		Map<String, ModCandidateSet> candidateMap = new HashMap<>();
+        assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void dep_gte() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "dep_gte");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void extraLibs() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "extra_libs");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModMissing(modSet, "mod-resolving-tests-library");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void subMod() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "sub_mod");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-sub", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void quiltLoadType() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt_load_type");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void quiltIncludedDep() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt_included_dep");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void quiltIncludedProvided() throws Exception {
+        ModSolveResult modSet = resolveModSet("valid", "quilt_included_provided");
+
+        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+        assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
+        assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+        assertNoMoreMods(modSet);
+    }
+
+    @Test
+    public void breaksError() {
+    	resolveErrorSet("breaks");
+    }
+
+    @Test
+    public void multiBreaksError() {
+        resolveErrorSet("multi_breaks");
+    }
+
+    private static void resolveErrorSet(String subpath) {
+    	try {
+    		ModSolveResult result = resolveModSet("error", subpath);
+
+    		StringBuilder sb = new StringBuilder();
+    		sb.append("Incorrectly resolved an invalid mod set!\n");
+
+    		for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
+    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginUrl() + "\n");
+    		}
+
+    		for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
+    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginUrl() + "\n");
+    		}
+
+    		Assertions.fail(sb.toString());
+    	} catch (ModSolvingException ignored) {
+    		// Correct
+    	} catch (ModResolutionException setupError) {
+    		Assertions.fail("Failed to read the mod set!", setupError);
+    	}
+    }
+
+	private static ModSolveResult resolveModSet(String type, String subpath) throws ModResolutionException {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 
-		List<Path> subFolders = Files.list(modRoot)//
-			.filter(p -> p.getFileName().toString().endsWith(".jar") && Files.isDirectory(p))//
-			.collect(Collectors.toCollection(ArrayList::new));
-
-		List<Path> loadFrom = new ArrayList<>();
-		int depth = 0;
-
-		loadFrom.addAll(subFolders);
-
-		while (!loadFrom.isEmpty()) {
-			subFolders.clear();
-
-			for (Path modPath : loadFrom) {
-
-				URL url = modPath.toUri().toURL();
-				LoaderModMetadata[] metas = { ModMetadataParser.parseMetadata(LOGGER, modPath.resolve("fabric.mod.json")) };
-
-				for (LoaderModMetadata meta : metas) {
-					ModCandidate candidate = new ModCandidate(meta, url, depth, false);
-					candidateMap.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
-
-					for (NestedJarEntry jar : meta.getJars()) {
-						Path sub = modPath;
-
-						for (String part : jar.getFile().split("/")) {
-							sub = sub.resolve(part);
-						}
-
-						subFolders.add(sub);
-					}
-				}
-			}
-
-			loadFrom.clear();
-			loadFrom.addAll(subFolders);
-			depth++;
-		}
-
-		return resolver.findCompatibleSet(LOGGER, candidateMap);
+		ModResolver resolver = new ModResolver(LOGGER, true, modRoot);
+		resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
+		return resolver.resolve(null);
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
 	 * removes the mod entry from the map. */
-	private static void assertModPresent(Map<String, ModCandidate> map, String modid, String version) {
-		ModCandidate mod = map.remove(modid);
+	private static void assertModPresent(ModSolveResult result, String modid, String version) {
+		ModCandidate mod = result.modMap.remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + map);
+			Assertions.fail(modid + " is missing from " + result.modMap);
 		} else {
 			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
 		}
 	}
 
 	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
-	private static void assertModMissing(Map<String, ModCandidate> map, String modid) {
-		ModCandidate mod = map.remove(modid);
+	private static void assertModMissing(ModSolveResult result, String modid) {
+		ModCandidate mod = result.modMap.remove(modid);
 
 		if (mod != null) {
 			Assertions.fail(modid + " is not missing, and instead is loaded: " + mod);
 		}
 	}
 
-	private static void assertNoMoreMods(Map<String, ModCandidate> modSet) {
-		if (!modSet.isEmpty()) {
-			Assertions.fail("Expected to find no more mods loaded, but found: " + modSet);
+	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
+	 * removes the mod entry from the map. */
+	private static void assertProvidedPresent(ModSolveResult result, String modid, String version) {
+		ModCandidate mod = result.providedMap.remove(modid);
+
+		if (mod == null) {
+			Assertions.fail(modid + " is missing from " + result.providedMap);
+		} else {
+			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
+		}
+	}
+
+	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
+	private static void assertProvidedMissing(ModSolveResult result, String modid) {
+		ModCandidate mod = result.providedMap.remove(modid);
+
+		if (mod != null) {
+			Assertions.fail(modid + " is not missing, and instead is provided by: " + mod);
+		}
+	}
+
+	private static void assertNoMoreMods(ModSolveResult result) {
+		if (!result.modMap.isEmpty()) {
+			Assertions.fail("Expected to find no more mods loaded, but found: " + result.modMap);
+		}
+		if (!result.providedMap.isEmpty()) {
+			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.providedMap);
 		}
 	}
 }

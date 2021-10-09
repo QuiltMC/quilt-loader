@@ -1,0 +1,13 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "combine",
+        "id": "dep",
+        "version": "1.0.0",
+        "provides": [
+            "one:dep",
+            "two:dep",
+            "original:dep"
+        ]
+    }
+}

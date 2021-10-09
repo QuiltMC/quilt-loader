@@ -219,7 +219,7 @@ final class V0ModMetadataParser {
 			throw new ParseMetadataException.MissingRequired("version");
 		}
 
-		ModMetadataParser.logWarningMessages(logger, id, warnings);
+		FabricModMetadataReader.logWarningMessages(logger, id, warnings);
 
 		// Optional stuff
 		if (links == null) {
