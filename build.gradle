@@ -215,6 +215,17 @@ publishing {
 					password ENV.MAVEN_PASSWORD
 				}
 			}
+		} else if (ENV.SNAPSHOTS_URL) {
+			maven {
+				url ENV.SNAPSHOTS_URL
+
+				credentials {
+					username ENV.SNAPSHOTS_USERNAME
+					password ENV.SNAPSHOTS_PASSWORD
+				}
+			}
+		} else {
+			mavenLocal()
 		}
 	}
 }
