@@ -159,7 +159,7 @@ public final class DependencyOverrides {
 					throw new ParseMetadataException("Dependency version range must be a string or string array!", reader);
 			}
 
-			modDependencyMap.put(modId, new ModDependencyImpl(modId, matcherStringList));
+			modDependencyMap.put(modId, new FabricModDependencyImpl(modId, matcherStringList));
 		}
 
 		reader.endObject();

@@ -469,7 +469,7 @@ final class V1ModMetadataParser {
 				throw new ParseMetadataException("Dependency version range must be a string or string array!", reader);
 			}
 
-			modDependencies.put(modId, new ModDependencyImpl(modId, matcherStringList));
+			modDependencies.put(modId, new FabricModDependencyImpl(modId, matcherStringList));
 		}
 
 		reader.endObject();

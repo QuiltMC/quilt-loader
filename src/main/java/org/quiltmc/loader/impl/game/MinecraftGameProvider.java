@@ -26,6 +26,7 @@ import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchBranding;
 import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchHook;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
+import org.quiltmc.loader.impl.metadata.FabricModDependencyImpl;
 import org.quiltmc.loader.impl.minecraft.McVersionLookup;
 import org.quiltmc.loader.impl.minecraft.McVersion;
 import org.quiltmc.loader.impl.util.Arguments;
@@ -86,7 +87,8 @@ public class MinecraftGameProvider implements GameProvider {
 				.setName(getGameName());
 
 		if (versionData.getClassVersion().isPresent()) {
-			metadata.addDepends(new JavaModDependency(versionData.getClassVersion().getAsInt() - 44));
+			int version = versionData.getClassVersion().getAsInt() - 44;
+			metadata.addDepends(new FabricModDependencyImpl("java", Collections.singletonList("<=" + version)));
 		}
 
 		return Arrays.asList(new BuiltinMod(url, metadata.build()));
@@ -222,34 +224,6 @@ public class MinecraftGameProvider implements GameProvider {
 			m.invoke(null, (Object) arguments.toArray());
 		} catch (Exception e) {
 			throw new RuntimeException(e);
-		}
-	}
-
-	static class JavaModDependency implements ModDependency {
-		private final int minVersion;
-
-		JavaModDependency(int minVersion) {
-			this.minVersion = minVersion;
-		}
-
-		@Override
-		public String getModId() {
-			return "java";
-		}
-
-		@Override
-		public boolean matches(Version version) {
-			try {
-				return VersionPredicateParser.matches(version, ">=" + minVersion);
-			} catch (VersionParsingException e) {
-				e.printStackTrace();
-				return false;
-			}
-		}
-
-		@Override
-		public Set<VersionPredicate> getVersionRequirements() {
-			return Collections.singleton(new VersionPredicate(VersionPredicate.Type.GREATER_THAN_OR_EQUAL, minVersion + ""));
 		}
 	}
 }
