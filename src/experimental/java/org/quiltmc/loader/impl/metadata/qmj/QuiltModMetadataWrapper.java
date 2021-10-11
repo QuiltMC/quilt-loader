@@ -18,8 +18,6 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.*;
 
-import com.google.gson.JsonElement;
-
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
@@ -215,16 +213,6 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	@Override
 	public Map<String, CustomValue> getCustomValues() {
 		return customValues;
-	}
-
-	@Override
-	public boolean containsCustomElement(String key) {
-		return containsCustomValue(key);
-	}
-
-	@Override
-	public JsonElement getCustomElement(String key) {
-		return AbstractModMetadata.convert(getCustomValue(key));
 	}
 
 	// Fabric's internal ModMetadata
