@@ -17,11 +17,11 @@
 package org.quiltmc.loader.impl.entrypoint;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -32,7 +32,6 @@ import java.util.function.Function;
 public class EntrypointTransformer {
 	public static String appletMainClass;
 
-	public final Logger logger = LogManager.getFormatterLogger("FabricLoader|EntrypointTransformer");
 	private final List<EntrypointPatch> patches;
 	private Map<String, byte[]> patchedClasses;
 	private boolean entrypointsLocated = false;
@@ -73,7 +72,7 @@ public class EntrypointTransformer {
 		patchedClasses = new HashMap<>();
 
 		patches.forEach((e) -> e.process(launcher, this::addPatchedClass));
-		logger.debug("[EntrypointTransformer] Patched " + (patchedClasses.size() == 1 ? "1 class." : (patchedClasses.size() + " classes.")));
+		Log.debug(LogCategory.GAME_PATCH, "Patched " + (patchedClasses.size() == 1 ? "1 class." : (patchedClasses.size() + " classes.")));
 	}
 
 	/**

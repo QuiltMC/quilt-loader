@@ -20,7 +20,6 @@ import java.util.*;
 
 import com.google.gson.JsonElement;
 
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
@@ -29,7 +28,6 @@ import org.quiltmc.loader.impl.metadata.*;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.api.VersionPredicate;
 import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
@@ -281,7 +279,7 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	}
 
 	@Override
-	public void emitFormatWarnings(Logger logger) {
+	public void emitFormatWarnings() {
 
 	}
 }

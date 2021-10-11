@@ -16,12 +16,12 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -34,7 +34,7 @@ public final class ModLicenseImpl implements ModLicense {
 	private final String url;
 	private final String description;
 	private static final Map<String, ModLicense> LICENSES = new HashMap<>();
-	private static final Logger LOGGER = LogManager.getLogger(ModLicenseImpl.class);
+	private static final LogCategory CATEGORY = new LogCategory(LogCategory.METADATA, "Licenses");
 
 	static {
 		try (JsonReader reader = JsonReader.json(new InputStreamReader(ModLicenseImpl.class.getClassLoader().getResourceAsStream("quilt_loader/licenses.json")))) {
@@ -57,8 +57,7 @@ public final class ModLicenseImpl implements ModLicense {
 				throw new RuntimeException("License file is malformed?");
 			}
 		} catch (IOException e) {
-			LOGGER.error("Unable to parse license metadata");
-			LOGGER.throwing(e);
+			Log.error(CATEGORY, "Unable to parse license metadata", e);
 		}
 	}
 

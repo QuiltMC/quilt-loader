@@ -27,6 +27,9 @@ public final class SystemProperties {
 	public static final String DEBUG_MOD_SOLVING = "quilt.debug.mod_solving";
 	public static final String MODS_DIRECTORY = "quilt.modsDir";
 	public static final String CONFIG_DIRECTORY = "quilt.configDir";
+	// note: fabric version is "fabric.logFile
+	public static final String LOG_FILE = "quilt.log.file";
+	public static final String LOG_LEVEL = "quilt.log.level";
 
 	private SystemProperties() {
 	}

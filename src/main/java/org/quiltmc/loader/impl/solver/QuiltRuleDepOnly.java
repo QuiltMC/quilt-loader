@@ -21,12 +21,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 class QuiltRuleDepOnly extends QuiltRuleDep {
-	final Logger logger;
-
 	final ModDependency.Only publicDep;
 	final List<ModLoadOption> validOptions;
 	final List<ModLoadOption> invalidOptions;
@@ -34,23 +33,22 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 
 	final QuiltRuleDep unless;
 
-	public QuiltRuleDepOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleDepOnly(RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
-		this.logger = logger;
 		this.publicDep = publicDep;
 		validOptions = new ArrayList<>();
 		invalidOptions = new ArrayList<>();
 		allOptions = new ArrayList<>();
 
 		if (ModSolver.DEBUG_PRINT_STATE) {
-			logger.info("[ModSolver] Adding a mod depencency from " + source + " to " + publicDep.id().id());
+			Log.info(LogCategory.SOLVING, "Adding a mod depencency from " + source + " to " + publicDep.id().id());
 		}
 
 		ModDependency except = publicDep.unless();
 		if (except != null && !except.shouldIgnore()) {
 			QuiltModDepOption option = new QuiltModDepOption(except);
 			ctx.addOption(option);
-			this.unless = ModSolver.createModDepLink(logger, ctx, option, except);
+			this.unless = ModSolver.createModDepLink(ctx, option, except);
 			ctx.addRule(unless);
 		} else {
 			this.unless = null;
@@ -75,14 +73,14 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 				validOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  +  valid option: " + mod.fullString());
+					Log.info(LogCategory.SOLVING, "  +  valid option: " + mod.fullString());
 				}
 			} else {
 				invalidOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
 					String reason = groupMatches ? "mismatched group" : "wrong version";
-					logger.info("[ModSolver]  x  mismatching option: " + mod.fullString() + " because " + reason);
+					Log.info(LogCategory.SOLVING, "  x  mismatching option: " + mod.fullString() + " because " + reason);
 				}
 			}
 			return true;

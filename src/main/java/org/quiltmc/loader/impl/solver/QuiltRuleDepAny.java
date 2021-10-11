@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
 
 public class QuiltRuleDepAny extends QuiltRuleDep {
@@ -29,7 +28,7 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 	final QuiltRuleDepOnly[] options;
 	final ModDependency.Any publicDep;
 
-	public QuiltRuleDepAny(Logger logger, RuleContext ctx, LoadOption option, ModDependency.Any any) {
+	public QuiltRuleDepAny(RuleContext ctx, LoadOption option, ModDependency.Any any) {
 
 		super(option);
 		this.publicDep = any;
@@ -39,7 +38,7 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 			if (!only.shouldIgnore()) {
 				QuiltModDepOption sub = new QuiltModDepOption(only);
 				ctx.addOption(sub);
-				QuiltRuleDepOnly dep = new QuiltRuleDepOnly(logger, ctx, sub, only);
+				QuiltRuleDepOnly dep = new QuiltRuleDepOnly(ctx, sub, only);
 				ctx.addRule(dep);
 				optionList.add(dep);
 			}

@@ -42,6 +42,8 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** The main entry point for all quilt-based stuff. */
 public final class QuiltGuiEntry {
@@ -93,7 +95,7 @@ public final class QuiltGuiEntry {
 	/** @param exitAfter If true then this will call {@link System#exit(int)} after showing the gui, otherwise this will
 	 *            return normally. */
 	public static void displayCriticalError(Throwable exception, boolean exitAfter) {
-		QuiltLoaderImpl.INSTANCE.getLogger().fatal("A critical error occurred", exception);
+		Log.error(LogCategory.GENERAL, "A critical error occurred", exception);
 
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
 
@@ -112,7 +114,7 @@ public final class QuiltGuiEntry {
 				open(tree);
 			} catch (Exception e) {
 				if (exitAfter) {
-					QuiltLoaderImpl.INSTANCE.getLogger().warn("Failed to open the error gui!", e);
+					Log.warn(LogCategory.GENERAL, "Failed to open the error gui!", e);
 				} else {
 					throw new RuntimeException("Failed to open the error gui!", e);
 				}

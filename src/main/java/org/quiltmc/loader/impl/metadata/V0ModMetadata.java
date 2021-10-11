@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.apache.logging.log4j.Logger;
-
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.ContactInformation;
@@ -32,6 +30,8 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetadata {
 	private static final Mixins EMPTY_MIXINS = new Mixins(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
@@ -245,9 +245,9 @@ final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetada
 	}
 
 	@Override
-	public void emitFormatWarnings(Logger logger) {
+	public void emitFormatWarnings() {
 		if (getSchemaVersion() < FabricModMetadataReader.LATEST_VERSION) {
-			logger.warn("Mod ID " + getId() + " uses outdated schema version: " + getSchemaVersion() + " < " + FabricModMetadataReader.LATEST_VERSION);
+			Log.warn(LogCategory.METADATA, "Mod ID " + getId() + " uses outdated schema version: " + getSchemaVersion() + " < " + FabricModMetadataReader.LATEST_VERSION);
 		}
 	}
 

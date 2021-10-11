@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
@@ -43,14 +42,13 @@ public final class ModMetadataReader {
 	/**
 	 * Reads the {@code quilt.mod.json} at the supplied path
 	 *
-	 * @param logger the logger to emit warnings from
 	 * @param json the json file to read
 	 * @return an instance of mod metadata
 	 * @throws IOException if there are any issues reading the json file
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
 	@SuppressWarnings("SwitchStatementWithTooFewBranches") // Switch statement intentionally used for future expandability
-	public static InternalModMetadata read(Logger logger, Path json) throws IOException, ParseException {
+	public static InternalModMetadata read(Path json) throws IOException, ParseException {
 		JsonLoaderValue value;
 
 		try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {
@@ -84,7 +82,7 @@ public final class ModMetadataReader {
 
 		switch (version) {
 		case 1:
-			return V1ModMetadataReader.read(logger, root);
+			return V1ModMetadataReader.read(root);
 		default:
 			if (version < 0) {
 				throw parseException(schemaVersion, "schema_version must not be negative");

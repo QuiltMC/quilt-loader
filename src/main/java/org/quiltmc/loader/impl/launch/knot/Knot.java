@@ -27,6 +27,8 @@ import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import java.io.File;
@@ -87,11 +89,11 @@ public final class Knot extends QuiltLauncherBase {
 		}
 
 		if (provider != null) {
-			LOGGER.info("Loading for game " + provider.getGameName() + " " + provider.getRawGameVersion());
+			Log.info(LogCategory.KNOT, "Loading for game " + provider.getGameName() + " " + provider.getRawGameVersion());
 		} else {
-			LOGGER.error("Could not find valid game provider!");
+			Log.error(LogCategory.KNOT, "Could not find valid game provider!");
 			for (GameProvider p : providers) {
-				LOGGER.error("- " + p.getGameName());
+				Log.error(LogCategory.KNOT, "- " + p.getGameName());
 			}
 			throw new RuntimeException("Could not find valid game provider!");
 		}
@@ -168,7 +170,7 @@ public final class Knot extends QuiltLauncherBase {
 				try {
 					return (UrlUtil.asUrl(file));
 				} catch (UrlConversionException e) {
-					LOGGER.debug(e);
+					Log.debug(LogCategory.KNOT, "Exception parsing URL", e);
 					return null;
 				}
 			} else {
@@ -179,7 +181,7 @@ public final class Knot extends QuiltLauncherBase {
 
 	@Override
 	public void propose(URL url) {
-		QuiltLauncherBase.LOGGER.debug("[Knot] Proposed " + url + " to classpath.");
+		Log.debug(LogCategory.KNOT, "Proposed " + url + " to classpath.");
 		classLoader.addURL(url);
 	}
 

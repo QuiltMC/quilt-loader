@@ -18,6 +18,8 @@ package org.quiltmc.loader.impl.launch.common;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
@@ -25,8 +27,6 @@ import org.quiltmc.loader.impl.util.Arguments;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 
 import java.io.*;
@@ -41,8 +41,6 @@ import java.util.jar.JarFile;
 
 public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public static Path minecraftJar;
-
-	protected static Logger LOGGER = LogManager.getFormatterLogger("FabricLoader");
 	private static boolean mixinReady;
 	private static Map<String, Object> properties;
 	private static QuiltLauncher launcher;
@@ -72,10 +70,10 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			throw new RuntimeException("Could not locate Minecraft: " + jarFile + " not found");
 		}
 
-		LOGGER.debug("Requesting deobfuscation of " + jarFile.getFileName());
+		Log.debug(LogCategory.GAME_REMAP, "Requesting deobfuscation of " + jarFile.getFileName());
 
 		if (!launcher.isDevelopment()) { // in-dev is already deobfuscated
-			Path deobfJarDir = gameDir.resolve(".fabric").resolve("remappedJars");
+			Path deobfJarDir = gameDir.resolve(".quilt").resolve("remappedJars");
 
 			if (!gameId.isEmpty()) {
 				String versionedId = gameVersion.isEmpty() ? gameId : String.format("%s-%s", gameId, gameVersion);
@@ -89,7 +87,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			Path deobfJarFileTmp = deobfJarDir.resolve(deobfJarFilename + ".tmp");
 
 			if (Files.exists(deobfJarFileTmp)) { // previous unfinished remap attempt
-				LOGGER.warn("Incomplete remapped file found! This means that the remapping process failed on the previous launch. If this persists, make sure to let us at Quilt know!");
+				Log.warn(LogCategory.GAME_REMAP, "Incomplete remapped file found! This means that the remapping process failed on the previous launch. If this persists, make sure to let us at Quilt know!");
 
 				try {
 					Files.deleteIfExists(deobfJarFile);
@@ -104,10 +102,10 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			if (!Files.exists(deobfJarFile)
 					&& (mappings = mappingConfiguration.getMappings()) != null
 					&& mappings.getMetadata().getNamespaces().contains(targetNamespace)) {
-				LOGGER.debug("Quilt mapping file detected, applying...");
+				Log.debug(LogCategory.GAME_REMAP, "Quilt mapping file detected, applying...");
 
 				if (!emittedInfo) {
-					LOGGER.info("Quilt is preparing JARs on first launch, this may take a few seconds...");
+					Log.info(LogCategory.GAME_REMAP, "Quilt is preparing JARs on first launch, this may take a few seconds...");
 					emittedInfo = true;
 				}
 
@@ -174,7 +172,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 							&& !clsName.startsWith("org/quiltmc/json5"))
 					.build()) {
 				for (Path path : depPaths) {
-					LOGGER.debug("Appending '" + path + "' to remapper classpath");
+					Log.debug(LogCategory.GAME_REMAP, "Appending '" + path + "' to remapper classpath");
 					remapper.readClassPath(path);
 				}
 				remapper.readInputs(jarFile);
@@ -206,7 +204,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			}
 
 			if (!found) {
-				LOGGER.error("Generated deobfuscated JAR contains no classes! Trying again...");
+				Log.error(LogCategory.GAME_REMAP, "Generated deobfuscated JAR contains no classes! Trying again...");
 				Files.delete(deobfJarFileTmp);
 			} else {
 				Files.move(deobfJarFileTmp, deobfJarFile);
@@ -229,7 +227,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 				if (version == null) {
 					if ((version = argMap.get("version")) == null) {
 						version = "Unknown";
-						LOGGER.error("Launcher version unknown! Please provide it by setting the system property " + SystemProperties.LAUNCHER_NAME);
+						Log.error(LogCategory.GAME_REMAP, "Launcher version unknown! Please provide it by setting the system property " + SystemProperties.LAUNCHER_NAME);
 					}
 				}
 				argMap.put("version", version);

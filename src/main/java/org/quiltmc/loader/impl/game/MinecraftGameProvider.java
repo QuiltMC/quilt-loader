@@ -27,10 +27,12 @@ import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchHook;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModDependencyImpl;
+import org.quiltmc.loader.impl.minecraft.Log4jLogHandler;
 import org.quiltmc.loader.impl.minecraft.McVersionLookup;
 import org.quiltmc.loader.impl.minecraft.McVersion;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
 import java.io.File;
@@ -88,7 +90,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 		if (versionData.getClassVersion().isPresent()) {
 			int version = versionData.getClassVersion().getAsInt() - 44;
-			metadata.addDepends(new FabricModDependencyImpl("java", Collections.singletonList("<=" + version)));
+			metadata.addDepends(new FabricModDependencyImpl("java", Collections.singletonList(">=" + version)));
 		}
 
 		return Arrays.asList(new BuiltinMod(url, metadata.build()));
@@ -151,6 +153,8 @@ public class MinecraftGameProvider implements GameProvider {
 		if (!entrypointResult.isPresent()) {
 			return false;
 		}
+
+		Log.init(new Log4jLogHandler(), true);
 
 		entrypoint = entrypointResult.get().entrypointName;
 		gameJar = entrypointResult.get().entrypointPath;

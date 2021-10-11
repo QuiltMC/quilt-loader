@@ -34,14 +34,6 @@ public abstract class EntrypointPatch {
 		this.transformer = transformer;
 	}
 
-	protected void debug(String s) {
-		transformer.logger.debug(s);
-	}
-
-	protected void warn(String s) {
-		transformer.logger.warn(s);
-	}
-
 	protected boolean classExists(QuiltLauncher launcher, String className) {
 		try {
 			return launcher.getClassByteArray(className, false) != null;

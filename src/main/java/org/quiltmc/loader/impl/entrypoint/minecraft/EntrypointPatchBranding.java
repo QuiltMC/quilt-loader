@@ -24,6 +24,8 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
 import java.util.ListIterator;
@@ -59,7 +61,7 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 
 		for (MethodNode node : classNode.methods) {
 			if (node.name.equals("getClientModName") || node.name.equals("getServerModName") && node.desc.endsWith(")Ljava/lang/String;")) {
-				debug("Applying brand name hook to " + classNode.name + "::" + node.name);
+				Log.debug(LogCategory.GAME_PATCH, "Applying brand name hook to " + classNode.name + "::" + node.name);
 
 				ListIterator<AbstractInsnNode> it = node.instructions.iterator();
 				while (it.hasNext()) {

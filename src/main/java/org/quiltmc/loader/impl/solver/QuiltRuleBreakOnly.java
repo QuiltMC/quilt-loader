@@ -21,11 +21,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 class QuiltRuleBreakOnly extends QuiltRuleBreak {
-	final Logger logger;
 
 	final ModDependency.Only publicDep;
 	final List<ModLoadOption> conflictingOptions;
@@ -34,23 +34,22 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 
 	final QuiltRuleDep unless;
 
-	public QuiltRuleBreakOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleBreakOnly(RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
-		this.logger = logger;
 		this.publicDep = publicDep;
 		conflictingOptions = new ArrayList<>();
 		okayOptions = new ArrayList<>();
 		allOptions = new ArrayList<>();
 
 		if (ModSolver.DEBUG_PRINT_STATE) {
-			logger.info("[ModSolver] Adding a mod break from " + source + " to " + publicDep.id().id());
+			Log.info(LogCategory.SOLVING, "Adding a mod break from " + source + " to " + publicDep.id().id());
 		}
 
 		ModDependency except = publicDep.unless();
 		if (except != null && !except.shouldIgnore()) {
 			QuiltModDepOption option = new QuiltModDepOption(except);
 			ctx.addOption(option);
-			this.unless = ModSolver.createModDepLink(logger, ctx, option, except);
+			this.unless = ModSolver.createModDepLink(ctx, option, except);
 			ctx.addRule(unless);
 		} else {
 			this.unless = null;
@@ -75,7 +74,7 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 				conflictingOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  x  conflicting option: " + mod.fullString());
+					Log.info(LogCategory.SOLVING, "  x  conflicting option: " + mod.fullString());
 				}
 				return true;
 			} else {
@@ -83,7 +82,7 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
 					String reason = groupMatches ? "different group" : "different version";
-					logger.info("[ModSolver]  +  okay option: " + mod.fullString() + " because " + reason);
+					Log.info(LogCategory.SOLVING, "  +  okay option: " + mod.fullString() + " because " + reason);
 				}
 			}
 

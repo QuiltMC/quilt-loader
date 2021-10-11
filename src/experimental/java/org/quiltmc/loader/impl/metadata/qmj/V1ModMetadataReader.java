@@ -19,22 +19,19 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.*;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
-import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
-import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ArrayImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 final class V1ModMetadataReader {
-	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root) {
+	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -46,10 +43,10 @@ final class V1ModMetadataReader {
 			throw parseException(quiltLoader, "quilt_loader field must be an object");
 		}
 
-		return readFields(logger, root);
+		return readFields(root);
 	}
 
-	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root) {
+	private static V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
 		/* Required fields */
 		String id;
 		String group;

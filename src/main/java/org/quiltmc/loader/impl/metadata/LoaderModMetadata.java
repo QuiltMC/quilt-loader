@@ -18,8 +18,6 @@ package org.quiltmc.loader.impl.metadata;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
@@ -48,7 +46,7 @@ public interface LoaderModMetadata extends ModMetadata, ConvertibleModMetadata {
 	List<EntrypointMetadata> getEntrypoints(String type);
 	Collection<String> getEntrypointKeys();
 
-	void emitFormatWarnings(Logger logger);
+	void emitFormatWarnings();
 
 	@Override
 	default LoaderModMetadata asFabricModMetadata() {

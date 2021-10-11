@@ -18,6 +18,8 @@ package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.util.Collection;
 import java.util.function.Consumer;
@@ -27,7 +29,7 @@ public final class EntrypointUtils {
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 
 		if (!loader.hasEntrypoints(name)) {
-			loader.getLogger().debug("No subscribers for entrypoint '" + name + "'");
+			Log.debug(LogCategory.ENTRYPOINT, "No subscribers for entrypoint '%s'", name);
 		} else {
 			invoke0(name, type, invoker);
 		}
@@ -38,7 +40,7 @@ public final class EntrypointUtils {
 		RuntimeException exception = null;
 		Collection<EntrypointContainer<T>> entrypoints = loader.getEntrypointContainers(name, type);
 
-		loader.getLogger().debug("Iterating over entrypoint '" + name + "'");
+		Log.debug(LogCategory.ENTRYPOINT, "Iterating over entrypoint '%s'", name);
 
 		for (EntrypointContainer<T> container : entrypoints) {
 			try {

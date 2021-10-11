@@ -17,13 +17,11 @@
 package org.quiltmc.loader.impl.launch.common;
 
 import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.api.ModContainer;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
@@ -31,14 +29,12 @@ import org.spongepowered.asm.mixin.Mixins;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class QuiltMixinBootstrap {
 	private QuiltMixinBootstrap() {
 
 	}
 
-	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|MixinBootstrap");
 	private static boolean initialized = false;
 
 	static void addConfiguration(String configuration) {
@@ -70,9 +66,9 @@ public final class QuiltMixinBootstrap {
 					try {
 						MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, "intermediary", mappingConfiguration.getTargetNamespace());
 						MixinEnvironment.getDefaultEnvironment().getRemappers().add(remapper);
-						LOGGER.info("Loaded Quilt development mappings for mixin remapper!");
+						Log.info(LogCategory.MIXIN, "Loaded Quilt development mappings for mixin remapper!");
 					} catch (Exception e) {
-						LOGGER.error("Quilt development environment setup error - the game will probably crash soon!");
+						Log.error(LogCategory.MIXIN, "Quilt development environment setup error - the game will probably crash soon!");
 						e.printStackTrace();
 					}
 				}

@@ -26,9 +26,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.util.sat4j.core.Vec;
 import org.quiltmc.loader.util.sat4j.core.VecInt;
 import org.quiltmc.loader.util.sat4j.pb.IPBSolver;
@@ -56,7 +57,8 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
  * This is (mostly) separated from any more specific rules */
 class Sat4jWrapper implements RuleContext {
 
-	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	private static final boolean DEBUG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	private static final LogCategory CATEGORY = new LogCategory(LogCategory.SOLVING, "Sat4j");
 
 	public enum Sat4jSolveStep {
 
@@ -72,8 +74,6 @@ class Sat4jWrapper implements RuleContext {
 			this.canAdd = canAdd;
 		}
 	}
-
-	private final Logger logger;
 
 	private volatile Sat4jSolveStep step = Sat4jSolveStep.DEFINE;
 
@@ -100,10 +100,6 @@ class Sat4jWrapper implements RuleContext {
 	/** Only available during {@link Sat4jSolveStep#SOLVE}. */
 	private Map<IConstr, Rule> constraintToRule = null;
 
-	public Sat4jWrapper(Logger logger) {
-		this.logger = logger;
-	}
-
 	public Sat4jSolveStep getStep() {
 		return step;
 	}
@@ -124,8 +120,8 @@ class Sat4jWrapper implements RuleContext {
 		validateCanAdd();
 		optionToWeight.put(option, weight);
 
-		if (LOG) {
-			logger.info("Sat4jWrapper: adding option " + option + " with weight " + weight);
+		if (DEBUG) {
+			Log.info(CATEGORY, "Adding option " + option + " with weight " + weight);
 		}
 
 		List<Rule> rulesToRedefine = new ArrayList<>();
@@ -151,8 +147,8 @@ class Sat4jWrapper implements RuleContext {
 	public void removeOption(LoadOption option) {
 		validateCanAdd();
 
-		if (LOG) {
-			logger.info("Sat4jWrapper: removing option " + option);
+		if (DEBUG) {
+			Log.info(CATEGORY, "Removing option " + option);
 		}
 
 		indexToOption.remove(optionToIndex.remove(option));
@@ -175,8 +171,8 @@ class Sat4jWrapper implements RuleContext {
 	 * {@link LoadOption} currently held, and calls {@link Rule#define(RuleDefiner)} once afterwards. */
 	@Override
 	public void addRule(Rule rule) {
-		if (LOG) {
-			logger.info("Sat4jWrapper: added rule " + rule);
+		if (DEBUG) {
+			Log.info(CATEGORY, "Added rule " + rule);
 		}
 
 		validateCanAdd();
@@ -191,8 +187,8 @@ class Sat4jWrapper implements RuleContext {
 	}
 
 	public void removeRule(Rule rule) {
-		if (LOG) {
-			logger.info("Sat4jWrapper: removed rule " + rule);
+		if (DEBUG) {
+			Log.info(CATEGORY, "Removed rule " + rule);
 		}
 
 		validateCanAdd();
@@ -204,8 +200,8 @@ class Sat4jWrapper implements RuleContext {
 	@Override
 	public void redefine(Rule rule) {
 
-		if (LOG) {
-			logger.info("Sat4jWrapper: redefining rule " + rule);
+		if (DEBUG) {
+			Log.info(CATEGORY, "Redefining rule " + rule);
 		}
 
 		validateCanAdd();
@@ -234,9 +230,9 @@ class Sat4jWrapper implements RuleContext {
 
 		if (step == Sat4jSolveStep.DEFINE || (step == Sat4jSolveStep.SOLVE && rulesChanged)) {
 
-			if (LOG) {
+			if (DEBUG) {
 				if (step != Sat4jSolveStep.DEFINE) {
-					logger.info("Sat4jWrapper: redefining rules");
+					Log.info(CATEGORY, "Redefining rules");
 				}
 			}
 
@@ -256,8 +252,8 @@ class Sat4jWrapper implements RuleContext {
 		boolean success = explainer.isSatisfiable();
 
 		if (success) {
-			if (LOG) {
-				logger.info("Sat4jWrapper: found a valid solution, preparing to optimise it.");
+			if (DEBUG) {
+				Log.info(CATEGORY, "Found a valid solution, preparing to optimise it.");
 			}
 
 			explainer = null;
@@ -300,8 +296,8 @@ class Sat4jWrapper implements RuleContext {
 	public List<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
 		checkCancelled();
 
-		if (LOG) {
-			logger.info("Sat4jWrapper: Starting optimisation.");
+		if (DEBUG) {
+			Log.info(CATEGORY, "Starting optimisation.");
 		}
 
 		int count = 0;
@@ -320,8 +316,8 @@ class Sat4jWrapper implements RuleContext {
 				}
 			} catch (TimeoutException e) {
 				if (success) {
-					if (LOG) {
-						logger.info("Sat4jWrapper: Aborted optimisation due to timeout");
+					if (DEBUG) {
+						Log.info(CATEGORY, "Aborted optimisation due to timeout");
 					}
 					break;
 				}
@@ -330,16 +326,16 @@ class Sat4jWrapper implements RuleContext {
 			step = Sat4jSolveStep.OPTIMISE;
 			success = true;
 
-			if (LOG) {
-				logger.info("Sat4jWrapper: Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue() + " = " + Arrays.toString(optimiser.model()));
+			if (DEBUG) {
+				Log.info(CATEGORY, "Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue() + " = " + Arrays.toString(optimiser.model()));
 			}
 
 			try {
 				optimiser.discardCurrentSolution();
 			} catch (ContradictionException e) {
 				// This means we're *already* optimal?
-				if (LOG) {
-					logger.info("Sat4jWrapper: Found optimal solution!");
+				if (DEBUG) {
+					Log.info(CATEGORY, "Found optimal solution!");
 				}
 				break;
 			}
@@ -433,8 +429,8 @@ class Sat4jWrapper implements RuleContext {
 			optionToIndex.put(option, objVal);
 			indexToOption.put(objVal, option);
 
-			if (LOG) {
-				logger.info("Sat4jWrapper: " + objVal + " = " + option);
+			if (DEBUG) {
+				Log.info(CATEGORY, objVal + " = " + option);
 			}
 		}
 
