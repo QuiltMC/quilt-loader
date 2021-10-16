@@ -6,8 +6,7 @@ plugins {
 	id("org.cadixdev.licenser") version "0.5.0"
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+def javaVersion = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
 
@@ -95,6 +94,9 @@ processResources {
 }
 
 java {
+	sourceCompatibility = javaVersion
+	targetCompatibility = javaVersion
+
 	withJavadocJar()
 	withSourcesJar()
 }
@@ -184,16 +186,7 @@ license {
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			// add all the jars that should be included when publishing to maven
-			artifact(file("${project.buildDir}/libs/$archivesBaseName-${version}.jar")) {
-				builtBy jar
-			}
-
-			artifact(sourcesJar) {
-				builtBy sourcesJar
-			}
-
-			artifact javadocJar
+			from components.java
 
 			artifact(file('src/main/resources/quilt-installer.json')) {
 				builtBy jar
