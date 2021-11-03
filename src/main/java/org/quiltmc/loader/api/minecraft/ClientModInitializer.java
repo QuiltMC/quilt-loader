@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api.minecraft;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.entrypoint.GameEntrypoint;
 
 import net.fabricmc.api.EnvType;
 
@@ -33,7 +34,7 @@ import net.fabricmc.api.EnvType;
  * @see org.quiltmc.loader.api.QuiltLoader#getEntrypointContainers(String, Class)
  */
 @FunctionalInterface
-public interface ClientModInitializer {
+public interface ClientModInitializer extends GameEntrypoint {
 	/**
 	 * Runs the mod initializer on the client environment.
 	 */

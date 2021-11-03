@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api.minecraft;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.entrypoint.GameEntrypoint;
 
 /**
  * A mod initializer ran only on {@link EnvType#SERVER}.
@@ -28,7 +29,7 @@ import org.quiltmc.loader.api.ModContainer;
  * @see org.quiltmc.loader.api.QuiltLoader#getEntrypointContainers(String, Class)
  */
 @FunctionalInterface
-public interface DedicatedServerModInitializer {
+public interface DedicatedServerModInitializer extends GameEntrypoint {
 	/**
 	 * Runs the mod initializer on the server environment.
 	 */
