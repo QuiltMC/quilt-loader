@@ -23,6 +23,7 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 /**
  * Represents a mod.
  */
+@Deprecated
 public interface ModContainer {
 	/**
 	 * Returns the metadata of this mod.

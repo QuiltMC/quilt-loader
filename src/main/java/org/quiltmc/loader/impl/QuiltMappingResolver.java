@@ -24,7 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import net.fabricmc.loader.api.MappingResolver;
+import org.quiltmc.loader.api.MappingResolver;
+
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.Descriptored;
 import net.fabricmc.mapping.tree.TinyTree;

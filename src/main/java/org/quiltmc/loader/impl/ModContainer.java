@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl;
 
-import net.fabricmc.loader.api.metadata.ModMetadata;
+import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -28,7 +28,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class ModContainer implements net.fabricmc.loader.api.ModContainer {
+public class ModContainer implements org.quiltmc.loader.api.ModContainer {
 	private final InternalModMetadata meta;
 	private final LoaderModMetadata fabricMeta;
 	private final URL originUrl;
@@ -41,12 +41,12 @@ public class ModContainer implements net.fabricmc.loader.api.ModContainer {
 	}
 
 	@Override
-	public ModMetadata getMetadata() {
-		return fabricMeta;
+	public ModMetadata metadata() {
+		return meta;
 	}
 
 	@Override
-	public Path getRootPath() {
+	public Path rootPath() {
 		Path ret = root;
 
 		if (ret == null) {

@@ -1,34 +1,18 @@
-/*
- * Copyright 2016 FabricMC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+package org.quiltmc.loader.api;
 
-package net.fabricmc.loader.api;
-
-import java.io.File;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
-import net.fabricmc.loader.impl.quiltmc.Quilt2FabricLoader;
-
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
+import net.fabricmc.loader.api.EntrypointException;
+import net.fabricmc.loader.api.LanguageAdapter;
+
+import net.fabricmc.api.EnvType;
 
 /**
  * The public-facing FabricLoader instance.
@@ -36,15 +20,17 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
  * <p>To obtain a working instance, call {@link #getInstance()}.</p>
  *
  * @since 0.4.0
- * @deprecated Please migrate to using {@link QuiltLoader} directly instead.
  */
-@Deprecated
-public interface FabricLoader {
+public interface QuiltLoader {
 	/**
-	 * Returns the public-facing Fabric Loader instance.
+	 * Returns the public-facing Quilt Loader instance.
 	 */
-	static FabricLoader getInstance() {
-		return ((QuiltLoaderImpl) QuiltLoader.getInstance()).quilt2Fabric;
+	static QuiltLoader getInstance() {
+		if (QuiltLoaderImpl.INSTANCE == null) {
+			throw new RuntimeException("Accessed QuiltLoader too early!");
+		}
+
+		return QuiltLoaderImpl.INSTANCE;
 	}
 
 	/**
@@ -173,18 +159,12 @@ public interface FabricLoader {
 	 */
 	Path getGameDir();
 
-	@Deprecated
-	File getGameDirectory();
-
 	/**
 	 * Get the current directory for game configuration files.
 	 *
 	 * @return the configuration directory
 	 */
 	Path getConfigDir();
-
-	@Deprecated
-	File getConfigDirectory();
 
 	/**
 	 * Gets the command line arguments used to launch the game. If this is printed for debugging, make sure {@code sanitize} is {@code true}.

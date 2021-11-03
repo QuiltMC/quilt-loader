@@ -16,6 +16,8 @@
 
 package net.fabricmc.api;
 
+import org.quiltmc.loader.api.ModContainer;
+
 /**
  * A mod initializer.
  *
@@ -24,11 +26,18 @@ package net.fabricmc.api;
  * @see ClientModInitializer
  * @see DedicatedServerModInitializer
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
+ * @deprecated Please migrate to the quilt version: {@link  org.quiltmc.loader.api.ModInitializer}.
  */
+@Deprecated
 @FunctionalInterface
-public interface ModInitializer {
+public interface ModInitializer extends org.quiltmc.loader.api.ModInitializer {
 	/**
 	 * Runs the mod initializer.
 	 */
 	void onInitialize();
+
+	@Override
+	default void onInitialize(ModContainer mod) {
+		onInitialize();
+	}
 }

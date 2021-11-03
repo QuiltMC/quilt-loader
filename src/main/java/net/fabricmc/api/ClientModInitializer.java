@@ -16,6 +16,8 @@
 
 package net.fabricmc.api;
 
+import org.quiltmc.loader.api.ModContainer;
+
 /**
  * A mod initializer ran only on {@link EnvType#CLIENT}.
  *
@@ -29,9 +31,14 @@ package net.fabricmc.api;
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
  */
 @FunctionalInterface
-public interface ClientModInitializer {
+public interface ClientModInitializer extends org.quiltmc.loader.api.minecraft.ClientModInitializer {
 	/**
 	 * Runs the mod initializer on the client environment.
 	 */
 	void onInitializeClient();
+
+	@Override
+	default void onInitializeClient(ModContainer mod) {
+		onInitializeClient();
+	}
 }

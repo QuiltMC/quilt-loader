@@ -16,6 +16,9 @@
 
 package net.fabricmc.loader.api.entrypoint;
 
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.entrypoint.GameEntrypoint;
+
 /**
  * Entrypoint getting invoked just before launching the game.
  *
@@ -27,12 +30,19 @@ package net.fabricmc.loader.api.entrypoint;
  * <p>The entrypoint is exposed with {@code preLaunch} key in the mod json and runs for any environment. It usually
  * executes several seconds before the {@code main}/{@code client}/{@code server} entrypoints.
  * 
- * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class) 
+ * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
+ * @deprecated Please migrate to the Quilt version of this interface: {@link org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint} 
  */
+@Deprecated
 @FunctionalInterface
-public interface PreLaunchEntrypoint {
+public interface PreLaunchEntrypoint extends org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint {
 	/**
 	 * Runs the entrypoint.
 	 */
 	void onPreLaunch();
+
+	@Override
+	default void onPreLaunch(ModContainer mod) {
+		onPreLaunch();
+	}
 }

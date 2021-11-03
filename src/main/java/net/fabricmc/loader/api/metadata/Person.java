@@ -18,7 +18,10 @@ package net.fabricmc.loader.api.metadata;
 
 /**
  * Represents a person.
+ * 
+ * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
  */
+@Deprecated
 public interface Person {
 	/**
 	 * Returns the display name of the person.

@@ -16,9 +16,9 @@
 
 package org.quiltmc.loader.impl.util;
 
-import net.fabricmc.loader.api.LanguageAdapter;
-import net.fabricmc.loader.api.LanguageAdapterException;
-import net.fabricmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.LanguageAdapter;
+import org.quiltmc.loader.api.LanguageAdapterException;
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 import java.lang.invoke.MethodHandle;
