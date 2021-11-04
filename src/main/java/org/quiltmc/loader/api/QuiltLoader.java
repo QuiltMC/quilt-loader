@@ -23,10 +23,8 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-
-import net.fabricmc.loader.api.EntrypointException;
-import net.fabricmc.loader.api.LanguageAdapter;
 
 import net.fabricmc.api.EnvType;
 
@@ -56,9 +54,10 @@ public interface QuiltLoader {
 	 * @param type the type of entrypoints
 	 * @param <T>  the type of entrypoints
 	 * @return the obtained entrypoints
+	 * @throws EntrypointException if a problem arises during entrypoint creation
 	 * @see #getEntrypointContainers(String, Class)
 	 */
-	<T> List<T> getEntrypoints(String key, Class<T> type);
+	<T> List<T> getEntrypoints(String key, Class<T> type) throws EntrypointException;
 
 	/**
 	 * Returns all entrypoints declared under a {@code key}, assuming they are of a specific type.
@@ -99,7 +98,8 @@ public interface QuiltLoader {
 	 * @throws EntrypointException if a problem arises during entrypoint creation
 	 * @see LanguageAdapter
 	 */
-	<T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type);
+	<T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type)
+		throws EntrypointException;
 
 	/**
 	 * Get the current mapping resolver.
