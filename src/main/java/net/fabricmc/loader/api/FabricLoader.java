@@ -44,7 +44,7 @@ public interface FabricLoader {
 	 * Returns the public-facing Fabric Loader instance.
 	 */
 	static FabricLoader getInstance() {
-		return ((QuiltLoaderImpl) QuiltLoader.getInstance()).quilt2Fabric;
+		return Quilt2FabricLoader.INSTANCE;
 	}
 
 	/**

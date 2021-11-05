@@ -30,22 +30,9 @@ import net.fabricmc.api.EnvType;
 
 /**
  * The public-facing FabricLoader instance.
- *
- * <p>To obtain a working instance, call {@link #getInstance()}.</p>
- *
- * @since 0.4.0
  */
-public interface QuiltLoader {
-	/**
-	 * Returns the public-facing Quilt Loader instance.
-	 */
-	static QuiltLoader getInstance() {
-		if (QuiltLoaderImpl.INSTANCE == null) {
-			throw new RuntimeException("Accessed QuiltLoader too early!");
-		}
-
-		return QuiltLoaderImpl.INSTANCE;
-	}
+public final class QuiltLoader {
+	private QuiltLoader() {}
 
 	/**
 	 * Returns all entrypoints declared under a {@code key}, assuming they are of a specific type.
@@ -57,7 +44,9 @@ public interface QuiltLoader {
 	 * @throws EntrypointException if a problem arises during entrypoint creation
 	 * @see #getEntrypointContainers(String, Class)
 	 */
-	<T> List<T> getEntrypoints(String key, Class<T> type) throws EntrypointException;
+	public static <T> List<T> getEntrypoints(String key, Class<T> type) throws EntrypointException {
+		return impl().getEntrypoints(key, type);
+	}
 
 	/**
 	 * Returns all entrypoints declared under a {@code key}, assuming they are of a specific type.
@@ -98,8 +87,9 @@ public interface QuiltLoader {
 	 * @throws EntrypointException if a problem arises during entrypoint creation
 	 * @see LanguageAdapter
 	 */
-	<T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type)
-		throws EntrypointException;
+	public static <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) throws EntrypointException {
+		return impl().getEntrypointContainers(key, type);
+	}
 
 	/**
 	 * Get the current mapping resolver.
@@ -110,7 +100,9 @@ public interface QuiltLoader {
 	 * @return the current mapping resolver instance
 	 * @since 0.4.1
 	 */
-	MappingResolver getMappingResolver();
+	public static MappingResolver getMappingResolver() {
+		return impl().getMappingResolver();
+	}
 
 	/**
 	 * Gets the container for a given mod.
@@ -118,14 +110,18 @@ public interface QuiltLoader {
 	 * @param id the ID of the mod
 	 * @return the mod container, if present
 	 */
-	Optional<ModContainer> getModContainer(String id);
+	public static Optional<ModContainer> getModContainer(String id) {
+		return impl().getModContainer(id);
+	}
 
 	/**
 	 * Gets all mod containers.
 	 *
 	 * @return a collection of all loaded mod containers
 	 */
-	Collection<ModContainer> getAllMods();
+	public static Collection<ModContainer> getAllMods() {
+		return impl().getAllMods();
+	}
 
 	/**
 	 * Checks if a mod with a given ID is loaded.
@@ -133,7 +129,9 @@ public interface QuiltLoader {
 	 * @param id the ID of the mod, as defined in {@code fabric.mod.json}
 	 * @return whether or not the mod is present in this Fabric Loader instance
 	 */
-	boolean isModLoaded(String id);
+	public static boolean isModLoaded(String id) {
+		return impl().isModLoaded(id);
+	}
 
 	/**
 	 * Checks if Fabric Loader is currently running in a "development"
@@ -145,14 +143,9 @@ public interface QuiltLoader {
 	 * @return whether or not Loader is currently in a "development"
 	 * environment
 	 */
-	boolean isDevelopmentEnvironment();
-
-	/**
-	 * Get the current environment type.
-	 *
-	 * @return the current environment type
-	 */
-	EnvType getEnvironmentType();
+	public static boolean isDevelopmentEnvironment() {
+		return impl().isDevelopmentEnvironment();
+	}
 
 	/**
 	 * Get the current game instance. Can represent a game client or
@@ -166,26 +159,42 @@ public interface QuiltLoader {
 	 */
 	@Nullable
 	@Deprecated
-	Object getGameInstance();
+	public static Object getGameInstance() {
+		return impl().getGameInstance();
+	}
 
 	/**
 	 * Get the current game working directory.
 	 *
 	 * @return the working directory
 	 */
-	Path getGameDir();
+	public static Path getGameDir() {
+		return impl().getGameDir();
+	}
 
 	/**
 	 * Get the current directory for game configuration files.
 	 *
 	 * @return the configuration directory
 	 */
-	Path getConfigDir();
+	public static Path getConfigDir() {
+		return impl().getConfigDir();
+	}
 
 	/**
 	 * Gets the command line arguments used to launch the game. If this is printed for debugging, make sure {@code sanitize} is {@code true}.
 	 * @param sanitize Whether to remove sensitive information
 	 * @return the launch arguments
 	 */
-	String[] getLaunchArguments(boolean sanitize);
+	public static String[] getLaunchArguments(boolean sanitize) {
+		return impl().getLaunchArguments(sanitize);
+	}
+
+	private static QuiltLoaderImpl impl() {
+		if (QuiltLoaderImpl.INSTANCE == null) {
+			throw new RuntimeException("Accessed QuiltLoader too early!");
+ 		}
+
+		return QuiltLoaderImpl.INSTANCE;
+	}
 }

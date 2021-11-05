@@ -68,7 +68,7 @@ import org.objectweb.asm.Opcodes;
  * The main class for mod loading operations.
  */
 @ApiStatus.Internal
-public class QuiltLoaderImpl implements QuiltLoader {
+public class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = new QuiltLoaderImpl();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
@@ -77,11 +77,6 @@ public class QuiltLoaderImpl implements QuiltLoader {
 
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
-
-	/** @deprecated This will be moved to a plugin when they are implemented. Mods should use
-	 *             {@link FabricLoader#getInstance()} instead. */
-	@Deprecated
-	public final Quilt2FabricLoader quilt2Fabric = new Quilt2FabricLoader(this);
 
 	protected final Map<String, ModContainer> modMap = new HashMap<>();
 	protected List<ModContainer> mods = new ArrayList<>();
@@ -139,12 +134,10 @@ public class QuiltLoaderImpl implements QuiltLoader {
 		this.modsDir = gameDir.resolve((modsDir == null || modsDir.isEmpty()) ? DEFAULT_MODS_DIR : modsDir);
 	}
 
-	@Override
 	public Object getGameInstance() {
 		return gameInstance;
 	}
 
-	@Override
 	public EnvType getEnvironmentType() {
 		return QuiltLauncherBase.getLauncher().getEnvironmentType();
 	}
@@ -152,7 +145,6 @@ public class QuiltLoaderImpl implements QuiltLoader {
 	/**
 	 * @return The game instance's root directory.
 	 */
-	@Override
 	public Path getGameDir() {
 		return gameDir;
 	}
@@ -160,7 +152,6 @@ public class QuiltLoaderImpl implements QuiltLoader {
 	/**
 	 * @return The game instance's configuration directory.
 	 */
-	@Override
 	public Path getConfigDir() {
 		if (configDir == null) {
 			// May be null during tests
@@ -272,17 +263,14 @@ public class QuiltLoaderImpl implements QuiltLoader {
 		return entrypointStorage.hasEntrypoints(key);
 	}
 
-	@Override
 	public <T> List<T> getEntrypoints(String key, Class<T> type) {
 		return entrypointStorage.getEntrypoints(key, type);
 	}
 
-	@Override
 	public <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		return entrypointStorage.getEntrypointContainers(key, type);
 	}
 
-	@Override
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
 			mappingResolver = new QuiltMappingResolver(
@@ -294,22 +282,18 @@ public class QuiltLoaderImpl implements QuiltLoader {
 		return mappingResolver;
 	}
 
-	@Override
 	public Optional<org.quiltmc.loader.api.ModContainer> getModContainer(String id) {
 		return Optional.ofNullable(modMap.get(id));
 	}
 
-	@Override
 	public Collection<org.quiltmc.loader.api.ModContainer> getAllMods() {
 		return Collections.unmodifiableList(mods);
 	}
 
-	@Override
 	public boolean isModLoaded(String id) {
 		return modMap.containsKey(id);
 	}
 
-	@Override
 	public boolean isDevelopmentEnvironment() {
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 		if (launcher == null) {
@@ -527,7 +511,6 @@ public class QuiltLoaderImpl implements QuiltLoader {
 		this.gameInstance = gameInstance;
 	}
 
-	@Override
 	public String[] getLaunchArguments(boolean sanitize) {
 		return getGameProvider().getLaunchArguments(sanitize);
 	}

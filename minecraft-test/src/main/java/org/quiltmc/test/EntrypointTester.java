@@ -30,7 +30,7 @@ public class EntrypointTester implements ModInitializer {
 	@Override
 	public void onInitialize(ModContainer mod) {
 
-		Set<CustomEntry> testingInits = new LinkedHashSet<>(QuiltLoader.getInstance().getEntrypoints("test:testing", CustomEntry.class));
+		Set<CustomEntry> testingInits = new LinkedHashSet<>(QuiltLoader.getEntrypoints("test:testing", CustomEntry.class));
 		System.out.printf("Found %s testing inits%n", testingInits.size());
 		System.out.println(testingInits.stream().map(CustomEntry::describe).collect(Collectors.joining(", ")));
 	}

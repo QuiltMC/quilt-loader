@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
+import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
@@ -36,21 +37,18 @@ import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
 import net.fabricmc.api.EnvType;
 
 public class Quilt2FabricLoader implements FabricLoader {
+	private Quilt2FabricLoader() {}
 
-	private final QuiltLoader quilt;
-
-	public Quilt2FabricLoader(QuiltLoader quilt) {
-		this.quilt = quilt;
-	}
+	public static final Quilt2FabricLoader INSTANCE = new Quilt2FabricLoader();
 
 	@Override
 	public <T> List<T> getEntrypoints(String key, Class<T> type) {
-		return quilt.getEntrypoints(key, type);
+		return QuiltLoader.getEntrypoints(key, type);
 	}
 
 	@Override
 	public <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
-		List<org.quiltmc.loader.api.entrypoint.EntrypointContainer<T>> from = quilt.getEntrypointContainers(key, type);
+		List<org.quiltmc.loader.api.entrypoint.EntrypointContainer<T>> from = QuiltLoader.getEntrypointContainers(key, type);
 		List<EntrypointContainer<T>> out = new ArrayList<>(from.size());
 		try {
 			for (org.quiltmc.loader.api.entrypoint.EntrypointContainer<T> c : from) {
@@ -64,18 +62,18 @@ public class Quilt2FabricLoader implements FabricLoader {
 
 	@Override
 	public MappingResolver getMappingResolver() {
-		return new Quilt2FabricMappingResolver(quilt.getMappingResolver());
+		return new Quilt2FabricMappingResolver(QuiltLoader.getMappingResolver());
 	}
 
 	@Override
 	public Optional<ModContainer> getModContainer(String id) {
-		return quilt.getModContainer(id).map(Quilt2FabricModContainer::new);
+		return QuiltLoader.getModContainer(id).map(Quilt2FabricModContainer::new);
 	}
 
 	@Override
 	public Collection<ModContainer> getAllMods() {
 		Collection<ModContainer> out = new ArrayList<>();
-		for (org.quiltmc.loader.api.ModContainer mc : quilt.getAllMods()) {
+		for (org.quiltmc.loader.api.ModContainer mc : QuiltLoader.getAllMods()) {
 			out.add(new Quilt2FabricModContainer(mc));
 		}
 		return Collections.unmodifiableCollection(out);
@@ -83,27 +81,27 @@ public class Quilt2FabricLoader implements FabricLoader {
 
 	@Override
 	public boolean isModLoaded(String id) {
-		return quilt.isModLoaded(id);
+		return QuiltLoader.isModLoaded(id);
 	}
 
 	@Override
 	public boolean isDevelopmentEnvironment() {
-		return quilt.isDevelopmentEnvironment();
+		return QuiltLoader.isDevelopmentEnvironment();
 	}
 
 	@Override
 	public EnvType getEnvironmentType() {
-		return quilt.getEnvironmentType();
+		return MinecraftQuiltLoader.getEnvironmentType();
 	}
 
 	@Override
 	public @Nullable Object getGameInstance() {
-		return quilt.getGameInstance();
+		return QuiltLoader.getGameInstance();
 	}
 
 	@Override
 	public Path getGameDir() {
-		return quilt.getGameDir();
+		return QuiltLoader.getGameDir();
 	}
 
 	@Override
@@ -115,7 +113,7 @@ public class Quilt2FabricLoader implements FabricLoader {
 
 	@Override
 	public Path getConfigDir() {
-		return quilt.getConfigDir();
+		return QuiltLoader.getConfigDir();
 	}
 
 	@Override
@@ -127,6 +125,6 @@ public class Quilt2FabricLoader implements FabricLoader {
 
 	@Override
 	public String[] getLaunchArguments(boolean sanitize) {
-		return quilt.getLaunchArguments(sanitize);
+		return QuiltLoader.getLaunchArguments(sanitize);
 	}
 }
