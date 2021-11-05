@@ -28,6 +28,7 @@ import net.fabricmc.loader.impl.quiltmc.Quilt2FabricLoader;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 /**
@@ -36,7 +37,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
  * <p>To obtain a working instance, call {@link #getInstance()}.</p>
  *
  * @since 0.4.0
- * @deprecated Please migrate to using {@link QuiltLoader} directly instead.
+ * @deprecated Please migrate to using {@link QuiltLoader} directly instead - except for {@link #getEnvironmentType()}, which is now located in {@link MinecraftQuiltLoader}.
  */
 @Deprecated
 public interface FabricLoader {
