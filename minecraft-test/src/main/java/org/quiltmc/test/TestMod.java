@@ -17,7 +17,7 @@
 package org.quiltmc.test;
 
 import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.api.ModInitializer;
+import org.quiltmc.loader.api.minecraft.ModInitializer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 /**

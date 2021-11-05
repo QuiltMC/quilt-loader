@@ -21,8 +21,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.api.ModInitializer;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.minecraft.ModInitializer;
 
 public class EntrypointTester implements ModInitializer {
 

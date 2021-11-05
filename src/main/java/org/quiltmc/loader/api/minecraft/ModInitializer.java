@@ -14,7 +14,10 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api;
+package org.quiltmc.loader.api.minecraft;
+
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
 
 /**
  * A mod initializer.

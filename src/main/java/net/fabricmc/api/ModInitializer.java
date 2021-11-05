@@ -26,11 +26,11 @@ import org.quiltmc.loader.api.ModContainer;
  * @see ClientModInitializer
  * @see DedicatedServerModInitializer
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
- * @deprecated Please migrate to the quilt version: {@link  org.quiltmc.loader.api.ModInitializer}.
+ * @deprecated Please migrate to the quilt version: {@link  org.quiltmc.loader.api.minecraft.ModInitializer}.
  */
 @Deprecated
 @FunctionalInterface
-public interface ModInitializer extends org.quiltmc.loader.api.ModInitializer {
+public interface ModInitializer extends org.quiltmc.loader.api.minecraft.ModInitializer {
 	/**
 	 * Runs the mod initializer.
 	 */
