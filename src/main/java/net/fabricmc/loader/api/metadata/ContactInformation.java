@@ -22,7 +22,10 @@ import java.util.Optional;
 
 /**
  * Represents a contact information.
+ * 
+ * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
  */
+@Deprecated
 public interface ContactInformation {
 	/**
 	 * An empty contact information.

@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api.metadata;
+package org.quiltmc.loader.api.entrypoint;
 
-/**
- * Represents a person.
- * 
- * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
- */
-@Deprecated
-public interface Person {
-	/**
-	 * Returns the display name of the person.
-	 */
-	String getName();
+import org.jetbrains.annotations.ApiStatus;
 
-	/**
-	 * Returns the contact information of the person.
-	 */
-	ContactInformation getContact();
+/** Marker interface for quilt entrypoints. Generally only entrypoint interfaces should extend this - and then only for
+ * entrypoints that might want to migrate to a different sort later on!*/
+@ApiStatus.NonExtendable
+public interface GameEntrypoint {
+
 }

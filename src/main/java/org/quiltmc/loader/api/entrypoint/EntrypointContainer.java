@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api.metadata;
+package org.quiltmc.loader.api.entrypoint;
+
+import org.quiltmc.loader.api.ModContainer;
 
 /**
- * Represents a person.
- * 
- * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
+ * A container holding both an entrypoint instance and the {@link ModContainer} which has provided the entrypoint.
+ *
+ * @param <T> The type of the entrypoint
+ * @see org.quiltmc.loader.api.QuiltLoader#getEntrypointContainers(String, Class) 
  */
-@Deprecated
-public interface Person {
+public interface EntrypointContainer<T> {
 	/**
-	 * Returns the display name of the person.
+	 * Returns the entrypoint instance. It will be constructed the first time you call this method.
 	 */
-	String getName();
+	T getEntrypoint();
 
 	/**
-	 * Returns the contact information of the person.
+	 * Returns the mod that provided this entrypoint.
 	 */
-	ContactInformation getContact();
+	ModContainer getProvider();
 }

@@ -16,20 +16,21 @@
 
 package org.quiltmc.test;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.minecraft.ModInitializer;
 
 public class EntrypointTester implements ModInitializer {
 
 
 	@Override
-	public void onInitialize() {
+	public void onInitialize(ModContainer mod) {
 
-		Set<CustomEntry> testingInits = new LinkedHashSet<>(FabricLoader.getInstance().getEntrypoints("test:testing", CustomEntry.class));
+		Set<CustomEntry> testingInits = new LinkedHashSet<>(QuiltLoader.getEntrypoints("test:testing", CustomEntry.class));
 		System.out.printf("Found %s testing inits%n", testingInits.size());
 		System.out.println(testingInits.stream().map(CustomEntry::describe).collect(Collectors.joining(", ")));
 	}

@@ -16,10 +16,10 @@
 
 package org.quiltmc.loader.impl.entrypoint;
 
-import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
-
 import java.util.function.Supplier;
+
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 
 public class EntrypointContainerImpl<T> implements EntrypointContainer<T> {
 	private final ModContainer container;
