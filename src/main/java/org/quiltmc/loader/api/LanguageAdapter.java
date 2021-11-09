@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api;
-
-import net.fabricmc.loader.impl.quiltmc.Quilt2FabricModContainer;
+package org.quiltmc.loader.api;
 
 /**
  * Creates instances of objects from custom notations.
@@ -94,11 +92,8 @@ import net.fabricmc.loader.impl.quiltmc.Quilt2FabricModContainer;
  *   You would declare {@code "net.fabricmc.example.ExampleMod::init"}.</p>
  *   </li>
  * </ul>
- * 
- * @deprecated Please move to quilt's {@link org.quiltmc.loader.api.LanguageAdapter}.
  */
-@Deprecated
-public interface LanguageAdapter extends org.quiltmc.loader.api.LanguageAdapter {
+public interface LanguageAdapter {
 	/**
 	 * Creates an object of {@code type} from an arbitrary string declaration.
 	 *
@@ -110,15 +105,4 @@ public interface LanguageAdapter extends org.quiltmc.loader.api.LanguageAdapter 
 	 * @throws LanguageAdapterException if a problem arises during creation, such as an invalid declaration
 	 */
 	<T> T create(ModContainer mod, String value, Class<T> type) throws LanguageAdapterException;
-
-	@Override
-	default <T> T create(org.quiltmc.loader.api.ModContainer mod, String value, Class<T> type)
-		throws org.quiltmc.loader.api.LanguageAdapterException {
-
-		try {
-			return create(new Quilt2FabricModContainer(mod), value, type);
-		} catch (LanguageAdapterException e) {
-			throw new org.quiltmc.loader.api.LanguageAdapterException(e);
-		}
-	}
 }

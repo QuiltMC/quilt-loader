@@ -14,32 +14,13 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api;
+package org.quiltmc.loader.api;
 
 import java.nio.file.Path;
 
-import net.fabricmc.loader.api.metadata.ModMetadata;
-
-/**
- * Represents a mod.
- */
-@Deprecated
 public interface ModContainer {
-	/**
-	 * Returns the metadata of this mod.
-	 */
-	ModMetadata getMetadata();
 
-	/**
-	 * Returns the root directory of the mod.
-	 *
-	 * @return the root directory
-	 * @deprecated use {@link #getRootPath()} instead
-	 */
-	@Deprecated
-	default Path getRoot() {
-		return getRootPath();
-	}
+	ModMetadata metadata();
 
 	/**
 	 * Returns the root directory of the mod.
@@ -48,7 +29,7 @@ public interface ModContainer {
 	 *
 	 * @return the root directory of the mod
 	 */
-	Path getRootPath();
+	Path rootPath();
 
 	/**
 	 * Gets an NIO reference to a file inside the JAR.
@@ -59,7 +40,7 @@ public interface ModContainer {
 	 * @return the path to a given file
 	 */
 	default Path getPath(String file) {
-		Path root = getRootPath();
+		Path root = rootPath();
 		return root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
 	}
 }

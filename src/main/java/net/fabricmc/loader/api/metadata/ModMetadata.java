@@ -31,7 +31,10 @@ import net.fabricmc.loader.api.Version;
 
 /**
  * The metadata of a mod.
+ * 
+ * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
  */
+@Deprecated
 public interface ModMetadata {
 	/**
 	 * Returns the type of the mod.

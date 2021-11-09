@@ -20,7 +20,10 @@ import java.util.Map;
 
 /**
  * Represents a custom value in the {@code fabric.mod.json}.
+ 
+ * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
  */
+@Deprecated
 public interface CustomValue {
 	/**
 	 * Returns the type of the value.

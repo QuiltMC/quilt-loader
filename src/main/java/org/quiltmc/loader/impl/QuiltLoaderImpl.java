@@ -25,7 +25,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import net.fabricmc.loader.impl.quiltmc.Quilt2FabricLoader;
+
 import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.metadata.DependencyOverrides;
@@ -33,9 +34,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.LanguageAdapter;
-import net.fabricmc.loader.api.MappingResolver;
 import net.fabricmc.loader.api.SemanticVersion;
+
+import org.quiltmc.loader.api.LanguageAdapter;
+import org.quiltmc.loader.api.MappingResolver;
+import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
@@ -64,7 +68,7 @@ import org.objectweb.asm.Opcodes;
  * The main class for mod loading operations.
  */
 @ApiStatus.Internal
-public class QuiltLoaderImpl implements FabricLoader {
+public class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = new QuiltLoaderImpl();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
@@ -130,12 +134,10 @@ public class QuiltLoaderImpl implements FabricLoader {
 		this.modsDir = gameDir.resolve((modsDir == null || modsDir.isEmpty()) ? DEFAULT_MODS_DIR : modsDir);
 	}
 
-	@Override
 	public Object getGameInstance() {
 		return gameInstance;
 	}
 
-	@Override
 	public EnvType getEnvironmentType() {
 		return QuiltLauncherBase.getLauncher().getEnvironmentType();
 	}
@@ -143,21 +145,13 @@ public class QuiltLoaderImpl implements FabricLoader {
 	/**
 	 * @return The game instance's root directory.
 	 */
-	@Override
 	public Path getGameDir() {
 		return gameDir;
-	}
-
-	@Override
-	@Deprecated
-	public File getGameDirectory() {
-		return getGameDir().toFile();
 	}
 
 	/**
 	 * @return The game instance's configuration directory.
 	 */
-	@Override
 	public Path getConfigDir() {
 		if (configDir == null) {
 			// May be null during tests
@@ -175,12 +169,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 		return configDir;
 	}
 
-	@Override
-	@Deprecated
-	public File getConfigDirectory() {
-		return getConfigDir().toFile();
-	}
-
 	public Path getModsDir() {
 		// modsDir should be initialized before this method is ever called, this acts as a very special failsafe
 		if (modsDir == null) {
@@ -195,11 +183,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 			}
 		}
 		return modsDir;
-	}
-
-	@Deprecated
-	public File getModsDirectory() {
-		return getModsDir().toFile();
 	}
 
 	public void load() {
@@ -221,8 +204,8 @@ public class QuiltLoaderImpl implements FabricLoader {
 		Map<String, ModCandidate> candidateMap = result.modMap;
 
 		String modListText = candidateMap.values().stream()
-					.sorted(Comparator.comparing(candidate -> candidate.getInfo().getId()))
-					.map(candidate -> String.format("\t- %s@%s", candidate.getInfo().getId(), candidate.getInfo().getVersion().getFriendlyString()))
+					.sorted(Comparator.comparing(candidate -> candidate.getMetadata().id()))
+					.map(candidate -> String.format("\t- %s@%s", candidate.getMetadata().id(), candidate.getMetadata().version().raw()))
 					.collect(Collectors.joining("\n"));
 
 		String modText;
@@ -266,7 +249,7 @@ public class QuiltLoaderImpl implements FabricLoader {
 		// add mods to classpath
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainer mod : mods) {
-			if (!mod.getInfo().getId().equals("quilt_loader") && !mod.getInfo().getType().equals("builtin")) {
+			if (!mod.metadata().id().equals("quilt_loader") && !mod.getInfo().getType().equals("builtin")) {
 				QuiltLauncherBase.getLauncher().propose(mod.getOriginUrl());
 			}
 		}
@@ -280,17 +263,14 @@ public class QuiltLoaderImpl implements FabricLoader {
 		return entrypointStorage.hasEntrypoints(key);
 	}
 
-	@Override
 	public <T> List<T> getEntrypoints(String key, Class<T> type) {
 		return entrypointStorage.getEntrypoints(key, type);
 	}
 
-	@Override
 	public <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		return entrypointStorage.getEntrypointContainers(key, type);
 	}
 
-	@Override
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
 			mappingResolver = new QuiltMappingResolver(
@@ -302,22 +282,18 @@ public class QuiltLoaderImpl implements FabricLoader {
 		return mappingResolver;
 	}
 
-	@Override
-	public Optional<net.fabricmc.loader.api.ModContainer> getModContainer(String id) {
+	public Optional<org.quiltmc.loader.api.ModContainer> getModContainer(String id) {
 		return Optional.ofNullable(modMap.get(id));
 	}
 
-	@Override
-	public Collection<net.fabricmc.loader.api.ModContainer> getAllMods() {
+	public Collection<org.quiltmc.loader.api.ModContainer> getAllMods() {
 		return Collections.unmodifiableList(mods);
 	}
 
-	@Override
 	public boolean isModLoaded(String id) {
 		return modMap.containsKey(id);
 	}
 
-	@Override
 	public boolean isDevelopmentEnvironment() {
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 		if (launcher == null) {
@@ -535,7 +511,6 @@ public class QuiltLoaderImpl implements FabricLoader {
 		this.gameInstance = gameInstance;
 	}
 
-	@Override
 	public String[] getLaunchArguments(boolean sanitize) {
 		return getGameProvider().getLaunchArguments(sanitize);
 	}

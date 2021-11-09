@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api.metadata;
+package org.quiltmc.loader.api.minecraft;
+
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
 
 /**
- * Represents a person.
- * 
- * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
+ * A mod initializer.
+ *
+ * <p>In {@code quilt.mod.json}, the entrypoint is defined with {@code main} key.</p>
+ *
+ * @see ClientModInitializer
+ * @see DedicatedServerModInitializer
+ * @see org.quiltmc.loader.api.QuiltLoader#getEntrypointContainers(String, Class)
  */
-@Deprecated
-public interface Person {
-	/**
-	 * Returns the display name of the person.
-	 */
-	String getName();
-
-	/**
-	 * Returns the contact information of the person.
-	 */
-	ContactInformation getContact();
+@FunctionalInterface
+public interface ModInitializer {
+	void onInitialize(ModContainer mod);
 }

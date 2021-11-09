@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
+package org.quiltmc.loader.api.minecraft;
 
-import org.quiltmc.loader.api.minecraft.DedicatedServerModInitializer;
-import org.quiltmc.loader.api.minecraft.ModInitializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
-import java.io.File;
+import net.fabricmc.api.EnvType;
 
-public final class EntrypointServer {
-	public static void start(File runDir, Object gameInstance) {
-		if (runDir == null) {
-			runDir = new File(".");
+/** Public access for some minecraft-specific functionality in quilt loader. */
+public final class MinecraftQuiltLoader {
+	private MinecraftQuiltLoader() {}
+
+	/**
+	 * Get the current environment type.
+	 *
+	 * @return the current environment type
+	 */
+	public static EnvType getEnvironmentType() {
+		// TODO: Get this from a plugin instead!
+		QuiltLoaderImpl impl = QuiltLoaderImpl.INSTANCE;
+		if (impl == null) {
+			throw new IllegalStateException("Accessed QuiltLoader too early!");
 		}
-
-		QuiltLoaderImpl.INSTANCE.prepareModInit(runDir.toPath(), gameInstance);
-		EntrypointUtils.invoke("main", ModInitializer.class, ModInitializer::onInitialize);
-		EntrypointUtils.invoke("server", DedicatedServerModInitializer.class, DedicatedServerModInitializer::onInitializeServer);
+		return impl.getEnvironmentType();
 	}
 }

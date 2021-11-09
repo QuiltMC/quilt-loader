@@ -23,7 +23,9 @@ import net.fabricmc.loader.api.VersionPredicate;
 
 /**
  * Represents a dependency.
+ * @deprecated Please use quilt's org.quiltmc.loader.api.ModMetadata instead.
  */
+@Deprecated
 public interface ModDependency {
 	/**
 	 * Returns the ID of the mod to check.
