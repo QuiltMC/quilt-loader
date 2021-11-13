@@ -23,14 +23,17 @@ import java.util.List;
 
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 
 class QuiltRuleDepOnly extends QuiltRuleDep {
 	final Logger logger;
 
 	final ModDependency.Only publicDep;
-	final List<ModLoadOption> validOptions;
-	final List<ModLoadOption> invalidOptions;
-	final List<ModLoadOption> allOptions;
+	final List<ModLoadOptionCls> validOptions;
+	final List<ModLoadOptionCls> invalidOptions;
+	final List<ModLoadOptionCls> allOptions;
 
 	final QuiltRuleDep unless;
 
@@ -58,11 +61,11 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 	}
 
 	@Override
-	boolean onLoadOptionAdded(LoadOption option) {
-		if (option instanceof ModLoadOption) {
-			ModLoadOption mod = (ModLoadOption) option;
+	public boolean onLoadOptionAdded(LoadOption option) {
+		if (option instanceof ModLoadOptionCls) {
+			ModLoadOptionCls mod = (ModLoadOptionCls) option;
 
-			if (!mod.modId().equals(publicDep.id().id())) {
+			if (!mod.id().equals(publicDep.id().id())) {
 				return false;
 			}
 
@@ -91,7 +94,7 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 	}
 
 	@Override
-	boolean onLoadOptionRemoved(LoadOption option) {
+	public boolean onLoadOptionRemoved(LoadOption option) {
 		boolean changed = validOptions.remove(option);
 		changed |= invalidOptions.remove(option);
 		allOptions.remove(option);
@@ -99,10 +102,10 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 	}
 
 	@Override
-	void define(RuleDefiner definer) {
+	public void define(RuleDefiner definer) {
 
 		boolean optional = publicDep.optional();
-		List<ModLoadOption> options = optional ? invalidOptions : validOptions;
+		List<ModLoadOptionCls> options = optional ? invalidOptions : validOptions;
 
 		if (optional && options.isEmpty()) {
 			return;
@@ -167,11 +170,11 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 		errors.append(invalidOptions.size());
 		errors.append(" invalid options)");
 
-		for (ModLoadOption option : validOptions) {
+		for (ModLoadOptionCls option : validOptions) {
 			errors.append("\n\t+ " + option.fullString());
 		}
 
-		for (ModLoadOption option : invalidOptions) {
+		for (ModLoadOptionCls option : invalidOptions) {
 			errors.append("\n\tx " + option.fullString());
 		}
 	}

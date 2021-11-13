@@ -19,10 +19,13 @@ package org.quiltmc.loader.impl.solver;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.discovery.ModCandidateCls;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 
-/** A concrete definition that allows the modid to be loaded from any of a set of {@link ModCandidate}s. */
+/** A concrete definition that allows the modid to be loaded from any of a set of {@link ModCandidateCls}s. */
 final class OptionalModIdDefintion extends ModIdDefinition {
 	final String modid;
 	final List<ModLoadOption> sources = new ArrayList<>();
@@ -37,8 +40,8 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	}
 
 	@Override
-	ModLoadOption[] sources() {
-		return sources.toArray(new ModLoadOption[0]);
+	ModLoadOptionCls[] sources() {
+		return sources.toArray(new ModLoadOptionCls[0]);
 	}
 
 	@Override
@@ -46,7 +49,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 		String name = null;
 
 		for (ModLoadOption option : sources) {
-			String opName = option.candidate.getMetadata().name();
+			String opName = option.metadata().name();
 
 			if (name == null) {
 				name = opName;
@@ -59,10 +62,10 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	}
 
 	@Override
-	boolean onLoadOptionAdded(LoadOption option) {
+	public boolean onLoadOptionAdded(LoadOption option) {
 		if (option instanceof ModLoadOption) {
 			ModLoadOption mod = (ModLoadOption) option;
-			if (mod.modId().equals(modid)) {
+			if (mod.id().equals(modid)) {
 				sources.add(mod);
 				return true;
 			}
@@ -72,22 +75,22 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	}
 
 	@Override
-	boolean onLoadOptionRemoved(LoadOption option) {
+	public boolean onLoadOptionRemoved(LoadOption option) {
 		return sources.remove(option);
 	}
 
 	@Override
-	void define(RuleDefiner definer) {
+	public void define(RuleDefiner definer) {
 		boolean anyAreAlways = false;
 
 		for (ModLoadOption mod : sources) {
-			if (mod.candidate.getMetadata().loadType() == ModLoadType.ALWAYS) {
+			if (mod.metadata().loadType() == ModLoadType.ALWAYS) {
 				anyAreAlways = true;
 				break;
 			}
 		}
 
-		ModLoadOption[] array = sources.toArray(new ModLoadOption[0]);
+		LoadOption[] array = sources.toArray(new LoadOption[0]);
 
 		if (anyAreAlways) {
 			definer.exactly(1, array);
@@ -111,7 +114,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
 		errors.append(toString());
-		for (ModLoadOption option : sources) {
+		for (ModLoadOptionCls option : sources) {
 			errors.append("\n\t - v");
 			errors.append(option.getSpecificInfo());
 		}

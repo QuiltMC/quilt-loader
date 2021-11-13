@@ -42,7 +42,7 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModCandidateCls;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
@@ -56,7 +56,7 @@ import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import net.fabricmc.accesswidener.AccessWidener;
@@ -200,8 +200,8 @@ public class QuiltLoaderImpl {
 		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-		ModSolveResult result = resolver.resolve(this);
-		Map<String, ModCandidate> candidateMap = result.modMap;
+		ModSolveResultImpl result = resolver.resolve(this);
+		Map<String, ModCandidateCls> candidateMap = result.modMap;
 
 		String modListText = candidateMap.values().stream()
 					.sorted(Comparator.comparing(candidate -> candidate.getMetadata().id()))
@@ -235,11 +235,11 @@ public class QuiltLoaderImpl {
 		}
 
 		if (runtimeModRemapping) {
-			for (ModCandidate candidate : RuntimeModRemapper.remap(candidateMap.values(), ModResolver.getInMemoryFs())) {
+			for (ModCandidateCls candidate : RuntimeModRemapper.remap(candidateMap.values(), ModResolver.getInMemoryFs())) {
 				addMod(candidate);
 			}
 		} else {
-			for (ModCandidate candidate : candidateMap.values()) {
+			for (ModCandidateCls candidate : candidateMap.values()) {
 				addMod(candidate);
 			}
 		}
@@ -317,7 +317,7 @@ public class QuiltLoaderImpl {
 		return Collections.unmodifiableList(mods);
 	}
 
-	protected void addMod(ModCandidate candidate) throws ModResolutionException {
+	protected void addMod(ModCandidateCls candidate) throws ModResolutionException {
 		InternalModMetadata meta = candidate.getMetadata();
 		URL originUrl = candidate.getOriginUrl();
 

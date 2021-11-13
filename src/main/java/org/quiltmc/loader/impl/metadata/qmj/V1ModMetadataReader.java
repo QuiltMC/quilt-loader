@@ -50,10 +50,10 @@ final class V1ModMetadataReader {
 	}
 
 	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root) {
-		/* Required fields */
 		String id;
 		String group;
 		Version version = null;
+		V1ModMetadataBuilder builder;
 		/* Optional fields */
 		String name = null;
 		String description = null;
@@ -111,6 +111,9 @@ final class V1ModMetadataReader {
 			// TODO: Here we would check if the version is a placeholder in dev.
 
 			version = Version.of(versionValue.asString());
+
+			builder = new V1ModMetadataBuilder(root, id, group, version);
+
 			// Now we reach optional fields
 			// TODO: provides
 
@@ -122,7 +125,7 @@ final class V1ModMetadataReader {
 					throw parseException(entrypointsValue, "entrypoints must be an object");
 				}
 
-				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", entrypoints);
+				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", builder.entrypoints);
 			}
 
 			@Nullable
@@ -134,7 +137,7 @@ final class V1ModMetadataReader {
 				}
 
 				for (LoaderValue entry : pluginsValue.asArray()) {
-					plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
+					builder.plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
 				}
 			}
 
@@ -146,7 +149,7 @@ final class V1ModMetadataReader {
 					throw parseException(jarsValue, "jars must be an array");
 				}
 
-				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", jars);
+				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", builder.jars);
 			}
 
 			@Nullable
@@ -157,7 +160,7 @@ final class V1ModMetadataReader {
 					throw parseException(languageAdaptersValue, "language_adapters must be an object");
 				}
 
-				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", languageAdapters);
+				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", builder.languageAdapters);
 			}
 
 			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
@@ -343,30 +346,7 @@ final class V1ModMetadataReader {
 
 		}
 
-		return new V1ModMetadataImpl(
-				root,
-				id,
-				group,
-				version,
-				name,
-				description,
-				licenses,
-				contributors,
-				contactInformation,
-				depends,
-				breaks,
-				icons,
-				loadType,
-				provides,
-				entrypoints,
-				plugins,
-				jars,
-				languageAdapters,
-				repositories,
-				mixins,
-				accessWideners,
-				environment
-		);
+		return new V1ModMetadataImpl(builder);
 	}
 
 	private static String requiredString(JsonLoaderValue.ObjectImpl object, String field) {

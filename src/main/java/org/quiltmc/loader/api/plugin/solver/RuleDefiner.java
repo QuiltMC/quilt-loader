@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.api.plugin.solver;
 
 /** Plugin interface to allow {@link Rule}s to define themselves. If multiple definition methods are called then all
  * of those definitions must be matched. */
-interface RuleDefiner {
+public interface RuleDefiner {
 
 	/** @return A {@link LoadOption} which is negated - that is instead of being equal to TRUE, it will be equal to
 	 *         FALSE. (If you double-negate a {@link LoadOption} then it will return itself, rather than being

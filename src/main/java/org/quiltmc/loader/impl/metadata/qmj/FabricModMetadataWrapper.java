@@ -320,4 +320,9 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	public Collection<String> repositories() {
 		return Collections.emptyList();
 	}
+
+	@Override
+	public boolean hasField(ModMetadataField field) {
+		return true;
+	}
 }

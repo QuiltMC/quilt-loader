@@ -27,6 +27,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.core.Vec;

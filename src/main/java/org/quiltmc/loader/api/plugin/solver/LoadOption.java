@@ -14,15 +14,10 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.api.plugin.solver;
 
-import org.jetbrains.annotations.Nullable;
+/** Base definition of something that can either be completely loaded or not loaded. (Usually this is just a mod jar
+ * file, but in the future this might refer to something else that loader has control over). */
+public abstract class LoadOption {
 
-/** Indicates that this {@link LoadOption} should use {@link #getTarget()} for mod solving instead of this. */
-interface AliasedLoadOption {
-
-    /** @return The {@link LoadOption} to use instead of this, or null if this can be used (and so this is not actually
-     *         an alias). */
-    @Nullable
-    LoadOption getTarget();
 }

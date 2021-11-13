@@ -34,10 +34,10 @@ import net.fabricmc.loader.api.Version;
 public class ModCandidateSet {
 	private final String modId;
 	private final List<String> modProvides = new ArrayList<>();
-	private final Set<ModCandidate> depthZeroCandidates = new HashSet<>();
-	private final Map<String, ModCandidate> candidates = new HashMap<>();
+	private final Set<ModCandidateCls> depthZeroCandidates = new HashSet<>();
+	private final Map<String, ModCandidateCls> candidates = new HashMap<>();
 
-	private static int compare(ModCandidate a, ModCandidate b) {
+	private static int compare(ModCandidateCls a, ModCandidateCls b) {
 		Version av = a.getInfo().getVersion();
 		Version bv = b.getInfo().getVersion();
 
@@ -62,9 +62,9 @@ public class ModCandidateSet {
 		return modProvides;
 	}
 
-	public synchronized boolean add(ModCandidate candidate) {
+	public synchronized boolean add(ModCandidateCls candidate) {
 		String version = candidate.getInfo().getVersion().getFriendlyString();
-		ModCandidate oldCandidate = candidates.get(version);
+		ModCandidateCls oldCandidate = candidates.get(version);
 		if (oldCandidate != null) {
 			int oldDepth = oldCandidate.getDepth();
 			int newDepth = candidate.getDepth();
@@ -94,15 +94,15 @@ public class ModCandidateSet {
 		return !depthZeroCandidates.isEmpty();
 	}
 
-	public Collection<ModCandidate> toSortedSet() throws ModSolvingException {
+	public Collection<ModCandidateCls> toSortedSet() throws ModSolvingException {
 		if (depthZeroCandidates.size() > 1) {
 			StringBuilder sb = new StringBuilder("Duplicate mandatory mods found for '" + modId + "':");
-			for (ModCandidate mc : depthZeroCandidates) {
+			for (ModCandidateCls mc : depthZeroCandidates) {
 				sb.append("\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, mc));
 			}
 			throw new ModSolvingException(sb.toString());
 		} else if (candidates.size() > 1) {
-			List<ModCandidate> out = new ArrayList<>(candidates.values());
+			List<ModCandidateCls> out = new ArrayList<>(candidates.values());
 			out.sort(ModCandidateSet::compare);
 			return out;
 		} else {

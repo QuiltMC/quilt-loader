@@ -17,15 +17,19 @@
 package org.quiltmc.loader.impl.solver;
 
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModCandidate;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModCandidateCls;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 
-abstract class ModLoadOption extends LoadOption {
-	final ModCandidate candidate;
+@Deprecated
+abstract class ModLoadOptionCls extends LoadOption implements ModLoadOption {
+	final ModCandidateCls candidate;
 
-	ModLoadOption(ModCandidate candidate) {
+	ModLoadOptionCls(ModCandidateCls candidate) {
 		this.candidate = candidate;
 	}
 
@@ -36,24 +40,17 @@ abstract class ModLoadOption extends LoadOption {
 			return "$jar+quilt$";
 		}
 	}
-	
-	String group() {
-		return candidate.getMetadata().group();
-	}
 
-	String modId() {
-		return candidate.getMetadata().id();
-	}
-
-	Version version() {
-		return candidate.getMetadata().version();
+	@Override
+	public ModCandidate candidate() {
+		return candidate;
 	}
 
 	@Override
 	public String toString() {
 		return shortString();
 	}
-	
+
 	abstract String shortString();
 
 	String fullString() {
@@ -65,6 +62,4 @@ abstract class ModLoadOption extends LoadOption {
 	}
 
 	abstract String getSpecificInfo();
-
-	abstract MainModLoadOption getRoot();
 }

@@ -16,18 +16,22 @@
 
 package org.quiltmc.loader.impl.discovery;
 
+import org.quiltmc.loader.api.plugin.MinimalModMetadata;
+import org.quiltmc.loader.api.plugin.ModCandidate;
 import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 
 import java.net.URL;
 
-public class ModCandidate {
+/** @deprecated Will be replaced with a different class for loader plugins. */
+@Deprecated
+public class ModCandidateCls implements ModCandidate {
 	private final LoaderModMetadata info;
 	private final URL originUrl;
 	private final int depth;
 	private final boolean requiresRemap;
 
-	public ModCandidate(LoaderModMetadata info, URL originUrl, int depth, boolean requiresRemap) {
+	public ModCandidateCls(LoaderModMetadata info, URL originUrl, int depth, boolean requiresRemap) {
 		this.info = info;
 		this.originUrl = originUrl;
 		this.depth = depth;
@@ -57,10 +61,10 @@ public class ModCandidate {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof ModCandidate)) {
+		if (!(obj instanceof ModCandidateCls)) {
 			return false;
 		} else {
-			ModCandidate other = (ModCandidate) obj;
+			ModCandidateCls other = (ModCandidateCls) obj;
 			return other.info.getVersion().getFriendlyString().equals(info.getVersion().getFriendlyString()) && other.info.getId().equals(info.getId());
 		}
 	}

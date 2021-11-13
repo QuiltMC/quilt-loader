@@ -19,6 +19,9 @@ package org.quiltmc.loader.impl.solver;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 
 /** A concrete definition of a modid. This also maps the modid to the {@link LoadOption} candidates, and so is used
@@ -28,19 +31,7 @@ abstract class ModIdDefinition extends Rule {
 
 	/** @return An array of all the possible {@link LoadOption} instances that can define this modid. May be empty, but
 	 *         will never be null. */
-	abstract ModLoadOption[] sources();
-
-	/** Utility for {@link #put(DependencyHelper)} which returns only {@link ModLoadOption#getRoot()}
-	 * 
-	 * @deprecated Since {@link RuleDefiner} should handle this. */
-	@Deprecated
-	protected static MainModLoadOption[] processSources(ModLoadOption[] array) {
-		MainModLoadOption[] dst = new MainModLoadOption[array.length];
-		for (int i = 0; i < dst.length; i++) {
-			dst[i] = array[i].getRoot();
-		}
-		return dst;
-	}
+	abstract ModLoadOptionCls[] sources();
 
 	abstract String getFriendlyName();
 

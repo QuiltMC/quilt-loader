@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.solver;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
 
 /** Used to indicate part of a {@link ModDependency} from quilt.mod.json. */
 public class QuiltModDepOption extends LoadOption {

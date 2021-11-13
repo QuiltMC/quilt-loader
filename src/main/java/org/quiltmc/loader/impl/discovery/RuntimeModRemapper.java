@@ -58,16 +58,16 @@ import java.util.stream.Stream;
 
 public final class RuntimeModRemapper {
 
-	public static Collection<ModCandidate> remap(Collection<ModCandidate> modCandidates, FileSystem fileSystem) {
-		List<ModCandidate> modsToRemap = modCandidates.stream()
-				.filter(ModCandidate::requiresRemap)
+	public static Collection<ModCandidateCls> remap(Collection<ModCandidateCls> modCandidates, FileSystem fileSystem) {
+		List<ModCandidateCls> modsToRemap = modCandidates.stream()
+				.filter(ModCandidateCls::requiresRemap)
 				.collect(Collectors.toList());
 
 		if (modsToRemap.isEmpty()) {
 			return modCandidates;
 		}
 
-		List<ModCandidate> modsToSkip = modCandidates.stream()
+		List<ModCandidateCls> modsToSkip = modCandidates.stream()
 				.filter(mc -> !mc.requiresRemap())
 				.collect(Collectors.toList());
 
@@ -84,12 +84,12 @@ public final class RuntimeModRemapper {
 			throw new RuntimeException("Failed to populate remap classpath", e);
 		}
 
-		List<ModCandidate> remappedMods = new ArrayList<>();
+		List<ModCandidateCls> remappedMods = new ArrayList<>();
 
 		try {
-			Map<ModCandidate, RemapInfo> infoMap = new HashMap<>();
+			Map<ModCandidateCls, RemapInfo> infoMap = new HashMap<>();
 
-			for (ModCandidate mod : modsToRemap) {
+			for (ModCandidateCls mod : modsToRemap) {
 				RemapInfo info = new RemapInfo();
 				infoMap.put(mod, info);
 
@@ -101,7 +101,7 @@ public final class RuntimeModRemapper {
 			}
 
 			//Done in a 2nd loop as we need to make sure all the inputs are present before remapping
-			for (ModCandidate mod : modsToRemap) {
+			for (ModCandidateCls mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 				info.outputPath = fileSystem.getPath(UUID.randomUUID() + ".jar");
 				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).build();
@@ -121,7 +121,7 @@ public final class RuntimeModRemapper {
 			}
 
 			//Done in a 3rd loop as this can happen when the remapper is doing its thing.
-			for (ModCandidate mod : modsToRemap) {
+			for (ModCandidateCls mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 
 				String accessWidener = mod.getInfo().getAccessWidener();
@@ -138,7 +138,7 @@ public final class RuntimeModRemapper {
 
 			remapper.finish();
 
-			for (ModCandidate mod : modsToRemap) {
+			for (ModCandidateCls mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 
 				info.outputConsumerPath.close();
@@ -152,7 +152,7 @@ public final class RuntimeModRemapper {
 					}
 				}
 
-				remappedMods.add(new ModCandidate(mod.getInfo(), UrlUtil.asUrl(info.outputPath), 0, false));
+				remappedMods.add(new ModCandidateCls(mod.getInfo(), UrlUtil.asUrl(info.outputPath), 0, false));
 			}
 
 		} catch (UrlConversionException | IOException e) {

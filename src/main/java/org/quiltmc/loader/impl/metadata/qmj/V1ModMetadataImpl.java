@@ -18,7 +18,6 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
@@ -54,79 +53,52 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<String> mixins;
 	private final Collection<String> accessWideners;
 	private final ModEnvironment environment;
-	V1ModMetadataImpl(
-			JsonLoaderValue.ObjectImpl root,
-			/* Required fields */
-			String id,
-			String group,
-			Version version,
-			/* Optional fields */
-			@Nullable String name,
-			@Nullable String description,
-			Collection<ModLicense> licenses,
-			Collection<ModContributor> contributors,
-			Map<String, String> contactInformation,
-			Collection<ModDependency> depends,
-			Collection<ModDependency> breaks,
-			@Nullable Icons icons,
-			/* Internal fields */
-			ModLoadType loadType,
-			Collection<ModProvided> provides,
-			Map<String, List<AdapterLoadableClassEntry>> entrypoints,
-			Collection<AdapterLoadableClassEntry> plugins,
-			Collection<String> jars,
-			Map<String, String> languageAdapters,
-			Collection<String> repositories,
-			/* TODO: Move to plugins */
-			Collection<String> mixins,
-			Collection<String> accessWideners,
-			ModEnvironment env
-			// TODO: Custom objects - long term
-	) {
-		this.root = root;
-		this.id = id;
-		this.group = group;
-		this.version = version;
+
+	V1ModMetadataImpl(V1ModMetadataBuilder builder) {
+		this.root = builder.root;
+		this.id = builder.id;
+		this.group = builder.group;
+		this.version = builder.version;
 
 		// Delegate to id if null
-		if (name != null) {
-			this.name = name;
+		if (builder.name != null) {
+			this.name = builder.name;
 		} else {
-			this.name = id;
+			this.name = builder.id;
 		}
 
 		// Empty string if null
-		if (description != null) {
-			this.description = description;
+		if (builder.description != null) {
+			this.description = builder.description;
 		} else {
 			this.description = "";
 		}
 
-		this.licenses = Collections.unmodifiableCollection(licenses);
-		this.contributors = Collections.unmodifiableCollection(contributors);
-		this.contactInformation = Collections.unmodifiableMap(contactInformation);
-		this.depends = Collections.unmodifiableCollection(depends);
-		this.breaks = Collections.unmodifiableCollection(breaks);
+		this.licenses = Collections.unmodifiableCollection(builder.licenses);
+		this.contributors = Collections.unmodifiableCollection(builder.contributors);
+		this.contactInformation = Collections.unmodifiableMap(builder.contactInformation);
+		this.depends = Collections.unmodifiableCollection(builder.depends);
+		this.breaks = Collections.unmodifiableCollection(builder.breaks);
 
-		if (icons != null) {
-			this.icons = icons;
+		if (builder.icons != null) {
+			this.icons = builder.icons;
 		} else {
 			this.icons = new Icons.Single(null);
 		}
 
 		// Internal fields
-		this.loadType = loadType;
-		this.provides = Collections.unmodifiableCollection(provides);
-		this.entrypoints = Collections.unmodifiableMap(entrypoints);
-		this.plugins = Collections.unmodifiableCollection(plugins);
-		this.jars = Collections.unmodifiableCollection(jars);
-		this.languageAdapters = Collections.unmodifiableMap(languageAdapters);
-		this.repositories = Collections.unmodifiableCollection(repositories);
+		this.loadType = builder.loadType;
+		this.provides = Collections.unmodifiableCollection(builder.provides);
+		this.entrypoints = Collections.unmodifiableMap(builder.entrypoints);
+		this.plugins = Collections.unmodifiableCollection(builder.plugins);
+		this.jars = Collections.unmodifiableCollection(builder.jars);
+		this.languageAdapters = Collections.unmodifiableMap(builder.languageAdapters);
+		this.repositories = Collections.unmodifiableCollection(builder.repositories);
 
 		// Move to plugins
-		this.mixins = Collections.unmodifiableCollection(mixins);
-		this.accessWideners = Collections.unmodifiableCollection(accessWideners);
-		this.environment = env;
+		this.mixins = Collections.unmodifiableCollection(builder.mixins);
+		this.accessWideners = Collections.unmodifiableCollection(builder.accessWideners);
+		this.environment = builder.env;
 	}
 
 	@Override
@@ -258,5 +230,10 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public ModEnvironment environment() {
 		return environment;
+	}
+
+	@Override
+	public boolean hasField(ModMetadataField field) {
+		return true;
 	}
 }

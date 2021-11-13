@@ -32,7 +32,7 @@ import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
@@ -116,7 +116,7 @@ public class ModResolver {
 		return readableNestedJarPaths.getOrDefault(url.toString(), path.toString());
 	}
 
-	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
+	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidateCls c) {
 		return getReadablePath(loader.getGameDir(), c.getOriginUrl());
 	}
 
@@ -280,7 +280,7 @@ public class ModResolver {
 			}
 
 			for (LoaderModMetadata i : info) {
-				ModCandidate candidate = new ModCandidate(i, normalizedUrl, depth, requiresRemap);
+				ModCandidateCls candidate = new ModCandidateCls(i, normalizedUrl, depth, requiresRemap);
 				boolean added;
 
 				if (candidate.getInfo().getId() == null || candidate.getInfo().getId().isEmpty()) {
@@ -398,9 +398,9 @@ public class ModResolver {
 	 * 
 	 * @param loader The loader. If this is null then none of the builtin mods will be added. (Primarily useful during
 	 *			tests).
-	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
+	 * @return The final map of modids to the {@link ModCandidateCls} that should be used for that ID.
 	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
-	public ModSolveResult resolve(QuiltLoaderImpl loader) throws ModResolutionException {
+	public ModSolveResultImpl resolve(QuiltLoaderImpl loader) throws ModResolutionException {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
 		long time1 = System.currentTimeMillis();
@@ -464,13 +464,13 @@ public class ModResolver {
 
 		long time2 = System.currentTimeMillis();
 		ModSolver solver = new ModSolver(logger);
-		ModSolveResult result = solver.findCompatibleSet(candidatesById);
+		ModSolveResultImpl result = solver.findCompatibleSet(candidatesById);
 
 		long time3 = System.currentTimeMillis();
 		logger.debug("Mod resolution detection time: " + (time2 - time1) + "ms");
 		logger.debug("Mod resolution time: " + (time3 - time2) + "ms");
 
-		for (ModCandidate candidate : result.modMap.values()) {
+		for (ModCandidateCls candidate : result.modMap.values()) {
 			candidate.getInfo().emitFormatWarnings(logger);
 		}
 
@@ -479,7 +479,7 @@ public class ModResolver {
 
 	private void addBuiltinMod(ConcurrentMap<String, ModCandidateSet> candidatesById, BuiltinMod mod) {
 		candidatesById.computeIfAbsent(mod.metadata.getId(), ModCandidateSet::new)
-				.add(new ModCandidate(new BuiltinMetadataWrapper(mod.metadata), mod.url, 0, false));
+				.add(new ModCandidateCls(new BuiltinMetadataWrapper(mod.metadata), mod.url, 0, false));
 	}
 
 	public static FileSystem getInMemoryFs() {

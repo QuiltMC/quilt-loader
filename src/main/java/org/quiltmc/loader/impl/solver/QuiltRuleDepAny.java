@@ -23,6 +23,9 @@ import java.util.List;
 
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 
 public class QuiltRuleDepAny extends QuiltRuleDep {
 
@@ -49,17 +52,17 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 	}
 
 	@Override
-	boolean onLoadOptionAdded(LoadOption option) {
+	public boolean onLoadOptionAdded(LoadOption option) {
 		return false;
 	}
 
 	@Override
-	boolean onLoadOptionRemoved(LoadOption option) {
+	public boolean onLoadOptionRemoved(LoadOption option) {
 		return false;
 	}
 
 	@Override
-	void define(RuleDefiner definer) {
+	public void define(RuleDefiner definer) {
 		LoadOption[] array = new LoadOption[options.length + 1];
 		int i = 0;
 

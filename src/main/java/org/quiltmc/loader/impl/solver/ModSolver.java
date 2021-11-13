@@ -29,8 +29,11 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModCandidateCls;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
@@ -38,7 +41,7 @@ import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
@@ -59,7 +62,7 @@ public final class ModSolver {
 	 * 
 	 * @return A valid list of mods.
 	 * @throws ModResolutionException if that is impossible. */
-	public ModSolveResult findCompatibleSet(Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
+	public ModSolveResultImpl findCompatibleSet(Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
 
 		/*
 		 * Implementation notes:
@@ -85,15 +88,15 @@ public final class ModSolver {
 		 *	 present "breaking" mods then we only need to perform the validation at the end of resolving.
 		 */
 		// modCandidateMap doesn't contain provided mods, whereas fullCandidateMap does.
-		Map<String, List<ModCandidate>> modCandidateMap = new HashMap<>();
-		Map<String, List<ModCandidate>> fullCandidateMap = new HashMap<>();
+		Map<String, List<ModCandidateCls>> modCandidateMap = new HashMap<>();
+		Map<String, List<ModCandidateCls>> fullCandidateMap = new HashMap<>();
 
-		Map<String, ModCandidate> mandatoryMods = new HashMap<>();
+		Map<String, ModCandidateCls> mandatoryMods = new HashMap<>();
 		List<ModSolvingException> errors = new ArrayList<>();
 
 		for (ModCandidateSet mcs : modCandidateSetMap.values()) {
 			try {
-				Collection<ModCandidate> s = mcs.toSortedSet();
+				Collection<ModCandidateCls> s = mcs.toSortedSet();
 				modCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
 				fullCandidateMap.computeIfAbsent(mcs.getModId(), i -> new ArrayList<>()).addAll(s);
 				for (String modProvide : mcs.getModProvides()) {
@@ -121,22 +124,22 @@ public final class ModSolver {
 			throw ex;
 		}
 
-		Map<String, ModCandidate> resultingModMap;
-		Map<String, ModCandidate> providedModMap;
+		Map<String, ModCandidateCls> resultingModMap;
+		Map<String, ModCandidateCls> providedModMap;
 		Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults;
 
 		Sat4jWrapper sat = new Sat4jWrapper(logger);
 		Map<String, OptionalModIdDefintion> modDefs = new HashMap<>();
 
 		// Put primary mod (first mod in jar)
-		for (Entry<String, List<ModCandidate>> entry : modCandidateMap.entrySet()) {
+		for (Entry<String, List<ModCandidateCls>> entry : modCandidateMap.entrySet()) {
 			String modId = entry.getKey();
-			List<ModCandidate> candidates = entry.getValue();
-			ModCandidate mandatedCandidate = mandatoryMods.get(modId);
+			List<ModCandidateCls> candidates = entry.getValue();
+			ModCandidateCls mandatedCandidate = mandatoryMods.get(modId);
 
 			int index = 0;
 
-			for (ModCandidate m : candidates) {
+			for (ModCandidateCls m : candidates) {
 				MainModLoadOption cOption;
 
 				if (m == mandatedCandidate) {
@@ -290,17 +293,17 @@ public final class ModSolver {
 				optionMap.computeIfAbsent(cls.asSubclass(LoadOption.class), c -> new HashMap<>()).put(option, !negated);
 			} while (LoadOption.class.isAssignableFrom((cls = cls.getSuperclass())));
 
-			if (option instanceof ModLoadOption) {
+			if (option instanceof ModLoadOptionCls) {
 				if (!negated) {
-					ModLoadOption modOption = (ModLoadOption) option;
+					ModLoadOptionCls modOption = (ModLoadOptionCls) option;
 
-					ModCandidate previous = resultingModMap.put(modOption.modId(), modOption.candidate);
+					ModCandidateCls previous = resultingModMap.put(modOption.id(), modOption.candidate);
 					if (previous != null && previous != modOption.candidate) {
-						throw new ModSolvingError("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
+						throw new ModSolvingError("Duplicate result ModCandidate for " + modOption.id() + " - something has gone wrong internally!");
 					}
 
-					if (providedModMap.containsKey(modOption.modId())) {
-						throw new ModSolvingError(modOption.modId() + " is already provided by " + providedModMap.get(modOption.modId())
+					if (providedModMap.containsKey(modOption.id())) {
+						throw new ModSolvingError(modOption.id() + " is already provided by " + providedModMap.get(modOption.id())
 								+ " - something has gone wrong internally!");
 					}
 
@@ -332,7 +335,7 @@ public final class ModSolver {
 
 		// TODO: Warn on suspiciously similar versions!
 
-		return new ModSolveResult(resultingModMap, providedModMap, extraResults);
+		return new ModSolveResultImpl(resultingModMap, providedModMap, extraResults);
 	}
 
 	private boolean blameSingleRule(Sat4jWrapper sat, List<Rule> causes) {
@@ -395,7 +398,7 @@ public final class ModSolver {
 	}
 
 	// TODO: Convert all these methods to new error syntax
-	private void addErrorToList(ModCandidate candidate, ModDependency dependency, Map<String, ModCandidate> result, Map<String, ModCandidate> provided, StringBuilder errors, String errorType, boolean cond) {
+	private void addErrorToList(ModCandidateCls candidate, ModDependency dependency, Map<String, ModCandidateCls> result, Map<String, ModCandidateCls> provided, StringBuilder errors, String errorType, boolean cond) {
 		String depModId = dependency.getModId();
 
 		List<String> errorList = new ArrayList<>();
@@ -411,7 +414,7 @@ public final class ModSolver {
 			return;
 		}
 
-		ModCandidate depCandidate = result.get(depModId);
+		ModCandidateCls depCandidate = result.get(depModId);
 		// attempt searching provides
 		if(depCandidate == null) {
 			depCandidate = provided.get(depModId);
@@ -449,13 +452,13 @@ public final class ModSolver {
 				.append(dependency.getModId()).append(".");
 	}
 
-	private void appendUnsatisfiedDependencyError(StringBuilder errors, ModDependency dependency, ModCandidate depCandidate) {
+	private void appendUnsatisfiedDependencyError(StringBuilder errors, ModDependency dependency, ModCandidateCls depCandidate) {
 		errors.append("but a non-matching version is present: ").append(getCandidateFriendlyVersion(depCandidate)).append("!");
 		errors.append("\n\t - You must install ").append(getDependencyVersionRequirements(dependency)).append(" of ")
 				.append(getCandidateName(depCandidate)).append(".");
 	}
 
-	private void appendConflictError(StringBuilder errors, ModCandidate candidate, ModCandidate depCandidate) {
+	private void appendConflictError(StringBuilder errors, ModCandidateCls candidate, ModCandidateCls depCandidate) {
 		final String depCandidateVer = getCandidateFriendlyVersion(depCandidate);
 		errors.append("but a matching version is present: ").append(depCandidateVer).append("!");
 		errors.append("\n\t - While this won't prevent you from starting the game,");
@@ -465,7 +468,7 @@ public final class ModSolver {
 		errors.append("\n\t - It is heavily recommended to remove one of the mods.");
 	}
 
-	private void appendBreakingError(StringBuilder errors, ModCandidate candidate, ModCandidate depCandidate) {
+	private void appendBreakingError(StringBuilder errors, ModCandidateCls candidate, ModCandidateCls depCandidate) {
 		final String depCandidateVer = getCandidateFriendlyVersion(depCandidate);
 		errors.append("but a matching version is present: ").append(depCandidate.getInfo().getVersion()).append("!");
 		errors.append("\n\t - The developer(s) of ").append(getCandidateName(candidate));
@@ -474,7 +477,7 @@ public final class ModSolver {
 		errors.append("\n\t - You must remove one of the mods.");
 	}
 
-	private void appendJiJInfo(StringBuilder errors, Map<String, ModCandidate> result, ModCandidate candidate) {
+	private void appendJiJInfo(StringBuilder errors, Map<String, ModCandidateCls> result, ModCandidateCls candidate) {
 		if (candidate.getDepth() < 1) {
 			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
 					.append(" v").append(getCandidateFriendlyVersion(candidate))
@@ -491,8 +494,8 @@ public final class ModSolver {
 			return;
 		}
 		// step 2: try to find source mod candidate
-		ModCandidate srcCandidate = null;
-		for (Map.Entry<String, ModCandidate> entry : result.entrySet()) {
+		ModCandidateCls srcCandidate = null;
+		for (Map.Entry<String, ModCandidateCls> entry : result.entrySet()) {
 			if (sourceUrl.equals(entry.getValue().getOriginUrl())) {
 				srcCandidate = entry.getValue();
 				break;
@@ -517,11 +520,11 @@ public final class ModSolver {
 		return ModResolver.getSourceURL(originUrl);
 	}
 
-	static String getCandidateName(ModCandidate candidate) {
+	static String getCandidateName(ModCandidateCls candidate) {
 		return "'" + candidate.getInfo().getName() + "' (" + candidate.getInfo().getId() + ")";
 	}
 
-	static String getCandidateFriendlyVersion(ModCandidate candidate) {
+	static String getCandidateFriendlyVersion(ModCandidateCls candidate) {
 		return candidate.getInfo().getVersion().getFriendlyString();
 	}
 
@@ -616,7 +619,7 @@ public final class ModSolver {
 			return;
 		}
 
-		ModLoadOption[] sources = def.sources();
+		ModLoadOptionCls[] sources = def.sources();
 
 		if (sources.length == 0) {
 			return;
@@ -627,7 +630,7 @@ public final class ModSolver {
 				.append(" is being loaded from \"").append(sources[0].getLoadSource()).append("\".");
 		} else {
 			String name = getCandidateName(sources[0].candidate);
-			for (ModLoadOption option : sources) {
+			for (ModLoadOptionCls option : sources) {
 				if (!getCandidateName(option.candidate).equals(name)) {
 					name = null;
 					break;
@@ -637,7 +640,7 @@ public final class ModSolver {
 			if (name != null) {
 				errors.append("\n- $folder$ ").append(name).append(" can be loaded from:");
 
-				for (ModLoadOption source : sources) {
+				for (ModLoadOptionCls source : sources) {
 					errors.append("\n\t- ").append(source.getSourceIcon()).append(" v")
 						.append(getCandidateFriendlyVersion(source))
 						.append(" in \"").append(source.getLoadSource()).append("\".");
@@ -645,7 +648,7 @@ public final class ModSolver {
 			} else {
 				errors.append("\n- $folder$ Mod ").append(def.getModId()).append(" can be loaded from:");
 
-				for (ModLoadOption source : sources) {
+				for (ModLoadOptionCls source : sources) {
 					errors.append("\n\t- ").append(source.getSourceIcon()).append(" ")
 						.append(getLoadOptionDescription(source))
 						.append(" \"").append(source.getLoadSource()).append("\".");
@@ -654,23 +657,23 @@ public final class ModSolver {
 		}
 	}
 
-	private static void appendLoadSourceInfo(StringBuilder errors, HashSet<String> listedSources, ModLoadOption option) {
-		if (listedSources.add(option.modId())) {
+	private static void appendLoadSourceInfo(StringBuilder errors, HashSet<String> listedSources, ModLoadOptionCls option) {
+		if (listedSources.add(option.id())) {
 			errors.append("\n- ").append(option.getSourceIcon()).append(" ")
 					.append(getLoadOptionDescription(option))
 					.append(" is being loaded from \"").append(option.getLoadSource()).append("\".");
 		}
 	}
 
-	static String getLoadOptionDescription(ModLoadOption loadOption) {
+	static String getLoadOptionDescription(ModLoadOptionCls loadOption) {
 		return getCandidateName(loadOption) + " v" + getCandidateFriendlyVersion(loadOption);
 	}
 
-	static String getCandidateName(ModLoadOption candidate) {
+	static String getCandidateName(ModLoadOptionCls candidate) {
 		return getCandidateName(candidate.candidate);
 	}
 
-	static String getCandidateFriendlyVersion(ModLoadOption candidate) {
+	static String getCandidateFriendlyVersion(ModLoadOptionCls candidate) {
 		return getCandidateFriendlyVersion(candidate.candidate);
 	}
 

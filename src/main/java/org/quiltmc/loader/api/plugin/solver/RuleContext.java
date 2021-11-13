@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.api.plugin.solver;
 
 public interface RuleContext {
 
