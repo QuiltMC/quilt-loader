@@ -24,16 +24,17 @@ import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 
-class QuiltRuleBreakOnly extends QuiltRuleBreak {
+public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final Logger logger;
 
 	final ModDependency.Only publicDep;
-	final List<ModLoadOptionCls> conflictingOptions;
-	final List<ModLoadOptionCls> okayOptions;
-	final List<ModLoadOptionCls> allOptions;
+	final List<ModLoadOption> conflictingOptions;
+	final List<ModLoadOption> okayOptions;
+	final List<ModLoadOption> allOptions;
 
 	final QuiltRuleDep unless;
 
@@ -62,8 +63,8 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 
 	@Override
 	public boolean onLoadOptionAdded(LoadOption option) {
-		if (option instanceof ModLoadOptionCls) {
-			ModLoadOptionCls mod = (ModLoadOptionCls) option;
+		if (option instanceof ModLoadOption) {
+			ModLoadOption mod = (ModLoadOption) option;
 
 			if (!mod.id().equals(publicDep.id().id())) {
 				return false;
@@ -78,7 +79,7 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 				conflictingOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  x  conflicting option: " + mod.fullString());
+					logger.info("[ModSolver]  x  conflicting option: " + mod);
 				}
 				return true;
 			} else {
@@ -86,7 +87,7 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
 					String reason = groupMatches ? "different group" : "different version";
-					logger.info("[ModSolver]  +  okay option: " + mod.fullString() + " because " + reason);
+					logger.info("[ModSolver]  +  okay option: " + mod + " because " + reason);
 				}
 			}
 
@@ -105,8 +106,12 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	@Override
 	public void define(RuleDefiner definer) {
 
+		if (publicDep.shouldIgnore()) {
+			return;
+		}
+
 		// "optional" is meaningless for breaks
-		List<ModLoadOptionCls> conficts = conflictingOptions;
+		List<ModLoadOption> conficts = conflictingOptions;
 
 		if (conficts.isEmpty()) {
 			return;
@@ -119,8 +124,8 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 			options[2] = definer.negate(unless.source);
 		}
 
-		for (ModLoadOptionCls conflict : conficts) {
-			options[0] = definer.negate(conflict);
+		for (ModLoadOption conflict : conficts) {
+			options[0] = definer.negate((LoadOption) conflict);
 			definer.atLeastOneOf(options);
 		}
 	}
@@ -161,12 +166,12 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		errors.append(okayOptions.size());
 		errors.append(" okay options)");
 
-		for (ModLoadOptionCls option : conflictingOptions) {
-			errors.append("\n\tx " + option.fullString());
+		for (ModLoadOption option : conflictingOptions) {
+			errors.append("\n\tx " + option);
 		}
 
-		for (ModLoadOptionCls option : okayOptions) {
-			errors.append("\n\t+ " + option.fullString());
+		for (ModLoadOption option : okayOptions) {
+			errors.append("\n\t+ " + option);
 		}
 	}
 }

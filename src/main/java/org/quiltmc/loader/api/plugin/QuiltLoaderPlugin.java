@@ -8,24 +8,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import com.google.gson.JsonElement;
-
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 
 /** The base type for all plugins.
  * <p>
- * Plugins are applied the following steps, repeated as many times as necessary to get a final result:
+ * Plugins are applied the following steps:
  * <ol>
- * <li>{@link #load(QuiltPluginContext)} is called to set the {@link QuiltPluginContext}. Unlike all other methods, this
- * is only called once per plugin object, and not called again in other cycles.</li>
+ * <li>{@link #load(QuiltPluginContext)} is called to set the {@link QuiltPluginContext}.</li>
  * <li>{@link #addModFolders(Set)} is called to add folders that will be scanned by quilt and other plugins for mods.
  * </li>
  * <li>Quilt Loader will scan all files in those folders, and follow these steps:
  * <ol>
+ * <li>If it ends with ".disabled", or is a system or hidden file, then it is skipped.</li>
  * <li>If it is a zip or jar file (or can be opened by {@link FileSystems#newFileSystem(Path, ClassLoader)}) then it
  * will be opened, and checked for a "quilt.mod.json" file. If one is found, then it is loaded as a quilt mod (and
  * possibly as a new plugin - which will be loaded instantly, rather than waiting until the next cycle).</li>
@@ -33,6 +34,7 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path)}</li>
  * </ol>
  * </li>
+ * <li>{@link #beforeSolve()} is called.</li>
  * <li>Loader will begin solving the rules added</li>
  * </ol>
  * In particular, plugins must never call {@link QuiltLoader} directly - that's designed solely for mods to use after
@@ -46,12 +48,13 @@ public interface QuiltLoaderPlugin {
 	 * data.
 	 * 
 	 * @param context The context, to use later. You should store this in a field if you need it.
-	 * @param previousData The data written to {@link #unload(Map)} by a different version of this plugin. */
-	void load(QuiltPluginContext context, Map<String, JsonElement> previousData);
+	 * @param previousData The data written to {@link #unload(Map)} by a different version of this plugin, or an empty
+	 *            map if the plugin hasn't been reloaded. */
+	void load(QuiltPluginContext context, Map<String, LoaderValue> previousData);
 
 	/** Prepares to unload this plugin, in preparation for loading a different version of the same plugin. If you wish
 	 * to keep some data from previous runs into the next run, you should put them into the given map. */
-	void unload(Map<String, JsonElement> data);
+	void unload(Map<String, LoaderValue> data);
 
 	/** Adds mod folders which will be scanned by quilt and plugins for mods. Only {@link Path}s which are provided by
 	 * {@link FileSystems#getDefault()}, and {@link Files#isDirectory(Path, java.nio.file.LinkOption...) is a directory}
@@ -63,11 +66,6 @@ public interface QuiltLoaderPlugin {
 	 *            methods are supported. */
 	default void addModFolders(Set<Path> folders) {}
 
-	/** Called once per {@link Path} that is added to {@link #addModFolders(Set)}.
-	 * 
-	 * @param folders Identical to the set passed to {@link #addModFolders(Set)}. */
-	default void onModFolderAdded(Path folder, Set<Path> folders) {}
-
 	/** Called once per archival file found in any of the folders added by {@link #addModFolders(Set)} or
 	 * {@link #onModFolderAdded(Path, Set)}. This is only called for zips that aren't identified as quilt mods, and
 	 * aren't system files.
@@ -75,24 +73,28 @@ public interface QuiltLoaderPlugin {
 	 * You can retrieve the file name of the original zip by using {@link QuiltPluginManager#getParent(Path)}.
 	 * 
 	 * @param root The root of the zip file.
-	 * @return A result indicating what this plugin did - in particular if it was able to load a mod candidate from the
-	 *         zip then this should return FOUND, so that it is not passed to other plugins. */
-	default PluginScanResult scanZip(Path root) {
-		return PluginScanResult.IGNORED;
+	 * @return A {@link ModLoadOption} if this plugin could load the given zip as a mod, or null if it couldn't. */
+	@Nullable
+	default ModLoadOption scanZip(Path root) {
+		return null;
 	}
 
 	/** Called once per file encountered which loader can't open (I.E. those which are not passed to
 	 * {@link #scanZip(Path)}). However system files are not passed here.
 	 * 
 	 * @param file
-	 * @return A result indicating what this plugin did - in particular if it was able to load a mod candidate from the
-	 *         zip then this should return FOUND, so that it is not passed to other plugins. */
-	default PluginScanResult scanUnknownFile(Path file) {
-		return PluginScanResult.IGNORED;
+	 * @return A {@link ModLoadOption} if this plugin could load the given file as a mod, or null if it couldn't. */
+	@Nullable
+	default ModLoadOption scanUnknownFile(Path file) {
+		return null;
 	}
 
-	/** Called after solving has finished, and successfully found the final set of {@link LoadOption}s and mods, none of
-	 * which will be {@link TentativeLoadOption}. This will only be called once, and marks the end of the final cycle.
+	/** Called once per cycle just before the set of {@link Rule}s and {@link LoadOption}s are solved. */
+	default void beforeSolve() {}
+
+	/** Called after solving has finished and successfully found the final set of {@link LoadOption}s and mods. None of
+	 * the "present" {@link LoadOption}s will be {@link TentativeLoadOption}. This will only be called once, and marks
+	 * the end of the final cycle.
 	 * <p>
 	 * Like resolving, you can submit tasks and queue gui requests during this, which will be completed before the game
 	 * can actually be launched. */

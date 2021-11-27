@@ -2,35 +2,45 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModMetadataBuilder;
+import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
+import org.quiltmc.loader.api.plugin.FullModMetadata.ModMetadataField;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
-final class V1ModMetadataBuilder {
+public final class V1ModMetadataBuilder implements ModMetadataBuilder {
+
+	private static final EnumSet<ModMetadataField> DEFAULT_SET = EnumSet.of(
+		ModMetadataField.ID, ModMetadataField.GROUP, ModMetadataField.VERSION
+	);
 
 	public final JsonLoaderValue.ObjectImpl root;
 	public final String id;
 	public final String group;
 	public final Version version;
 
-	public @Nullable String name;
-	public @Nullable String description;
+	@Nullable String name;
+	@Nullable String description;
 	final List<ModLicense> licenses = new ArrayList<>();
 	final List<ModContributor> contributors = new ArrayList<>();
 	final Map<String, String> contactInformation = new LinkedHashMap<>();
 	final List<ModDependency> depends = new ArrayList<>();
 	final List<ModDependency> breaks = new ArrayList<>();
-	public @Nullable Icons icons;
-	public ModLoadType loadType = ModLoadType.IF_REQUIRED;
-	final Collection<ModProvided> provides = new ArrayList<>();;
+	@Nullable Icons icons;
+	ModLoadType loadType = ModLoadType.IF_REQUIRED;
+	final Collection<ModProvided> provides = new ArrayList<>();
 	final Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
 	final Collection<AdapterLoadableClassEntry> plugins = new ArrayList<>();
 	final List<String> jars = new ArrayList<>();
@@ -39,20 +49,40 @@ final class V1ModMetadataBuilder {
 
 	final Collection<String> mixins = new ArrayList<>();
 	final Collection<String> accessWideners = new ArrayList<>();
-	public ModEnvironment env = ModEnvironment.UNIVERSAL;
+	ModEnvironment env = ModEnvironment.UNIVERSAL;
 
-	public V1ModMetadataBuilder(JsonLoaderValue.ObjectImpl root, String id, String group, Version version) {
-		this.root = root;
+	final @Nullable Set<ModMetadataField> fieldsPresent;
+
+	private V1ModMetadataBuilder(LoaderValue.LObject root, String id, String group, Version version, boolean tentative) {
+		this.root = (JsonLoaderValue.ObjectImpl) root;
 		this.id = id;
 		this.group = group;
 		this.version = version;
+		
+		if (tentative) {
+			fieldsPresent = EnumSet.copyOf(DEFAULT_SET);
+		} else {
+			fieldsPresent = null;
+		}
 	}
 
-	public void name(@Nullable String name) {
+	public static ModMetadataBuilder of(LoaderValue.LObject root, String id, String group, Version version) {
+		return new V1ModMetadataBuilder(root, id, group, version, false);
+	}
+
+	public static ModMetadataBuilder ofTentative(LoaderValue.LObject root, String id, String group, Version version) {
+		return new V1ModMetadataBuilder(root, id, group, version, true);
+	}
+
+	@Override
+	public ModMetadataBuilder name(String name) {
 		this.name = name;
+		fieldPresent();
+		return this;
 	}
 
-	public void description(@Nullable String description) {
+	@Override
+	public ModMetadataBuilder description(String description) {
 		this.description = description;
 	}
 

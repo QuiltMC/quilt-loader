@@ -24,16 +24,17 @@ import java.util.List;
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 
-class QuiltRuleDepOnly extends QuiltRuleDep {
+public class QuiltRuleDepOnly extends QuiltRuleDep {
 	final Logger logger;
 
 	final ModDependency.Only publicDep;
-	final List<ModLoadOptionCls> validOptions;
-	final List<ModLoadOptionCls> invalidOptions;
-	final List<ModLoadOptionCls> allOptions;
+	final List<ModLoadOption> validOptions;
+	final List<ModLoadOption> invalidOptions;
+	final List<ModLoadOption> allOptions;
 
 	final QuiltRuleDep unless;
 
@@ -62,8 +63,8 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 
 	@Override
 	public boolean onLoadOptionAdded(LoadOption option) {
-		if (option instanceof ModLoadOptionCls) {
-			ModLoadOptionCls mod = (ModLoadOptionCls) option;
+		if (option instanceof ModLoadOption) {
+			ModLoadOption mod = (ModLoadOption) option;
 
 			if (!mod.id().equals(publicDep.id().id())) {
 				return false;
@@ -78,14 +79,14 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 				validOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
-					logger.info("[ModSolver]  +  valid option: " + mod.fullString());
+					logger.info("[ModSolver]  +  valid option: " + mod);
 				}
 			} else {
 				invalidOptions.add(mod);
 
 				if (ModSolver.DEBUG_PRINT_STATE) {
 					String reason = groupMatches ? "mismatched group" : "wrong version";
-					logger.info("[ModSolver]  x  mismatching option: " + mod.fullString() + " because " + reason);
+					logger.info("[ModSolver]  x  mismatching option: " + mod + " because " + reason);
 				}
 			}
 			return true;
@@ -103,9 +104,12 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 
 	@Override
 	public void define(RuleDefiner definer) {
+		if (publicDep.shouldIgnore()) {
+			return;
+		}
 
 		boolean optional = publicDep.optional();
-		List<ModLoadOptionCls> options = optional ? invalidOptions : validOptions;
+		List<ModLoadOption> options = optional ? invalidOptions : validOptions;
 
 		if (optional && options.isEmpty()) {
 			return;
@@ -170,12 +174,12 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 		errors.append(invalidOptions.size());
 		errors.append(" invalid options)");
 
-		for (ModLoadOptionCls option : validOptions) {
-			errors.append("\n\t+ " + option.fullString());
+		for (ModLoadOption option : validOptions) {
+			errors.append("\n\t+ " + option);
 		}
 
-		for (ModLoadOptionCls option : invalidOptions) {
-			errors.append("\n\tx " + option.fullString());
+		for (ModLoadOption option : invalidOptions) {
+			errors.append("\n\tx " + option);
 		}
 	}
 }

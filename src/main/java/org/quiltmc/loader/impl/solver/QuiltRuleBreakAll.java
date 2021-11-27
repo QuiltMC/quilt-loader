@@ -63,6 +63,10 @@ public class QuiltRuleBreakAll extends QuiltRuleBreak {
 
 	@Override
 	public void define(RuleDefiner definer) {
+		if (publicDep.shouldIgnore()) {
+			return;
+		}
+
 		LoadOption[] array = new LoadOption[options.length + 1];
 		int i = 0;
 

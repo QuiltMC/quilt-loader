@@ -58,7 +58,7 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
  * <li>Perform optimisation of the rules.</li>
  * </ol>
  * This is (mostly) separated from any more specific rules */
-class Sat4jWrapper implements RuleContext {
+public class Sat4jWrapper implements RuleContext {
 
 	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
 
@@ -110,6 +110,19 @@ class Sat4jWrapper implements RuleContext {
 
 	public Sat4jSolveStep getStep() {
 		return step;
+	}
+
+	/** Clears out this {@link Sat4jWrapper} of all data EXCEPT the added {@link Rule}s and {@link LoadOption}s. */
+	public void resetStep() {
+		optionToIndex.clear();
+		indexToOption.clear();
+		explainer = null;
+		optimiser = null;
+		solver = null;
+		cancelled = false;
+		constraintToRule = null;
+		rulesChanged = true;
+		step = Sat4jSolveStep.DEFINE;
 	}
 
 	// ############
@@ -266,7 +279,7 @@ class Sat4jWrapper implements RuleContext {
 
 			explainer = null;
 			solver = new OptToPBSATAdapter(optimiser = new PseudoOptDecorator(SolverFactory.newDefault()));
-//			optimiser.setTimeoutForFindingBetterSolution(2);
+			// optimiser.setTimeoutForFindingBetterSolution(2);
 			step = Sat4jSolveStep.RE_SOLVING;
 			optionToIndex.clear();
 			indexToOption.clear();
@@ -335,7 +348,10 @@ class Sat4jWrapper implements RuleContext {
 			success = true;
 
 			if (LOG) {
-				logger.info("Sat4jWrapper: Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue() + " = " + Arrays.toString(optimiser.model()));
+				logger.info(
+					"Sat4jWrapper: Found solution #" + (++count) + " weight = " + optimiser.calculateObjective()
+						.intValue() + " = " + Arrays.toString(optimiser.model())
+				);
 			}
 
 			try {

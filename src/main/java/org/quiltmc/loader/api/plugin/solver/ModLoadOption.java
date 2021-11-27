@@ -1,29 +1,33 @@
 package org.quiltmc.loader.api.plugin.solver;
 
+import java.nio.file.Path;
+
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.FullModMetadata;
-import org.quiltmc.loader.api.plugin.ModCandidate;
+import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 
-public interface ModLoadOption {
+public abstract class ModLoadOption extends LoadOption {
 
-	/** @return The real candidate for this mod. Note that the candidates metadata might not be accurate, so you should
-	 *         always use {@link #metadata()} instead. (In particular the {@link ModLoadOption} for provided mods will
-	 *         return the candidate that is providing it, but different metadata). */
-	ModCandidate candidate();
+	public abstract FullModMetadata metadata();
 
-	default FullModMetadata metadata() {
-		return candidate().metadata();
-	}
+	/** @return The {@link Path} where this is loaded from. This should be either the Path that was passed to
+	 *         {@link QuiltLoaderPlugin#scanZip(Path)} or the Path that was passed to
+	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path)}. */
+	public abstract Path from();
 
-	default String group() {
+	// TODO: How do we turn this into a ModContainer?
+	// like... how should we handle mods that need remapping vs those that don't?
+	// plus how is that meant to work with caches in the future?
+
+	public final String group() {
 		return metadata().group();
 	}
 
-	default String id() {
+	public final String id() {
 		return metadata().id();
 	}
 
-	default Version version() {
+	public final Version version() {
 		return metadata().version();
 	}
 }

@@ -56,6 +56,8 @@ import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
+import org.quiltmc.loader.impl.plugin.QuiltPluginContextImpl;
+import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -197,6 +199,11 @@ public class QuiltLoaderImpl {
 	}
 
 	private void setup() throws ModResolutionException {
+
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderOptions());
+
+		ModSolveResultImpl resolt = plugins.run();
+
 		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));

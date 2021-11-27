@@ -14,8 +14,17 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 @ApiStatus.NonExtendable
 public interface QuiltPluginContext {
 
-	/** @return The global plugin manager, which is independant of specific contexts. */
+	/** @return The global plugin manager, which is independent of specific contexts. */
 	QuiltPluginManager manager();
+
+	/** @return The {@link Path} that the plugin is loaded from. Use this to lookup resources rather than
+	 *         {@link Class#getResource(String)}. */
+	Path pluginPath();
+
+	/** Adds an additional file to scan for mods, which will go through the same steps as files found in mod folders.
+	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
+	 * or vice versa. Or any mod type of which a loader plugin can load). */
+	void addFileToScan(Path file);
 
 	/** "Locks" a zip file that has been opened by {@link QuiltPluginManager#loadZip(Path)} so that it won't be unloaded
 	 * if no loaded mod is using it.

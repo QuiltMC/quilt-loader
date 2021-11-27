@@ -3,7 +3,9 @@ package org.quiltmc.loader.api.plugin;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModMetadata;
+import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
@@ -16,7 +18,8 @@ public interface FullModMetadata extends ModMetadata {
 
 	Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints();
 
-	Collection<AdapterLoadableClassEntry> getPlugins();
+	@Nullable
+	ModPlugin plugin();
 
 	Collection<String> jars();
 
@@ -24,9 +27,22 @@ public interface FullModMetadata extends ModMetadata {
 
 	Collection<String> repositories();
 
+	/** @return True if the builtin quilt plugin should generate {@link Rule}s based on the {@link #depends()} and
+	 *         {@link #breaks()} of this metadata. */
+	boolean isQuiltDeps();
+
 	/** @return True if the field is present, and the returned value for that field is the same as the future mod that
 	 *         will replace this {@link TentativeLoadOption}. */
 	boolean hasField(ModMetadataField field);
+
+	/** @return A {@link ModMetadataBuilder} that is NOT tentative. */
+	ModMetadataBuilder copyToBuilder();
+
+	public interface ModPlugin {
+		String pluginClass();
+
+		Collection<String> packages();
+	}
 
 	public enum ModMetadataField {
 		ID(false, true),

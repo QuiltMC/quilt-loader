@@ -18,6 +18,8 @@ package org.quiltmc.loader.api.plugin.solver;
 
 import java.util.Collection;
 
+import org.quiltmc.loader.api.ModDependency;
+
 /** Base definition of a link between one or more {@link LoadOption}s, that */
 public abstract class Rule {
 
@@ -30,6 +32,15 @@ public abstract class Rule {
 	/** @return true if {@link #define(RuleDefiner)} needs to be called again, or false if the removed option had no
 	 *         affect on this rule. */
 	public abstract boolean onLoadOptionRemoved(LoadOption option);
+
+	/** Called whenever a {@link LoadOption} is changed. Not all {@link Rule}s are expected to be able to update to all
+	 * changes - instead this affects only minor things, like whether {@link ModDependency#shouldIgnore()} is different.
+	 * 
+	 * @return True if {@link #define(RuleDefiner)} needs to be called again, or false if option changing doesn't affect
+	 *         this rule. */
+	public boolean onLoadOptionChanged(LoadOption option) {
+		return false;
+	}
 
 	public abstract void define(RuleDefiner definer);
 

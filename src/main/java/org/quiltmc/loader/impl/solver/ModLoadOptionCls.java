@@ -16,8 +16,7 @@
 
 package org.quiltmc.loader.impl.solver;
 
-import org.quiltmc.loader.api.Version;
-import org.quiltmc.loader.api.plugin.ModCandidate;
+import org.quiltmc.loader.api.plugin.FullModMetadata;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -26,7 +25,7 @@ import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 
 @Deprecated
-abstract class ModLoadOptionCls extends LoadOption implements ModLoadOption {
+abstract class ModLoadOptionCls extends ModLoadOption {
 	final ModCandidateCls candidate;
 
 	ModLoadOptionCls(ModCandidateCls candidate) {
@@ -42,8 +41,8 @@ abstract class ModLoadOptionCls extends LoadOption implements ModLoadOption {
 	}
 
 	@Override
-	public ModCandidate candidate() {
-		return candidate;
+	public FullModMetadata metadata() {
+		return candidate.getMetadata();
 	}
 
 	@Override
