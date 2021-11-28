@@ -30,6 +30,23 @@ public final class SystemProperties {
 	public static final String LOG_FILE = "quilt.log.file";
 	public static final String LOG_LEVEL = "quilt.log.level";
 
+	// TODO: check which of these is used
+	// additional mods to load (path separator separated paths, @ prefix for meta-file with each line referencing an actual file)
+	public static final String ADD_MODS = "quilt.addMods";
+	// throw exceptions from entrypoints, discovery etc. directly instead of gathering and attaching as suppressed
+	public static final String DEBUG_THROW_DIRECTLY = "quilt.debug.throwDirectly";
+	// logs class transformation errors to uncover caught exceptions without adequate logging
+	public static final String DEBUG_LOG_TRANSFORM_ERRORS = "quilt.debug.logTransformErrors";
+	// disables mod load order shuffling to be the same in-dev as in production
+	public static final String DEBUG_DISABLE_MOD_SHUFFLE = "quilt.debug.disableModShuffle";
+	// workaround for bad load order dependencies
+	public static final String DEBUG_LOAD_LATE = "quilt.debug.loadLate";
+	// override the mod discovery timeout, unit in seconds, <= 0 to disable
+	public static final String DEBUG_DISCOVERY_TIMEOUT = "quilt.debug.discoveryTimeout";
+	// override the mod resolution timeout, unit in seconds, <= 0 to disable
+	public static final String DEBUG_RESOLUTION_TIMEOUT = "quilt.debug.resolutionTimeout";
+	// replace mod versions (modA:versionA,modB:versionB,...)
+	public static final String DEBUG_REPLACE_VERSION = "quilt.debug.replaceVersion";
 	private SystemProperties() {
 	}
 }

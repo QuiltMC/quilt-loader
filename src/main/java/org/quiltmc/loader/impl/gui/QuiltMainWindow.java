@@ -25,12 +25,16 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -73,6 +77,10 @@ class QuiltMainWindow {
 			throw new HeadlessException();
 		}
 
+		// Set MacOS specific system props
+		System.setProperty("apple.awt.application.appearance", "system");
+		System.setProperty("apple.awt.application.name", "Quilt Loader");
+
 		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		open0(tree, shouldWait);
 	}
@@ -99,6 +107,7 @@ class QuiltMainWindow {
 			images.add(loadImage("/ui/icon/quilt_x16.png"));
 			images.add(loadImage("/ui/icon/quilt_x128.png"));
 			window.setIconImages(images);
+			setTaskBarImage(images.get(1));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -149,8 +158,17 @@ class QuiltMainWindow {
 			for (QuiltStatusButton button : tree.buttons) {
 				JButton btn = new JButton(button.text);
 				buttons.add(btn);
-				btn.addActionListener(e -> {
-					btn.setEnabled(false);
+				btn.addActionListener(event -> {
+					if (button.type == FabricBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
+
+					if (button.clipboard != null) {
+						try {
+							StringSelection clipboard = new StringSelection(button.clipboard);
+							Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
+						} catch (IllegalStateException e) {
+							//Clipboard unavailable?
+						}
+					}
 
 					if (button.shouldClose) {
 						window.dispose();
@@ -179,6 +197,7 @@ class QuiltMainWindow {
 		DefaultTreeModel model = new DefaultTreeModel(treeNode);
 		JTree tree = new JTree(model);
 		tree.setRootVisible(false);
+		tree.setRowHeight(0); // Allow rows to be multiple lines tall
 
 		for (int row = 0; row < tree.getRowCount(); row++) {
 			if (!tree.isVisible(tree.getPathForRow(row))) {
@@ -187,7 +206,7 @@ class QuiltMainWindow {
 
 			CustomTreeNode node = ((CustomTreeNode) tree.getPathForRow(row).getLastPathComponent());
 
-			if (node.node.expandByDefault || node.node.getMaximumWarningLevel().isAtLeast(FabricTreeWarningLevel.WARN)) {
+			if (node.node.expandByDefault) {
 				tree.expandRow(row);
 			}
 		}
@@ -213,6 +232,19 @@ class QuiltMainWindow {
 		}
 
 		return stream;
+	}
+
+	private static void setTaskBarImage(Image image) {
+		try {
+			// TODO Remove reflection when updating past Java 8
+			Class<?> taskbarClass = Class.forName("java.awt.Taskbar");
+			Method getTaskbar = taskbarClass.getDeclaredMethod("getTaskbar");
+			Method setIconImage = taskbarClass.getDeclaredMethod("setIconImage", Image.class);
+			Object taskbar = getTaskbar.invoke(null);
+			setIconImage.invoke(taskbar, image);
+		} catch (Exception e) {
+			// Ignored
+		}
 	}
 
 	static final class IconSet {
@@ -388,6 +420,7 @@ class QuiltMainWindow {
 
 		private CustomTreeCellRenderer(IconSet icons) {
 			this.iconSet = icons;
+			//setVerticalTextPosition(TOP); // Move icons to top rather than centre
 		}
 
 		@Override

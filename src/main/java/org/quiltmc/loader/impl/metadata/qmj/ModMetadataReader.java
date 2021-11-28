@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
@@ -43,7 +42,6 @@ public final class ModMetadataReader {
 	/**
 	 * Reads the {@code quilt.mod.json} at the supplied path
 	 *
-	 * @param logger the logger to emit warnings from
 	 * @param json the json file to read
 	 * @return an instance of mod metadata
 	 * @throws IOException if there are any issues reading the json file

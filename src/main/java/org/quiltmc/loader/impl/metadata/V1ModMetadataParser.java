@@ -35,7 +35,7 @@ import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
-import org.quiltmc.loader.impl.util.version.VersionDeserializer;
+import org.quiltmc.loader.impl.util.version.VersionParser;
 
 final class V1ModMetadataParser {
 	/**
@@ -46,7 +46,7 @@ final class V1ModMetadataParser {
 	 * @return the metadata of this file, null if the file could not be parsed
 	 * @throws IOException         if there was any issue reading the file
 	 */
-	static LoaderModMetadata parse(JsonReader reader) throws IOException, ParseMetadataException {
+	static FabricLoaderModMetadata parse(JsonReader reader) throws IOException, ParseMetadataException {
 		List<ParseWarning> warnings = new ArrayList<>();
 
 		// All the values the `fabric.mod.json` may contain:
@@ -61,19 +61,13 @@ final class V1ModMetadataParser {
 		ModEnvironment environment = ModEnvironment.UNIVERSAL; // Default is always universal
 		Map<String, List<EntrypointMetadata>> entrypoints = new HashMap<>();
 		List<NestedJarEntry> jars = new ArrayList<>();
-		List<V1ModMetadata.MixinEntry> mixins = new ArrayList<>();
+		List<V1ModMetadataFabric.MixinEntry> mixins = new ArrayList<>();
 		String accessWidener = null;
 
 		// Optional (dependency resolution)
-		Map<String, ModDependency> depends = new HashMap<>();
-		Map<String, ModDependency> recommends = new HashMap<>();
-		Map<String, ModDependency> suggests = new HashMap<>();
-		Map<String, ModDependency> conflicts = new HashMap<>();
-		Map<String, ModDependency> breaks = new HashMap<>();
-
+		List<ModDependency> dependencies = new ArrayList<>();
 		// Happy little accidents
-		@Deprecated
-		Map<String, ModDependency> requires = new HashMap<>();
+		boolean hasRequires = false;
 
 		// Optional (metadata)
 		String name = null;
@@ -82,7 +76,7 @@ final class V1ModMetadataParser {
 		List<Person> contributors = new ArrayList<>();
 		ContactInformation contact = null;
 		List<String> license = new ArrayList<>();
-		V1ModMetadata.IconEntry icon = null;
+		V1ModMetadataFabric.IconEntry icon = null;
 
 		// Optional (language adapter providers)
 		Map<String, String> languageAdapters = new HashMap<>();
@@ -121,7 +115,7 @@ final class V1ModMetadataParser {
 				}
 
 				try {
-					version = VersionDeserializer.deserialize(reader.nextString());
+					version = VersionParser.parse(reader.nextString(), false);
 				} catch (VersionParsingException e) {
 					throw new ParseMetadataException("Failed to parse version", e);
 				}
@@ -154,22 +148,23 @@ final class V1ModMetadataParser {
 				accessWidener = reader.nextString();
 				break;
 			case "depends":
-				readDependenciesContainer(reader, depends);
+				readDependenciesContainer(reader, ModDependency.Kind.DEPENDS, dependencies);
 				break;
 			case "recommends":
-				readDependenciesContainer(reader, recommends);
+				readDependenciesContainer(reader, ModDependency.Kind.RECOMMENDS, dependencies);
 				break;
 			case "suggests":
-				readDependenciesContainer(reader, suggests);
+				readDependenciesContainer(reader, ModDependency.Kind.SUGGESTS, dependencies);
 				break;
 			case "conflicts":
-				readDependenciesContainer(reader, conflicts);
+				readDependenciesContainer(reader, ModDependency.Kind.CONFLICTS, dependencies);
 				break;
 			case "breaks":
-				readDependenciesContainer(reader, breaks);
+				readDependenciesContainer(reader, ModDependency.Kind.BREAKS, dependencies);
 				break;
 			case "requires":
-				readDependenciesContainer(reader, requires);
+				hasRequires = true;
+				reader.skipValue();
 				break;
 			case "name":
 				if (reader.peek() != JsonToken.STRING) {
@@ -210,7 +205,9 @@ final class V1ModMetadataParser {
 				reader.skipValue();
 				break;
 			default:
-				warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
+				if (!ModMetadataParser.IGNORED_KEYS.contains(key)) {
+					warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
+				}
 				reader.skipValue();
 				break;
 			}
@@ -218,16 +215,19 @@ final class V1ModMetadataParser {
 
 		// Validate all required fields are resolved
 		if (id == null) {
-			throw new ParseMetadataException.MissingRequired("id");
+			throw new ParseMetadataException.MissingField("id");
 		}
 
 		if (version == null) {
-			throw new ParseMetadataException.MissingRequired("version");
+			throw new ParseMetadataException.MissingField("version");
 		}
 
 		FabricModMetadataReader.logWarningMessages(id, warnings);
 
-		return new V1ModMetadata(id, version, provides, environment, entrypoints, jars, mixins, accessWidener, depends, recommends, suggests, conflicts, breaks, requires, name, description, authors, contributors, contact, license, icon, languageAdapters, customValues);
+		return new V1ModMetadataFabric(id, version, provides,
+				environment, entrypoints, jars, mixins, accessWidener,
+				dependencies, hasRequires,
+				name, description, authors, contributors, contact, license, icon, languageAdapters, customValues);
 	}
 
 	private static void readProvides(JsonReader reader, List<String> provides) throws IOException, ParseMetadataException {
@@ -316,10 +316,10 @@ final class V1ModMetadataParser {
 				}
 
 				if (value == null) {
-					throw new ParseMetadataException.MissingRequired("Entrypoint value must be present");
+					throw new ParseMetadataException.MissingField("Entrypoint value must be present");
 				}
 
-				metadata.add(new V1ModMetadata.EntrypointMetadataImpl(adapter, value));
+				metadata.add(new V1ModMetadataFabric.EntrypointMetadataImpl(adapter, value));
 			}
 
 			reader.endArray();
@@ -367,13 +367,13 @@ final class V1ModMetadataParser {
 				throw new ParseMetadataException("Missing mandatory key 'file' in JAR entry!", reader);
 			}
 
-			jars.add(new V1ModMetadata.JarEntry(file));
+			jars.add(new V1ModMetadataFabric.JarEntry(file));
 		}
 
 		reader.endArray();
 	}
 
-	private static void readMixinConfigs(List<ParseWarning> warnings, JsonReader reader, List<V1ModMetadata.MixinEntry> mixins) throws IOException, ParseMetadataException {
+	private static void readMixinConfigs(List<ParseWarning> warnings, JsonReader reader, List<V1ModMetadataFabric.MixinEntry> mixins) throws IOException, ParseMetadataException {
 		if (reader.peek() != JsonToken.BEGIN_ARRAY) {
 			throw new ParseMetadataException("Mixin configs must be in an array", reader);
 		}
@@ -384,7 +384,7 @@ final class V1ModMetadataParser {
 			switch (reader.peek()) {
 			case STRING:
 				// All mixin configs specified via string are assumed to be universal
-				mixins.add(new V1ModMetadata.MixinEntry(reader.nextString(), ModEnvironment.UNIVERSAL));
+				mixins.add(new V1ModMetadataFabric.MixinEntry(reader.nextString(), ModEnvironment.UNIVERSAL));
 				break;
 			case BEGIN_OBJECT:
 				reader.beginObject();
@@ -420,10 +420,10 @@ final class V1ModMetadataParser {
 				}
 
 				if (config == null) {
-					throw new ParseMetadataException.MissingRequired("Missing mandatory key 'config' in mixin entry!");
+					throw new ParseMetadataException.MissingField("Missing mandatory key 'config' in mixin entry!");
 				}
 
-				mixins.add(new V1ModMetadata.MixinEntry(config, environment));
+				mixins.add(new V1ModMetadataFabric.MixinEntry(config, environment));
 				break;
 			default:
 				warnings.add(new ParseWarning(reader.locationString(), "Invalid mixin entry type"));
@@ -435,7 +435,7 @@ final class V1ModMetadataParser {
 		reader.endArray();
 	}
 
-	private static void readDependenciesContainer(JsonReader reader, Map<String, ModDependency> modDependencies) throws IOException, ParseMetadataException {
+	private static void readDependenciesContainer(JsonReader reader, ModDependency.Kind kind, List<ModDependency> out) throws IOException, ParseMetadataException {
 		if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 			throw new ParseMetadataException("Dependency container must be an object!", reader);
 		}
@@ -467,7 +467,11 @@ final class V1ModMetadataParser {
 				throw new ParseMetadataException("Dependency version range must be a string or string array!", reader);
 			}
 
-			modDependencies.put(modId, new ModDependencyImpl(modId, matcherStringList));
+			try {
+				out.add(new ModDependencyImpl(kind, modId, matcherStringList));
+			} catch (VersionParsingException e) {
+				throw new ParseMetadataException(e);
+			}
 		}
 
 		reader.endObject();
@@ -518,7 +522,7 @@ final class V1ModMetadataParser {
 				reader.endObject();
 
 				if (personName == null) {
-					throw new ParseMetadataException.MissingRequired("Person object must have a 'name' field!");
+					throw new ParseMetadataException.MissingField("Person object must have a 'name' field!");
 				}
 
 				if (contactInformation == null) {
@@ -583,10 +587,10 @@ final class V1ModMetadataParser {
 		}
 	}
 
-	private static V1ModMetadata.IconEntry readIcon(JsonReader reader) throws IOException, ParseMetadataException {
+	private static V1ModMetadataFabric.IconEntry readIcon(JsonReader reader) throws IOException, ParseMetadataException {
 		switch (reader.peek()) {
 		case STRING:
-			return new V1ModMetadata.Single(reader.nextString());
+			return new V1ModMetadataFabric.Single(reader.nextString());
 		case BEGIN_OBJECT:
 			reader.beginObject();
 
@@ -618,7 +622,7 @@ final class V1ModMetadataParser {
 				throw new ParseMetadataException("Icon object must not be empty!", reader);
 			}
 
-			return new V1ModMetadata.MapEntry(iconMap);
+			return new V1ModMetadataFabric.MapEntry(iconMap);
 		default:
 			throw new ParseMetadataException("Icon entry must be an object or string!", reader);
 		}

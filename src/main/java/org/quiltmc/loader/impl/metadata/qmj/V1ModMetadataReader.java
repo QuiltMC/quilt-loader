@@ -19,7 +19,6 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.*;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;

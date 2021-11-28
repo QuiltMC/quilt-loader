@@ -34,13 +34,13 @@ import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
-import org.quiltmc.loader.impl.util.version.VersionDeserializer;
+import org.quiltmc.loader.impl.util.version.VersionParser;
 
 final class V0ModMetadataParser {
 	private static final Pattern WEBSITE_PATTERN = Pattern.compile("\\((.+)\\)");
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("<(.+)>");
 
-	public static LoaderModMetadata parse(JsonReader reader) throws IOException, ParseMetadataException {
+	public static FabricLoaderModMetadata parse(JsonReader reader) throws IOException, ParseMetadataException {
 		List<ParseWarning> warnings = new ArrayList<>();
 
 		// All the values the `fabric.mod.json` may contain:
@@ -49,16 +49,14 @@ final class V0ModMetadataParser {
 		Version version = null;
 
 		// Optional (mod loading)
-		Map<String, ModDependency> requires = new HashMap<>();
-		Map<String, ModDependency> conflicts = new HashMap<>();
-		V0ModMetadata.Mixins mixins = null;
+		List<ModDependency> dependencies = new ArrayList<>();
+		V0ModMetadataFabric.Mixins mixins = null;
 		ModEnvironment environment = ModEnvironment.UNIVERSAL; // Default is always universal
 		String initializer = null;
 		List<String> initializers = new ArrayList<>();
 
 		String name = null;
 		String description = null;
-		Map<String, ModDependency> recommends = new HashMap<>();
 		List<Person> authors = new ArrayList<>();
 		List<Person> contributors = new ArrayList<>();
 		ContactInformation links = null;
@@ -96,17 +94,17 @@ final class V0ModMetadataParser {
 				final String rawVersion = reader.nextString();
 
 				try {
-					version = VersionDeserializer.deserialize(rawVersion);
+					version = VersionParser.parse(rawVersion, false);
 				} catch (VersionParsingException e) {
 					throw new ParseMetadataException(String.format("Failed to parse version: %s", rawVersion), e);
 				}
 
 				break;
 			case "requires":
-				readDependenciesContainer(reader, requires, "requires");
+				readDependenciesContainer(reader, ModDependency.Kind.DEPENDS, dependencies, "requires");
 				break;
 			case "conflicts":
-				readDependenciesContainer(reader, conflicts, "conflicts");
+				readDependenciesContainer(reader, ModDependency.Kind.BREAKS, dependencies, "conflicts");
 				break;
 			case "mixins":
 				mixins = readMixins(warnings, reader);
@@ -183,7 +181,7 @@ final class V0ModMetadataParser {
 				description = reader.nextString();
 				break;
 			case "recommends":
-				readDependenciesContainer(reader, recommends, "recommends");
+				readDependenciesContainer(reader, ModDependency.Kind.SUGGESTS, dependencies, "recommends");
 				break;
 			case "authors":
 				readPeople(warnings, reader, authors);
@@ -202,7 +200,9 @@ final class V0ModMetadataParser {
 				license = reader.nextString();
 				break;
 			default:
-				warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
+				if (!ModMetadataParser.IGNORED_KEYS.contains(key)) {
+					warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
+				}
 				reader.skipValue();
 				break;
 			}
@@ -210,11 +210,11 @@ final class V0ModMetadataParser {
 
 		// Validate all required fields are resolved
 		if (id == null) {
-			throw new ParseMetadataException.MissingRequired("id");
+			throw new ParseMetadataException.MissingField("id");
 		}
 
 		if (version == null) {
-			throw new ParseMetadataException.MissingRequired("version");
+			throw new ParseMetadataException.MissingField("version");
 		}
 
 		FabricModMetadataReader.logWarningMessages(id, warnings);
@@ -224,7 +224,7 @@ final class V0ModMetadataParser {
 			links = ContactInformation.EMPTY;
 		}
 
-		return new V0ModMetadata(id, version, requires, conflicts, mixins, environment, initializer, initializers, name, description, recommends, authors, contributors, links, license);
+		return new V0ModMetadataFabric(id, version, dependencies, mixins, environment, initializer, initializers, name, description, authors, contributors, links, license);
 	}
 
 	private static ContactInformation readLinks(List<ParseWarning> warnings, JsonReader reader) throws IOException, ParseMetadataException {
@@ -277,7 +277,7 @@ final class V0ModMetadataParser {
 		return new MapBackedContactInformation(contactInfo);
 	}
 
-	private static V0ModMetadata.Mixins readMixins(List<ParseWarning> warnings, JsonReader reader) throws IOException, ParseMetadataException {
+	private static V0ModMetadataFabric.Mixins readMixins(List<ParseWarning> warnings, JsonReader reader) throws IOException, ParseMetadataException {
 		final List<String> client = new ArrayList<>();
 		final List<String> common = new ArrayList<>();
 		final List<String> server = new ArrayList<>();
@@ -308,7 +308,7 @@ final class V0ModMetadataParser {
 		}
 
 		reader.endObject();
-		return new V0ModMetadata.Mixins(client, common, server);
+		return new V0ModMetadataFabric.Mixins(client, common, server);
 	}
 
 	private static List<String> readStringArray(JsonReader reader, String key) throws IOException, ParseMetadataException {
@@ -337,7 +337,7 @@ final class V0ModMetadataParser {
 		}
 	}
 
-	private static void readDependenciesContainer(JsonReader reader, Map<String, ModDependency> dependencies, String name) throws IOException, ParseMetadataException {
+	private static void readDependenciesContainer(JsonReader reader, ModDependency.Kind kind, List<ModDependency> dependencies, String name) throws IOException, ParseMetadataException {
 		if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 			throw new ParseMetadataException(String.format("%s must be an object containing dependencies.", name), reader);
 		}
@@ -369,7 +369,11 @@ final class V0ModMetadataParser {
 				throw new ParseMetadataException("Expected version to be a string or array", reader);
 			}
 
-			dependencies.put(modId, new ModDependencyImpl(modId, versionMatchers));
+			try {
+				dependencies.add(new ModDependencyImpl(kind, modId, versionMatchers));
+			} catch (VersionParsingException e) {
+				throw new ParseMetadataException(e);
+			}
 		}
 
 		reader.endObject();

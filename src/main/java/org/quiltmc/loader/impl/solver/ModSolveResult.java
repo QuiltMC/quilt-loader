@@ -36,6 +36,7 @@ public final class ModSolveResult {
 		this.extraResults = extraResults;
 	}
 
+	@SuppressWarnings("unchecked")
 	public <O extends LoadOption> LoadOptionResult<O> getResult(Class<O> optionClass) {
 		LoadOptionResult<?> result = extraResults.get(optionClass);
 		if (result == null) {

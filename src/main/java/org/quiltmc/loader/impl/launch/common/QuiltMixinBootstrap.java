@@ -17,23 +17,29 @@
 package org.quiltmc.loader.impl.launch.common;
 
 import net.fabricmc.api.EnvType;
+
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.VersionParsingException;
+
+import org.quiltmc.loader.impl.ModContainerImpl;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.api.ModContainer;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
 import net.fabricmc.mapping.tree.TinyTree;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+
 import org.spongepowered.asm.launch.MixinBootstrap;
+import org.spongepowered.asm.mixin.FabricUtil;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.Mixins;
+import org.spongepowered.asm.mixin.extensibility.IMixinConfig;
+import org.spongepowered.asm.mixin.transformer.Config;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class QuiltMixinBootstrap {
 	private QuiltMixinBootstrap() { }
@@ -45,11 +51,12 @@ public final class QuiltMixinBootstrap {
 	}
 
 	static Set<String> getMixinConfigs(QuiltLoaderImpl loader, EnvType type) {
-		Set<String> set = new HashSet<>();
-		for (org.quiltmc.loader.impl.ModContainer mod : loader.getMods()) {
-			set.addAll(mod.getInternalMeta().mixins(type));
-		}
-		return set;
+//		return loader.getAllMods().stream()
+//				.map(ModContainer::metadata)
+//				.filter((m) -> m instanceof FabricLoaderModMetadata)
+//				.flatMap((m) -> ((FabricLoaderModMetadata) m).getMixinConfigs(type).stream())
+//				.filter(s -> s != null && !s.isEmpty())
+//				.collect(Collectors.toSet());
 	}
 
 	public static void init(EnvType side, QuiltLoaderImpl loader) {
@@ -81,6 +88,108 @@ public final class QuiltMixinBootstrap {
 
 		MixinBootstrap.init();
 		getMixinConfigs(loader, side).forEach(QuiltMixinBootstrap::addConfiguration);
+
+		Map<String, ModContainerImpl> configToModMap = new HashMap<>();
+
+		for (ModContainerImpl mod : loader.getMods()) {
+			for (String config : mod.metadata().getMixinConfigs(side)) {
+				ModContainerImpl prev = configToModMap.putIfAbsent(config, mod);
+				if (prev != null) throw new RuntimeException(String.format("Non-unique Mixin config name %s used by the mods %s and %s", config, prev.getMetadata().getId(), mod.getMetadata().getId()));
+
+				try {
+					Mixins.addConfiguration(config);
+				} catch (Throwable t) {
+					throw new RuntimeException(String.format("Error creating Mixin config %s for mod %s", config, mod.getMetadata().getId()), t);
+				}
+			}
+		}
+
+		for (Config config : Mixins.getConfigs()) {
+			ModContainerImpl mod = configToModMap.get(config.getName());
+			if (mod == null) continue;
+		}
+
+		try {
+			IMixinConfig.class.getMethod("decorate", String.class, Object.class);
+			MixinConfigDecorator.apply(configToModMap);
+		} catch (NoSuchMethodException e) {
+			Log.info(LogCategory.MIXIN, "Detected old Mixin version without config decoration support");
+		}
+
 		initialized = true;
+	}
+
+	private static final class MixinConfigDecorator {
+		private static final List<LoaderMixinVersionEntry> versions = new ArrayList<>();
+
+		static {
+			// maximum loader version and bundled fabric mixin version, DESCENDING ORDER, LATEST FIRST
+			// loader versions with new mixin versions need to be added here
+
+			// addVersion("0.13", FabricUtil.COMPATIBILITY_0_11_0); // example for next entry (latest first!)
+			addVersion("0.12.0-", FabricUtil.COMPATIBILITY_0_10_0);
+		}
+
+		static void apply(Map<String, ModContainerImpl> configToModMap) {
+			for (Config rawConfig : Mixins.getConfigs()) {
+				ModContainerImpl mod = configToModMap.get(rawConfig.getName());
+				if (mod == null) continue;
+
+				IMixinConfig config = rawConfig.getConfig();
+				config.decorate(FabricUtil.KEY_MOD_ID, mod.metadata().id());
+				config.decorate(FabricUtil.KEY_COMPATIBILITY, getMixinCompat(mod));
+			}
+		}
+
+		private static int getMixinCompat(ModContainerImpl mod) {
+			// infer from loader dependency by determining the least relevant loader version the mod accepts
+			// AND any loader deps
+
+//			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
+//
+//			for (ModDependency dep : mod.metadata().depends()) {
+//				if (dep.getModId().equals("fabricloader") || dep.getModId().equals("fabric-loader")) {
+//					if (dep.getKind() == Kind.DEPENDS) {
+//						reqIntervals = VersionInterval.and(reqIntervals, dep.getVersionIntervals());
+//					} else if (dep.getKind() == Kind.BREAKS) {
+//						reqIntervals = VersionInterval.and(reqIntervals, VersionInterval.not(dep.getVersionIntervals()));
+//					}
+//				}
+//			}
+//
+//			if (reqIntervals.isEmpty()) throw new IllegalStateException("mod "+mod+" is incompatible with every loader version?"); // shouldn't get there
+//
+//			Version minLoaderVersion = reqIntervals.get(0).getMin(); // it is sorted, to 0 has the absolute lower bound
+//
+//			if (minLoaderVersion != null) { // has a lower bound
+//				for (LoaderMixinVersionEntry version : versions) {
+//					if (minLoaderVersion.compareTo(version.loaderVersion) >= 0) { // lower bound is >= current version
+//						return version.mixinVersion;
+//					} else {
+//						break;
+//					}
+//				}
+//			}
+
+			return FabricUtil.COMPATIBILITY_0_9_2;
+		}
+
+		private static void addVersion(String minLoaderVersion, int mixinCompat) {
+			try {
+				versions.add(new LoaderMixinVersionEntry(SemanticVersion.parse(minLoaderVersion), mixinCompat));
+			} catch (VersionParsingException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		private static final class LoaderMixinVersionEntry {
+			final SemanticVersion loaderVersion;
+			final int mixinVersion;
+
+			LoaderMixinVersionEntry(SemanticVersion loaderVersion, int mixinVersion) {
+				this.loaderVersion = loaderVersion;
+				this.mixinVersion = mixinVersion;
+			}
+		}
 	}
 }

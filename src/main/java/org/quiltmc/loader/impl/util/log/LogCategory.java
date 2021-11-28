@@ -34,10 +34,12 @@ public final class LogCategory {
 	public static final LogCategory SOLVING = new LogCategory("Solving");
 	public static final LogCategory TEST = new LogCategory("Test");
 
+	public static final String SEPARATOR = "/";
+
 	public final String name;
 	public Object data;
 
 	public LogCategory(String... names) {
-		this.name = String.join("/", names);
+		this.name = String.join(SEPARATOR, names);
 	}
 }

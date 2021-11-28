@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import net.fabricmc.loader.api.ObjectShare;
+
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
@@ -58,6 +60,11 @@ public class Quilt2FabricLoader implements FabricLoader {
 		} catch (EntrypointException e) {
 			throw new net.fabricmc.loader.api.EntrypointException(e.getKey(), e);
 		}
+	}
+
+	@Override
+	public ObjectShare getObjectShare() {
+		return QuiltLoader.getObjectShare();
 	}
 
 	@Override

@@ -1,0 +1,64 @@
+/*
+ * Copyright 2016 FabricMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.quiltmc.loader.impl.game.minecraft;
+
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.impl.util.log.LogHandler;
+import org.quiltmc.loader.impl.util.log.LogLevel;
+
+public final class Log4jLogHandler implements LogHandler {
+	@Override
+	public boolean shouldLog(LogLevel level, LogCategory category) {
+		return getLogger(category).isEnabled(translateLogLevel(level));
+	}
+
+	@Override
+	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean isReplayedBuiltin) {
+		// TODO: suppress console log output if isReplayedBuiltin is true to avoid duplicate output
+		getLogger(category).log(translateLogLevel(level), msg, exc);
+	}
+
+	private static Logger getLogger(LogCategory category) {
+		Logger ret = (Logger) category.data;
+
+		if (ret == null) {
+			String name = category.name.isEmpty() ? Log.NAME : String.format("%s/%s", Log.NAME, category.name);
+			category.data = ret = LogManager.getLogger(name);
+		}
+
+		return ret;
+	}
+
+	private static Level translateLogLevel(LogLevel level) {
+		// can't use enum due to it generating a nested class, which would have to be on the same class loader as Log4jLogHandler
+		if (level == LogLevel.ERROR) return Level.ERROR;
+		if (level == LogLevel.WARN) return Level.WARN;
+		if (level == LogLevel.INFO) return Level.INFO;
+		if (level == LogLevel.DEBUG) return Level.DEBUG;
+		if (level == LogLevel.TRACE) return Level.TRACE;
+
+		throw new IllegalArgumentException("unknown log level: "+level);
+	}
+
+	@Override
+	public void close() { }
+}

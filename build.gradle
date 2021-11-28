@@ -1,10 +1,18 @@
+buildscript {
+	dependencies {
+		classpath 'com.guardsquare:proguard-gradle:' + (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_11) ? '7.2.0-beta2' : '7.1.0')
+	}
+}
+
 plugins {
 	id "java-library"
 	id 'idea'
 	id 'eclipse'
 	id 'maven-publish'
-	id("org.cadixdev.licenser") version "0.5.0"
-	id("checkstyle")
+	id 'checkstyle'
+	id 'org.cadixdev.licenser' version '0.6.1'
+	id 'fabric-loom' version '0.9-SNAPSHOT' apply false
+	id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
 def javaVersion = JavaVersion.VERSION_1_8
@@ -12,80 +20,67 @@ def javaVersion = JavaVersion.VERSION_1_8
 archivesBaseName = "quilt-loader"
 
 def ENV = System.getenv()
-version = version + (ENV.GITHUB_ACTIONS ? (ENV.SNAPSHOTS_URL ? "-SNAPSHOT" : "") : "+local")
 
-checkstyle {
-	configFile = file("checkstyle.xml")
-	toolVersion = '8.31'
+allprojects {
+	apply plugin: 'java-library'
+	apply plugin: 'eclipse'
+	apply plugin: 'checkstyle'
+
+	version = version + (ENV.GITHUB_ACTIONS ? (ENV.SNAPSHOTS_URL ? "-SNAPSHOT" : "") : "+local")
+
+	repositories {
+		maven {
+			name = 'Fabric'
+			url = 'https://maven.quiltmc.org/repository/fabricmc'
+		}
+		maven {
+			name = 'Quilt'
+			url = 'https://maven.quiltmc.org/repository/release'
+		}
+		mavenCentral()
+		maven {
+			name = 'mojang'
+			url = 'https://libraries.minecraft.net/'
+		}
+	}
 }
 
-repositories {
-	mavenCentral()
 
-	maven {
-		name = 'Quilt'
-		url = 'https://maven.quiltmc.org/repository/release'
-	}
+configurations {
+	include
 
-	maven {
-		name = 'Mojang'
-		url = 'https://libraries.minecraft.net/'
-	}
-
-	maven {
-		name = "Fabric"
-		url = "https://maven.quiltmc.org/repository/fabricmc"
+	implementation {
+		extendsFrom include
 	}
 }
 
 dependencies {
-	// TODO: Remove when we bump major version
-	api("com.google.code.gson:gson:2.8.0")
+	// fabric-loader dependencies
+	api "org.ow2.asm:asm:${project.asmVersion}"
+	api "org.ow2.asm:asm-analysis:${project.asmVersion}"
+	api "org.ow2.asm:asm-commons:${project.asmVersion}"
+	api "org.ow2.asm:asm-tree:${project.asmVersion}"
+	api "org.ow2.asm:asm-util:${project.asmVersion}"
 
-	// FIXME: Match logger from MC for now until we detach from it
-	implementation("org.apache.logging.log4j:log4j-api:2.14.1")
-	implementation("org.apache.logging.log4j:log4j-core:2.14.1")
+	api('net.fabricmc:sponge-mixin:0.10.6+mixin.0.8.4') {
+		exclude module: 'launchwrapper'
+		exclude module: 'guava'
+	}
 
-	implementation("org.ow2.asm:asm:$project.asmVersion")
-	implementation("org.ow2.asm:asm-analysis:$project.asmVersion")
-	implementation("org.ow2.asm:asm-commons:$project.asmVersion")
-	implementation("org.ow2.asm:asm-tree:$project.asmVersion")
-	implementation("org.ow2.asm:asm-util:$project.asmVersion")
-
-	// ASM is required for the mixin annotation processor
-	annotationProcessor("org.ow2.asm:asm:$project.asmVersion")
-	annotationProcessor("org.ow2.asm:asm-analysis:$project.asmVersion")
-	annotationProcessor("org.ow2.asm:asm-commons:$project.asmVersion")
-	annotationProcessor("org.ow2.asm:asm-tree:$project.asmVersion")
-	annotationProcessor("org.ow2.asm:asm-util:$project.asmVersion")
-
-	implementation("net.fabricmc:sponge-mixin:$project.mixinVersion") {
-		exclude module: "launchwrapper"
+	// FIXME: Upstream has a version that doesn't require jimfs; we should use that instead
+	implementation("com.google.jimfs:jimfs:1.2") {
 		exclude module: "guava"
 	}
 
-	implementation("org.quiltmc:quilt-json5:$project.json5Version") // TODO: shadow me
-	implementation("net.fabricmc:tiny-mappings-parser:$project.tinyMappingsParserVersion")
-	implementation("net.fabricmc:tiny-remapper:$project.tinyRemapperVersion")
-	implementation("net.fabricmc:access-widener:$project.accessWidenerVersion")
-
-	implementation("com.google.jimfs:jimfs:$project.jimfsVersion") {
-		exclude module: "guava"
-	}
-
-	// FIXME: Shadow this in jimfs
 	implementation("com.google.guava:guava:21.0")
 
-	implementation("org.quiltmc:quilt-loader-sat4j:$project.sat4jVersion")
+	api 'net.fabricmc:tiny-mappings-parser:0.3.0+build.17'
+	api 'net.fabricmc:tiny-remapper:0.6.0'
+	api 'net.fabricmc:access-widener:2.0.1'
+	api 'org.quiltmc:quilt-json5:1.0.0'
+	include 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
-	// launchwrapper + dependencies
-	implementation("net.minecraft:launchwrapper:$project.launchwrapperVersion") {
-		transitive = false
-	}
-
-	implementation("net.sf.jopt-simple:jopt-simple:$project.joptsimpleVersion")
-
-	testCompileOnly("org.jetbrains:annotations:$project.jbAnnotationsVersions")
+	testCompileOnly 'org.jetbrains:annotations:21.0.1'
 
 	// Unit testing
 	testImplementation(platform("org.junit:junit-bom:$project.junitVersion"))
@@ -113,35 +108,120 @@ java {
 }
 
 jar {
+	enabled = false
+	// Set the classifier to fix gradle task validation confusion.
+	archiveClassifier = "disabled"
+}
+
+shadowJar {
+	// Has stupid defaults, make our own
+	enabled = false
+}
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+// Renaming in the shadow jar task doesnt seem to work, so do it here
+task getSat4jAbout(type: Copy) {
+	dependsOn project.configurations.include
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
+	from {
+		configurations.include.collect {
+			zipTree(it).matching {
+				include 'about.html'
+			}
+		}
+	}
+
+	rename 'about.html', 'net/fabricmc/loader/impl/lib/sat4j/about-sat4j.html'
+
+	into layout.buildDirectory.dir("sat4j")
+}
+
+task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
+	from sourceSets.main.output
+	from project(":minecraft").sourceSets.main.output
+	from getSat4jAbout.destinationDir
+	from("LICENSE") {
+		rename { "${it}_${project.archivesBaseName}"}
+	}
+
 	manifest {
 		attributes (
 			"Main-Class": "org.quiltmc.impl.launch.server.QuiltServerLauncher"
 		)
 	}
 
-	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
-	}
+	archiveClassifier = "fat"
+	configurations = [project.configurations.include]
+
+	relocate 'org.sat4j', 'net.fabricmc.loader.impl.lib.sat4j'
+
+	exclude 'about.html'
+	exclude 'sat4j.version'
+	exclude 'META-INF/maven/org.ow2.sat4j/*/**'
+
+	outputs.upToDateWhen { false }
 }
 
-task copyJson(type: Copy, dependsOn: ["jar"]) {
-	from('src/main/resources/quilt-installer.json') {
-		rename { "${archivesBaseName}-${version}.json" }
+File proguardFile = file("build/libs/fabric-loader-${version}.jar")
+
+import proguard.gradle.ProGuardTask
+task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
+	def classpath = project(":minecraft").configurations.compileClasspath
+
+	inputs.files(fatJar, classpath)
+	outputs.files(proguardFile)
+	outputs.upToDateWhen { false }
+
+	doFirst {
+		classpath.resolve().forEach {
+			libraryjars it
+		}
 	}
 
-	into 'build/libs'
+	libraryjars JavaVersion.current().java9Compatible ? "${System.getProperty('java.home')}/jmods" : "${System.getProperty('java.home')}/lib/rt.jar"
+
+	injars fatJar.archiveFile
+	outjars proguardFile
+	configuration file("proguard.conf")
+}
+build.dependsOn proguardJar
+
+tasks.withType(AbstractArchiveTask) {
+	preserveFileTimestamps = false
+	reproducibleFileOrder = true
 }
 
-task copyJsonLw(type: Copy, dependsOn: ["jar"]) {
-	from('src/main/resources/quilt-installer.launchwrapper.json') {
-		rename { "${archivesBaseName}-${version}.launchwrapper.json" }
+sourcesJar {
+	from sourceSets.main.allSource
+	from project(":minecraft").sourceSets.main.allSource
+}
+
+// useful for creating test mod jar
+task testJar(type: Jar) {
+	archiveClassifier = "test"
+	from sourceSets.test.output
+}
+
+
+
+task copyJson() {
+	def inJson = file('src/main/resources/quilt-installer.json')
+	def inLwJson = file('src/main/resources/quilt-installer.launchwrapper.json')
+
+	def outJson = file("build/libs/${archivesBaseName}-${version}.json")
+	def outLwJson = file("build/libs/${archivesBaseName}-${version}.launchwrapper.json")
+
+	inputs.files (inJson, inLwJson)
+	outputs.files(outJson, outLwJson)
+
+	doLast {
+		outJson.text = inJson.text
+		outLwJson.text = inLwJson.text
 	}
-
-	into 'build/libs'
 }
-
 tasks.build.dependsOn "copyJson"
-tasks.build.dependsOn "copyJsonLw"
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
@@ -176,25 +256,46 @@ javadoc {
 	classpath = sourceSets.main.compileClasspath + sourceSets.main.output // compile impl stuff for dep as well
 	include("**/api/**")
 	// workaround as one of the api stuff use that package
-	failOnError = false
+	failOnError false
 }
 
-license {
-	header file("codeformat/FABRIC-HEADER")
-	include '**/*.java'
+
+build.dependsOn javadocJar
+
+allprojects {
+	checkstyle {
+		configFile = project.rootProject.file("checkstyle.xml")
+		toolVersion = '8.44'
+	}
+
+	license {
+		header project.rootProject.file("codeformat/FABRIC-HEADER")
+		include '**/*.java'
+
+		// Exclude gson since it is google's code, we just modify and bundle it
+		exclude '**/lib/gson/*.java'
+	}
+}
+
+// Causes more trouble than its worth
+tasks.withType(GenerateModuleMetadata) {
+	enabled = false
 }
 
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			from components.java
-
-			artifact(file('src/main/resources/quilt-installer.json')) {
-				builtBy jar
+			// add all the jars that should be included when publishing to maven
+			artifact(proguardFile) {
+				builtBy proguardJar
 			}
-
-			artifact(file('src/main/resources/quilt-installer.launchwrapper.json')) {
-				builtBy jar
+			artifact(sourcesJar)
+			artifact javadocJar
+			artifact(file('src/main/resources/fabric-installer.json')) {
+				builtBy copyJson
+			}
+			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
+				builtBy copyJson
 				classifier = "launchwrapper"
 			}
 		}

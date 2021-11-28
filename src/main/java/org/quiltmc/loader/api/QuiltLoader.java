@@ -21,6 +21,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import net.fabricmc.loader.api.ObjectShare;
+
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
@@ -188,6 +190,25 @@ public final class QuiltLoader {
 	 */
 	public static String[] getLaunchArguments(boolean sanitize) {
 		return impl().getLaunchArguments(sanitize);
+	}
+
+	/**
+	 * Get the object share for inter-mod communication.
+	 *
+	 * <p>The share allows mods to exchange data without directly referencing each other. This makes simple interaction
+	 * easier by eliminating any compile- or run-time dependencies if the shared value type is independent of the mod
+	 * (only Java/game/Fabric types like collections, primitives, String, Consumer, Function, ...).
+	 *
+	 * <p>Active interaction is possible as well since the shared values can be arbitrary Java objects. For example
+	 * exposing a {@code Runnable} or {@code Function} allows the "API" user to directly invoke some program logic.
+	 *
+	 * <p>It is required to prefix the share key with the mod id like {@code mymod:someProperty}. Mods should not
+	 * modify entries by other mods. The share is thread safe.
+	 *
+	 * @return the global object share instance
+	 */
+	public static ObjectShare getObjectShare() {
+		return impl().getObjectShare();
 	}
 
 	private static QuiltLoaderImpl impl() {

@@ -17,7 +17,7 @@
 package org.quiltmc.loader.impl.solver;
 
 import org.quiltmc.loader.impl.discovery.ModCandidate;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 
 class MainModLoadOption extends ModLoadOption {
 	/** Used to identify this {@link MainModLoadOption} against others with the same modid. A value of -1 indicates that
@@ -40,7 +40,7 @@ class MainModLoadOption extends ModLoadOption {
 
 	@Override
 	String getSpecificInfo() {
-		LoaderModMetadata info = candidate.getInfo();
+		FabricLoaderModMetadata info = candidate.getInfo();
 		return "version " + info.getVersion() + " loaded from " + getLoadSource();
 	}
 

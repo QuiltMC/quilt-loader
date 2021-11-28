@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.entrypoint;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -56,11 +57,11 @@ public final class EntrypointUtils {
 			try {
 				invoker.accept(container);
 			} catch (Throwable t) {
-				if (exception == null) {
-					exception = new RuntimeException("Could not execute entrypoint stage '" + name + "' due to errors, provided by '" + container.getProvider().metadata().id() + "'!", t);
-				} else {
-					exception.addSuppressed(t);
-				}
+				exception = ExceptionUtil.gatherExceptions(t,
+						exception,
+						exc -> new RuntimeException(String.format("Could not execute entrypoint stage '%s' due to errors, provided by '%s'!",
+								name, container.getProvider().metadata().id()),
+								exc));
 			}
 		}
 

@@ -101,11 +101,13 @@ public final class Log {
 	}
 
 	public static void log(LogLevel level, LogCategory category, String msg) {
-		log(handler, level, category, msg, null);
+		LogHandler handler = Log.handler;
+		if (handler.shouldLog(level, category)) log(handler, level, category, msg, null);
 	}
 
 	public static void log(LogLevel level, LogCategory category, String msg, Throwable exc) {
-		log(handler, level, category, msg, exc);
+		LogHandler handler = Log.handler;
+		if (handler.shouldLog(level, category)) log(handler, level, category, msg, exc);
 	}
 
 	public static void logFormat(LogLevel level, LogCategory category, String format, Object... args) {
@@ -151,18 +153,43 @@ public final class Log {
 
 	private static int getRequiredArgs(String format) {
 		int ret = 0;
+		int minRet = 0;
 		boolean wasPct = false;
 
 		for (int i = 0, max = format.length(); i < max; i++) {
-			if (format.charAt(i) == '%') {
+			char c = format.charAt(i);
+
+			if (c == '%') {
 				wasPct = !wasPct;
 			} else if (wasPct) {
-				ret++;
 				wasPct = false;
+
+				if (c == 'n' || c == '<') { // not %n or %<x
+					continue;
+				}
+
+				if (c >= '0' && c <= '9') { // abs indexing %12$
+					int start = i;
+
+					while (i + 1 < format.length()
+							&& (c = format.charAt(i + 1)) >= '0' && c <= '9') {
+						i++;
+					}
+
+					if (i + 1 < format.length() && format.charAt(i + 1) == '$') {
+						i++;
+						minRet = Math.max(minRet, Integer.parseInt(format.substring(start, i)) + 1);
+						continue;
+					} else {
+						i = start;
+					}
+				}
+
+				ret++;
 			}
 		}
 
-		return ret;
+		return Math.max(ret, minRet);
 	}
 
 	private static void log(LogHandler handler, LogLevel level, LogCategory category, String msg, Throwable exc) {

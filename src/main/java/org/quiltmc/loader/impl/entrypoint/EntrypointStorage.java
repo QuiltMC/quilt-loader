@@ -19,12 +19,9 @@ package org.quiltmc.loader.impl.entrypoint;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
-import org.quiltmc.loader.impl.ModContainer;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.entrypoint.EntrypointContainerImpl;
-import org.quiltmc.loader.impl.entrypoint.QuiltEntrypointException;
+import org.quiltmc.loader.api.entrypoint.EntrypointException;
+import org.quiltmc.loader.impl.ModContainerImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -34,8 +31,9 @@ import java.util.*;
 public final class EntrypointStorage {
 	interface Entry {
 		<T> T getOrCreate(Class<T> type) throws Exception;
+		boolean isOptional();
 
-		ModContainer getModContainer();
+		ModContainerImpl getModContainer();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -44,12 +42,12 @@ public final class EntrypointStorage {
 			.missingSuperclassBehaviour(org.quiltmc.loader.impl.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
 			.build();
 
-		private final ModContainer mod;
+		private final ModContainerImpl mod;
 		private final String languageAdapter;
 		private final String value;
 		private Object object;
 
-		private OldEntry(ModContainer mod, String languageAdapter, String value) {
+		private OldEntry(ModContainerImpl mod, String languageAdapter, String value) {
 			this.mod = mod;
 			this.languageAdapter = languageAdapter;
 			this.value = value;
@@ -76,18 +74,23 @@ public final class EntrypointStorage {
 		}
 
 		@Override
-		public ModContainer getModContainer() {
+		public boolean isOptional() {
+			return true;
+		}
+
+		@Override
+		public ModContainerImpl getModContainer() {
 			return mod;
 		}
 	}
 
 	private static final class NewEntry implements Entry {
-		private final ModContainer mod;
+		private final ModContainerImpl mod;
 		private final LanguageAdapter adapter;
 		private final String value;
 		private final Map<Class<?>, Object> instanceMap = new HashMap<>(1);
 
-		NewEntry(ModContainer mod, LanguageAdapter adapter, String value) {
+		NewEntry(ModContainerImpl mod, LanguageAdapter adapter, String value) {
 			this.mod = mod;
 			this.adapter = adapter;
 			this.value = value;
@@ -100,18 +103,27 @@ public final class EntrypointStorage {
 
 		@SuppressWarnings("unchecked")
 		@Override
-		public <T> T getOrCreate(Class<T> type) throws Exception {
-			return (T) instanceMap.computeIfAbsent(type, t -> {
-				try {
-					return adapter.create(mod, value, t);
-				} catch (LanguageAdapterException ex) {
-					throw sneakyThrows(ex);
-				}
-			});
+		public synchronized <T> T getOrCreate(Class<T> type) throws Exception {
+			// this impl allows reentrancy (unlike computeIfAbsent)
+			T ret = (T) instanceMap.get(type);
+
+			if (ret == null) {
+				ret = adapter.create(mod, value, type);
+				assert ret != null;
+				T prev = (T) instanceMap.putIfAbsent(type, ret);
+				if (prev != null) ret = prev;
+			}
+
+			return ret;
 		}
 
 		@Override
-		public ModContainer getModContainer() {
+		public boolean isOptional() {
+			return false;
+		}
+
+		@Override
+		public ModContainerImpl getModContainer() {
 			return mod;
 		}
 	}
@@ -122,20 +134,20 @@ public final class EntrypointStorage {
 		return entryMap.computeIfAbsent(key, (z) -> new ArrayList<>());
 	}
 
-	public void addDeprecated(ModContainer modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
-		Log.debug(LogCategory.ENTRYPOINT, "Registering 0.3.x old-style initializer " + value + " for mod " + modContainer.metadata().id());
+	public void addDeprecated(ModContainerImpl modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
+		Log.debug(LogCategory.ENTRYPOINT, "Registering 0.3.x old-style initializer %s for mod %s", value, modContainer.metadata().id());
 		OldEntry oe = new OldEntry(modContainer, adapter, value);
 		getOrCreateEntries("main").add(oe);
 		getOrCreateEntries("client").add(oe);
 		getOrCreateEntries("server").add(oe);
 	}
 
-	public void add(ModContainer modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
+	public void add(ModContainerImpl modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
 		if (!adapterMap.containsKey(metadata.getAdapter())) {
 			throw new Exception("Could not find adapter '" + metadata.getAdapter() + "' (mod " + modContainer.metadata().id() + "!)");
 		}
 
-		Log.debug(LogCategory.ENTRYPOINT, "Registering new-style initializer " + metadata.getValue() + " for mod " +  modContainer.metadata().id() + " (key " + key + ")");
+		Log.debug(LogCategory.ENTRYPOINT, "Registering new-style initializer %s for mod %s (key %s)", metadata.getValue(), modContainer.metadata().id(), key);
 		getOrCreateEntries(key).add(new NewEntry(
 				modContainer, adapterMap.get(metadata.getAdapter()), metadata.getValue()
 				));
@@ -181,22 +193,41 @@ public final class EntrypointStorage {
 		if (entries == null) return Collections.emptyList();
 
 		List<EntrypointContainer<T>> results = new ArrayList<>(entries.size());
+		EntrypointException exc = null;
 
 		for (Entry entry : entries) {
-			results.add(new EntrypointContainerImpl<>(entry.getModContainer(), () -> {
+			EntrypointContainerImpl<T> container;
+
+			if (entry.isOptional()) {
+				try {
+					T instance = entry.getOrCreate(type);
+					if (instance == null) continue;
+
+					container = new EntrypointContainerImpl<>(entry.getModContainer(), instance);
+				} catch (Throwable t) {
+					if (exc == null) {
+						exc = new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), t);
+					} else {
+						exc.addSuppressed(t);
+					}
+
+					continue;
+				}
+			} else {
+				container = new EntrypointContainerImpl<>(entry.getModContainer(), () -> {
 				try {
 					return entry.getOrCreate(type);
 				} catch (Exception ex) {
 					throw new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), ex);
 				}
-			}));
+			});
+			}
+
+			results.add(container);
 		}
 
-		return results;
-	}
+		if (exc != null) throw exc;
 
-	@SuppressWarnings("unchecked") // return value allows "throw" declaration to end method
-	static <E extends Throwable> RuntimeException sneakyThrows(Throwable ex) throws E {
-		throw (E) ex;
+		return results;
 	}
 }

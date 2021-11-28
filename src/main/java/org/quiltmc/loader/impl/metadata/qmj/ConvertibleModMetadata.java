@@ -16,10 +16,11 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 
 public interface ConvertibleModMetadata {
-	LoaderModMetadata asFabricModMetadata();
+	FabricLoaderModMetadata asFabricModMetadata();
 
 	InternalModMetadata asQuiltModMetadata();
 }

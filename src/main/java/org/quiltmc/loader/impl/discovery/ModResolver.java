@@ -27,7 +27,7 @@ import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
@@ -38,7 +38,6 @@ import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 
-import org.apache.logging.log4j.Logger;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -96,31 +95,25 @@ public class ModResolver {
 		candidateFinders.add(f);
 	}
 
-	private static String getReadablePath(Path gameDir, URL url) {
-		Path path;
-		try {
-			path = UrlUtil.asPath(url);
-		} catch (UrlConversionException e) {
-			throw new RuntimeException(e);
-		}
-
+	private static String getReadablePath(Path gameDir, Path original) {
+		Path truncated = original;
 		if (gameDir != null) {
 			gameDir = gameDir.normalize();
 
-			if (path.startsWith(gameDir)) {
-				path = gameDir.relativize(path);
+			if (original.startsWith(gameDir)) {
+				truncated = gameDir.relativize(original);
 			}
 		}
 
-		return readableNestedJarPaths.getOrDefault(url.toString(), path.toString());
+		return readableNestedJarPaths.getOrDefault(original.toString(), truncated.toString());
 	}
 
 	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
-		return getReadablePath(loader.getGameDir(), c.getOriginUrl());
+		return getReadablePath(loader.getGameDir(), c.getPath());
 	}
 
-	public String getReadablePath(URL url) {
-		return getReadablePath(gameDir, url);
+	public String getReadablePath(Path path) {
+		return getReadablePath(gameDir, path);
 	}
 
 	/** Only exposed for {@link ModSolver}. This is also intended to be temporary. */
@@ -135,7 +128,7 @@ public class ModResolver {
 					}
 				}
 			}
-		} catch (UrlConversionException | MalformedURLException e) {
+		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		}
 		return null;
@@ -249,23 +242,23 @@ public class ModResolver {
 				}
 			}
 
-			LoaderModMetadata[] info;
+			FabricLoaderModMetadata[] info;
 
 			try {
-				info = new LoaderModMetadata[] { ModMetadataReader.read(quiltModJson).asFabricModMetadata() };
+				info = new FabricLoaderModMetadata[] { ModMetadataReader.read(quiltModJson).asFabricModMetadata() };
 			} catch (ParseException e) {
 				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid quilt.mod.json file!", path), e);
 			} catch (NoSuchFileException notQuilt) {
 
 				try {
-					info = new LoaderModMetadata[] { FabricModMetadataReader.parseMetadata(fabricModJson) };
+					info = new FabricLoaderModMetadata[] { FabricModMetadataReader.parseMetadata(fabricModJson) };
 				} catch (ParseMetadataException.MissingRequired e){
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
 				} catch (ParseException | ParseMetadataException e) {
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file!", path), e);
 				} catch (NoSuchFileException e) {
 					Log.warn(LogCategory.RESOLUTION, "Neither a fabric nor a quilt JAR at \"%s\", ignoring", path);
-					info = new LoaderModMetadata[0];
+					info = new FabricLoaderModMetadata[0];
 				} catch (IOException e) {
 					throw new RuntimeException(String.format("Failed to open fabric.mod.json for mod at \"%s\"!", path), e);
 				} catch (Throwable t) {
@@ -278,7 +271,7 @@ public class ModResolver {
 				throw new RuntimeException(String.format("Failed to parse mod metadata for mod at \"%s\"", path), t);
 			}
 
-			for (LoaderModMetadata i : info) {
+			for (FabricLoaderModMetadata i : info) {
 				ModCandidate candidate = new ModCandidate(i, normalizedUrl, depth, requiresRemap);
 				boolean added;
 

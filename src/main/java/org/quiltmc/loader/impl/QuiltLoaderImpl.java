@@ -19,9 +19,10 @@ package org.quiltmc.loader.impl;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.SemanticVersion;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import net.fabricmc.loader.impl.discovery.ArgumentModCandidateFinder;
+
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
 import org.quiltmc.loader.api.LanguageAdapter;
@@ -45,11 +46,22 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -61,17 +73,26 @@ public class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Loader");
 
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
 
-	protected final Map<String, ModContainer> modMap = new HashMap<>();
-	protected List<ModContainer> mods = new ArrayList<>();
+	protected final Map<String, ModContainerImpl> modMap = new HashMap<>();
+	protected List<ModContainerImpl> mods = new ArrayList<>();
+	public static final String MOD_ID = "quilt_loader";
+
+	public static final String CACHE_DIR_NAME = ".fabric"; // relative to game dir
+	private static final String PROCESSED_MODS_DIR_NAME = "processedMods"; // relative to cache dir
+	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to cache dir
+	private static final String TMP_DIR_NAME = "tmp"; // relative to cache dir
+
+	private List<ModCandidate> modCandidates;
 
 	private final Map<String, LanguageAdapter> adapterMap = new HashMap<>();
 	private final EntrypointStorage entrypointStorage = new EntrypointStorage();
 	private final AccessWidener accessWidener = new AccessWidener();
+
+	private final ObjectShare objectShare = new ObjectShareImpl();
 
 	private boolean frozen = false;
 
@@ -91,7 +112,7 @@ public class QuiltLoaderImpl {
 	 */
 	public void freeze() {
 		if (frozen) {
-			throw new RuntimeException("Already frozen!");
+			throw new IllegalStateException("Already frozen!");
 		}
 
 		frozen = true;
@@ -101,6 +122,10 @@ public class QuiltLoaderImpl {
 	public GameProvider getGameProvider() {
 		if (provider == null) throw new IllegalStateException("game provider not set (yet)");
 
+		return provider;
+	}
+
+	public GameProvider tryGetGameProvider() {
 		return provider;
 	}
 
@@ -188,46 +213,122 @@ public class QuiltLoaderImpl {
 	private void setup() throws ModResolutionException {
 		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
+		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
 		ModSolveResult result = resolver.resolve(this);
 		Map<String, ModCandidate> candidateMap = result.modMap;
 
-		String modListText = candidateMap.values().stream()
-					.sorted(Comparator.comparing(candidate -> candidate.getMetadata().id()))
-					.map(candidate -> String.format("\t- %s@%s", candidate.getMetadata().id(), candidate.getMetadata().version().raw()))
-					.collect(Collectors.joining("\n"));
 
-		int count = candidateMap.values().size();
+		// dump mod list
+
+		StringBuilder modListText = new StringBuilder();
+
+		for (ModCandidate mod : modCandidates) {
+			if (modListText.length() > 0) modListText.append('\n');
+
+			modListText.append("\t- ");
+			modListText.append(mod.getId());
+			modListText.append(' ');
+			modListText.append(mod.getVersion().raw());
+
+			if (!mod.getParentMods().isEmpty()) {
+				modListText.append(" via ");
+				modListText.append(mod.getParentMods().iterator().next().getId());
+			}
+		}
+
+		int count = modCandidates.size();
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
 
 		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
-			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides().keySet()));
+			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides()));
 		}
 
-		boolean runtimeModRemapping = isDevelopmentEnvironment();
+		Path cacheDir = gameDir.resolve(CACHE_DIR_NAME);
+		Path outputdir = cacheDir.resolve(PROCESSED_MODS_DIR_NAME);
 
-		if (runtimeModRemapping && System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
-			Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
-			runtimeModRemapping = false;
-		}
+		// runtime mod remapping
 
-		if (runtimeModRemapping) {
-			for (ModCandidate candidate : RuntimeModRemapper.remap(candidateMap.values(), ModResolver.getInMemoryFs())) {
-				addMod(candidate);
-			}
-		} else {
-			for (ModCandidate candidate : candidateMap.values()) {
-				addMod(candidate);
+		if (isDevelopmentEnvironment()) {
+			if (System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
+				Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
+			} else {
+				RuntimeModRemapper.remap(modCandidates, cacheDir.resolve(TMP_DIR_NAME), outputdir);
 			}
 		}
+
+		// shuffle mods in-dev to reduce the risk of false order reliance, apply late load requests
+
+		if (isDevelopmentEnvironment() && System.getProperty(SystemProperties.DEBUG_DISABLE_MOD_SHUFFLE) == null) {
+			Collections.shuffle(modCandidates);
+		}
+
+		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
+
+		if (modsToLoadLate != null) {
+			for (String modId : modsToLoadLate.split(",")) {
+				for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext(); ) {
+					ModCandidate mod = it.next();
+
+					if (mod.getId().equals(modId)) {
+						it.remove();
+						modCandidates.add(mod);
+						break;
+					}
+				}
+			}
+		}
+
+		// add mods
+
+		for (ModCandidate mod : modCandidates) {
+			if (!mod.hasPath() && !mod.isBuiltin()) {
+				try {
+					mod.setPath(mod.copyToDir(outputdir, false));
+				} catch (IOException e) {
+					throw new RuntimeException("Error extracting mod "+mod, e);
+				}
+			}
+
+			addMod(mod);
+		}
+
+		modCandidates = null;
 	}
 
 	protected void finishModLoading() {
 		// add mods to classpath
 		// TODO: This can probably be made safer, but that's a long-term goal
-		for (ModContainer mod : mods) {
-			if (!mod.metadata().id().equals("quilt_loader") && !mod.getInfo().getType().equals("builtin")) {
-				QuiltLauncherBase.getLauncher().propose(mod.getOriginUrl());
+		for (ModContainerImpl mod : mods) {
+			if (!mod.metadata().id().equals(MOD_ID) && !mod.getInfo().getType().equals("builtin")) {
+				QuiltLauncherBase.getLauncher().addToClassPath(mod.getOriginPath());
+			}
+		}
+
+		if (isDevelopmentEnvironment()) {
+			// Many development environments will provide classes and resources as separate directories to the classpath.
+			// As such, we're adding them to the classpath here and now.
+			// To avoid tripping loader-side checks, we also don't add URLs already in modsList.
+			// TODO: Perhaps a better solution would be to add the Sources of all parsed entrypoints. But this will do, for now.
+
+			Set<Path> knownModPaths = new HashSet<>();
+
+			for (ModContainerImpl mod : mods) {
+				knownModPaths.add(mod.getOriginPath().toAbsolutePath().normalize());
+			}
+
+			// suppress fabric loader explicitly in case its fabric.mod.json is in a different folder from the classes
+			Path fabricLoaderPath = ClasspathModCandidateFinder.getLoaderPath();
+			if (fabricLoaderPath != null) knownModPaths.add(fabricLoaderPath);
+
+			for (String pathName : System.getProperty("java.class.path", "").split(File.pathSeparator)) {
+				if (pathName.isEmpty() || pathName.endsWith("*")) continue;
+
+				Path path = Paths.get(pathName).toAbsolutePath().normalize();
+
+				if (Files.isDirectory(path) && knownModPaths.add(path)) {
+					QuiltLauncherBase.getLauncher().addToClassPath(path);
+				}
 			}
 		}
 
@@ -260,9 +361,25 @@ public class QuiltLoaderImpl {
 	}
 
 	public Optional<org.quiltmc.loader.api.ModContainer> getModContainer(String id) {
+
+
 		return Optional.ofNullable(modMap.get(id));
 	}
 
+	// TODO: add to QuiltLoader api
+	public ObjectShare getObjectShare() {
+		return objectShare;
+	}
+
+	public ModCandidate getModCandidate(String id) {
+		if (modCandidates == null) return null;
+
+		for (ModCandidate mod : modCandidates) {
+			if (mod.getId().equals(id)) return mod;
+		}
+
+		return null;
+	}
 	public Collection<org.quiltmc.loader.api.ModContainer> getAllMods() {
 		return Collections.unmodifiableList(mods);
 	}
@@ -285,34 +402,33 @@ public class QuiltLoaderImpl {
 	 * @deprecated Use {@link net.fabricmc.loader.api.FabricLoader#getAllMods()}
 	 */
 	@Deprecated
-	public Collection<ModContainer> getModContainers() {
+	public Collection<ModContainerImpl> getModContainers() {
 		return Collections.unmodifiableList(mods);
 	}
 
 	@Deprecated
-	public List<ModContainer> getMods() {
+	public List<ModContainerImpl> getMods() {
 		return Collections.unmodifiableList(mods);
 	}
 
 	protected void addMod(ModCandidate candidate) throws ModResolutionException {
 		InternalModMetadata meta = candidate.getMetadata();
-		URL originUrl = candidate.getOriginUrl();
-
+		File origin = candidate.getPath().toFile();
 		if (modMap.containsKey(meta.id())) {
-			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
+			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")");
 		}
 
 		if (!meta.environment().matches(getEnvironmentType())) {
 			return;
 		}
 
-		ModContainer container = new ModContainer(meta, originUrl);
+		ModContainerImpl container = new ModContainerImpl(meta, candidate.getPath());
 		mods.add(container);
 		modMap.put(meta.id(), container);
 
 		for (ModProvided provided : meta.provides()) {
 			if (modMap.containsKey(provided.id)) {
-				throw new ModSolvingError("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
+				throw new ModSolvingError("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")");
 			}
 
 			modMap.put(provided.id, container);
@@ -320,7 +436,7 @@ public class QuiltLoaderImpl {
 	}
 
 	protected void postprocessModMetadata() {
-		for (ModContainer mod : mods) {
+		for (ModContainerImpl mod : mods) {
 			if (!(mod.getInfo().getVersion() instanceof SemanticVersion)) {
 				Log.warn(LogCategory.METADATA, "Mod `%s` (%s) does not respect SemVer - comparison support is limited.",
 						mod.getInfo().getId(), mod.getInfo().getVersion().getFriendlyString());
@@ -331,43 +447,10 @@ public class QuiltLoaderImpl {
 		}
 	}
 
-	/* private void sortMods() {
-		LOGGER.debug("Sorting mods");
-
-		LinkedList<ModContainer> sorted = new LinkedList<>();
-
-		for (ModContainer mod : mods) {
-			if (sorted.isEmpty() || mod.getInfo().getRequires().size() == 0) {
-				sorted.addFirst(mod);
-			} else {
-				boolean b = false;
-
-				l1: for (int i = 0; i < sorted.size(); i++) {
-					for (Map.Entry<String, ModMetadataV0.Dependency> entry : sorted.get(i).getInfo().getRequires().entrySet()) {
-						String depId = entry.getKey();
-						ModMetadataV0.Dependency dep = entry.getValue();
-
-						if (depId.equalsIgnoreCase(mod.getInfo().getId()) && dep.satisfiedBy(mod.getInfo())) {
-							sorted.add(i, mod);
-							b = true;
-							break l1;
-						}
-					}
-				}
-
-				if (!b) {
-					sorted.addLast(mod);
-				}
-			}
-		}
-
-		mods = sorted;
-	} */
-
 	private void setupLanguageAdapters() {
 		adapterMap.put("default", DefaultLanguageAdapter.INSTANCE);
 
-		for (ModContainer mod : mods) {
+		for (ModContainerImpl mod : mods) {
 			// add language adapters
 			for (Map.Entry<String, String> laEntry : mod.getInternalMeta().languageAdapters().entrySet()) {
 				if (adapterMap.containsKey(laEntry.getKey())) {
@@ -384,7 +467,7 @@ public class QuiltLoaderImpl {
 	}
 
 	private void setupMods() {
-		for (ModContainer mod : mods) {
+		for (ModContainerImpl mod : mods) {
 			try {
 				for (String in : mod.getInfo().getOldInitializers()) {
 					String adapter = mod.getInfo().getOldStyleLanguageAdapter();
@@ -397,7 +480,7 @@ public class QuiltLoaderImpl {
 					}
 				}
 			} catch (Exception e) {
-				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.getOriginUrl().getFile()), e);
+				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.getOriginPath()), e);
 			}
 		}
 	}
@@ -405,7 +488,7 @@ public class QuiltLoaderImpl {
 	public void loadAccessWideners() {
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
 
-		for (ModContainer mod : mods) {
+		for (ModContainerImpl mod : mods) {
 			for (String accessWidener : mod.getInternalMeta().accessWideners()) {
 
 				Path path = mod.getPath(accessWidener);

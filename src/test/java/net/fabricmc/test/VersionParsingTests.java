@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.loader.api.VersionParsingException;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.SemanticVersionPredicateParser;
 
 public class VersionParsingTests {
 	private static Exception tryParseSemantic(String s, boolean storeX) {
@@ -94,7 +93,7 @@ public class VersionParsingTests {
 
 		// Test: comparator range with pre-releases.
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create(">=0.3.1-beta.2 <0.4.0");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create(">=0.3.1-beta.2 <0.4.0");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.2", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.2.1", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.3", false)));
@@ -109,7 +108,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create(">=0.3.1-beta.2 <0.4.0-");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create(">=0.3.1-beta.2 <0.4.0-");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.2", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.2.1", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.3", false)));
@@ -124,7 +123,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create(">=1.4-");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create(">=1.4-");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.4-beta.2", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.4+build.125", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.4", false)));
@@ -135,7 +134,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("<1.4");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("<1.4");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3.5", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3-alpha.1", false)));
@@ -145,7 +144,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("<1.4-");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("<1.4-");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3.5", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3-alpha.1", false)));
@@ -156,7 +155,7 @@ public class VersionParsingTests {
 
 		// Test: pre-release parts
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create(">=0.3.1-beta.8.d.10");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create(">=0.3.1-beta.8.d.10");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.9", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.11", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.3.1-beta.8.e", false)));
@@ -173,7 +172,7 @@ public class VersionParsingTests {
 
 		// Test: x-range. "a.b.x" = ">=a.b.0- <a.(b+1).0-" (same major+minor, pre allowed)
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("1.3.x");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("1.3.x");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3.0-alpha.1", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3.99", false)));
@@ -186,7 +185,7 @@ public class VersionParsingTests {
 
 		// Test: smaller x-range. "a.x" = ">=a.0.0- <(a+1).0.0-" (same major, pre allowed)
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("2.x");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("2.x");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("2.0.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("2.0.0-alpha.1", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("2.9.0-beta.2", false)));
@@ -198,7 +197,7 @@ public class VersionParsingTests {
 
 		// Test: tilde-ranges. "~a" = ">=a <(a[0]).(a[1]+1).0-" (at least a, same major+minor)
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("~1.2.3");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("~1.2.3");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.4", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.4-alpha.1", false)));
@@ -209,7 +208,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("~1.2");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("~1.2");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.1-alpha.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.6", false)));
@@ -220,7 +219,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("~1.2-");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("~1.2-");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.1-alpha.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.6", false)));
@@ -231,7 +230,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("~1");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("~1");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.0.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.0.4", false)));
 			testFalse(predicate.test(new FabricSemanticVersionImpl("0.9.9", false)));
@@ -240,7 +239,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("~1.2.3-beta.2");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("~1.2.3-beta.2");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3-beta.2", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3-beta.2.1", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3-beta.3", false)));
@@ -258,7 +257,7 @@ public class VersionParsingTests {
 
 		// Test: caret-range. "^a" = ">=a <(a[0]+1).0.0-" (at least a, same major)
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("^1.2.3");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("^1.2.3");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.4", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.3.0", false)));
@@ -269,7 +268,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("^0.2.3");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("^0.2.3");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.2.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.2.4", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("0.2.8-beta.2", false)));
@@ -280,7 +279,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("^1.2.3-beta.2");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("^1.2.3-beta.2");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3-beta.2", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3-beta.3", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.3-rc.7", false)));
@@ -294,7 +293,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("^1");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("^1");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.0.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.4", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.99.99", false)));
@@ -306,7 +305,7 @@ public class VersionParsingTests {
 		}
 
 		{
-			Predicate<FabricSemanticVersionImpl> predicate = SemanticVersionPredicateParser.create("^1-");
+			Predicate<FabricSemanticVersionImpl> predicate = FabricSemanticVersionPredicateParser.create("^1-");
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.0.0", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.0.0-rc.5", false)));
 			testTrue(predicate.test(new FabricSemanticVersionImpl("1.2.4", false)));

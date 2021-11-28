@@ -20,17 +20,24 @@ import net.fabricmc.api.EnvType;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.util.Collection;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.jar.Manifest;
 
 public interface QuiltLauncher {
 	MappingConfiguration getMappingConfiguration();
 
-	void propose(URL url);
+	void addToClassPath(Path path, String... allowedPrefixes);
+	void setAllowedPrefixes(Path path, String... prefixes);
 
 	EnvType getEnvironmentType();
 
 	boolean isClassLoaded(String name);
+
+	/**
+	 * Load a class into the game's class loader even if its bytes are only available from the parent class loader.
+	 */
+	Class<?> loadIntoTarget(String name) throws ClassNotFoundException;
 
 	InputStream getResourceAsStream(String name);
 
@@ -44,11 +51,13 @@ public interface QuiltLauncher {
 	 */
 	byte[] getClassByteArray(String name, boolean runTransformers) throws IOException;
 
+	Manifest getManifest(Path originPath);
+
 	boolean isDevelopment();
 
 	String getEntrypoint();
 
 	String getTargetNamespace();
 
-	Collection<URL> getLoadTimeDependencies();
+	List<Path> getClassPath();
 }

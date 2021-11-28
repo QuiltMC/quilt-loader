@@ -19,9 +19,10 @@ package org.quiltmc.loader.impl.discovery;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -29,7 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.EnumSet;
-import java.util.function.BiConsumer;
 
 public class DirectoryModCandidateFinder implements ModCandidateFinder {
 	private final Path path;
@@ -41,7 +41,7 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 	}
 
 	@Override
-	public void findCandidates(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> urlProposer) {
+	public void findCandidates(ModCandidateConsumer out) {
 		if (!Files.exists(path)) {
 			try {
 				Files.createDirectory(path);
@@ -58,23 +58,8 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 			Files.walkFileTree(this.path, EnumSet.of(FileVisitOption.FOLLOW_LINKS), 1, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					/*
-					 * We only propose a file as a possible mod in the following scenarios:
-					 * General: Must be a jar file
-					 *
-					 * Some OSes Generate metadata so consider the following because of OSes:
-					 * UNIX: Exclude if file is hidden; this occurs when starting a file name with `.`
-					 * MacOS: Exclude hidden + startsWith "." since Mac OS names their metadata files in the form of `.mod.jar`
-					 */
-
-					String fileName = file.getFileName().toString();
-
-					if (fileName.endsWith(".jar") && !fileName.startsWith(".") && !Files.isHidden(file)) {
-						try {
-							urlProposer.accept(UrlUtil.asUrl(file), requiresRemap);
-						} catch (UrlConversionException e) {
-							throw new RuntimeException("Failed to convert URL for mod '" + file + "'!", e);
-						}
+					if (isValidFile(file)) {
+						out.accept(file, requiresRemap);
 					}
 
 					return FileVisitResult.CONTINUE;
@@ -83,5 +68,29 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 		} catch (IOException e) {
 			throw new RuntimeException("Exception while searching for mods in '" + path + "'!", e);
 		}
+	}
+
+	public static boolean isValidFile(Path path) {
+		/*
+		 * We only propose a file as a possible mod in the following scenarios:
+		 * General: Must be a jar file
+		 *
+		 * Some OSes Generate metadata so consider the following because of OSes:
+		 * UNIX: Exclude if file is hidden; this occurs when starting a file name with `.`
+		 * MacOS: Exclude hidden + startsWith "." since Mac OS names their metadata files in the form of `.mod.jar`
+		 */
+
+		if (!Files.isRegularFile(path)) return false;
+
+		try {
+			if (Files.isHidden(path)) return false;
+		} catch (IOException e) {
+			Log.warn(LogCategory.DISCOVERY, "Error checking if file %s is hidden", path, e);
+			return false;
+		}
+
+		String fileName = path.getFileName().toString();
+
+		return fileName.endsWith(".jar") && !fileName.startsWith(".");
 	}
 }

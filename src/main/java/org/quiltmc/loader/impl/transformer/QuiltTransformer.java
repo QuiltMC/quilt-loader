@@ -16,34 +16,16 @@
 
 package org.quiltmc.loader.impl.transformer;
 
-import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
+
 public final class QuiltTransformer {
-	public static byte[] lwTransformerHook(String name, String transformedName, byte[] bytes) {
-		boolean isDevelopment = QuiltLauncherBase.getLauncher().isDevelopment();
-		EnvType envType = QuiltLauncherBase.getLauncher().getEnvironmentType();
-
-		byte[] input = MinecraftGameProvider.TRANSFORMER.transform(name);
-
-		if (input != null) {
-			return QuiltTransformer.transform(isDevelopment, envType, name, input);
-		} else {
-			if (bytes != null) {
-				return QuiltTransformer.transform(isDevelopment, envType, name, bytes);
-			} else {
-				return null;
-			}
-		}
-	}
-
-	@SuppressWarnings("deprecation")
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
 		// FIXME: Could use a better way to detect this...
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
@@ -56,12 +38,12 @@ public final class QuiltTransformer {
 		}
 
 		ClassReader classReader = new ClassReader(bytes);
-		ClassWriter classWriter = new ClassWriter(0);
+		ClassWriter classWriter = new ClassWriter(classReader, 0);
 		ClassVisitor visitor = classWriter;
 		int visitorCount = 0;
 
 		if (applyAccessWidener) {
-			visitor = AccessWidenerVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, QuiltLoaderImpl.INSTANCE.getAccessWidener());
+			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, QuiltLoaderImpl.INSTANCE.getAccessWidener());
 			visitorCount++;
 		}
 

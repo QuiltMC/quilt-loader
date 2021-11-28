@@ -16,23 +16,36 @@
 
 package org.quiltmc.loader.impl.metadata;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.api.VersionPredicate;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
+import net.fabricmc.loader.api.metadata.version.VersionInterval;
+import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 public final class ModDependencyImpl implements ModDependency {
+	private Kind kind;
 	private final String modId;
 	private final List<String> matcherStringList;
-	private Set<VersionPredicate> ranges;
+	private final Collection<VersionPredicate> ranges;
 
-	public ModDependencyImpl(String modId, List<String> matcherStringList) {
+	public ModDependencyImpl(Kind kind, String modId, List<String> matcherStringList) throws VersionParsingException {
+		this.kind = kind;
 		this.modId = modId;
 		this.matcherStringList = matcherStringList;
+		this.ranges = VersionPredicate.parse(this.matcherStringList);
+	}
+
+	@Override
+	public Kind getKind() {
+		return kind;
+	}
+
+	public void setKind(Kind kind) {
+		this.kind = kind;
 	}
 
 	@Override
@@ -42,23 +55,34 @@ public final class ModDependencyImpl implements ModDependency {
 
 	@Override
 	public boolean matches(Version version) {
-		for (String s : this.matcherStringList) {
-			try {
-				if (VersionPredicateParser.matches(version, s)) {
-					return true;
-				}
-			} catch (VersionParsingException e) {
-				e.printStackTrace();
-				return false;
-			}
+		for (VersionPredicate predicate : ranges) {
+			if (predicate.test(version)) return true;
 		}
 
 		return false;
 	}
 
 	@Override
+	public boolean equals(Object obj) {
+		if (!(obj instanceof ModDependency)) return false;
+
+		ModDependency o = (ModDependency) obj;
+
+		return kind == o.getKind()
+				&& modId.equals(o.getModId())
+				&& ranges.equals(o.getVersionRequirements());
+	}
+
+	@Override
+	public int hashCode() {
+		return (kind.ordinal() * 31 + modId.hashCode()) * 257 + ranges.hashCode();
+	}
+
+	@Override
 	public String toString() {
 		final StringBuilder builder = new StringBuilder("{");
+		builder.append(kind.getKey());
+		builder.append(' ');
 		builder.append(this.modId);
 		builder.append(" @ [");
 
@@ -75,11 +99,18 @@ public final class ModDependencyImpl implements ModDependency {
 	}
 
 	@Override
-	public Set<VersionPredicate> getVersionRequirements() {
-		if (ranges == null) {
-			ranges = VersionPredicate.parse(matcherStringList);
+	public Collection<VersionPredicate> getVersionRequirements() {
+		return ranges;
+	}
+
+	@Override
+	public List<VersionInterval> getVersionIntervals() {
+		List<VersionInterval> ret = Collections.emptyList();
+
+		for (VersionPredicate predicate : ranges) {
+			ret = VersionInterval.or(ret, predicate.getInterval());
 		}
 
-		return ranges;
+		return ret;
 	}
 }

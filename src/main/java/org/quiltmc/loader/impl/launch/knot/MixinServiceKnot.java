@@ -21,8 +21,18 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleURI;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
+import org.spongepowered.asm.logging.ILogger;
 import org.spongepowered.asm.mixin.MixinEnvironment;
-import org.spongepowered.asm.service.*;
+import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
+import org.spongepowered.asm.mixin.transformer.IMixinTransformerFactory;
+import org.spongepowered.asm.service.IClassBytecodeProvider;
+import org.spongepowered.asm.service.IClassProvider;
+import org.spongepowered.asm.service.IClassTracker;
+import org.spongepowered.asm.service.IMixinAuditTrail;
+import org.spongepowered.asm.service.IMixinInternal;
+import org.spongepowered.asm.service.IMixinService;
+import org.spongepowered.asm.service.ITransformer;
+import org.spongepowered.asm.service.ITransformerProvider;
 import org.spongepowered.asm.util.ReEntranceLock;
 
 import java.io.IOException;
@@ -33,6 +43,8 @@ import java.util.Collection;
 import java.util.Collections;
 
 public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBytecodeProvider, ITransformerProvider, IClassTracker {
+	static IMixinTransformer transformer;
+
 	private final ReEntranceLock lock;
 
 	public MixinServiceKnot() {
@@ -104,6 +116,13 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	@Override
 	public MixinEnvironment.Phase getInitialPhase() {
 		return MixinEnvironment.Phase.PREINIT;
+	}
+
+	@Override
+	public void offer(IMixinInternal internal) {
+		if (internal instanceof IMixinTransformerFactory) {
+			transformer = ((IMixinTransformerFactory) internal).createTransformer();
+		}
 	}
 
 	@Override
@@ -209,5 +228,14 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	@Override
 	public MixinEnvironment.CompatibilityLevel getMaxCompatibilityLevel() {
 		return MixinEnvironment.CompatibilityLevel.JAVA_17;
+	}
+
+	@Override
+	public ILogger getLogger(String name) {
+		return MixinLogger.get(name);
+	}
+
+	static IMixinTransformer getTransformer() {
+		return transformer;
 	}
 }

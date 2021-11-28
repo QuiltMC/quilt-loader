@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.util.version;
 
 import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 
 import java.util.Arrays;
@@ -25,8 +26,9 @@ import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-import org.quiltmc.loader.api.Version;
+import org.jetbrains.annotations.NotNull;
 
+@SuppressWarnings("deprecation")
 public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.loader.api.Version {
 	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");
 	private static final Pattern UNSIGNED_INTEGER = Pattern.compile("0|[1-9][0-9]*");
@@ -74,7 +76,8 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 			throw new VersionParsingException("Did not provide version numbers!");
 		}
 
-		components = new int[componentStrings.length];
+		int[] components = new int[componentStrings.length];
+		int firstWildcardIdx = -1;
 
 		for (int i = 0; i < componentStrings.length; i++) {
 			String compStr = componentStrings[i];
@@ -86,6 +89,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 					}
 
 					components[i] = COMPONENT_WILDCARD;
+					if (firstWildcardIdx < 0) firstWildcardIdx = i;
 					continue;
 				} else if (i > 0 && components[i - 1] == COMPONENT_WILDCARD) {
 					throw new VersionParsingException("Interjacent wildcard (1.x.2) are disallowed!");
@@ -111,10 +115,19 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 			throw new VersionParsingException("Versions of form 'x' or 'X' not allowed!");
 		}
 
+		// strip extra wildcards (1.x.x -> 1.x)
+		if (firstWildcardIdx > 0 && components.length > firstWildcardIdx + 1) {
+			components = Arrays.copyOf(components, firstWildcardIdx + 1);
+		}
+
+		this.components = components;
+
 		buildFriendlyName();
 	}
 
 	public FabricSemanticVersionImpl(int[] components, String prerelease, String build) {
+		if (components.length == 0 || components[0] == COMPONENT_WILDCARD) throw new IllegalArgumentException("Invalid components: "+Arrays.toString(components));
+
 		this.components = components;
 		this.prerelease = prerelease;
 		this.build = build;
@@ -122,7 +135,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		buildFriendlyName();
 	}
 
-	public FabricSemanticVersionImpl(Version.Semantic quiltVersion) {
+	public FabricSemanticVersionImpl(org.quiltmc.loader.api.Version.Semantic quiltVersion) {
 		this.components = new int[] { quiltVersion.major(), quiltVersion.minor(), quiltVersion.patch() };
 		this.prerelease = quiltVersion.preRelease();
 		this.build = quiltVersion.buildMetadata();
@@ -174,6 +187,10 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		} else {
 			return components[pos];
 		}
+	}
+
+	public int[] getVersionComponents() {
+		return components.clone();
 	}
 
 	@Override
@@ -237,12 +254,14 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		return true;
 	}
 
-	boolean isPrerelease() {
-		return prerelease != null;
-	}
-
 	@Override
-	public int compareTo(SemanticVersion o) {
+	public int compareTo(Version other) {
+		if (!(other instanceof SemanticVersion)) {
+			return 1;
+		}
+
+		SemanticVersion o = (SemanticVersion) other;
+
 		for (int i = 0; i < Math.max(getVersionComponentCount(), o.getVersionComponentCount()); i++) {
 			int first = getVersionComponent(i);
 			int second = o.getVersionComponent(i);

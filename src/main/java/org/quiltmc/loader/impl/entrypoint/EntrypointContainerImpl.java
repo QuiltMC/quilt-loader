@@ -26,11 +26,24 @@ public class EntrypointContainerImpl<T> implements EntrypointContainer<T> {
 	private final Supplier<T> entrypointSupplier;
 	private T instance;
 
+	/**
+	 * Create EntrypointContainer with lazy init.
+	 */
 	public EntrypointContainerImpl(ModContainer container, Supplier<T> entrypointSupplier) {
 		this.container = container;
 		this.entrypointSupplier = entrypointSupplier;
 	}
 
+	/**
+	 * Create EntrypointContainer without lazy init.
+	 */
+	public EntrypointContainerImpl(ModContainer container, T instance) {
+		this.container = container;
+		this.entrypointSupplier = null;
+		this.instance = instance;
+	}
+
+	@SuppressWarnings("deprecation")
 	@Override
 	public synchronized T getEntrypoint() {
 		if (instance == null) {

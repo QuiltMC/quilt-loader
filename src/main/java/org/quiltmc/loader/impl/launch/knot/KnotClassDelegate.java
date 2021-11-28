@@ -17,18 +17,25 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.impl.util.LoaderUtil;
+
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
-import org.spongepowered.asm.mixin.transformer.QuiltMixinTransformerProxy;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.net.JarURLConnection;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.FileSystemNotFoundException;
@@ -36,8 +43,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.Manifest;
 
 class KnotClassDelegate {
@@ -53,13 +60,14 @@ class KnotClassDelegate {
 		}
 	}
 
-	private final Map<String, Metadata> metadataCache = new HashMap<>();
+	private final Map<String, Metadata> metadataCache = new ConcurrentHashMap<>();
 	private final KnotClassLoaderInterface itf;
 	private final GameProvider provider;
 	private final boolean isDevelopment;
 	private final EnvType envType;
-	private QuiltMixinTransformerProxy mixinTransformer;
+	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
+	private final Map<URL, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
 		this.isDevelopment = isDevelopment;
@@ -69,108 +77,171 @@ class KnotClassDelegate {
 	}
 
 	public void initializeTransformers() {
-		if (transformInitialized) {
-			throw new RuntimeException("Cannot initialize KnotClassDelegate twice!");
-		}
+		if (transformInitialized) throw new IllegalStateException("Cannot initialize KnotClassDelegate twice!");
 
-		mixinTransformer = new QuiltMixinTransformerProxy();
+		mixinTransformer = MixinServiceKnot.getTransformer();
+
+		if (mixinTransformer == null) {
+			try { // reflective instantiation for older mixin versions
+				@SuppressWarnings("unchecked")
+				Constructor<IMixinTransformer> ctor = (Constructor<IMixinTransformer>) Class.forName("org.spongepowered.asm.mixin.transformer.MixinTransformer").getConstructor();
+				ctor.setAccessible(true);
+				mixinTransformer = ctor.newInstance();
+			} catch (ReflectiveOperationException e) {
+				Log.debug(LogCategory.KNOT, "Can't create Mixin transformer through reflection (only applicable for 0.8-0.8.2): %s", e);
+
+				// both lookups failed (not received through IMixinService.offer and not found through reflection)
+				throw new IllegalStateException("mixin transformer unavailable?");
+			}
+		}
 
 		transformInitialized = true;
 	}
 
-	private QuiltMixinTransformerProxy getMixinTransformer() {
+	private IMixinTransformer getMixinTransformer() {
 		assert mixinTransformer != null;
 		return mixinTransformer;
 	}
 
-	Metadata getMetadata(String name, URL resourceURL) {
-		if (resourceURL != null) {
-			URL codeSourceURL = null;
-			String filename = name.replace('.', '/') + ".class";
+	Class<?> tryLoadClass(String name, boolean allowFromParent) throws ClassNotFoundException {
+		if (name.startsWith("java.")) {
+			return null;
+		}
 
-			try {
-				codeSourceURL = UrlUtil.getSource(filename, resourceURL);
-			} catch (UrlConversionException e) {
-				System.err.println("Could not find code source for " + resourceURL + ": " + e.getMessage());
-			}
+		if (!allowedPrefixes.isEmpty()) {
+			URL url = itf.getResource(LoaderUtil.getClassFileName(name));
+			String[] prefixes;
 
-			if (codeSourceURL != null) {
-				return metadataCache.computeIfAbsent(codeSourceURL.toString(), (codeSourceStr) -> {
-					Manifest manifest = null;
-					CodeSource codeSource = null;
-					Certificate[] certificates = null;
-					URL fCodeSourceUrl = null;
+			if (url != null
+					&& (prefixes = allowedPrefixes.get(url)) != null) {
+				assert prefixes.length > 0;
+				boolean found = false;
 
-					try {
-						fCodeSourceUrl = new URL(codeSourceStr);
-						Path path = UrlUtil.asPath(fCodeSourceUrl);
-
-						if (Files.isRegularFile(path)) {
-							URLConnection connection = new URL("jar:" + codeSourceStr + "!/").openConnection();
-
-							if (connection instanceof JarURLConnection) {
-								manifest = ((JarURLConnection) connection).getManifest();
-								certificates = ((JarURLConnection) connection).getCertificates();
-							}
-
-							if (manifest == null) {
-								try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(path, false)) {
-									Path manifestPath = jarFs.get().getPath("META-INF/MANIFEST.MF");
-
-									if (Files.exists(manifestPath)) {
-										try (InputStream stream = Files.newInputStream(manifestPath)) {
-											manifest = new Manifest(stream);
-
-											// TODO
-											/* JarEntry codeEntry = codeSourceJar.getJarEntry(filename);
-
-											if (codeEntry != null) {
-												codeSource = new CodeSource(codeSourceURL, codeEntry.getCodeSigners());
-											} */
-										}
-									}
-								}
-							}
-						}
-					} catch (IOException | FileSystemNotFoundException | UrlConversionException e) {
-						if (QuiltLauncherBase.getLauncher().isDevelopment()) {
-							System.err.println("Failed to load manifest: " + e);
-							e.printStackTrace();
-						}
+				for (String prefix : prefixes) {
+					if (name.startsWith(prefix)) {
+						found = true;
+						break;
 					}
+				}
 
-					if (codeSource == null) {
-						codeSource = new CodeSource(fCodeSourceUrl, certificates);
-					}
-
-					return new Metadata(manifest, codeSource);
-				});
+				if (!found) {
+					throw new ClassNotFoundException("class "+name+" is currently restricted from being loaded");
+				}
 			}
 		}
 
-		return Metadata.EMPTY;
+		byte[] input = getPostMixinClassByteArray(name, allowFromParent);
+		if (input == null) return null;
+
+		KnotClassDelegate.Metadata metadata = getMetadata(name, itf.getResource(LoaderUtil.getClassFileName(name)));
+
+		int pkgDelimiterPos = name.lastIndexOf('.');
+
+		if (pkgDelimiterPos > 0) {
+			// TODO: package definition stub
+			String pkgString = name.substring(0, pkgDelimiterPos);
+
+			if (itf.getPackage(pkgString) == null) {
+				try {
+					itf.definePackage(pkgString, null, null, null, null, null, null, null);
+				} catch (IllegalArgumentException e) { // presumably concurrent package definition
+					if (itf.getPackage(pkgString) == null) throw e; // still not defined?
+				}
+			}
+		}
+
+		return itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
 	}
 
-	public byte[] getPostMixinClassByteArray(String name) {
-		byte[] transformedClassArray = getPreMixinClassByteArray(name, true);
+	Metadata getMetadata(String name, URL resourceURL) {
+		if (resourceURL == null) return Metadata.EMPTY;
+
+		URL codeSourceUrl = null;
+
+		try {
+			codeSourceUrl = UrlUtil.getSource(LoaderUtil.getClassFileName(name), resourceURL);
+		} catch (UrlConversionException e) {
+			System.err.println("Could not find code source for " + resourceURL + ": " + e.getMessage());
+		}
+
+		if (codeSourceUrl == null) return Metadata.EMPTY;
+
+		return getMetadata(codeSourceUrl);
+	}
+
+	Metadata getMetadata(URL codeSourceUrl) {
+		return metadataCache.computeIfAbsent(codeSourceUrl.toString(), (codeSourceStr) -> {
+			Manifest manifest = null;
+			CodeSource codeSource = null;
+			Certificate[] certificates = null;
+
+			try {
+				Path path = UrlUtil.asPath(codeSourceUrl);
+
+				if (Files.isDirectory(path)) {
+					manifest = ManifestUtil.readManifest(path);
+				} else {
+					URLConnection connection = new URL("jar:" + codeSourceStr + "!/").openConnection();
+
+					if (connection instanceof JarURLConnection) {
+						manifest = ((JarURLConnection) connection).getManifest();
+						certificates = ((JarURLConnection) connection).getCertificates();
+					}
+
+					if (manifest == null) {
+						try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(path, false)) {
+							manifest = ManifestUtil.readManifest(jarFs.get().getRootDirectories().iterator().next());
+						}
+					}
+
+					// TODO
+					/* JarEntry codeEntry = codeSourceJar.getJarEntry(filename);
+
+					if (codeEntry != null) {
+						codeSource = new CodeSource(codeSourceURL, codeEntry.getCodeSigners());
+					} */
+				}
+			} catch (IOException | FileSystemNotFoundException | URISyntaxException e) {
+				if (QuiltLauncherBase.getLauncher().isDevelopment()) {
+					Log.warn(LogCategory.KNOT, "Failed to load manifest", e);
+				}
+			}
+
+			if (codeSource == null) {
+				codeSource = new CodeSource(codeSourceUrl, certificates);
+			}
+
+			return new Metadata(manifest, codeSource);
+		});
+	}
+
+	public byte[] getPostMixinClassByteArray(String name, boolean allowFromParent) {
+		byte[] transformedClassArray = getPreMixinClassByteArray(name, allowFromParent);
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			return transformedClassArray;
 		}
 
-		return getMixinTransformer().transformClassBytes(name, name, transformedClassArray);
+		try {
+			return getMixinTransformer().transformClassBytes(name, name, transformedClassArray);
+		} catch (Throwable t) {
+			String msg = String.format("Mixin transformation of %s failed", name);
+			if (LOG_TRANSFORM_ERRORS) Log.warn(LogCategory.KNOT, msg, t);
+
+			throw new RuntimeException(msg, t);
+		}
 	}
 
 	/**
 	 * Runs all the class transformers except mixin.
 	 */
-	public byte[] getPreMixinClassByteArray(String name, boolean skipOriginalLoader) {
+	public byte[] getPreMixinClassByteArray(String name, boolean allowFromParent) {
 		// some of the transformers rely on dot notation
 		name = name.replace('/', '.');
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			try {
-				return getRawClassByteArray(name, skipOriginalLoader);
+				return getRawClassByteArray(name, allowFromParent);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
 			}
@@ -180,7 +251,7 @@ class KnotClassDelegate {
 
 		if (input == null) {
 			try {
-				input = getRawClassByteArray(name, skipOriginalLoader);
+				input = getRawClassByteArray(name, allowFromParent);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
 			}
@@ -199,13 +270,8 @@ class KnotClassDelegate {
 		return /* !"net.fabricmc.api.EnvType".equals(name) && !name.startsWith("net.fabricmc.loader.") && */ !name.startsWith("org.apache.logging.log4j");
 	}
 
-	String getClassFileName(String name) {
-		return name.replace('.', '/') + ".class";
-	}
-
-	public byte[] getRawClassByteArray(String name, boolean skipOriginalLoader) throws IOException {
-		String classFile = getClassFileName(name);
-		InputStream inputStream = itf.getResourceAsStream(classFile, skipOriginalLoader);
+	public byte[] getRawClassByteArray(String name, boolean allowFromParent) throws IOException {
+		InputStream inputStream = itf.getResourceAsStream(LoaderUtil.getClassFileName(name), allowFromParent);
 		if (inputStream == null) return null;
 
 		int a = inputStream.available();
@@ -219,5 +285,13 @@ class KnotClassDelegate {
 
 		inputStream.close();
 		return outputStream.toByteArray();
+	}
+
+	void setAllowedPrefixes(URL url, String... prefixes) {
+		if (prefixes.length == 0) {
+			allowedPrefixes.remove(url);
+		} else {
+			allowedPrefixes.put(url, prefixes);
+		}
 	}
 }
