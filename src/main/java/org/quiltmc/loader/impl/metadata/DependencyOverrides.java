@@ -139,24 +139,24 @@ public final class DependencyOverrides {
 			final List<String> matcherStringList = new ArrayList<>();
 
 			switch (reader.peek()) {
-				case STRING:
-					matcherStringList.add(reader.nextString());
-					break;
-				case BEGIN_ARRAY:
-					reader.beginArray();
+			case STRING:
+				matcherStringList.add(reader.nextString());
+				break;
+			case BEGIN_ARRAY:
+				reader.beginArray();
 
-					while (reader.hasNext()) {
-						if (reader.peek() != JsonToken.STRING) {
-							throw new ParseMetadataException("Dependency version range array must only contain string values", reader);
-						}
-
-						matcherStringList.add(reader.nextString());
+				while (reader.hasNext()) {
+					if (reader.peek() != JsonToken.STRING) {
+						throw new ParseMetadataException("Dependency version range array must only contain string values", reader);
 					}
 
-					reader.endArray();
-					break;
-				default:
-					throw new ParseMetadataException("Dependency version range must be a string or string array!", reader);
+					matcherStringList.add(reader.nextString());
+				}
+
+				reader.endArray();
+				break;
+			default:
+				throw new ParseMetadataException("Dependency version range must be a string or string array!", reader);
 			}
 
 			modDependencyMap.put(modId, new ModDependencyImpl(modId, matcherStringList));
@@ -167,9 +167,7 @@ public final class DependencyOverrides {
 	}
 
 	public Map<String, ModDependency> getActiveDependencyMap(String key, String modId, Map<String, ModDependency> defaultMap) {
-		if(!exists) {
-			return defaultMap;
-		}
+		if (!exists) return defaultMap;
 
 		Map<String, Map<String, ModDependency>> modOverrides = dependencyOverrides.get(modId);
 

@@ -190,7 +190,7 @@ final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetada
 	@Override
 	public Optional<String> getIconPath(int size) {
 		// honor Mod Menu's de-facto standard
-		return Optional.of("assets/" + this.getId() + "/icon.png");
+		return Optional.of("assets/" + getId() + "/icon.png");
 	}
 
 	@Override
@@ -199,7 +199,9 @@ final class V0ModMetadata extends AbstractModMetadata implements LoaderModMetada
 	}
 
 	@Override
-	public Map<String, CustomValue> getCustomValues() { return Collections.emptyMap(); }
+	public Map<String, CustomValue> getCustomValues() {
+		return Collections.emptyMap();
+	}
 
 	@Override
 	public boolean containsCustomValue(String key) {

@@ -48,7 +48,7 @@ public interface GameProvider {
 		return true;
 	}
 
-	public static class BuiltinMod {
+	class BuiltinMod {
 		public BuiltinMod(URL url, ModMetadata metadata) {
 			this.url = url;
 			this.metadata = metadata;

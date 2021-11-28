@@ -26,7 +26,7 @@ class InjectingURLClassLoader extends URLClassLoader {
 
 	InjectingURLClassLoader(URL[] urls, ClassLoader classLoader, String... exclusions) {
 		super(urls, classLoader);
-		this.exclusions  = Arrays.asList(exclusions);
+		this.exclusions = Arrays.asList(exclusions);
 	}
 
 	@Override
@@ -36,6 +36,7 @@ class InjectingURLClassLoader extends URLClassLoader {
 
 			if (c == null) {
 				boolean excluded = false;
+
 				for (String s : exclusions) {
 					if (name.startsWith(s)) {
 						excluded = true;

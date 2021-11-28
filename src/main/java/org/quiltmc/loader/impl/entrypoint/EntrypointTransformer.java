@@ -43,6 +43,7 @@ public class EntrypointTransformer {
 
 	ClassNode loadClass(QuiltLauncher launcher, String className) throws IOException {
 		byte[] data = patchedClasses.containsKey(className) ? patchedClasses.get(className) : launcher.getClassByteArray(className, true);
+
 		if (data != null) {
 			ClassReader reader = new ClassReader(data);
 			ClassNode node = new ClassNode();
@@ -55,6 +56,7 @@ public class EntrypointTransformer {
 
 	private void addPatchedClass(ClassNode node) {
 		String key = node.name.replace('/', '.');
+
 		if (patchedClasses.containsKey(key)) {
 			throw new RuntimeException("Duplicate addPatchedClasses call: " + key);
 		}

@@ -99,9 +99,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	}
 
 	@Override
-	public void prepare() {
-
-	}
+	public void prepare() { }
 
 	@Override
 	public MixinEnvironment.Phase getInitialPhase() {
@@ -113,14 +111,10 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	}
 
 	@Override
-	public void beginPhase() {
-
-	}
+	public void beginPhase() { }
 
 	@Override
-	public void checkEnv(Object bootSource) {
-
-	}
+	public void checkEnv(Object bootSource) { }
 
 	@Override
 	public ReEntranceLock getReEntranceLock() {
@@ -177,9 +171,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	}
 
 	@Override
-	public void registerInvalidClass(String className) {
-
-	}
+	public void registerInvalidClass(String className) { }
 
 	@Override
 	public boolean isClassLoaded(String className) {
@@ -202,9 +194,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	}
 
 	@Override
-	public void addTransformerExclusion(String name) {
-
-	}
+	public void addTransformerExclusion(String name) { }
 
 	@Override
 	public String getSideName() {
@@ -218,6 +208,6 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public MixinEnvironment.CompatibilityLevel getMaxCompatibilityLevel() {
-		return MixinEnvironment.CompatibilityLevel.JAVA_14;
+		return MixinEnvironment.CompatibilityLevel.JAVA_17;
 	}
 }

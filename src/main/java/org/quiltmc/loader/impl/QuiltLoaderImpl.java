@@ -166,6 +166,7 @@ public class QuiltLoaderImpl {
 				throw new RuntimeException(String.format("Failed to create config directory at '%s'", configDir), e);
 			}
 		}
+
 		return configDir;
 	}
 
@@ -210,15 +211,15 @@ public class QuiltLoaderImpl {
 
 		String modText;
 		switch (candidateMap.values().size()) {
-			case 0:
-				modText = "Loading %d mods";
-				break;
-			case 1:
-				modText = "Loading %d mod:";
-				break;
-			default:
-				modText = "Loading %d mods:";
-				break;
+		case 0:
+			modText = "Loading %d mods";
+			break;
+		case 1:
+			modText = "Loading %d mod:";
+			break;
+		default:
+			modText = "Loading %d mods:";
+			break;
 		}
 
 		LOGGER.info("[%s] " + modText + "%n%s", getClass().getSimpleName(), candidateMap.values().size(), modListText);
@@ -332,10 +333,12 @@ public class QuiltLoaderImpl {
 		ModContainer container = new ModContainer(meta, originUrl);
 		mods.add(container);
 		modMap.put(meta.id(), container);
+
 		for (ModProvided provided : meta.provides()) {
-			if(modMap.containsKey(provided.id)) {
+			if (modMap.containsKey(provided.id)) {
 				throw new ModSolvingError("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginUrl().getFile() + ", " + originUrl.getFile() + ")");
 			}
+
 			modMap.put(provided.id, container);
 		}
 	}
@@ -354,13 +357,14 @@ public class QuiltLoaderImpl {
 		LOGGER.debug("Sorting mods");
 
 		LinkedList<ModContainer> sorted = new LinkedList<>();
+
 		for (ModContainer mod : mods) {
 			if (sorted.isEmpty() || mod.getInfo().getRequires().size() == 0) {
 				sorted.addFirst(mod);
 			} else {
 				boolean b = false;
-				l1:
-				for (int i = 0; i < sorted.size(); i++) {
+
+				l1: for (int i = 0; i < sorted.size(); i++) {
 					for (Map.Entry<String, ModMetadataV0.Dependency> entry : sorted.get(i).getInfo().getRequires().entrySet()) {
 						String depId = entry.getKey();
 						ModMetadataV0.Dependency dep = entry.getValue();
@@ -422,6 +426,7 @@ public class QuiltLoaderImpl {
 
 	public void loadAccessWideners() {
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
+
 		for (ModContainer mod : mods) {
 			for (String accessWidener : mod.getInternalMeta().accessWideners()) {
 
@@ -451,10 +456,12 @@ public class QuiltLoaderImpl {
 				containsKnot = true;
 			} else {
 				gameClassLoader = gameClassLoader.getParent();
+
 				while (gameClassLoader != null && gameClassLoader.getParent() != gameClassLoader) {
 					if (gameClassLoader == targetClassLoader) {
 						containsKnot = true;
 					}
+
 					gameClassLoader = gameClassLoader.getParent();
 				}
 			}
@@ -464,9 +471,9 @@ public class QuiltLoaderImpl {
 					getLogger().info("Environment: Target class loader is parent of game class loader.");
 				} else {
 					getLogger().warn("\n\n* CLASS LOADER MISMATCH! THIS IS VERY BAD AND WILL PROBABLY CAUSE WEIRD ISSUES! *\n"
-						+ " - Expected game class loader: " + QuiltLauncherBase.getLauncher().getTargetClassLoader() + "\n"
-						+ " - Actual game class loader: " + gameClassLoader + "\n"
-						+ "Could not find the expected class loader in game class loader parents!\n");
+							+ " - Expected game class loader: " + QuiltLauncherBase.getLauncher().getTargetClassLoader() + "\n"
+							+ " - Actual game class loader: " + gameClassLoader + "\n"
+							+ "Could not find the expected class loader in game class loader parents!\n");
 				}
 			}
 		}

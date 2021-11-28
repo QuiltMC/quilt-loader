@@ -64,6 +64,7 @@ public class ModContainer implements org.quiltmc.loader.api.ModContainer {
 				return holder;
 			} else /* JAR */ {
 				FileSystemUtil.FileSystemDelegate delegate = FileSystemUtil.getJarFileSystem(holder, false);
+
 				if (delegate.get() == null) {
 					throw new RuntimeException("Could not open JAR file " + holder.getFileName() + " for NIO reading!");
 				}

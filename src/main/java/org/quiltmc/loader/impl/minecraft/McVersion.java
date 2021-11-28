@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.minecraft;
 
-
 import java.util.OptionalInt;
 
 public final class McVersion {

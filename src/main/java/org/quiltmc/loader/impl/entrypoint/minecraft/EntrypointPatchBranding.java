@@ -37,11 +37,12 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 	@Override
 	public void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter) {
 		for (String brandClassName : new String[] {
-			"net.minecraft.client.ClientBrandRetriever",
-			"net.minecraft.server.MinecraftServer"
+				"net.minecraft.client.ClientBrandRetriever",
+				"net.minecraft.server.MinecraftServer"
 		}) {
 			try {
 				ClassNode brandClass = loadClass(launcher, brandClassName);
+
 				if (brandClass != null) {
 					if (applyBrandingPatch(brandClass)) {
 						classEmitter.accept(brandClass);
@@ -53,7 +54,6 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 		}
 	}
 
-
 	private boolean applyBrandingPatch(ClassNode classNode) {
 		boolean applied = false;
 
@@ -62,6 +62,7 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 				debug("Applying brand name hook to " + classNode.name + "::" + node.name);
 
 				ListIterator<AbstractInsnNode> it = node.instructions.iterator();
+
 				while (it.hasNext()) {
 					if (it.next().getOpcode() == Opcodes.ARETURN) {
 						it.previous();

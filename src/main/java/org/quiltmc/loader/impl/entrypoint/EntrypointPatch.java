@@ -70,6 +70,7 @@ public abstract class EntrypointPatch {
 		if (last) {
 			for (int i = node.instructions.size() - 1; i >= 0; i--) {
 				AbstractInsnNode insn = node.instructions.get(i);
+
 				if (predicate.test(insn)) {
 					return insn;
 				}
@@ -77,6 +78,7 @@ public abstract class EntrypointPatch {
 		} else {
 			for (int i = 0; i < node.instructions.size(); i++) {
 				AbstractInsnNode insn = node.instructions.get(i);
+
 				if (predicate.test(insn)) {
 					return insn;
 				}
@@ -89,6 +91,7 @@ public abstract class EntrypointPatch {
 	protected void moveAfter(ListIterator<AbstractInsnNode> it, int opcode) {
 		while (it.hasNext()) {
 			AbstractInsnNode node = it.next();
+
 			if (node.getOpcode() == opcode) {
 				break;
 			}
@@ -103,6 +106,7 @@ public abstract class EntrypointPatch {
 	protected void moveAfter(ListIterator<AbstractInsnNode> it, AbstractInsnNode targetNode) {
 		while (it.hasNext()) {
 			AbstractInsnNode node = it.next();
+
 			if (node == targetNode) {
 				break;
 			}
@@ -117,6 +121,7 @@ public abstract class EntrypointPatch {
 	protected void moveBeforeType(ListIterator<AbstractInsnNode> it, int nodeType) {
 		while (it.hasPrevious()) {
 			AbstractInsnNode node = it.previous();
+
 			if (node.getType() == nodeType) {
 				break;
 			}

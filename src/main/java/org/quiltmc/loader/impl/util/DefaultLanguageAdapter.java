@@ -31,18 +31,19 @@ import java.util.List;
 public final class DefaultLanguageAdapter implements LanguageAdapter {
 	public static final DefaultLanguageAdapter INSTANCE = new DefaultLanguageAdapter();
 
-	private DefaultLanguageAdapter() {
+	private DefaultLanguageAdapter() { }
 
-	}
-
+	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T create(ModContainer mod, String value, Class<T> type) throws LanguageAdapterException {
 		String[] methodSplit = value.split("::");
+
 		if (methodSplit.length >= 3) {
 			throw new LanguageAdapterException("Invalid handle format: " + value);
 		}
 
 		Class<?> c;
+
 		try {
 			c = Class.forName(methodSplit[0], true, QuiltLauncherBase.getLauncher().getTargetClassLoader());
 		} catch (ClassNotFoundException e) {
@@ -75,6 +76,7 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 			try {
 				Field field = c.getDeclaredField(methodSplit[1]);
 				Class<?> fType = field.getType();
+
 				if ((field.getModifiers() & Modifier.STATIC) == 0) {
 					throw new LanguageAdapterException("Field " + value + " must be static!");
 				}

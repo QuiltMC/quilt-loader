@@ -47,6 +47,7 @@ import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.SemanticVersionPredicateParser;
 
+@SuppressWarnings("deprecation")
 public final class McVersionLookup {
 	private static final Pattern VERSION_PATTERN = Pattern.compile(
 			"0\\.\\d+(\\.\\d+)?a?(_\\d+)?|" // match classic versions first: 0.1.2a_34
@@ -68,17 +69,16 @@ public final class McVersionLookup {
 	private static final Pattern INDEV_PATTERN = Pattern.compile("(?:inf-|Inf?dev )(?:0\\.31 )?(\\d+(-\\d+)?)");
 	private static final String STRING_DESC = "Ljava/lang/String;";
 
-	// FIXME: "Really upstream, this could have just been a short lived class visitor" - i509
-	public static McVersion getVersion(Path gameJar, List<String> entrypointClasses, @Nullable String versionName) {
+	public static McVersion getVersion(Path gameJar, List<String> entrypointClasses, String versionName) {
 		McVersion.Builder builder = new McVersion.Builder();
 
-		// check various known files for version information
 		if (versionName != null) {
 			builder.setNameAndRelease(versionName);
 		}
 
 		try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(gameJar, false)) {
 			FileSystem fs = jarFs.get();
+
 			// Determine class version
 			for (String entrypointClass : entrypointClasses) {
 				String fileString = entrypointClass.replace('.', '/') + ".class";
@@ -126,26 +126,22 @@ public final class McVersionLookup {
 			Path file;
 
 			// version.json - contains version and target release for 18w47b+
-			if (Files.isRegularFile(file = fs.getPath("version.json"))
-					&& fromVersionJson(Files.newInputStream(file), builder)) {
+			if (Files.isRegularFile(file = fs.getPath("version.json")) && fromVersionJson(Files.newInputStream(file), builder)) {
 				return;
 			}
 
 			// constant field RealmsSharedConstants.VERSION_STRING
-			if (Files.isRegularFile(file = fs.getPath("net/minecraft/realms/RealmsSharedConstants.class"))
-					&& fromAnalyzer(Files.newInputStream(file), new FieldStringConstantVisitor("VERSION_STRING"), builder)) {
+			if (Files.isRegularFile(file = fs.getPath("net/minecraft/realms/RealmsSharedConstants.class")) && fromAnalyzer(Files.newInputStream(file), new FieldStringConstantVisitor("VERSION_STRING"), builder)) {
 				return;
 			}
 
 			// constant return value of RealmsBridge.getVersionString (presumably inlined+dead code eliminated VERSION_STRING)
-			if (Files.isRegularFile(file = fs.getPath("net/minecraft/realms/RealmsBridge.class"))
-					&& fromAnalyzer(Files.newInputStream(file), new MethodConstantRetVisitor("getVersionString"), builder)) {
+			if (Files.isRegularFile(file = fs.getPath("net/minecraft/realms/RealmsBridge.class")) && fromAnalyzer(Files.newInputStream(file), new MethodConstantRetVisitor("getVersionString"), builder)) {
 				return;
 			}
 
 			// version-like String constant used in MinecraftServer.run or another MinecraftServer method
-			if (Files.isRegularFile(file = fs.getPath("net/minecraft/server/MinecraftServer.class"))
-					&& fromAnalyzer(Files.newInputStream(file), new MethodConstantVisitor("run"), builder)) {
+			if (Files.isRegularFile(file = fs.getPath("net/minecraft/server/MinecraftServer.class")) && fromAnalyzer(Files.newInputStream(file), new MethodConstantVisitor("run"), builder)) {
 				return;
 			}
 
@@ -243,7 +239,9 @@ public final class McVersionLookup {
 		} finally {
 			try {
 				is.close();
-			} catch (IOException e) { }
+			} catch (IOException e) {
+				// ignored
+			}
 		}
 
 		return false;
@@ -329,7 +327,7 @@ public final class McVersionLookup {
 	}
 
 	/**
-	 * Returns the probable version contained in the given string, or null if the string doesn't contain a version
+	 * Returns the probable version contained in the given string, or null if the string doesn't contain a version.
 	 */
 	private static String findProbableVersion(String str) {
 		Matcher matcher = VERSION_PATTERN.matcher(str);
@@ -355,6 +353,7 @@ public final class McVersionLookup {
 
 		if (name.startsWith(release)) {
 			matcher = RELEASE_CANDIDATE_PATTERN.matcher(name);
+
 			if (matcher.matches()) {
 				String rcBuild = matcher.group(1);
 
@@ -468,7 +467,7 @@ public final class McVersionLookup {
 	}
 
 	private static final class FieldStringConstantVisitor extends ClassVisitor implements Analyzer {
-		public FieldStringConstantVisitor(String fieldName) {
+		FieldStringConstantVisitor(String fieldName) {
 			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.fieldName = fieldName;
@@ -539,7 +538,7 @@ public final class McVersionLookup {
 	}
 
 	private static final class MethodStringConstantContainsVisitor extends ClassVisitor implements Analyzer {
-		public MethodStringConstantContainsVisitor(String methodOwner, String methodName) {
+		MethodStringConstantContainsVisitor(String methodOwner, String methodName) {
 			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodOwner = methodOwner;
@@ -594,7 +593,7 @@ public final class McVersionLookup {
 	}
 
 	private static final class MethodConstantRetVisitor extends ClassVisitor implements Analyzer {
-		public MethodConstantRetVisitor(String methodName) {
+		MethodConstantRetVisitor(String methodName) {
 			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodName = methodName;
@@ -652,7 +651,7 @@ public final class McVersionLookup {
 	}
 
 	private static final class MethodConstantVisitor extends ClassVisitor implements Analyzer {
-		public MethodConstantVisitor(String methodNameHint) {
+		MethodConstantVisitor(String methodNameHint) {
 			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodNameHint = methodNameHint;
@@ -691,8 +690,8 @@ public final class McVersionLookup {
 		private boolean foundInMethodHint;
 	}
 
-	private static abstract class InsnFwdMethodVisitor extends MethodVisitor {
-		public InsnFwdMethodVisitor() {
+	private abstract static class InsnFwdMethodVisitor extends MethodVisitor {
+		InsnFwdMethodVisitor() {
 			super(QuiltLoaderImpl.ASM_VERSION);
 		}
 

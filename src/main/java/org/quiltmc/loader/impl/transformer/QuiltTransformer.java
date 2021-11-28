@@ -31,6 +31,7 @@ public final class QuiltTransformer {
 		EnvType envType = QuiltLauncherBase.getLauncher().getEnvironmentType();
 
 		byte[] input = MinecraftGameProvider.TRANSFORMER.transform(name);
+
 		if (input != null) {
 			return QuiltTransformer.transform(isDevelopment, envType, name, input);
 		} else {
@@ -40,9 +41,9 @@ public final class QuiltTransformer {
 				return null;
 			}
 		}
-
 	}
 
+	@SuppressWarnings("deprecation")
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
 		// FIXME: Could use a better way to detect this...
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
@@ -72,9 +73,11 @@ public final class QuiltTransformer {
 		if (environmentStrip) {
 			EnvironmentStrippingData stripData = new EnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType.toString());
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+
 			if (stripData.stripEntireClass()) {
 				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
 			}
+
 			if (!stripData.isEmpty()) {
 				visitor = new ClassStripper(QuiltLoaderImpl.ASM_VERSION, visitor, stripData.getStripInterfaces(), stripData.getStripFields(), stripData.getStripMethods());
 				visitorCount++;

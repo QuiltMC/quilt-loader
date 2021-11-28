@@ -37,7 +37,8 @@ public interface QuiltLauncher {
 	ClassLoader getTargetClassLoader();
 
 	/**
-	 * Gets the byte array for a particular class
+	 * Gets the byte array for a particular class.
+	 *
 	 * @param name The name of the class to retrieve
 	 * @param runTransformers Whether to run all transformers <i>except mixin</i> on the class
 	 */

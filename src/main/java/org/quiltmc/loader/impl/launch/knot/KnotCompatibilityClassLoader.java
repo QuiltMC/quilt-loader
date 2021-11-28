@@ -51,13 +51,16 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 
 			if (c == null) {
 				byte[] input = delegate.getPostMixinClassByteArray(name);
+
 				if (input != null) {
 					KnotClassDelegate.Metadata metadata = delegate.getMetadata(name, getResource(delegate.getClassFileName(name)));
 
 					int pkgDelimiterPos = name.lastIndexOf('.');
+
 					if (pkgDelimiterPos > 0) {
 						// TODO: package definition stub
 						String pkgString = name.substring(0, pkgDelimiterPos);
+
 						if (getPackage(pkgString) == null) {
 							definePackage(pkgString, null, null, null, null, null, null, null);
 						}

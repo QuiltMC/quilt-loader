@@ -43,7 +43,7 @@ public interface ModContainer {
 
 	/**
 	 * Returns the root directory of the mod.
-	 * 
+	 *
 	 * <p>It may be the root directory of the mod JAR or the folder of the mod.</p>
 	 *
 	 * @return the root directory of the mod
@@ -52,7 +52,7 @@ public interface ModContainer {
 
 	/**
 	 * Gets an NIO reference to a file inside the JAR.
-	 * 
+	 *
 	 * <p>The path is not guaranteed to exist!</p>
 	 *
 	 * @param file The location from root, using {@code /} as a separator.

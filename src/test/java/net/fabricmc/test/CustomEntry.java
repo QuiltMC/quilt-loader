@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api.metadata;
+package net.fabricmc.test;
 
-import net.fabricmc.api.EnvType;
+/**
+ * A custom entry point that allows testing functionalities of default methods.
+ */
+@FunctionalInterface
+public interface CustomEntry {
+	String name();
 
-public enum ModEnvironment {
-	CLIENT,
-	SERVER,
-	UNIVERSAL;
-
-	public boolean matches(EnvType type) {
-		switch (this) {
-		case CLIENT:
-			return type == EnvType.CLIENT;
-		case SERVER:
-			return type == EnvType.SERVER;
-		case UNIVERSAL:
-			return true;
-		default:
-			return false;
-		}
+	default String describe() {
+		return "Custom entry point \"" + name() + "\"";
 	}
 }

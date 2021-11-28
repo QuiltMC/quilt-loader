@@ -37,6 +37,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 
 	public FabricSemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
 	    int buildDelimPos = version.indexOf('+');
+
 		if (buildDelimPos >= 0) {
 			build = version.substring(buildDelimPos + 1);
 			version = version.substring(0, buildDelimPos);
@@ -45,6 +46,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		}
 
 		int dashDelimPos = version.indexOf('-');
+
 		if (dashDelimPos >= 0) {
 			prerelease = version.substring(dashDelimPos + 1);
 			version = version.substring(0, dashDelimPos);
@@ -67,6 +69,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		}
 
 		String[] componentStrings = version.split("\\.");
+
 		if (componentStrings.length < 1) {
 			throw new VersionParsingException("Did not provide version numbers!");
 		}
@@ -95,6 +98,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 
 			try {
 				components[i] = Integer.parseInt(compStr);
+
 				if (components[i] < 0) {
 					throw new VersionParsingException("Negative version number component '" + compStr + "'!");
 				}
@@ -193,6 +197,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 			return false;
 		} else {
 			FabricSemanticVersionImpl other = (FabricSemanticVersionImpl) o;
+
 			if (!equalsComponentsExactly(other)) {
 				return false;
 			}
@@ -241,14 +246,13 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		for (int i = 0; i < Math.max(getVersionComponentCount(), o.getVersionComponentCount()); i++) {
 			int first = getVersionComponent(i);
 			int second = o.getVersionComponent(i);
+
 			if (first == COMPONENT_WILDCARD || second == COMPONENT_WILDCARD) {
 				continue;
 			}
 
 			int compare = Integer.compare(first, second);
-			if (compare != 0) {
-				return compare;
-			}
+			if (compare != 0) return compare;
 		}
 
 		Optional<String> prereleaseA = getPrereleaseKey();
@@ -267,9 +271,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 						if (UNSIGNED_INTEGER.matcher(partA).matches()) {
 							if (UNSIGNED_INTEGER.matcher(partB).matches()) {
 								int compare = Integer.compare(partA.length(), partB.length());
-								if (compare != 0) {
-									return compare;
-								}
+								if (compare != 0) return compare;
 							} else {
 								return -1;
 							}
@@ -280,13 +282,12 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 						}
 
 						int compare = partA.compareTo(partB);
-						if (compare != 0) {
-							return compare;
-						}
+						if (compare != 0) return compare;
 					} else {
 						return 1;
 					}
 				}
+
 				return prereleaseBTokenizer.hasMoreElements() ? -1 : 0;
 			} else if (prereleaseA.isPresent()) {
 				return o.hasWildcard() ? 0 : -1;

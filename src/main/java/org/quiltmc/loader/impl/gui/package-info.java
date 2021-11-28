@@ -16,7 +16,7 @@
 
 /** The swing GUI shown if any major errors are thrown while obtaining the list of mods in
  * {@link org.quiltmc.loader.impl.QuiltLoaderImpl#load()}.
- * <p>
- * This could potentially be useful for showing an tree-like structure while in-game, however this usecase is rather
+ *
+ * <p>This could potentially be useful for showing an tree-like structure while in-game, however this usecase is rather
  * limited. */
 package org.quiltmc.loader.impl.gui;

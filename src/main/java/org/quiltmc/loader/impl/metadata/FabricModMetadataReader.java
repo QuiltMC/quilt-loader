@@ -23,11 +23,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import net.fabricmc.loader.api.FabricLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 
 public final class FabricModMetadataReader {
@@ -101,8 +101,10 @@ public final class FabricModMetadataReader {
 				final LoaderModMetadata ret = readModMetadata(logger, reader, schemaVersion);
 				reader.endObject();
 
-				if (FabricLoader.getInstance().isDevelopmentEnvironment())
+				if (QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
 					LOGGER.warn(String.format("\"fabric.mod.json\" from mod %s did not have \"schemaVersion\" as first field.", ret.getId()));
+				}
+
 				return ret;
 			}
 		} catch (IllegalStateException e) {
@@ -120,31 +122,23 @@ public final class FabricModMetadataReader {
 		default:
 			if (schemaVersion > 0) {
 				throw new ParseMetadataException(String.format("This version of fabric-loader doesn't support the newer schema version of \"%s\""
-					+ "\nPlease update fabric-loader to be able to read this.", schemaVersion));
+						+ "\nPlease update fabric-loader to be able to read this.", schemaVersion));
 			}
+
 			throw new ParseMetadataException(String.format("Invalid/Unsupported schema version \"%s\" was found", schemaVersion));
 		}
 	}
 
 	static void logWarningMessages(Logger logger, String id, List<ParseWarning> warnings) {
-		if (warnings.isEmpty()) {
-			return;
-		}
+		if (warnings.isEmpty()) return;
 
 		final StringBuilder message = new StringBuilder();
 
-		message.append("The mod \"")
-				.append(id)
-				.append("\" contains invalid entries in its mod json:");
+		message.append(String.format("The mod \"%s\" contains invalid entries in its mod json:", id));
 
 		for (ParseWarning warning : warnings) {
-			message.append("\n- ")
-					.append(warning.getReason())
-					.append(" \"")
-					.append(warning.getKey())
-					.append('"')
-					.append(warning.getLocation())
-					.append('"');
+			message.append(String.format("\n- %s \"%s\" at %s",
+					warning.getReason(), warning.getKey(), warning.getLocation()));
 		}
 
 		logger.warn(message.toString());

@@ -14,25 +14,28 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.minecraft.hooks;
+package net.fabricmc.test;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public final class EntrypointBranding {
-	public static final String QUILT = "quilt_loader";
-	public static final String VANILLA = "vanilla";
+public final class EntrypointTest {
+	private static final Logger LOGGER = LogManager.getLogger();
+	public static final CustomEntry FIELD_ENTRY = EntrypointTest::fieldEntry;
 
-	private static final Logger LOGGER = LogManager.getLogger("Quilt|Branding");
+	public static String staticEntry() {
+		return "static";
+	}
 
-	private EntrypointBranding() { }
+	public EntrypointTest() {
+		LOGGER.info("EntrypointTest instance created");
+	}
 
-	public static String brand(final String brand) {
-		if (brand == null || brand.isEmpty()) {
-			LOGGER.warn("Null or empty branding found!", new IllegalStateException());
-			return QUILT;
-		}
+	public String instanceEntry() {
+		return "instance";
+	}
 
-		return VANILLA.equals(brand) ? QUILT : brand + ',' + QUILT;
+	public static String fieldEntry() {
+		return "field";
 	}
 }

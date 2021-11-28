@@ -56,6 +56,7 @@ class EntrypointStorage {
 			return mod.metadata().id() + "->" + value;
 		}
 
+		@SuppressWarnings({ "unchecked" })
 		@Override
 		public <T> T getOrCreate(Class<T> type) throws Exception {
 			if (object == null) {
@@ -66,9 +67,7 @@ class EntrypointStorage {
 			if (object == null || !type.isAssignableFrom(object.getClass())) {
 				return null;
 			} else {
-				@SuppressWarnings("unchecked")
-				T tmp = (T) object;
-				return tmp;
+				return (T) object;
 			}
 		}
 
@@ -95,25 +94,22 @@ class EntrypointStorage {
 			return mod.metadata().id() + "->(0.3.x)" + value;
 		}
 
+		@SuppressWarnings("unchecked")
 		@Override
 		public <T> T getOrCreate(Class<T> type) throws Exception {
-			@SuppressWarnings("unchecked")
-			T tmp = (T) instanceMap.computeIfAbsent(type, t -> {
+			return (T) instanceMap.computeIfAbsent(type, t -> {
 				try {
 					return adapter.create(mod, value, t);
 				} catch (LanguageAdapterException ex) {
 					throw sneakyThrows(ex);
 				}
 			});
-
-			return tmp;
 		}
 
 		@Override
 		public ModContainer getModContainer() {
 			return mod;
 		}
-
 	}
 
 	private final Map<String, List<Entry>> entryMap = new HashMap<>();
@@ -137,8 +133,8 @@ class EntrypointStorage {
 
 		QuiltLoaderImpl.INSTANCE.getLogger().debug("Registering new-style initializer " + metadata.getValue() + " for mod " +  modContainer.metadata().id() + " (key " + key + ")");
 		getOrCreateEntries(key).add(new NewEntry(
-			modContainer, adapterMap.get(metadata.getAdapter()), metadata.getValue()
-		));
+				modContainer, adapterMap.get(metadata.getAdapter()), metadata.getValue()
+				));
 	}
 
 	boolean hasEntrypoints(String key) {
@@ -175,6 +171,7 @@ class EntrypointStorage {
 		return results;
 	}
 
+	@SuppressWarnings("deprecation")
 	protected <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		List<Entry> entries = entryMap.get(key);
 		if (entries == null) return Collections.emptyList();

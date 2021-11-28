@@ -3,15 +3,19 @@ plugins {
 	id "idea"
 	id "eclipse"
 	id("com.diffplug.spotless") version "5.12.5"
-	id("org.quiltmc.loom") version "0.7.24"
+	id("fabric-loom") version "0.10-SNAPSHOT"
 }
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
-
+repositories {
+	maven {
+		url = "https://maven.quiltmc.org/repository/release"
+	}
+}
 dependencies {
 	minecraft "com.mojang:minecraft:1.16.5"
-	mappings "org.quiltmc:yarn:1.16.5+build.5:v2"
+	mappings "net.fabricmc:yarn:1.16.5+build.5:v2"
 
 	// loader
 	implementation(rootProject)

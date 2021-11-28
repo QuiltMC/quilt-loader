@@ -34,9 +34,11 @@ import java.util.Map;
  */
 public interface LoaderModMetadata extends ModMetadata, ConvertibleModMetadata {
 	int getSchemaVersion();
+
 	default String getOldStyleLanguageAdapter() {
 		return "org.quiltmc.loader.impl.language.JavaLanguageAdapter";
 	}
+
 	Map<String, String> getLanguageAdapterDefinitions();
 	Collection<NestedJarEntry> getJars();
 	Collection<String> getMixinConfigs(EnvType type);

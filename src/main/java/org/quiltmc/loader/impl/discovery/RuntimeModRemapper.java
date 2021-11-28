@@ -57,7 +57,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class RuntimeModRemapper {
-
 	public static Collection<ModCandidate> remap(Collection<ModCandidate> modCandidates, FileSystem fileSystem) {
 		List<ModCandidate> modsToRemap = modCandidates.stream()
 				.filter(ModCandidate::requiresRemap)
@@ -154,7 +153,6 @@ public final class RuntimeModRemapper {
 
 				remappedMods.add(new ModCandidate(mod.getInfo(), UrlUtil.asUrl(info.outputPath), 0, false));
 			}
-
 		} catch (UrlConversionException | IOException e) {
 			remapper.finish();
 			throw new RuntimeException("Failed to remap mods", e);

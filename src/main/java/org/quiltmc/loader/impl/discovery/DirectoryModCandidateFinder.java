@@ -78,7 +78,6 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 					}
 
 					return FileVisitResult.CONTINUE;
-
 				}
 			});
 		} catch (IOException e) {

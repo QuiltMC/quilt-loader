@@ -30,8 +30,10 @@ public class QuiltServerLauncher {
 
 	public static void main(String[] args) {
 		URL propUrl = parentLoader.getResource("fabric-server-launch.properties");
+
 		if (propUrl != null) {
 			Properties properties = new Properties();
+
 			try (InputStream is = propUrl.openStream()) {
 				properties.load(is);
 			} catch (IOException e) {
@@ -82,6 +84,7 @@ public class QuiltServerLauncher {
 		// a few versions... let's use this.
 		if (!properties.containsKey("serverJar")) {
 			properties.put("serverJar", "server.jar");
+
 			try (FileOutputStream stream = new FileOutputStream(propertiesFile)) {
 				properties.store(stream, null);
 			}
@@ -100,6 +103,7 @@ public class QuiltServerLauncher {
 		}
 
 		System.setProperty(SystemProperties.GAME_JAR_PATH, serverJar.getAbsolutePath());
+
 		try {
 			URLClassLoader newClassLoader = new InjectingURLClassLoader(new URL[] { QuiltServerLauncher.class.getProtectionDomain().getCodeSource().getLocation(), UrlUtil.asUrl(serverJar) }, parentLoader, "com.google.common.jimfs.");
 			Thread.currentThread().setContextClassLoader(newClassLoader);

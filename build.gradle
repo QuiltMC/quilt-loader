@@ -4,6 +4,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id("org.cadixdev.licenser") version "0.5.0"
+	id("checkstyle")
 }
 
 def javaVersion = JavaVersion.VERSION_1_8
@@ -12,6 +13,11 @@ archivesBaseName = "quilt-loader"
 
 def ENV = System.getenv()
 version = version + (ENV.GITHUB_ACTIONS ? (ENV.SNAPSHOTS_URL ? "-SNAPSHOT" : "") : "+local")
+
+checkstyle {
+	configFile = file("checkstyle.xml")
+	toolVersion = '8.31'
+}
 
 repositories {
 	mavenCentral()
@@ -24,6 +30,11 @@ repositories {
 	maven {
 		name = 'Mojang'
 		url = 'https://libraries.minecraft.net/'
+	}
+
+	maven {
+		name = "Fabric"
+		url = "https://maven.quiltmc.org/repository/fabricmc"
 	}
 }
 
@@ -48,15 +59,15 @@ dependencies {
 	annotationProcessor("org.ow2.asm:asm-tree:$project.asmVersion")
 	annotationProcessor("org.ow2.asm:asm-util:$project.asmVersion")
 
-	implementation("org.quiltmc:sponge-mixin:$project.mixinVersion") {
+	implementation("net.fabricmc:sponge-mixin:$project.mixinVersion") {
 		exclude module: "launchwrapper"
 		exclude module: "guava"
 	}
 
 	implementation("org.quiltmc:quilt-json5:$project.json5Version") // TODO: shadow me
-	implementation("org.quiltmc:tiny-mappings-parser:$project.tinyMappingsParserVersion")
-	implementation("org.quiltmc:tiny-remapper:$project.tinyRemapperVersion")
-	implementation("org.quiltmc:access-widener:$project.accessWidenerVersion")
+	implementation("net.fabricmc:tiny-mappings-parser:$project.tinyMappingsParserVersion")
+	implementation("net.fabricmc:tiny-remapper:$project.tinyRemapperVersion")
+	implementation("net.fabricmc:access-widener:$project.accessWidenerVersion")
 
 	implementation("com.google.jimfs:jimfs:$project.jimfsVersion") {
 		exclude module: "guava"

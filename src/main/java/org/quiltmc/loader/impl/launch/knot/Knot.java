@@ -52,15 +52,14 @@ public final class Knot extends QuiltLauncherBase {
 		this.gameJarFile = gameJarFile;
 	}
 
+	@SuppressWarnings("deprecation")
 	protected ClassLoader init(String[] args) {
 		setProperties(properties);
 
 		// configure fabric vars
 		if (envType == null) {
 			String side = System.getProperty(SystemProperties.SIDE);
-			if (side == null) {
-				throw new RuntimeException("Please specify side or use a dedicated Knot!");
-			}
+			if (side == null) throw new RuntimeException("Please specify side or use a dedicated Knot!");
 
 			switch (side.toLowerCase(Locale.ROOT)) {
 			case "client":
@@ -91,9 +90,11 @@ public final class Knot extends QuiltLauncherBase {
 			LOGGER.info("Loading for game " + provider.getGameName() + " " + provider.getRawGameVersion());
 		} else {
 			LOGGER.error("Could not find valid game provider!");
+
 			for (GameProvider p : providers) {
 				LOGGER.error("- " + p.getGameName());
 			}
+
 			throw new RuntimeException("Could not find valid game provider!");
 		}
 
@@ -111,8 +112,7 @@ public final class Knot extends QuiltLauncherBase {
 						provider.getGameId(), provider.getNormalizedGameVersion(),
 						provider.getLaunchDirectory(),
 						path,
-						this
-						);
+						this);
 			}
 		}
 
@@ -140,9 +140,10 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	public void launch(ClassLoader cl) {
-		if(this.provider == null) {
+		if (this.provider == null) {
 			throw new IllegalStateException("Game provider was not initialized! (Knot#init(String[]))");
 		}
+
 		provider.launch(cl);
 	}
 
@@ -165,6 +166,7 @@ public final class Knot extends QuiltLauncherBase {
 			}
 		}).map((s) -> {
 			File file = new File(s);
+
 			if (!file.equals(gameJarFile)) {
 				try {
 					return (UrlUtil.asUrl(file));

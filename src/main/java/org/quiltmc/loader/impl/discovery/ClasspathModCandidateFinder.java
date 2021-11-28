@@ -36,6 +36,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 		Stream<URL> urls;
 
 		URL fabricCodeSource;
+
 		try {
 			fabricCodeSource = QuiltLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation();
 		} catch (Throwable t) {
@@ -57,12 +58,15 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 				// TODO: Perhaps a better solution would be to add the Sources of all parsed entrypoints. But this will do, for now.
 				loader.getLogger().debug("[ClasspathModCandidateFinder] Adding dev classpath directories to classpath.");
 				String[] classpathPropertyInput = System.getProperty("java.class.path", "").split(File.pathSeparator);
+
 				for (String s : classpathPropertyInput) {
 					if (s.isEmpty() || s.equals("*") || s.endsWith(File.separator + "*")) continue;
 					File file = new File(s);
+
 					if (file.exists() && file.isDirectory()) {
 						try {
 							URL url = UrlUtil.asUrl(file);
+
 							if (!modsList.contains(url)) {
 								// Fix running fabric-loader itself in a developmental environment.
 								// By proposing loader classes to KnotClassLoader, we setup a
@@ -86,7 +90,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 				throw new RuntimeException(e);
 			}
 		} else {
-			if(fabricCodeSource != null) {
+			if (fabricCodeSource != null) {
 				urls = Stream.of(fabricCodeSource);
 			} else {
 				loader.getLogger().debug("Could not fallback to itself for mod candidate lookup!");
@@ -97,6 +101,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 		urls.forEach((url) -> {
 			loader.getLogger().debug("[ClasspathModCandidateFinder] Processing " + url.getPath());
 			File f;
+
 			try {
 				f = UrlUtil.asFile(url);
 			} catch (UrlConversionException e) {
@@ -114,6 +119,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 
 	protected void addModSources(QuiltLoaderImpl loader, Set<URL> modsList, String name) throws IOException {
 		Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources(name);
+
 		while (mods.hasMoreElements()) {
 			try {
 				modsList.add(UrlUtil.getSource(name, mods.nextElement()));

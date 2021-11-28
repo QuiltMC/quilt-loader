@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.jar.JarFile;
 
+
 public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public static Path minecraftJar;
 
@@ -89,7 +90,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			Path deobfJarFileTmp = deobfJarDir.resolve(deobfJarFilename + ".tmp");
 
 			if (Files.exists(deobfJarFileTmp)) { // previous unfinished remap attempt
-				LOGGER.warn("Incomplete remapped file found! This means that the remapping process failed on the previous launch. If this persists, make sure to let us at Quilt know!");
+				LOGGER.warn("Incomplete remapped file found! This means that the remapping process failed on the previous launch. If this persists, make sure to let us at Fabric know!");
 
 				try {
 					Files.deleteIfExists(deobfJarFile);
@@ -150,6 +151,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			for (URL url : launcher.getLoadTimeDependencies()) {
 				try {
 					Path path = UrlUtil.asPath(url);
+
 					if (!Files.exists(path)) {
 						throw new RuntimeException("Path does not exist: " + path);
 					}
@@ -165,18 +167,18 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(deobfJarFileTmp)
 					// force jar despite the .tmp extension
 					.assumeArchive(true)
-					// don't accept class names from a blacklist of dependencies that Quilt itself utilizes
-					// FIXME: really could use a better solution, as always...
+					// don't accept class names from a blacklist of dependencies that Fabric itself utilizes
+					// TODO: really could use a better solution, as always...
 					.filter(clsName -> !clsName.startsWith("com/google/common/")
 							&& !clsName.startsWith("com/google/gson/")
 							&& !clsName.startsWith("com/google/thirdparty/")
-							&& !clsName.startsWith("org/apache/logging/log4j/")
-							&& !clsName.startsWith("org/quiltmc/json5"))
+							&& !clsName.startsWith("org/apache/logging/log4j/"))
 					.build()) {
 				for (Path path : depPaths) {
 					LOGGER.debug("Appending '" + path + "' to remapper classpath");
 					remapper.readClassPath(path);
 				}
+
 				remapper.readInputs(jarFile);
 				remapper.apply(outputConsumer);
 			} finally {
@@ -187,6 +189,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 			// so we clean up here.
 
 			depPaths.add(deobfJarFileTmp);
+
 			for (Path p : depPaths) {
 				try {
 					p.getFileSystem().close();
@@ -278,7 +281,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 
 	protected static void finishMixinBootstrapping() {
 		if (mixinReady) {
-			throw new RuntimeException("Must not call FabricLauncherBase.finishMixinBootstrapping() twice!");
+			throw new RuntimeException("Must not call QuiltLauncherBase.finishMixinBootstrapping() twice!");
 		}
 
 		try {

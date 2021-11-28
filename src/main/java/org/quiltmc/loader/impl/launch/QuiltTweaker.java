@@ -90,6 +90,7 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 		QuiltLauncherBase.processArgumentMap(arguments, getEnvironmentType());
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	public void injectIntoClassLoader(LaunchClassLoader launchClassLoader) {
 		isDevelopment = Boolean.parseBoolean(System.getProperty(SystemProperties.DEVELOPMENT, "false"));
@@ -126,17 +127,20 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 		if (!isDevelopment) {
 			// Obfuscated environment
 			Launch.blackboard.put(SystemProperties.DEVELOPMENT, false);
+
 			try {
 				String target = getLaunchTarget();
 				URL loc = launchClassLoader.findResource(target.replace('.', '/') + ".class");
 				JarURLConnection locConn = (JarURLConnection) loc.openConnection();
 				File jarFile = UrlUtil.asFile(locConn.getJarFileURL());
+
 				if (!jarFile.exists()) {
 					throw new RuntimeException("Could not locate Minecraft: " + jarFile.getAbsolutePath() + " not found");
 				}
 
 				Path obfuscated = jarFile.toPath();
 				Path remapped = QuiltLauncherBase.deobfuscate(provider.getGameId(), provider.getNormalizedGameVersion(), provider.getLaunchDirectory(), obfuscated, this);
+
 				if (remapped != obfuscated) {
 					preloadRemappedJar(remapped);
 				}
@@ -197,6 +201,7 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 				if (transformer instanceof Proxy) {
 					continue; // skip mixin as per method contract
 				}
+
 				classBytes = transformer.transform(name, transformedName, classBytes);
 			}
 		}
@@ -209,8 +214,10 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 	// for the entrypoint.
 	// To work around that, we pre-popuplate the LaunchClassLoader's resource cache,
 	// which will then cause it to use the one we need it to.
+	@SuppressWarnings("unchecked")
 	private void preloadRemappedJar(Path remappedJarFile) throws IOException {
 		Map<String, byte[]> resourceCache = null;
+
 		try {
 			Field f = LaunchClassLoader.class.getDeclaredField("resourceCache");
 			f.setAccessible(true);
@@ -235,6 +242,7 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 					// These will never be in the obfuscated jar, so we can safely skip them
 					continue;
 				}
+
 				String className = entry.getName();
 				className = className.substring(0, className.length() - 6).replace('/', '.');
 				LOGGER.debug("Appending " + className + " to resource cache...");
@@ -248,6 +256,7 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(estimate < 32 ? 32768 : estimate);
 		byte[] buffer = new byte[8192];
 		int len;
+
 		while ((len = inputStream.read(buffer)) > 0) {
 			outputStream.write(buffer, 0, len);
 		}

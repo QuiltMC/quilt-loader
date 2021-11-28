@@ -64,6 +64,7 @@ public final class QuiltMixinBootstrap {
 
 			if (mappings != null) {
 				List<String> namespaces = mappings.getMetadata().getNamespaces();
+
 				if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace())) {
 					System.setProperty("mixin.env.remapRefMap", "true");
 

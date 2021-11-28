@@ -23,6 +23,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import java.io.File;
 
 public final class EntrypointServer {
+	@SuppressWarnings("deprecation")
 	public static void start(File runDir, Object gameInstance) {
 		if (runDir == null) {
 			runDir = new File(".");

@@ -37,14 +37,13 @@ public class ModCandidateSet {
 	private final Set<ModCandidate> depthZeroCandidates = new HashSet<>();
 	private final Map<String, ModCandidate> candidates = new HashMap<>();
 
+	@SuppressWarnings("unchecked")
 	private static int compare(ModCandidate a, ModCandidate b) {
 		Version av = a.getInfo().getVersion();
 		Version bv = b.getInfo().getVersion();
 
 		if (av instanceof Comparable && bv instanceof Comparable) {
-			@SuppressWarnings("unchecked")
-			Comparable<? super Version> cv = (Comparable<? super Version>) bv;
-			return (cv.compareTo(av));
+			return ((Comparable<Version>) bv).compareTo(av);
 		} else {
 			return 0;
 		}
@@ -65,6 +64,7 @@ public class ModCandidateSet {
 	public synchronized boolean add(ModCandidate candidate) {
 		String version = candidate.getInfo().getVersion().getFriendlyString();
 		ModCandidate oldCandidate = candidates.get(version);
+
 		if (oldCandidate != null) {
 			int oldDepth = oldCandidate.getDepth();
 			int newDepth = candidate.getDepth();
@@ -73,6 +73,7 @@ public class ModCandidateSet {
 				return false;
 			} else {
 				candidates.remove(version);
+
 				if (oldDepth > 0) {
 					depthZeroCandidates.remove(oldCandidate);
 				}
@@ -80,9 +81,11 @@ public class ModCandidateSet {
 		}
 
 		candidates.put(version, candidate);
+
 		for (ModProvided provided : candidate.getMetadata().provides()) {
 			modProvides.add(provided.id);
 		}
+
 		if (candidate.getDepth() == 0) {
 			depthZeroCandidates.add(candidate);
 		}

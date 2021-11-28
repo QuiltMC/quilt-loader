@@ -31,11 +31,13 @@ public final class SemanticVersionPredicateParser {
 
 		for (String s : text.split(" ")) {
 			s = s.trim();
+
 			if (s.isEmpty() || s.equals("*")) {
 				continue;
 			}
 
 			Function<FabricSemanticVersionImpl, Predicate<FabricSemanticVersionImpl>> factory = null;
+
 			for (String prefix : PREFIXES.keySet()) {
 				if (s.startsWith(prefix)) {
 					factory = PREFIXES.get(prefix);
@@ -45,6 +47,7 @@ public final class SemanticVersionPredicateParser {
 			}
 
 			FabricSemanticVersionImpl version = new FabricSemanticVersionImpl(s, true);
+
 			if (version.isPrerelease()) {
 				prereleaseVersions.add(version);
 			}
