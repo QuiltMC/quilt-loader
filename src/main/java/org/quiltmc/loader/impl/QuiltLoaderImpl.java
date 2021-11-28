@@ -16,53 +16,41 @@
 
 package org.quiltmc.loader.impl;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.impl.quiltmc.Quilt2FabricLoader;
-
-import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
-import org.quiltmc.loader.impl.metadata.DependencyOverrides;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.SemanticVersion;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.ApiStatus;
+import org.objectweb.asm.Opcodes;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
-import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
-import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
-import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModResolver;
-import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.discovery.*;
+import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
-import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.DependencyOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
-import org.objectweb.asm.Opcodes;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The main class for mod loading operations.
@@ -209,29 +197,17 @@ public class QuiltLoaderImpl {
 					.map(candidate -> String.format("\t- %s@%s", candidate.getMetadata().id(), candidate.getMetadata().version().raw()))
 					.collect(Collectors.joining("\n"));
 
-		String modText;
-		switch (candidateMap.values().size()) {
-		case 0:
-			modText = "Loading %d mods";
-			break;
-		case 1:
-			modText = "Loading %d mod:";
-			break;
-		default:
-			modText = "Loading %d mods:";
-			break;
-		}
-
-		LOGGER.info("[%s] " + modText + "%n%s", getClass().getSimpleName(), candidateMap.values().size(), modListText);
+		int count = candidateMap.values().size();
+		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
 
 		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
-			LOGGER.info(String.format("Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides().keySet())));
+			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides().keySet()));
 		}
 
 		boolean runtimeModRemapping = isDevelopmentEnvironment();
 
 		if (runtimeModRemapping && System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
-			LOGGER.warn("Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
+			Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
 			runtimeModRemapping = false;
 		}
 
@@ -346,9 +322,11 @@ public class QuiltLoaderImpl {
 	protected void postprocessModMetadata() {
 		for (ModContainer mod : mods) {
 			if (!(mod.getInfo().getVersion() instanceof SemanticVersion)) {
-				LOGGER.warn("Mod `" + mod.getInfo().getId() + "` (" + mod.getInfo().getVersion().getFriendlyString() + ") does not respect SemVer - comparison support is limited.");
+				Log.warn(LogCategory.METADATA, "Mod `%s` (%s) does not respect SemVer - comparison support is limited.",
+						mod.getInfo().getId(), mod.getInfo().getVersion().getFriendlyString());
 			} else if (((SemanticVersion) mod.getInfo().getVersion()).getVersionComponentCount() >= 4) {
-				LOGGER.warn("Mod `" + mod.getInfo().getId() + "` (" + mod.getInfo().getVersion().getFriendlyString() + ") uses more dot-separated version components than SemVer allows; support for this is currently not guaranteed.");
+				Log.warn(LogCategory.METADATA, "Mod `%s` (%s) uses more dot-separated version components than SemVer allows; support for this is currently not guaranteed.",
+						mod.getInfo().getId(), mod.getInfo().getVersion().getFriendlyString());
 			}
 		}
 	}
@@ -468,12 +446,13 @@ public class QuiltLoaderImpl {
 
 			if (!matchesKnot) {
 				if (containsKnot) {
-					getLogger().info("Environment: Target class loader is parent of game class loader.");
+					Log.info(LogCategory.KNOT, "Environment: Target class loader is parent of game class loader.");
 				} else {
-					getLogger().warn("\n\n* CLASS LOADER MISMATCH! THIS IS VERY BAD AND WILL PROBABLY CAUSE WEIRD ISSUES! *\n"
-							+ " - Expected game class loader: " + QuiltLauncherBase.getLauncher().getTargetClassLoader() + "\n"
-							+ " - Actual game class loader: " + gameClassLoader + "\n"
-							+ "Could not find the expected class loader in game class loader parents!\n");
+					Log.warn(LogCategory.KNOT, "\n\n* CLASS LOADER MISMATCH! THIS IS VERY BAD AND WILL PROBABLY CAUSE WEIRD ISSUES! *\n"
+							+ " - Expected game class loader: %s\n"
+							+ " - Actual game class loader: %s\n"
+							+ "Could not find the expected class loader in game class loader parents!\n",
+							QuiltLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
 				}
 			}
 		}
@@ -483,11 +462,12 @@ public class QuiltLoaderImpl {
 		if (gameDir != null) {
 			try {
 				if (!gameDir.toRealPath().equals(newRunDir.toRealPath())) {
-					getLogger().warn("Inconsistent game execution directories: engine says " + newRunDir.toRealPath() + ", while initializer says " + gameDir.toRealPath() + "...");
+					Log.warn(LogCategory.GENERAL, "Inconsistent game execution directories: engine says %s, while initializer says %s...",
+							newRunDir.toRealPath(), gameDir.toRealPath());
 					setGameDir(newRunDir);
 				}
 			} catch (IOException e) {
-				getLogger().warn("Exception while checking game execution directory consistency!", e);
+				Log.warn(LogCategory.GENERAL, "Exception while checking game execution directory consistency!", e);
 			}
 		} else {
 			setGameDir(newRunDir);
@@ -496,10 +476,6 @@ public class QuiltLoaderImpl {
 
 	public AccessWidener getAccessWidener() {
 		return accessWidener;
-	}
-
-	public Logger getLogger() {
-		return LOGGER;
 	}
 
 	/**

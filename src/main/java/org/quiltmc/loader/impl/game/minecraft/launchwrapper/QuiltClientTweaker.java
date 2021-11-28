@@ -14,27 +14,18 @@
  * limitations under the License.
  */
 
-package net.fabricmc.test;
+package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
+import net.fabricmc.api.EnvType;
 
-public final class EntrypointTest {
-	public static final CustomEntry FIELD_ENTRY = EntrypointTest::fieldEntry;
-
-	public static String staticEntry() {
-		return "static";
+public final class QuiltClientTweaker extends QuiltTweaker {
+	@Override
+	public EnvType getEnvironmentType() {
+		return EnvType.CLIENT;
 	}
 
-	public EntrypointTest() {
-		Log.info(LogCategory.TEST, "EntrypointTest instance created");
-	}
-
-	public String instanceEntry() {
-		return "instance";
-	}
-
-	public static String fieldEntry() {
-		return "field";
+	@Override
+	public String getLaunchTarget() {
+		return "net.minecraft.client.main.Main";
 	}
 }

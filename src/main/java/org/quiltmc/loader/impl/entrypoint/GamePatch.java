@@ -27,19 +27,11 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public abstract class EntrypointPatch {
-	private final EntrypointTransformer transformer;
+public abstract class GamePatch {
+	private final GameTransformer transformer;
 
-	public EntrypointPatch(EntrypointTransformer transformer) {
+	public GamePatch(GameTransformer transformer) {
 		this.transformer = transformer;
-	}
-
-	protected void debug(String s) {
-		transformer.logger.debug(s);
-	}
-
-	protected void warn(String s) {
-		transformer.logger.warn(s);
 	}
 
 	protected boolean classExists(QuiltLauncher launcher, String className) {

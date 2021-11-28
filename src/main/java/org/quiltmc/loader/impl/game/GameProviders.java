@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.impl.game;
 
+import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
+
 import java.util.Collections;
 import java.util.List;
 

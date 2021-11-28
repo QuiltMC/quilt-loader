@@ -29,6 +29,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import net.fabricmc.api.EnvType;
+
 /**
  * Internal variant of the ModMetadata interface.
  */
@@ -50,7 +52,7 @@ public interface LoaderModMetadata extends ModMetadata, ConvertibleModMetadata {
 	List<EntrypointMetadata> getEntrypoints(String type);
 	Collection<String> getEntrypointKeys();
 
-	void emitFormatWarnings(Logger logger);
+	void emitFormatWarnings();
 
 	@Override
 	default LoaderModMetadata asFabricModMetadata() {

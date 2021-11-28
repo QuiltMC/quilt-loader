@@ -20,7 +20,7 @@ import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.entrypoint.minecraft.hooks.EntrypointUtils;
+import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProviders;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -28,6 +28,8 @@ import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import java.io.File;
@@ -52,7 +54,6 @@ public final class Knot extends QuiltLauncherBase {
 		this.gameJarFile = gameJarFile;
 	}
 
-	@SuppressWarnings("deprecation")
 	protected ClassLoader init(String[] args) {
 		setProperties(properties);
 
@@ -87,12 +88,12 @@ public final class Knot extends QuiltLauncherBase {
 		}
 
 		if (provider != null) {
-			LOGGER.info("Loading for game " + provider.getGameName() + " " + provider.getRawGameVersion());
+			Log.info(LogCategory.GAME_PROVIDER, "Loading for game %s %s", provider.getGameName(), provider.getRawGameVersion());
 		} else {
-			LOGGER.error("Could not find valid game provider!");
+			Log.error(LogCategory.GAME_PROVIDER, "Could not find valid game provider!");
 
 			for (GameProvider p : providers) {
-				LOGGER.error("- " + p.getGameName());
+				Log.error(LogCategory.GAME_PROVIDER, "- %s", p.getGameName());
 			}
 
 			throw new RuntimeException("Could not find valid game provider!");
@@ -159,7 +160,7 @@ public final class Knot extends QuiltLauncherBase {
 
 		return Arrays.stream(cmdLineClasspath.split(File.pathSeparator)).filter((s) -> {
 			if (s.equals("*") || s.endsWith(File.separator + "*")) {
-				System.err.println("WARNING: Knot does not support wildcard classpath entries: " + s + " - the game may not load properly!");
+				Log.warn(LogCategory.KNOT, "Knot does not support wildcard classpath entries: %s - the game may not load properly!", s);
 				return false;
 			} else {
 				return true;
@@ -171,7 +172,7 @@ public final class Knot extends QuiltLauncherBase {
 				try {
 					return (UrlUtil.asUrl(file));
 				} catch (UrlConversionException e) {
-					LOGGER.debug(e);
+					Log.debug(LogCategory.KNOT, "Can't determine url for %s", file, e);
 					return null;
 				}
 			} else {
@@ -182,7 +183,7 @@ public final class Knot extends QuiltLauncherBase {
 
 	@Override
 	public void propose(URL url) {
-		QuiltLauncherBase.LOGGER.debug("[Knot] Proposed " + url + " to classpath.");
+		Log.debug(LogCategory.KNOT, "Proposed " + url + " to classpath.");
 		classLoader.addURL(url);
 	}
 

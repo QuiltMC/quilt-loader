@@ -40,6 +40,8 @@ import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.util.sat4j.pb.tools.INegator;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
@@ -48,10 +50,8 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 public final class ModSolver {
 	static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
 
-	private final Logger logger;
 
-	public ModSolver(Logger logger) {
-		this.logger = logger;
+	public ModSolver() {
 	}
 
 	/** Primarily used by {@link ModResolver#resolve(QuiltLoaderImpl)} to find a valid map of mod ids to a single mod candidate, where
@@ -125,7 +125,7 @@ public final class ModSolver {
 		Map<String, ModCandidate> providedModMap;
 		Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults;
 
-		Sat4jWrapper sat = new Sat4jWrapper(logger);
+		Sat4jWrapper sat = new Sat4jWrapper();
 		Map<String, OptionalModIdDefintion> modDefs = new HashMap<>();
 
 		// Put primary mod (first mod in jar)
@@ -178,7 +178,7 @@ public final class ModSolver {
 						continue;
 					}
 
-					sat.addRule(createModDepLink(logger, sat, cOption, dep));
+					sat.addRule(createModDepLink(sat, cOption, dep));
 				}
 
 				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().breaks()) {
@@ -187,7 +187,7 @@ public final class ModSolver {
 						continue;
 					}
 
-					sat.addRule(createModBreaks(logger, sat, cOption, dep));
+					sat.addRule(createModBreaks(sat, cOption, dep));
 				}
 			}
 		}
@@ -369,28 +369,28 @@ public final class ModSolver {
 		return new LoadOptionResult<>(Collections.unmodifiableMap(resultMap));
 	}
 
-	public static QuiltRuleDep createModDepLink(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
+	public static QuiltRuleDep createModDepLink(RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
 
 		if (dep instanceof org.quiltmc.loader.api.ModDependency.Any) {
 			org.quiltmc.loader.api.ModDependency.Any any = (org.quiltmc.loader.api.ModDependency.Any) dep;
 
-			return new QuiltRuleDepAny(logger, ctx, option, any);
+			return new QuiltRuleDepAny(ctx, option, any);
 		} else {
 			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
 
-			return new QuiltRuleDepOnly(logger, ctx, option, only);
+			return new QuiltRuleDepOnly(ctx, option, only);
 		}
 	}
 
-	public static QuiltRuleBreak createModBreaks(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
+	public static QuiltRuleBreak createModBreaks(RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
 		if (dep instanceof org.quiltmc.loader.api.ModDependency.All) {
 			org.quiltmc.loader.api.ModDependency.All any = (org.quiltmc.loader.api.ModDependency.All) dep;
 
-			return new QuiltRuleBreakAll(logger, ctx, option, any);
+			return new QuiltRuleBreakAll(ctx, option, any);
 		} else {
 			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
 
-			return new QuiltRuleBreakOnly(logger, ctx, option, only);
+			return new QuiltRuleBreakOnly(ctx, option, only);
 		}
 	}
 
@@ -417,7 +417,7 @@ public final class ModSolver {
 			depCandidate = provided.get(depModId);
 			if (depCandidate != null) {
 				if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
-					logger.warn("Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + depCandidate.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
+					Log.warn(LogCategory.SOLVING, "Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + depCandidate.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
 				}
 			}
 		}

@@ -14,14 +14,10 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch;
+package org.quiltmc.loader.impl.util.log;
 
-import org.quiltmc.loader.impl.transformer.QuiltTransformer;
-import net.minecraft.launchwrapper.IClassTransformer;
-
-public class QuiltClassTransformer implements IClassTransformer {
-	@Override
-	public byte[] transform(String name, String transformedName, byte[] basicClass) {
-		return QuiltTransformer.lwTransformerHook(name, transformedName, basicClass);
-	}
+public interface LogHandler {
+	void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean isReplayedBuiltin);
+	boolean shouldLog(LogLevel level, LogCategory category);
+	void close();
 }

@@ -20,6 +20,8 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +42,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 		try {
 			fabricCodeSource = QuiltLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation();
 		} catch (Throwable t) {
-			loader.getLogger().debug("Could not retrieve launcher code source!", t);
+			Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			fabricCodeSource = null;
 		}
 
@@ -56,7 +58,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 				// As such, we're adding them to the classpath here and now.
 				// To avoid tripping loader-side checks, we also don't add URLs already in modsList.
 				// TODO: Perhaps a better solution would be to add the Sources of all parsed entrypoints. But this will do, for now.
-				loader.getLogger().debug("[ClasspathModCandidateFinder] Adding dev classpath directories to classpath.");
+				Log.debug(LogCategory.DISCOVERY, "[ClasspathModCandidateFinder] Adding dev classpath directories to classpath.");
 				String[] classpathPropertyInput = System.getProperty("java.class.path", "").split(File.pathSeparator);
 
 				for (String s : classpathPropertyInput) {
@@ -80,7 +82,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 								}
 							}
 						} catch (UrlConversionException e) {
-							loader.getLogger().warn("[ClasspathModCandidateFinder] Failed to add dev directory " + file.getAbsolutePath() + " to classpath!", e);
+							Log.warn(LogCategory.DISCOVERY, "[ClasspathModCandidateFinder] Failed to add dev directory %s to classpath!", file.getAbsolutePath(), e);
 						}
 					}
 				}
@@ -93,13 +95,13 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 			if (fabricCodeSource != null) {
 				urls = Stream.of(fabricCodeSource);
 			} else {
-				loader.getLogger().debug("Could not fallback to itself for mod candidate lookup!");
+				Log.debug(LogCategory.DISCOVERY, "Could not fallback to itself for mod candidate lookup!");
 				urls = Stream.empty();
 			}
 		}
 
 		urls.forEach((url) -> {
-			loader.getLogger().debug("[ClasspathModCandidateFinder] Processing " + url.getPath());
+			Log.debug(LogCategory.DISCOVERY, "[ClasspathModCandidateFinder] Processing %s", url.getPath());
 			File f;
 
 			try {
@@ -124,7 +126,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 			try {
 				modsList.add(UrlUtil.getSource(name, mods.nextElement()));
 			} catch (UrlConversionException e) {
-				loader.getLogger().debug(e);
+				Log.debug(LogCategory.DISCOVERY, "%s", e);
 			}
 		}
 	}

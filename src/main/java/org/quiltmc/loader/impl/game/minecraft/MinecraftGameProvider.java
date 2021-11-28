@@ -14,24 +14,19 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.game;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.api.VersionPredicate;
-import net.fabricmc.loader.api.metadata.ModDependency;
-import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
-import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchBranding;
-import org.quiltmc.loader.impl.entrypoint.minecraft.EntrypointPatchHook;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
+import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.ModDependencyImpl;
-import org.quiltmc.loader.impl.minecraft.McVersionLookup;
-import org.quiltmc.loader.impl.minecraft.McVersion;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -39,6 +34,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
+import org.quiltmc.loader.impl.util.log.Log;
 
 public class MinecraftGameProvider implements GameProvider {
 	private EnvType envType;
@@ -48,9 +44,9 @@ public class MinecraftGameProvider implements GameProvider {
 	private McVersion versionData;
 	private boolean hasModLoader = false;
 
-	public static final EntrypointTransformer TRANSFORMER = new EntrypointTransformer(it -> Arrays.asList(
-			new EntrypointPatchHook(it),
-			new EntrypointPatchBranding(it)
+	public static final GameTransformer TRANSFORMER = new GameTransformer(it -> Arrays.asList(
+			new EntrypointPatch(it),
+			new BrandingPatch(it)
 			));
 
 	@Override
@@ -154,6 +150,8 @@ public class MinecraftGameProvider implements GameProvider {
 			return false;
 		}
 
+		Log.init(new Log4jLogHandler(), true);
+
 		entrypoint = entrypointResult.get().entrypointName;
 		gameJar = entrypointResult.get().entrypointPath;
 		realmsJar = GameProviderHelper.getSource(loader, "realmsVersion").orElse(null);
@@ -198,7 +196,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public EntrypointTransformer getEntrypointTransformer() {
+	public GameTransformer getEntrypointTransformer() {
 		return TRANSFORMER;
 	}
 

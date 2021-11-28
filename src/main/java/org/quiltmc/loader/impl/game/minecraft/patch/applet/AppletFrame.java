@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.applet;
+package org.quiltmc.loader.impl.game.minecraft.patch.applet;
 
 import org.quiltmc.loader.impl.util.Arguments;
 

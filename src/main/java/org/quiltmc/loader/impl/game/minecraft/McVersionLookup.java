@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.minecraft;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -30,7 +30,6 @@ import java.util.regex.Pattern;
 
 import net.fabricmc.loader.api.VersionParsingException;
 
-import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;

@@ -14,20 +14,24 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl;
+package org.quiltmc.loader.impl.entrypoint;
 
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.impl.ModContainer;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointContainerImpl;
 import org.quiltmc.loader.impl.entrypoint.QuiltEntrypointException;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.util.*;
 
-class EntrypointStorage {
+public final class EntrypointStorage {
 	interface Entry {
 		<T> T getOrCreate(Class<T> type) throws Exception;
 
@@ -118,30 +122,30 @@ class EntrypointStorage {
 		return entryMap.computeIfAbsent(key, (z) -> new ArrayList<>());
 	}
 
-	protected void addDeprecated(ModContainer modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
-		QuiltLoaderImpl.INSTANCE.getLogger().debug("Registering 0.3.x old-style initializer " + value + " for mod " + modContainer.metadata().id());
+	public void addDeprecated(ModContainer modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
+		Log.debug(LogCategory.ENTRYPOINT, "Registering 0.3.x old-style initializer " + value + " for mod " + modContainer.metadata().id());
 		OldEntry oe = new OldEntry(modContainer, adapter, value);
 		getOrCreateEntries("main").add(oe);
 		getOrCreateEntries("client").add(oe);
 		getOrCreateEntries("server").add(oe);
 	}
 
-	protected void add(ModContainer modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
+	public void add(ModContainer modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
 		if (!adapterMap.containsKey(metadata.getAdapter())) {
 			throw new Exception("Could not find adapter '" + metadata.getAdapter() + "' (mod " + modContainer.metadata().id() + "!)");
 		}
 
-		QuiltLoaderImpl.INSTANCE.getLogger().debug("Registering new-style initializer " + metadata.getValue() + " for mod " +  modContainer.metadata().id() + " (key " + key + ")");
+		Log.debug(LogCategory.ENTRYPOINT, "Registering new-style initializer " + metadata.getValue() + " for mod " +  modContainer.metadata().id() + " (key " + key + ")");
 		getOrCreateEntries(key).add(new NewEntry(
 				modContainer, adapterMap.get(metadata.getAdapter()), metadata.getValue()
 				));
 	}
 
-	boolean hasEntrypoints(String key) {
+	public boolean hasEntrypoints(String key) {
 		return entryMap.containsKey(key);
 	}
 
-	protected <T> List<T> getEntrypoints(String key, Class<T> type) {
+	public <T> List<T> getEntrypoints(String key, Class<T> type) {
 		List<Entry> entries = entryMap.get(key);
 		if (entries == null) return Collections.emptyList();
 
@@ -172,7 +176,7 @@ class EntrypointStorage {
 	}
 
 	@SuppressWarnings("deprecation")
-	protected <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
+	public <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		List<Entry> entries = entryMap.get(key);
 		if (entries == null) return Collections.emptyList();
 

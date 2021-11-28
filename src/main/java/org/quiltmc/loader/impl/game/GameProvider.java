@@ -18,7 +18,7 @@ package org.quiltmc.loader.impl.game;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -39,7 +39,7 @@ public interface GameProvider {
 	List<Path> getGameContextJars();
 
 	boolean locateGame(EnvType envType, String[] args, ClassLoader loader);
-	EntrypointTransformer getEntrypointTransformer();
+	GameTransformer getEntrypointTransformer();
 	void launch(ClassLoader loader);
 
 	String[] getLaunchArguments(boolean sanitize);

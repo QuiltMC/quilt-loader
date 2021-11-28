@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch;
+package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
 import net.fabricmc.api.EnvType;
 
-public final class QuiltClientTweaker extends QuiltTweaker {
+public final class QuiltServerTweaker extends QuiltTweaker {
 	@Override
 	public EnvType getEnvironmentType() {
-		return EnvType.CLIENT;
+		return EnvType.SERVER;
 	}
 
 	@Override
 	public String getLaunchTarget() {
-		return "net.minecraft.client.main.Main";
+		return "net.minecraft.server.MinecraftServer";
 	}
 }

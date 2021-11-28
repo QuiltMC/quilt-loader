@@ -39,6 +39,8 @@ import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 
 import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.File;
 import java.io.IOException;
@@ -76,19 +78,16 @@ public class ModResolver {
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
 
-	private final Logger logger;
 	private final boolean isDevelopment;
 	private final Path gameDir;
 	private final List<ModCandidateFinder> candidateFinders = new ArrayList<>();
 
 	public ModResolver(QuiltLoaderImpl loader) {
-		this.logger = loader.getLogger();
 		this.isDevelopment = loader.isDevelopmentEnvironment();
 		this.gameDir = loader.getGameDir();
 	}
 
-	public ModResolver(Logger logger, boolean isDevelopment, Path gameDir) {
-		this.logger = logger;
+	public ModResolver(boolean isDevelopment, Path gameDir) {
 		this.isDevelopment = isDevelopment;
 		this.gameDir = gameDir;
 	}
@@ -211,7 +210,7 @@ public class ModResolver {
 			final Path path, fabricModJson, quiltModJson, rootDir;
 			URL normalizedUrl;
 
-			logger.debug("Testing " + url);
+			Log.debug(LogCategory.RESOLUTION, "Testing " + url);
 
 			try {
 				path = UrlUtil.asPath(url).normalize();
@@ -228,7 +227,7 @@ public class ModResolver {
 				rootDir = path;
 
 				if (isDevelopment && !Files.exists(fabricModJson) && !Files.exists(quiltModJson)) {
-					logger.warn("Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
+					Log.warn(LogCategory.RESOLUTION, "Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
 					synchronized (launcherSyncObject) {
 						QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 						if (launcher != null) {
@@ -253,19 +252,19 @@ public class ModResolver {
 			LoaderModMetadata[] info;
 
 			try {
-				info = new LoaderModMetadata[] { ModMetadataReader.read(logger, quiltModJson).asFabricModMetadata() };
+				info = new LoaderModMetadata[] { ModMetadataReader.read(quiltModJson).asFabricModMetadata() };
 			} catch (ParseException e) {
 				throw new RuntimeException(String.format("Mod at \"%s\" has an invalid quilt.mod.json file!", path), e);
 			} catch (NoSuchFileException notQuilt) {
 
 				try {
-					info = new LoaderModMetadata[] { FabricModMetadataReader.parseMetadata(logger, fabricModJson) };
+					info = new LoaderModMetadata[] { FabricModMetadataReader.parseMetadata(fabricModJson) };
 				} catch (ParseMetadataException.MissingRequired e){
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
 				} catch (ParseException | ParseMetadataException e) {
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file!", path), e);
 				} catch (NoSuchFileException e) {
-					logger.warn(String.format("Neither a fabric nor a quilt JAR at \"%s\", ignoring", path));
+					Log.warn(LogCategory.RESOLUTION, "Neither a fabric nor a quilt JAR at \"%s\", ignoring", path);
 					info = new LoaderModMetadata[0];
 				} catch (IOException e) {
 					throw new RuntimeException(String.format("Failed to open fabric.mod.json for mod at \"%s\"!", path), e);
@@ -329,13 +328,13 @@ public class ModResolver {
 				added = candidatesById.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
 
 				if (!added) {
-					logger.debug(candidate.getOriginUrl() + " already present as " + candidate);
+					Log.debug(LogCategory.RESOLUTION, candidate.getOriginUrl() + " already present as " + candidate);
 				} else {
-					logger.debug("Adding " + candidate.getOriginUrl() + " as " + candidate);
+					Log.debug(LogCategory.RESOLUTION, "Adding " + candidate.getOriginUrl() + " as " + candidate);
 
 					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getOriginUrl().toString(), (u) -> {
-						logger.debug("Searching for nested JARs in " + candidate);
-						logger.debug(u);
+						Log.debug(LogCategory.RESOLUTION, "Searching for nested JARs in " + candidate);
+						Log.debug(LogCategory.RESOLUTION, u);
 						Collection<String> jars = candidate.getMetadata().jars();
 						List<Path> list = new ArrayList<>(jars.size());
 
@@ -343,7 +342,7 @@ public class ModResolver {
 							.map((j) -> rootDir.resolve(j.replace("/", rootDir.getFileSystem().getSeparator())))
 							.forEach((modPath) -> {
 								if (!modPath.toString().endsWith(".jar")) {
-									logger.warn("Found nested jar entry that didn't end with '.jar': " + modPath);
+									Log.warn(LogCategory.RESOLUTION, "Found nested jar entry that didn't end with '.jar': " + modPath);
 									return;
 								}
 
@@ -351,7 +350,7 @@ public class ModResolver {
 									list.add(modPath);
 								} else {
 									// TODO: pre-check the JAR before loading it, if possible
-									logger.debug("Found nested JAR: " + modPath);
+									Log.debug(LogCategory.RESOLUTION, "Found nested JAR: " + modPath);
 									Path dest = inMemoryFs.getPath(UUID.randomUUID() + ".jar");
 
 									try {
@@ -463,15 +462,15 @@ public class ModResolver {
 		}
 
 		long time2 = System.currentTimeMillis();
-		ModSolver solver = new ModSolver(logger);
+		ModSolver solver = new ModSolver();
 		ModSolveResult result = solver.findCompatibleSet(candidatesById);
 
 		long time3 = System.currentTimeMillis();
-		logger.debug("Mod resolution detection time: " + (time2 - time1) + "ms");
-		logger.debug("Mod resolution time: " + (time3 - time2) + "ms");
+		Log.debug(LogCategory.RESOLUTION, "Mod resolution detection time: " + (time2 - time1) + "ms");
+		Log.debug(LogCategory.RESOLUTION, "Mod resolution time: " + (time3 - time2) + "ms");
 
 		for (ModCandidate candidate : result.modMap.values()) {
-			candidate.getInfo().emitFormatWarnings(logger);
+			candidate.getInfo().emitFormatWarnings();
 		}
 
 		return result;

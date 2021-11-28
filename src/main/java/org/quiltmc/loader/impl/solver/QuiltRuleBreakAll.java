@@ -29,7 +29,7 @@ public class QuiltRuleBreakAll extends QuiltRuleBreak {
 	final QuiltRuleBreakOnly[] options;
 	final ModDependency.All publicDep;
 
-	public QuiltRuleBreakAll(Logger logger, RuleContext ctx, LoadOption option, ModDependency.All all) {
+	public QuiltRuleBreakAll(RuleContext ctx, LoadOption option, ModDependency.All all) {
 
 		super(option);
 		this.publicDep = all;
@@ -39,7 +39,7 @@ public class QuiltRuleBreakAll extends QuiltRuleBreak {
 			if (!only.shouldIgnore()) {
 				QuiltModDepOption sub = new QuiltModDepOption(only);
 				ctx.addOption(sub);
-				QuiltRuleBreakOnly dep = new QuiltRuleBreakOnly(logger, ctx, sub, only);
+				QuiltRuleBreakOnly dep = new QuiltRuleBreakOnly(ctx, sub, only);
 				ctx.addRule(dep);
 				optionList.add(dep);
 			}

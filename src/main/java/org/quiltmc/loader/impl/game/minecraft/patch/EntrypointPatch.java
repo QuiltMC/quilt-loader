@@ -14,30 +14,35 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.minecraft;
+package org.quiltmc.loader.impl.game.minecraft.patch;
 
 import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.entrypoint.EntrypointPatch;
-import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
+import org.quiltmc.loader.impl.entrypoint.GamePatch;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.impl.game.minecraft.Hooks;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.function.Consumer;
 
-public class EntrypointPatchHook extends EntrypointPatch {
-	public EntrypointPatchHook(EntrypointTransformer transformer) {
+public class EntrypointPatch extends GamePatch {
+	public EntrypointPatch(GameTransformer transformer) {
 		super(transformer);
 	}
 
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
-		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/minecraft/hooks/Entrypoint" + (type == EnvType.CLIENT ? "Client" : "Server"), "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
+		String methodName = String.format("start%s", type == EnvType.CLIENT ? "Client" : "Server");
+		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, methodName, "(Ljava/io/File;Ljava/lang/Object;)V", false));
 	}
+
 
 	@Override
 	public void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter) {
@@ -135,7 +140,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 				throw new RuntimeException("Could not find game constructor in " + entrypoint + "!");
 			}
 
-			debug("Found game constructor: " + entrypoint + " -> " + gameEntrypoint);
+			Log.debug(LogCategory.GAME_PATCH, "Found game constructor: %s -> %s", entrypoint, gameEntrypoint);
 			ClassNode gameClass = gameEntrypoint.equals(entrypoint) || is20w22aServerOrHigher ? mainClass : loadClass(launcher, gameEntrypoint);
 			if (gameClass == null) throw new RuntimeException("Could not load game class " + gameEntrypoint + "!");
 
@@ -200,7 +205,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 			}
 
 			boolean patched = false;
-			debug("Patching game constructor " + gameMethod.name + gameMethod.desc);
+			Log.debug(LogCategory.GAME_PATCH, "Patching game constructor %s%s", gameMethod.name, gameMethod.desc);
 
 			if (type == EnvType.SERVER) {
 				ListIterator<AbstractInsnNode> it = gameMethod.instructions.iterator();
@@ -228,7 +233,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					// anewarray java/lang/String
 					// invokestatic java/nio/file/Paths.get (Ljava/lang/String;[Ljava/lang/String;)Ljava/nio/file/Path;
 					// ----------------
-					debug("20w22a+ detected, patching main method...");
+					Log.debug(LogCategory.GAME_PATCH, "20w22a+ detected, patching main method...");
 
 					// Find the "server.properties".
 					LdcInsnNode serverPropertiesLdc = (LdcInsnNode) findInsn(gameMethod, insn -> insn instanceof LdcInsnNode && ((LdcInsnNode) insn).cst.equals("server.properties"), false);
@@ -254,9 +259,9 @@ public class EntrypointPatchHook extends EntrypointPatch {
 
 					if (serverStartMethod == null) {
 						// We are running 20w22a, this requires a separate process for capturing game instance
-						debug("Detected 20w22a");
+						Log.debug(LogCategory.GAME_PATCH, "Detected 20w22a");
 					} else {
-						debug("Detected version above 20w22a");
+						Log.debug(LogCategory.GAME_PATCH, "Detected version above 20w22a");
 						// We are not running 20w22a.
 						// This means we need to position ourselves before any dynamic registries are initialized.
 						// Since it is a bit hard to figure out if we are on most 1.16-pre1+ versions.
@@ -320,7 +325,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					if (serverStartMethod == null) {
 						// FIXME: For 20w22a, find the only constructor in the game method that takes a DataFixer.
 						// That is the guaranteed to be dedicated server constructor
-						debug("Server game instance has not be implemented yet for 20w22a");
+						Log.debug(LogCategory.GAME_PATCH, "Server game instance has not be implemented yet for 20w22a");
 					} else {
 						final ListIterator<AbstractInsnNode> serverStartIt = serverStartMethod.instructions.iterator();
 
@@ -367,7 +372,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					// - level.dat is always stored in CWD. We can assume CWD is set, launchers generally adhere to that.
 					// - options.txt in newer Classic versions is stored in user.home/.minecraft/. This is not currently handled,
 					// but as these versions are relatively low on options this is not a huge concern.
-					warn("Could not find applet run directory! (If you're running pre-late-indev versions, this is fine.)");
+					Log.warn(LogCategory.GAME_PATCH, "Could not find applet run directory! (If you're running pre-late-indev versions, this is fine.)");
 
 					ListIterator<AbstractInsnNode> it = gameMethod.instructions.iterator();
 
@@ -380,7 +385,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					it.add(new LdcInsnNode("."));
 					it.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/lang/String;)V", false)); */
 					it.add(new InsnNode(Opcodes.ACONST_NULL));
-					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
+					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/patch/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
 					it.add(new VarInsnNode(Opcodes.ALOAD, 0));
 					finishEntrypoint(type, it);
 				} else {
@@ -388,7 +393,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					ListIterator<AbstractInsnNode> it = gameConstructor.instructions.iterator();
 					moveAfter(it, Opcodes.INVOKESPECIAL); /* Object.init */
 					it.add(new FieldInsnNode(Opcodes.GETSTATIC, gameClass.name, runDirectory.name, runDirectory.desc));
-					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
+					it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/patch/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
 					it.add(new FieldInsnNode(Opcodes.PUTSTATIC, gameClass.name, runDirectory.name, runDirectory.desc));
 
 					it = gameMethod.instructions.iterator();
@@ -418,7 +423,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 					AbstractInsnNode insn = consIt.next();
 					if (insn.getOpcode() == Opcodes.PUTFIELD
 							&& ((FieldInsnNode) insn).desc.equals("Ljava/io/File;")) {
-						debug("Run directory field is thought to be " + ((FieldInsnNode) insn).owner + "/" + ((FieldInsnNode) insn).name);
+						Log.debug(LogCategory.GAME_PATCH, "Run directory field is thought to be %s/%s", ((FieldInsnNode) insn).owner, ((FieldInsnNode) insn).name);
 
 						ListIterator<AbstractInsnNode> it;
 
@@ -458,7 +463,7 @@ public class EntrypointPatchHook extends EntrypointPatch {
 			}
 
 			if (isApplet) {
-				EntrypointTransformer.appletMainClass = entrypoint;
+				Hooks.appletMainClass = entrypoint;
 			}
 		} catch (IOException e) {
 			throw new RuntimeException(e);

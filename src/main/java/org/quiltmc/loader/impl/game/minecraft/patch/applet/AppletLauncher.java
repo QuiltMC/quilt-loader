@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.applet;
+package org.quiltmc.loader.impl.game.minecraft.patch.applet;
 
-import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 import java.applet.Applet;
@@ -65,7 +65,7 @@ public class AppletLauncher extends Applet implements AppletStub {
 		try {
 			mcApplet = (Applet) QuiltLauncherBase.getLauncher()
 					.getTargetClassLoader()
-					.loadClass(EntrypointTransformer.appletMainClass)
+					.loadClass(GameTransformer.appletMainClass)
 					.getDeclaredConstructor()
 					.newInstance();
 			//noinspection ConstantConditions

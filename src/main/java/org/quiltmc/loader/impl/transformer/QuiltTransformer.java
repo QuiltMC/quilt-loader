@@ -19,7 +19,7 @@ package org.quiltmc.loader.impl.transformer;
 import net.fabricmc.accesswidener.AccessWidenerVisitor;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.MinecraftGameProvider;
+import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;

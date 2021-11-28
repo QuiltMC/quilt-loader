@@ -50,7 +50,7 @@ public final class ModMetadataReader {
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
 	@SuppressWarnings("SwitchStatementWithTooFewBranches") // Switch statement intentionally used for future expandability
-	public static InternalModMetadata read(Logger logger, Path json) throws IOException, ParseException {
+	public static InternalModMetadata read(Path json) throws IOException, ParseException {
 		JsonLoaderValue value;
 
 		try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {
@@ -84,7 +84,7 @@ public final class ModMetadataReader {
 
 		switch (version) {
 		case 1:
-			return V1ModMetadataReader.read(logger, root);
+			return V1ModMetadataReader.read(root);
 		default:
 			if (version < 0) {
 				throw parseException(schemaVersion, "schema_version must not be negative");

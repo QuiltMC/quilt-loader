@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.minecraft;
+package org.quiltmc.loader.impl.game.minecraft.patch;
 
-import org.quiltmc.loader.impl.entrypoint.EntrypointPatch;
-import org.quiltmc.loader.impl.entrypoint.EntrypointTransformer;
+import org.quiltmc.loader.impl.entrypoint.GamePatch;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -28,9 +28,11 @@ import org.objectweb.asm.tree.MethodNode;
 import java.io.IOException;
 import java.util.ListIterator;
 import java.util.function.Consumer;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
-public final class EntrypointPatchBranding extends EntrypointPatch {
-	public EntrypointPatchBranding(EntrypointTransformer transformer) {
+public final class BrandingPatch extends GamePatch {
+	public BrandingPatch(GameTransformer transformer) {
 		super(transformer);
 	}
 
@@ -59,14 +61,14 @@ public final class EntrypointPatchBranding extends EntrypointPatch {
 
 		for (MethodNode node : classNode.methods) {
 			if (node.name.equals("getClientModName") || node.name.equals("getServerModName") && node.desc.endsWith(")Ljava/lang/String;")) {
-				debug("Applying brand name hook to " + classNode.name + "::" + node.name);
+				Log.debug(LogCategory.GAME_PATCH, "Applying brand name hook to %s::%s", classNode.name, node.name);
 
 				ListIterator<AbstractInsnNode> it = node.instructions.iterator();
 
 				while (it.hasNext()) {
 					if (it.next().getOpcode() == Opcodes.ARETURN) {
 						it.previous();
-						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/entrypoint/minecraft/hooks/EntrypointBranding", "brand", "(Ljava/lang/String;)Ljava/lang/String;", false));
+						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/Hooks", "insertBranding", "(Ljava/lang/String;)Ljava/lang/String;", false));
 						it.next();
 					}
 				}

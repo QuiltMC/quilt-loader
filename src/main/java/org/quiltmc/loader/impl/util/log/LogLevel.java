@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint.applet;
+package org.quiltmc.loader.impl.util.log;
 
-import java.io.File;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
-public final class AppletMain {
-	private AppletMain() { }
+import java.util.Locale;
 
-	public static File hookGameDir(File file) {
-		File proposed = AppletLauncher.gameDir;
 
-		if (proposed != null) {
-			return proposed;
-		} else {
-			return file;
-		}
+public enum LogLevel {
+	ERROR, WARN, INFO, DEBUG, TRACE;
+
+	public boolean isLessThan(LogLevel level) {
+		return ordinal() > level.ordinal();
 	}
 
-	public static void main(String[] args) {
-		AppletFrame me = new AppletFrame("Minecraft", null);
-		me.launch(args);
+	public static LogLevel getDefault() {
+		String val = System.getProperty(SystemProperties.LOG_LEVEL);
+		if (val == null) return INFO;
+
+		return LogLevel.valueOf(val.toUpperCase(Locale.ENGLISH));
 	}
 }

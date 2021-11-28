@@ -224,11 +224,6 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 		return containsCustomValue(key);
 	}
 
-	@Override
-	public JsonElement getCustomElement(String key) {
-		return AbstractModMetadata.convert(getCustomValue(key));
-	}
-
 	// Fabric's internal ModMetadata
 
 	private static UnsupportedOperationException internalError() {
@@ -281,7 +276,7 @@ public class QuiltModMetadataWrapper implements LoaderModMetadata {
 	}
 
 	@Override
-	public void emitFormatWarnings(Logger logger) {
+	public void emitFormatWarnings() {
 
 	}
 }

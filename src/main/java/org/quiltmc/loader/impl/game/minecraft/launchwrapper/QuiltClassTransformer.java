@@ -14,27 +14,14 @@
  * limitations under the License.
  */
 
-package net.fabricmc.test;
+package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.impl.transformer.QuiltTransformer;
+import net.minecraft.launchwrapper.IClassTransformer;
 
-public final class EntrypointTest {
-	public static final CustomEntry FIELD_ENTRY = EntrypointTest::fieldEntry;
-
-	public static String staticEntry() {
-		return "static";
-	}
-
-	public EntrypointTest() {
-		Log.info(LogCategory.TEST, "EntrypointTest instance created");
-	}
-
-	public String instanceEntry() {
-		return "instance";
-	}
-
-	public static String fieldEntry() {
-		return "field";
+public class QuiltClassTransformer implements IClassTransformer {
+	@Override
+	public byte[] transform(String name, String transformedName, byte[] basicClass) {
+		return QuiltTransformer.lwTransformerHook(name, transformedName, basicClass);
 	}
 }

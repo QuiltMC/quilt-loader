@@ -14,18 +14,25 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch;
+package org.quiltmc.loader.impl.game.minecraft.patch.applet;
 
-import net.fabricmc.api.EnvType;
+import java.io.File;
 
-public final class QuiltServerTweaker extends QuiltTweaker {
-	@Override
-	public EnvType getEnvironmentType() {
-		return EnvType.SERVER;
+public final class AppletMain {
+	private AppletMain() { }
+
+	public static File hookGameDir(File file) {
+		File proposed = AppletLauncher.gameDir;
+
+		if (proposed != null) {
+			return proposed;
+		} else {
+			return file;
+		}
 	}
 
-	@Override
-	public String getLaunchTarget() {
-		return "net.minecraft.server.MinecraftServer";
+	public static void main(String[] args) {
+		AppletFrame me = new AppletFrame("Minecraft", null);
+		me.launch(args);
 	}
 }

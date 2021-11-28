@@ -218,7 +218,7 @@ final class ModResolvingTests {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 
-		ModResolver resolver = new ModResolver(LOGGER, true, modRoot);
+		ModResolver resolver = new ModResolver(true, modRoot);
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
 		return resolver.resolve(null);
 	}

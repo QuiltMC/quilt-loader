@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch;
+package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
 import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.entrypoint.minecraft.hooks.EntrypointUtils;
+import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.game.MinecraftGameProvider;
+import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.util.Arguments;
@@ -33,8 +33,8 @@ import net.minecraft.launchwrapper.IClassTransformer;
 import net.minecraft.launchwrapper.ITweaker;
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.launchwrapper.LaunchClassLoader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.Proxy;
@@ -55,7 +55,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker {
-	protected static Logger LOGGER = LogManager.getFormatterLogger("Quilt|Tweaker");
+	private static final LogCategory LOG_CATEGORY = new LogCategory("GameProvider", "Tweaker");
 	protected Arguments arguments;
 	private LaunchClassLoader launchClassLoader;
 	private boolean isDevelopment;
@@ -229,7 +229,7 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 		}
 
 		if (resourceCache == null) {
-			LOGGER.warn("Resource cache not pre-populated - this will probably cause issues...");
+			Log.warn(LOG_CATEGORY, "Resource cache not pre-populated - this will probably cause issues...");
 			return;
 		}
 
@@ -245,7 +245,7 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 
 				String className = entry.getName();
 				className = className.substring(0, className.length() - 6).replace('/', '.');
-				LOGGER.debug("Appending " + className + " to resource cache...");
+				Log.debug(LOG_CATEGORY, "Appending %s to resource cache...", className);
 				resourceCache.put(className, toByteArray(jarStream));
 			}
 		}

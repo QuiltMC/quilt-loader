@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.SortedMap;
 
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import net.fabricmc.api.EnvType;
@@ -34,6 +33,8 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 final class V1ModMetadata extends AbstractModMetadata implements LoaderModMetadata {
 	static final IconEntry NO_ICON = size -> Optional.empty();
@@ -288,12 +289,12 @@ final class V1ModMetadata extends AbstractModMetadata implements LoaderModMetada
 	}
 
 	@Override
-	public void emitFormatWarnings(Logger logger) {
+	public void emitFormatWarnings() {
 		if (getSchemaVersion() < FabricModMetadataReader.LATEST_VERSION) {
-			logger.warn("Mod ID " + getId() + " uses outdated schema version: " + getSchemaVersion() + " < " + FabricModMetadataReader.LATEST_VERSION);
+			Log.warn(LogCategory.METADATA, "Mod ID " + getId() + " uses outdated schema version: " + getSchemaVersion() + " < " + FabricModMetadataReader.LATEST_VERSION);
 		}
 		if (!this.requires.isEmpty()) {
-			logger.warn("Mod `{}` ({}) uses 'requires' key in fabric.mod.json, which is not supported - use 'depends'", this.id, this.version);
+			Log.warn(LogCategory.METADATA, "Mod `%s` (%s) uses 'requires' key in fabric.mod.json, which is not supported - use 'depends'", this.id, this.version);
 		}
 	}
 

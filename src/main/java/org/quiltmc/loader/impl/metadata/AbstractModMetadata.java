@@ -16,14 +16,6 @@
 
 package org.quiltmc.loader.impl.metadata;
 
-import java.util.Map;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.jetbrains.annotations.Nullable;
@@ -35,13 +27,6 @@ public abstract class AbstractModMetadata implements ModMetadata {
 	}
 
 	@Override
-	public JsonElement getCustomElement(String key) {
-		CustomValue value = getCustomValue(key);
-
-		return value != null ? convert(value) : null;
-	}
-
-	@Override
 	public boolean containsCustomValue(String key) {
 		return getCustomValues().containsKey(key);
 	}
@@ -49,50 +34,5 @@ public abstract class AbstractModMetadata implements ModMetadata {
 	@Override
 	public CustomValue getCustomValue(String key) {
 		return getCustomValues().get(key);
-	}
-
-	/**
-	 * Converts a custom value to a json element.
-	 * This will be removed in a future version when we remove the gson dependency.
-	 *
-	 * @param value the custom value
-	 * @return a json element
-	 */
-	@Deprecated
-	public static JsonElement convert(@Nullable CustomValue value) {
-		if (value == null) {
-			return null;
-		}
-
-		switch (value.getType()) {
-		case ARRAY: {
-			JsonArray ret = new JsonArray();
-
-			for (CustomValue v : value.getAsArray()) {
-				ret.add(convert(v));
-			}
-
-			return ret;
-		}
-		case BOOLEAN:
-			return new JsonPrimitive(value.getAsBoolean());
-		case NULL:
-			return JsonNull.INSTANCE;
-		case NUMBER:
-			return new JsonPrimitive(value.getAsNumber());
-		case OBJECT: {
-			JsonObject ret = new JsonObject();
-
-			for (Map.Entry<String, CustomValue> entry : value.getAsObject()) {
-				ret.add(entry.getKey(), convert(entry.getValue()));
-			}
-
-			return ret;
-		}
-		case STRING:
-			return new JsonPrimitive(value.getAsString());
-		}
-
-		throw new IllegalStateException();
 	}
 }

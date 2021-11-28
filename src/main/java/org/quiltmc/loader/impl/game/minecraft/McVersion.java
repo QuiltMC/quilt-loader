@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.minecraft;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import java.util.OptionalInt;
 
