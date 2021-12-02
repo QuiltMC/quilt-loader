@@ -24,10 +24,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
-import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
-import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ArrayImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
@@ -60,8 +58,7 @@ final class V1ModMetadataReader {
 		List<ModLicense> licenses = new ArrayList<>();
 		List<ModContributor> contributors = new ArrayList<>();
 		Map<String, String> contactInformation = new LinkedHashMap<>();
-		List<ModDependency> depends = new ArrayList<>();
-		List<ModDependency> breaks = new ArrayList<>();
+		List<ModDependency> relations = new ArrayList<>();
 		Icons icons = null;
 		/* Internal fields */
 		ModLoadType loadType = ModLoadType.IF_REQUIRED;
@@ -163,14 +160,14 @@ final class V1ModMetadataReader {
 			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
 			if (dependsValue != null) {
 				for (LoaderValue v : dependsValue.asArray()) {
-					depends.add(readDependencyObject(true, (JsonLoaderValue) v));
+					relations.add(readDependencyObject(ModDependency.Kind.DEPENDS, (JsonLoaderValue) v));
 				}
 			}
 
 			@Nullable JsonLoaderValue breaksValue = assertType(quiltLoader, "breaks", LoaderValue.LType.ARRAY);
 			if (breaksValue != null) {
 				for (LoaderValue v : breaksValue.asArray()) {
-					breaks.add(readDependencyObject(false, (JsonLoaderValue) v));
+					relations.add(readDependencyObject(ModDependency.Kind.BREAKS, (JsonLoaderValue) v));
 				}
 			}
 
@@ -353,8 +350,7 @@ final class V1ModMetadataReader {
 				licenses,
 				contributors,
 				contactInformation,
-				depends,
-				breaks,
+				relations,
 				icons,
 				loadType,
 				provides,
@@ -606,7 +602,7 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
+	private static ModDependency readDependencyObject(ModDependency.Kind kind, JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
@@ -618,23 +614,23 @@ final class V1ModMetadataReader {
 			ModDependency unless = null;
 
 			if (unlessObj != null) {
-				unless = readDependencyObject(true, unlessObj);
+				unless = readDependencyObject(ModDependency.Kind.UNLESS, unlessObj);
 			}
 
-			return new ModDependencyImpl.OnlyImpl(value.location(), id, versions, reason, optional, unless);
+			return new ModDependencyImpl.EntryImpl(value.location(), id, versions, reason, optional, unless, kind);
 		case STRING:
 			// Single dependency, any version matching id
-			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
+			return new ModDependencyImpl.EntryImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()), kind);
 		case ARRAY:
 			// OR or all sub dependencies
 			JsonLoaderValue.ArrayImpl array = value.asArray();
 			Collection<ModDependency> dependencies = new ArrayList<>(array.size());
 
 			for (LoaderValue loaderValue : array) {
-				dependencies.add(readDependencyObject(isAny, (JsonLoaderValue) loaderValue));
+				dependencies.add(readDependencyObject(kind, (JsonLoaderValue) loaderValue));
 			}
 
-			return isAny ? new ModDependencyImpl.AnyImpl(value.location(), dependencies) : new ModDependencyImpl.AllImpl(value.location(), dependencies);
+			return new ModDependencyImpl.AnyImpl(value.location(), dependencies, kind);
 		default:
 			throw parseException(
 					value,

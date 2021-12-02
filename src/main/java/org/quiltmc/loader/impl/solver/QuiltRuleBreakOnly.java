@@ -27,14 +27,14 @@ import org.quiltmc.loader.api.ModDependency;
 class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final Logger logger;
 
-	final ModDependency.Only publicDep;
+	final ModDependency.Entry publicDep;
 	final List<ModLoadOption> conflictingOptions;
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
 
 	final QuiltRuleDep unless;
 
-	public QuiltRuleBreakOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleBreakOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Entry publicDep) {
 		super(source);
 		this.logger = logger;
 		this.publicDep = publicDep;

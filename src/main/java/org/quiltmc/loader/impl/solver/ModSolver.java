@@ -172,22 +172,25 @@ public final class ModSolver {
 					sat.addOption(new ProvidedModOption(cOption, provided));
 				}
 
-				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().depends()) {
 
+				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().relations()) {
 					if (dep.shouldIgnore()) {
 						continue;
 					}
 
-					sat.addRule(createModDepLink(logger, sat, cOption, dep));
-				}
 
-				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().breaks()) {
-
-					if (dep.shouldIgnore()) {
-						continue;
+					switch (dep.kind()) {
+						case DEPENDS:
+							sat.addRule(createModDepLink(logger, sat, cOption, dep));
+							continue;
+						case BREAKS:
+							sat.addRule(createModBreaks(logger, sat, cOption, dep));
+							continue;
+						case UNLESS:
+							throw new IllegalArgumentException("Illegal dependency kind " + dep.kind());
+						default:
+							throw new IllegalArgumentException("Unknown dependency kind " + dep.kind());
 					}
-
-					sat.addRule(createModBreaks(logger, sat, cOption, dep));
 				}
 			}
 		}
@@ -376,21 +379,21 @@ public final class ModSolver {
 
 			return new QuiltRuleDepAny(logger, ctx, option, any);
 		} else {
-			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
+			org.quiltmc.loader.api.ModDependency.Entry entry = (org.quiltmc.loader.api.ModDependency.Entry) dep;
 
-			return new QuiltRuleDepOnly(logger, ctx, option, only);
+			return new QuiltRuleDepOnly(logger, ctx, option, entry);
 		}
 	}
 
 	public static QuiltRuleBreak createModBreaks(Logger logger, RuleContext ctx, LoadOption option, org.quiltmc.loader.api.ModDependency dep) {
-		if (dep instanceof org.quiltmc.loader.api.ModDependency.All) {
-			org.quiltmc.loader.api.ModDependency.All any = (org.quiltmc.loader.api.ModDependency.All) dep;
+		if (dep instanceof org.quiltmc.loader.api.ModDependency.Any) {
+			org.quiltmc.loader.api.ModDependency.Any any = (org.quiltmc.loader.api.ModDependency.Any) dep;
 
 			return new QuiltRuleBreakAll(logger, ctx, option, any);
 		} else {
-			org.quiltmc.loader.api.ModDependency.Only only = (org.quiltmc.loader.api.ModDependency.Only) dep;
+			org.quiltmc.loader.api.ModDependency.Entry entry = (org.quiltmc.loader.api.ModDependency.Entry) dep;
 
-			return new QuiltRuleBreakOnly(logger, ctx, option, only);
+			return new QuiltRuleBreakOnly(logger, ctx, option, entry);
 		}
 	}
 

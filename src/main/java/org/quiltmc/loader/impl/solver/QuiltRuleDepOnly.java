@@ -27,14 +27,14 @@ import org.quiltmc.loader.api.ModDependency;
 class QuiltRuleDepOnly extends QuiltRuleDep {
 	final Logger logger;
 
-	final ModDependency.Only publicDep;
+	final ModDependency.Entry publicDep;
 	final List<ModLoadOption> validOptions;
 	final List<ModLoadOption> invalidOptions;
 	final List<ModLoadOption> allOptions;
 
 	final QuiltRuleDep unless;
 
-	public QuiltRuleDepOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleDepOnly(Logger logger, RuleContext ctx, LoadOption source, ModDependency.Entry publicDep) {
 		super(source);
 		this.logger = logger;
 		this.publicDep = publicDep;

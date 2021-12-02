@@ -90,14 +90,9 @@ public interface ModMetadata {
 	Map<String, String> contactInfo();
 
 	/**
-	 * @return all mod dependencies this mod depends on
+	 * @return all mod dependencies this mod has
 	 */
-	Collection<ModDependency> depends();
-
-	/**
-	 * @return all mod dependencies this mod conflicts with
-	 */
-	Collection<ModDependency> breaks();
+	Collection<ModDependency> relations();
 
 	/**
 	 * Gets the path to an icon.

@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api;
 
 import java.util.Collection;
+import java.util.Collections;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
@@ -33,9 +34,20 @@ public interface ModDependency {
 	boolean shouldIgnore();
 
 	/**
-	 * A mod dependency where there is only one condition that must be satisfied.
+	 * @return An immutable collection of the entries in this ModDependency.
 	 */
-	interface Only extends ModDependency {
+	Collection<Entry> entries();
+
+	/**
+	 * @return the kind of this dependency; currently either DEPENDS or BREAKS, though different kinds may be added in the future.
+	 * A ModDependency's entries must all be of the same kind.
+	 */
+	Kind kind();
+
+	/**
+	 * A mod dependency with one condition that must be satisfied.
+	 */
+	interface Entry extends ModDependency {
 		/**
 		 * @return the mod identifier that the dependency tries to check for
 		 */
@@ -52,7 +64,7 @@ public interface ModDependency {
 		String reason();
 
 		/**
-		 * Gets the dependency that must <b>not</b> be satisfied to allow this dependency to be active.
+		 * Gets the dependency that, if satisfied, disables this dependency.
 		 *
 		 * @return the mod dependency. May be null if none exists
 		 */
@@ -79,43 +91,49 @@ public interface ModDependency {
 
 			return false;
 		}
+
+		@Override
+		default Collection<Entry> entries() {
+			return Collections.singleton(this);
+		}
 	}
 
 	/**
 	 * A mod dependency where at least one condition must be satisfied.
 	 */
-	interface Any extends Collection<ModDependency.Only>, ModDependency {
+	interface Any extends Collection<ModDependency.Entry>, ModDependency {
 
 		/**
 		 * Checks to see if all of the conditions are ignored.
 		 */
 		@Override
 		default boolean shouldIgnore() {
-			for (ModDependency.Only dep : this) {
+			for (ModDependency.Entry dep : this) {
 				if (!dep.shouldIgnore()) {
 					return false;
 				}
 			}
 			return true;
+		}
+
+		@Override
+		default Collection<Entry> entries() {
+			return this;
 		}
 	}
 
-	/**
-	 * A mod breakage where at all conditions must be satisfied in order to conflict.
-	 */
-	interface All extends Collection<ModDependency.Only>, ModDependency {
+	enum Kind {
 		/**
-		 * Checks to see if all of the conditions are ignored.
+		 * A ModDependency that must be satisfied for the mod to load.
 		 */
-		@Override
-		default boolean shouldIgnore() {
-			for (ModDependency.Only dep : this) {
-				if (!dep.shouldIgnore()) {
-					return false;
-				}
-			}
-
-			return true;
-		}
+		DEPENDS,
+		/**
+		 * A ModDependency that must <b>not</b> be satisfied for a mod to load.
+		 */
+		BREAKS,
+		/**
+		 * A ModDependency that, if satisfied, disables its parent dependency.
+		 */
+		UNLESS
 	}
 }

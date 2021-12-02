@@ -35,11 +35,11 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 		this.publicDep = any;
 		List<QuiltRuleDepOnly> optionList = new ArrayList<>();
 
-		for (ModDependency.Only only : any) {
-			if (!only.shouldIgnore()) {
-				QuiltModDepOption sub = new QuiltModDepOption(only);
+		for (ModDependency.Entry entry : any) {
+			if (!entry.shouldIgnore()) {
+				QuiltModDepOption sub = new QuiltModDepOption(entry);
 				ctx.addOption(sub);
-				QuiltRuleDepOnly dep = new QuiltRuleDepOnly(logger, ctx, sub, only);
+				QuiltRuleDepOnly dep = new QuiltRuleDepOnly(logger, ctx, sub, entry);
 				ctx.addRule(dep);
 				optionList.add(dep);
 			}

@@ -40,8 +40,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<ModLicense> licenses;
 	private final Collection<ModContributor> contributors;
 	private final Map<String, String> contactInformation;
-	private final Collection<ModDependency> depends;
-	private final Collection<ModDependency> breaks;
+	private final Collection<ModDependency> relations;
 	private final Icons icons;
 	/* Internal fields */
 	private final ModLoadType loadType;
@@ -66,8 +65,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			Collection<ModLicense> licenses,
 			Collection<ModContributor> contributors,
 			Map<String, String> contactInformation,
-			Collection<ModDependency> depends,
-			Collection<ModDependency> breaks,
+			Collection<ModDependency> relations,
 			@Nullable Icons icons,
 			/* Internal fields */
 			ModLoadType loadType,
@@ -105,8 +103,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		this.licenses = Collections.unmodifiableCollection(licenses);
 		this.contributors = Collections.unmodifiableCollection(contributors);
 		this.contactInformation = Collections.unmodifiableMap(contactInformation);
-		this.depends = Collections.unmodifiableCollection(depends);
-		this.breaks = Collections.unmodifiableCollection(breaks);
+		this.relations = Collections.unmodifiableCollection(relations);
 
 		if (icons != null) {
 			this.icons = icons;
@@ -176,13 +173,8 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<ModDependency> depends() {
-		return this.depends;
-	}
-
-	@Override
-	public Collection<ModDependency> breaks() {
-		return this.breaks;
+	public Collection<ModDependency> relations() {
+		return relations;
 	}
 
 	@Nullable

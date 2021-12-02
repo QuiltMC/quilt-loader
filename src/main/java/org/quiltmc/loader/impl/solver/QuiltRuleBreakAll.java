@@ -27,19 +27,19 @@ import org.quiltmc.loader.api.ModDependency;
 public class QuiltRuleBreakAll extends QuiltRuleBreak {
 
 	final QuiltRuleBreakOnly[] options;
-	final ModDependency.All publicDep;
+	final ModDependency.Any publicDep;
 
-	public QuiltRuleBreakAll(Logger logger, RuleContext ctx, LoadOption option, ModDependency.All all) {
+	public QuiltRuleBreakAll(Logger logger, RuleContext ctx, LoadOption option, ModDependency.Any all) {
 
 		super(option);
 		this.publicDep = all;
 		List<QuiltRuleBreakOnly> optionList = new ArrayList<>();
 
-		for (ModDependency.Only only : all) {
-			if (!only.shouldIgnore()) {
-				QuiltModDepOption sub = new QuiltModDepOption(only);
+		for (ModDependency.Entry entry : all) {
+			if (!entry.shouldIgnore()) {
+				QuiltModDepOption sub = new QuiltModDepOption(entry);
 				ctx.addOption(sub);
-				QuiltRuleBreakOnly dep = new QuiltRuleBreakOnly(logger, ctx, sub, only);
+				QuiltRuleBreakOnly dep = new QuiltRuleBreakOnly(logger, ctx, sub, entry);
 				ctx.addRule(dep);
 				optionList.add(dep);
 			}

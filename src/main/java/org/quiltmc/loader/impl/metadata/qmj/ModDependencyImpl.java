@@ -27,37 +27,37 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
-import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
 
 final class ModDependencyImpl {
 	ModDependencyImpl() {
 	}
 
-	static abstract class CollectionImpl extends AbstractCollection<ModDependency.Only> implements ModDependency {
+	static class AnyImpl extends AbstractCollection<ModDependency.Entry> implements ModDependency.Any {
 		private final String location;
-		private final Collection<ModDependency.Only> conditions;
-
-		CollectionImpl(String location, Collection<ModDependency> conditions) {
+		private final Collection<Entry> conditions;
+		private final Kind kind;
+		AnyImpl(String location, Collection<ModDependency> conditions, Kind kind) {
 			this.location = location;
 			// For simplicities sake we flatten here
-			List<ModDependency.Only> flattened = new ArrayList<>();
+			List<Entry> flattened = new ArrayList<>();
 			for (ModDependency dep : conditions) {
-				if (dep instanceof ModDependency.Only) {
-					flattened.add((ModDependency.Only) dep);
+				if (dep instanceof Entry) {
+					flattened.add((Entry) dep);
 				} else {
 					if (getClass() != dep.getClass()) {
 						throw new IllegalArgumentException("You cannot mix any with all!");
 					}
-					flattened.addAll((CollectionImpl) dep);
+					flattened.addAll((AnyImpl) dep);
 				}
 			}
-			ModDependency.Only[] array = flattened.toArray(new ModDependency.Only[0]);
+			Entry[] array = flattened.toArray(new Entry[0]);
 			this.conditions = Collections.unmodifiableList(Arrays.asList(array));
+			this.kind = kind;
 		}
 
 		@Override
-		public Iterator<ModDependency.Only> iterator() {
+		public Iterator<Entry> iterator() {
 			return this.conditions.iterator();
 		}
 
@@ -70,21 +70,15 @@ final class ModDependencyImpl {
 		public String toString() {
 			return location;
 		}
-	}
 
-	static final class AnyImpl extends CollectionImpl implements ModDependency.Any {
-		AnyImpl(String location, Collection<ModDependency> conditions) {
-			super(location, conditions);
+		@Override
+		public Kind kind() {
+			return kind;
 		}
 	}
 
-	static final class AllImpl extends CollectionImpl  implements ModDependency.All {
-		AllImpl(String location, Collection<ModDependency> conditions) {
-			super(location, conditions);
-		}
-	}
 
-	static final class OnlyImpl implements ModDependency.Only {
+	static final class EntryImpl implements ModDependency.Entry {
 		private static final Collection<VersionConstraint> ANY = Collections.singleton(VersionConstraint.any());
 		private final String location;
 		private final ModDependencyIdentifier id;
@@ -92,14 +86,15 @@ final class ModDependencyImpl {
 		private final String reason;
 		private final boolean optional;
 		private final ModDependency unless;
+		private final Kind kind;
 
 		/**
 		 * Creates a ModDependency that matches any version of a specific mod id.
 		 */
-		OnlyImpl(String location, ModDependencyIdentifier id) {
-			this(location, id, ANY, "", false, null);
+		EntryImpl(String location, ModDependencyIdentifier id, Kind kind) {
+			this(location, id, ANY, "", false, null, kind);
 		}
-		OnlyImpl(String location, ModDependencyIdentifier id, Collection<VersionConstraint> constraints, @Nullable String reason, boolean optional, @Nullable ModDependency unless) {
+		EntryImpl(String location, ModDependencyIdentifier id, Collection<VersionConstraint> constraints, @Nullable String reason, boolean optional, @Nullable ModDependency unless, Kind kind) {
 			// We need to have at least one constraint
 			if (constraints.isEmpty()) {
 				throw new IllegalArgumentException("A ModDependency must have at least one constraint");
@@ -110,6 +105,7 @@ final class ModDependencyImpl {
 			this.reason = reason != null ? reason : "";
 			this.optional = optional;
 			this.unless = unless;
+			this.kind = kind;
 		}
 
 		@Override
@@ -141,6 +137,11 @@ final class ModDependencyImpl {
 		public boolean shouldIgnore() {
 			// TODO: Read fields for loader plugins, and check them earlier and store the result in a field!
 			return false;
+		}
+
+		@Override
+		public Kind kind() {
+			return kind;
 		}
 
 		@Override

@@ -42,7 +42,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private static final String NO_LOCATION = "location not supported";
 	private final LoaderModMetadata fabricMeta;
 	private final Version version;
-	private final Collection<ModDependency> depends, breaks;
+	private final Collection<ModDependency> relations;
 	private final Collection<ModLicense> licenses;
 	private final Collection<ModContributor> contributors;
 	private final List<String> jars;
@@ -58,8 +58,10 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		} else {
 			this.version = (FabricSemanticVersionImpl) fabricVersion;
 		}
-		this.depends = genDepends(fabricMeta.getDepends());
-		this.breaks = genDepends(fabricMeta.getBreaks());
+		List<ModDependency> relations;
+		relations = genDepends(fabricMeta.getDepends(), ModDependency.Kind.DEPENDS);
+		relations.addAll(genDepends(fabricMeta.getBreaks(), ModDependency.Kind.BREAKS));
+		this.relations = Collections.unmodifiableCollection(relations);
 		this.licenses = Collections.unmodifiableCollection(fabricMeta.getLicense().stream().map(ModLicenseImpl::fromIdentifierOrDefault).collect(Collectors.toList()));
 		this.contributors = convertContributors(fabricMeta);
 		List<String> jars = new ArrayList<>();
@@ -170,21 +172,17 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<ModDependency> depends() {
-		return depends;
+	public Collection<ModDependency> relations() {
+		return relations;
 	}
 
-	@Override
-	public Collection<ModDependency> breaks() {
-		return breaks;
-	}
 
 	@Override
 	public ModLoadType loadType() {
 		return ModLoadType.IF_POSSIBLE;
 	}
 
-	private static Collection<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from) {
+	private static List<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from, ModDependency.Kind kind) {
 		List<ModDependency> out = new ArrayList<>();
 		for (net.fabricmc.loader.api.metadata.ModDependency f : from) {
 			Collection<VersionConstraint> constraints = new ArrayList<>();
@@ -231,9 +229,9 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 					}
 				});
 			}
-			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dep 1", new ModDependencyIdentifierImpl(f.getModId()), constraints, null, false, null));
+			out.add(new ModDependencyImpl.EntryImpl("Fabric Dep 1", new ModDependencyIdentifierImpl(f.getModId()), constraints, null, false, null, kind));
 		}
-		return Collections.unmodifiableList(Arrays.asList(out.toArray(new ModDependency[0])));
+		return Arrays.asList(out.toArray(new ModDependency[0]));
 	}
 
 	private static VersionConstraint.Type convertType(net.fabricmc.loader.api.VersionPredicate.Type type) {
