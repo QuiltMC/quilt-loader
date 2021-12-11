@@ -14,12 +14,26 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 @ApiStatus.NonExtendable
 public interface QuiltPluginContext {
 
+	// ###########
+	// # Context #
+	// ###########
+
 	/** @return The global plugin manager, which is independent of specific contexts. */
 	QuiltPluginManager manager();
+
+	/** @return The plugin that this context is for. */
+	QuiltLoaderPlugin plugin();
+
+	/** @return The modID of this plugin. */
+	String pluginId();
 
 	/** @return The {@link Path} that the plugin is loaded from. Use this to lookup resources rather than
 	 *         {@link Class#getResource(String)}. */
 	Path pluginPath();
+
+	// ##############
+	// # Operations #
+	// ##############
 
 	/** Adds an additional file to scan for mods, which will go through the same steps as files found in mod folders.
 	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
@@ -33,6 +47,10 @@ public interface QuiltPluginContext {
 	 *            subfolders, or the zip file passed to that method. */
 	void lockZip(Path path);
 
+	// ##############
+	// # Scheduling #
+	// ##############
+
 	/** Submits a task to be completed after plugin resolution, but before the current cycle ends. The tasks may be
 	 * executed on a different thread, depending on loaders config options.
 	 * <p>
@@ -44,6 +62,10 @@ public interface QuiltPluginContext {
 	 *         wrong. */
 	<V> Future<V> submit(Callable<V> task);
 
+	// #######
+	// # Gui #
+	// #######
+
 	/** Used to ask the real user of something. Normally this will append something to the existing gui rather than
 	 * opening a new gui each time this is called.
 	 * <p>
@@ -52,9 +74,9 @@ public interface QuiltPluginContext {
 		throw new AbstractMethodError("// TODO: Add gui support!");
 	}
 
-	// #######
-	// Solving
-	// #######
+	// ###########
+	// # Solving #
+	// ###########
 
 	/** Retrieves a context for directly adding {@link LoadOption}s and {@link Rule}s. Note that you shouldn't use this
 	 * to add mods. */

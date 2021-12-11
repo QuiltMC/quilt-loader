@@ -21,25 +21,26 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModCandidateCls;
 
 public final class ModSolveResultImpl implements ModSolveResult {
 
 	/** This doesn't include the provided mods. */
-	public final Map<String, ModCandidateCls> modMap;
-	public final Map<String, ModCandidateCls> providedMap;
+	public final Map<String, ModLoadOption> modMap;
+	public final Map<String, ModLoadOption> providedMap;
 
-	private final Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults;
+	private final Map<Class<?>, LoadOptionResult<?>> extraResults;
 
-	ModSolveResultImpl(Map<String, ModCandidateCls> modMap, Map<String, ModCandidateCls> providedMap, Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults) {
+	public ModSolveResultImpl(Map<String, ModLoadOption> modMap, Map<String, ModLoadOption> providedMap, Map<Class<?>, LoadOptionResult<?>> extraResults) {
 		this.modMap = modMap;
 		this.providedMap = providedMap;
 		this.extraResults = extraResults;
 	}
 
 	@Override
-	public <O extends LoadOption> LoadOptionResult<O> getResult(Class<O> optionClass) {
+	public <O> LoadOptionResult<O> getResult(Class<O> optionClass) {
 		LoadOptionResult<?> result = extraResults.get(optionClass);
 		if (result == null) {
 			return new LoadOptionResult<>(Collections.emptyMap());
@@ -47,10 +48,10 @@ public final class ModSolveResultImpl implements ModSolveResult {
 		return (LoadOptionResult<O>) result;
 	}
 
-	public static final class LoadOptionResult<O extends LoadOption> implements SpecificLoadOptionResult<O> {
+	public static final class LoadOptionResult<O> implements SpecificLoadOptionResult<O> {
 		private final Map<O, Boolean> result;
 
-		LoadOptionResult(Map<O, Boolean> result) {
+		public LoadOptionResult(Map<O, Boolean> result) {
 			this.result = result;
 		}
 

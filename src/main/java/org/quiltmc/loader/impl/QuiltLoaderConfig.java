@@ -3,7 +3,7 @@ package org.quiltmc.loader.impl;
 import java.nio.file.FileSystems;
 
 /** User-configurable options. Normally loaded from "CURRENT_DIR/config/quilt-loader.txt". */
-public final class QuiltLoaderOptions {
+public final class QuiltLoaderConfig {
 
 	// #######
 	// General
@@ -52,7 +52,7 @@ public final class QuiltLoaderOptions {
 	 * quilt-loader, or tasks submitted by plugins. */
 	public final boolean singleThreadedLoading;
 
-	public QuiltLoaderOptions() {
+	public QuiltLoaderConfig() {
 		// FOR NOW
 
 		loadSubFolders = false;

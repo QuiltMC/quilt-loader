@@ -15,6 +15,9 @@ public abstract class ModLoadOption extends LoadOption {
 	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path)}. */
 	public abstract Path from();
 
+	/** @return The {@link Path} where this mod's classes and resources can be loaded from. */
+	public abstract Path resourceRoot();
+
 	// TODO: How do we turn this into a ModContainer?
 	// like... how should we handle mods that need remapping vs those that don't?
 	// plus how is that meant to work with caches in the future?

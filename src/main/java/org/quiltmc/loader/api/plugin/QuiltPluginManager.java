@@ -1,7 +1,10 @@
 package org.quiltmc.loader.api.plugin;
 
+import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.nio.file.ProviderNotFoundException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -16,14 +19,19 @@ public interface QuiltPluginManager {
 	// Loading
 	// #######
 
-	/** Loads the specified zip file and returns a path to the root of it's contents.
+	/** Loads the specified zip file and returns a path to the root of it's contents, using
+	 * {@link FileSystems#newFileSystem(Path, ClassLoader)} to actually load it.
 	 * <p>
 	 * How the given zip is loaded depends on loaders config settings - in particular the zip could be extracted to a
 	 * temporary folder on the same filesystem as the original zip.
 	 * <p>
 	 * WARNING: if this method allocates a new {@link FileSystem} then that will be closed, <em>unless</em> at least one
-	 * of the {@link QuiltLoaderPlugin}s locks it, or if a chosen mod is loaded from it. */
-	Path loadZip(Path zip);
+	 * of the {@link QuiltLoaderPlugin}s locks it, or if a chosen mod is loaded from it.
+	 * 
+	 * @throws IOException if something went wrong while loading the file.
+	 * @throws NonZipException if {@link FileSystems#newFileSystem(Path, ClassLoader)} throws a
+	 *             {@link ProviderNotFoundException}. */
+	Path loadZip(Path zip) throws IOException, NonZipException;
 
 	// #################
 	// Identifying Paths
@@ -64,15 +72,19 @@ public interface QuiltPluginManager {
 	 *         {@link #getModProvider(Path)} or {@link #getModLoadOption(Path)} for more details about the mod. */
 	Set<Path> getModPaths();
 
-	/** @return The mod id of the loader plugin that added a mod directly from the given path. The path should always be
-	 *         one that was passed to {@link QuiltLoaderPlugin#scanUnknownFile(Path)} or the {@link #getParent(Path)} of
-	 *         a path passed to {@link QuiltLoaderPlugin#scanZip(Path)}. */
+	/** @param mod The path to the mod. This should always be one that was passed to
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path)} or the {@link #getParent(Path)} of a path passed to
+	 *            {@link QuiltLoaderPlugin#scanZip(Path)}. (Paths in {@link #getModPaths()} always meet this
+	 *            requirement)
+	 * @return The mod id of the loader plugin that added a mod directly from the given path. */
 	@Nullable
 	String getModProvider(Path mod);
 
-	/** @return The mod load option that is loaded from the given path. The path should always be one that was passed to
-	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path)} or the {@link #getParent(Path)} of a path passed to
-	 *         {@link QuiltLoaderPlugin#scanZip(Path)}. */
+	/** @param mod The path to the mod. This should always be one that was passed to
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path)} or the {@link #getParent(Path)} of a path passed to
+	 *            {@link QuiltLoaderPlugin#scanZip(Path)}. (Paths in {@link #getModPaths()} always meet this
+	 *            requirement)
+	 * @return The mod load option that is loaded from the given path. */
 	@Nullable
 	ModLoadOption getModLoadOption(Path mod);
 

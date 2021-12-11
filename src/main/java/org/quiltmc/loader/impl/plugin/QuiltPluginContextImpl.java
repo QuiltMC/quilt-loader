@@ -1,41 +1,38 @@
 package org.quiltmc.loader.impl.plugin;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.plugin.FullModMetadata;
+import org.quiltmc.loader.api.plugin.FullModMetadata.ModPlugin;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
-import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.solver.LoadOption;
-import org.quiltmc.loader.api.plugin.solver.Rule;
-import org.quiltmc.loader.api.plugin.solver.RuleContext;
-import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 
 public class QuiltPluginContextImpl extends BasePluginContext {
 
+	final ModLoadOption optionFrom;
 	final Path pluginPath;
 	final QuiltPluginClassLoader classLoader;
 	final QuiltLoaderPlugin plugin;
 
-	public QuiltPluginContextImpl(QuiltPluginManagerImpl manager, Path pluginPath, FullModMetadata.ModPlugin metadata,
-		Map<String, LoaderValue> previousData) throws ReflectiveOperationException {
+	public QuiltPluginContextImpl(
+		QuiltPluginManagerImpl manager, ModLoadOption from, Map<String, LoaderValue> previousData
+	) throws ReflectiveOperationException {
 
-		super(manager);
-		this.pluginPath = pluginPath;
+		super(manager, from.id());
+		this.optionFrom = from;
+		this.pluginPath = from.resourceRoot();
 
 		ClassLoader parent = getClass().getClassLoader();
-		classLoader = new QuiltPluginClassLoader(manager, parent, pluginPath, metadata);
+		ModPlugin pluginMeta = from.metadata().plugin();
+		if (pluginMeta == null) {
+			throw new IllegalArgumentException("No plugin metadata!");
+		}
+		classLoader = new QuiltPluginClassLoader(manager, parent, pluginPath, pluginMeta);
 
-		Class<?> cls = classLoader.loadClass(metadata.pluginClass());
+		Class<?> cls = classLoader.loadClass(pluginMeta.pluginClass());
 		Object obj = cls.getDeclaredConstructor().newInstance();
 		this.plugin = (QuiltLoaderPlugin) obj;
 
@@ -43,39 +40,13 @@ public class QuiltPluginContextImpl extends BasePluginContext {
 	}
 
 	@Override
+	public QuiltLoaderPlugin plugin() {
+		return plugin;
+	}
+
+	@Override
 	public Path pluginPath() {
 		return pluginPath;
-	}
-
-	@Override
-	public void lockZip(Path path) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
-	}
-
-	@Override
-	public <V> Future<V> submit(Callable<V> task) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
-	}
-
-	@Override
-	public RuleContext ruleContext() {
-		// NOTE: In the future we might add info when adding rules, so we don't have a "getSolver" method in
-		// QuiltPluginManager
-		return manager.solver;
-	}
-
-	@Override
-	public <T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
-	}
-
-	@Override
-	public void blameRule(Rule rule) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
 	}
 
 	Map<String, LoaderValue> unload() {

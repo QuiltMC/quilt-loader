@@ -4,7 +4,9 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModMetadata;
+import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
@@ -37,6 +39,9 @@ public interface FullModMetadata extends ModMetadata {
 
 	/** @return A {@link ModMetadataBuilder} that is NOT tentative. */
 	ModMetadataBuilder copyToBuilder();
+
+	/** @return A {@link ModMetadataBuilder} that is NOT tentative. */
+	ModMetadataBuilder copyToBuilder(LoaderValue.LObject root, String id, String group, Version version);
 
 	public interface ModPlugin {
 		String pluginClass();

@@ -28,6 +28,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.impl.quiltmc.Quilt2FabricLoader;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.metadata.DependencyOverrides;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +41,9 @@ import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionResult;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidateCls;
@@ -61,6 +65,8 @@ import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
+
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 
@@ -200,9 +206,33 @@ public class QuiltLoaderImpl {
 
 	private void setup() throws ModResolutionException {
 
-		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderOptions());
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
 
-		ModSolveResultImpl resolt = plugins.run();
+		ModSolveResult result;
+		try {
+			result = plugins.run();
+		} catch (TimeoutException e) {
+			throw new ModSolvingError("Timout", e);
+		}
+		
+		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
+
+		for (LoadOption op : spec.getOptions()) {
+			if (spec.isPresent(op)) {
+				LOGGER.info(" + " + op);
+			}
+		}
+
+		for (LoadOption op : spec.getOptions()) {
+			if (!spec.isPresent(op)) {
+				LOGGER.info(" - " + op);
+			}
+		}
+
+		throw new AbstractMethodError("// TODO: Implement setup!");
+	}
+	
+	private void setupOld() {
 
 		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());

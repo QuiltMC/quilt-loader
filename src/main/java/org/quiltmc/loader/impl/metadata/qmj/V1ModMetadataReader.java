@@ -26,6 +26,8 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
 import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
+import org.quiltmc.loader.api.plugin.FullModMetadata;
+import org.quiltmc.loader.api.plugin.ModMetadataBuilder;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ArrayImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
@@ -34,7 +36,7 @@ import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseExcept
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 final class V1ModMetadataReader {
-	public static V1ModMetadataImpl read(Logger logger, JsonLoaderValue.ObjectImpl root) {
+	public static InternalModMetadata read(Logger logger, JsonLoaderValue.ObjectImpl root) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -49,7 +51,7 @@ final class V1ModMetadataReader {
 		return readFields(logger, root);
 	}
 
-	private static V1ModMetadataImpl readFields(Logger logger, JsonLoaderValue.ObjectImpl root) {
+	private static InternalModMetadata readFields(Logger logger, JsonLoaderValue.ObjectImpl root) {
 		String id;
 		String group;
 		Version version = null;
@@ -112,7 +114,7 @@ final class V1ModMetadataReader {
 
 			version = Version.of(versionValue.asString());
 
-			builder = new V1ModMetadataBuilder(root, id, group, version);
+			builder = V1ModMetadataBuilder.of(root, id, group, version);
 
 			// Now we reach optional fields
 			// TODO: provides
@@ -129,16 +131,17 @@ final class V1ModMetadataReader {
 			}
 
 			@Nullable
-			JsonLoaderValue pluginsValue = quiltLoader.get("plugins");
+			JsonLoaderValue pluginValue = quiltLoader.get("plugin");
 
-			if (pluginsValue != null) {
-				if (pluginsValue.type() != LoaderValue.LType.ARRAY) {
-					throw parseException(pluginsValue, "plugins must be an array");
+			if (pluginValue != null) {
+				if (pluginValue.type() != LoaderValue.LType.OBJECT) {
+					throw parseException(pluginValue, "plugin must be an object");
 				}
 
-				for (LoaderValue entry : pluginsValue.asArray()) {
-					builder.plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
-				}
+				// TODO: Implement plugin reading!
+//				for (LoaderValue entry : pluginValue.asArray()) {
+//					builder.plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
+//				}
 			}
 
 			@Nullable
@@ -346,7 +349,7 @@ final class V1ModMetadataReader {
 
 		}
 
-		return new V1ModMetadataImpl(builder);
+		return builder.build();
 	}
 
 	private static String requiredString(JsonLoaderValue.ObjectImpl object, String field) {

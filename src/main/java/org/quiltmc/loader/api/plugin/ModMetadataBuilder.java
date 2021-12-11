@@ -2,9 +2,11 @@ package org.quiltmc.loader.api.plugin;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
@@ -39,7 +41,7 @@ public interface ModMetadataBuilder {
 
 	ModMetadataBuilder description(String description);
 
-	/** @return An unmodifiable list of licenses. */
+	/** @return The (modifiable) list of licenses. */
 	List<ModLicense> licenses();
 
 	ModMetadataBuilder addLicense(ModLicense license);
@@ -52,7 +54,7 @@ public interface ModMetadataBuilder {
 	 *             {@link #ofTentative(org.quiltmc.loader.api.LoaderValue.LObject, String, String, Version)}. */
 	ModMetadataBuilder noLicenses();
 
-	/** @return An unmodifiable list of contributors. */
+	/** @return The (modifiable) list of contributors. */
 	List<ModContributor> contributors();
 
 	ModMetadataBuilder addContributor(ModContributor license);
@@ -65,8 +67,29 @@ public interface ModMetadataBuilder {
 	 *             {@link #ofTentative(org.quiltmc.loader.api.LoaderValue.LObject, String, String, Version)}. */
 	ModMetadataBuilder noContributors();
 
+	Map<String, String> contactInfo();
+
+	ModMetadataBuilder addContactInfo(String key, String value);
+
+	ModMetadataBuilder putContactInfo(Map<String, String> map);
+
+	// Dependency Information
+
+	ModMetadataBuilder addDepends(ModDependency dep);
+
+	ModDependencyBuilder startDepends();
+
 	// Usage
 
 	/** @see FullModMetadata#isQuiltDeps() */
 	void setIsQuiltDeps(boolean quiltShouldGen);
+
+	public interface ModDependencyBuilder {
+
+		ModDependency toDependency();
+
+		/** Passes {@link #toDependency()} into {@link ModMetadataBuilder#addDepends(ModDependency)} and returns the
+		 * original {@link ModMetadataBuilder} */
+		ModMetadataBuilder build();
+	}
 }

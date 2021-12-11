@@ -24,6 +24,9 @@ public interface RuleContext {
 	/** Adds a new {@link LoadOption}, with the given weight. */
 	void addOption(LoadOption option, int weight);
 
+	/** Sets the weight of an existing {@link LoadOption}.
+	 * 
+	 * @throws IllegalArgumentException if the given {@link LoadOption} isn't present. */
 	void setWeight(LoadOption option, int weight);
 
 	void removeOption(LoadOption option);
@@ -34,4 +37,8 @@ public interface RuleContext {
 
 	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
 	void redefine(Rule rule);
+
+	boolean isNegated(LoadOption option);
+
+	LoadOption negate(LoadOption option);
 }

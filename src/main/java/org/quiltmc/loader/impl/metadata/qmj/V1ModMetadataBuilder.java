@@ -14,9 +14,11 @@ import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.FullModMetadata;
 import org.quiltmc.loader.api.plugin.ModMetadataBuilder;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.api.plugin.FullModMetadata.ModMetadataField;
+import org.quiltmc.loader.api.plugin.FullModMetadata.ModPlugin;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
@@ -42,7 +44,7 @@ public final class V1ModMetadataBuilder implements ModMetadataBuilder {
 	ModLoadType loadType = ModLoadType.IF_REQUIRED;
 	final Collection<ModProvided> provides = new ArrayList<>();
 	final Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
-	final Collection<AdapterLoadableClassEntry> plugins = new ArrayList<>();
+	@Nullable ModPlugin plugin;
 	final List<String> jars = new ArrayList<>();
 	final Map<String, String> languageAdapters = new LinkedHashMap<>();
 	final Collection<String> repositories = new ArrayList<>();
@@ -66,56 +68,92 @@ public final class V1ModMetadataBuilder implements ModMetadataBuilder {
 		}
 	}
 
-	public static ModMetadataBuilder of(LoaderValue.LObject root, String id, String group, Version version) {
+	public static V1ModMetadataBuilder of(LoaderValue.LObject root, String id, String group, Version version) {
 		return new V1ModMetadataBuilder(root, id, group, version, false);
 	}
 
-	public static ModMetadataBuilder ofTentative(LoaderValue.LObject root, String id, String group, Version version) {
+	public static V1ModMetadataBuilder ofTentative(LoaderValue.LObject root, String id, String group, Version version) {
 		return new V1ModMetadataBuilder(root, id, group, version, true);
+	}
+
+	private void fieldPresent(ModMetadataField field) {
+		if (fieldsPresent != null) {
+			fieldsPresent.add(field);
+		}
+	}
+
+	@Override
+	public V1ModMetadataImpl build() {
+		return new V1ModMetadataImpl(this);
 	}
 
 	@Override
 	public ModMetadataBuilder name(String name) {
 		this.name = name;
-		fieldPresent();
+		fieldPresent(ModMetadataField.NAME);
 		return this;
 	}
 
 	@Override
 	public ModMetadataBuilder description(String description) {
 		this.description = description;
+		fieldPresent(ModMetadataField.DESCRIPTION);
+		return this;
 	}
 
-	public void addLicense(ModLicense license) {
+	@Override
+	public ModMetadataBuilder addLicense(ModLicense license) {
 		this.licenses.add(license);
+		fieldPresent(ModMetadataField.LICENSES);
+		return this;
 	}
 
-	public void addLicenses(Collection<ModLicense> licenses) {
+	@Override
+	public ModMetadataBuilder addLicenses(Collection<ModLicense> licenses) {
 		this.licenses.addAll(licenses);
+		fieldPresent(ModMetadataField.LICENSES);
+		return this;
 	}
 
-	public void addContributor(ModContributor contributor) {
+	@Override
+	public ModMetadataBuilder addContributor(ModContributor contributor) {
 		this.contributors.add(contributor);
+		fieldPresent(ModMetadataField.CONTRIBUTORS);
+		return this;
 	}
 
-	public void addContributors(Collection<ModContributor> contributors) {
+	@Override
+	public ModMetadataBuilder addContributors(Collection<ModContributor> contributors) {
 		this.contributors.addAll(contributors);
+		fieldPresent(ModMetadataField.CONTRIBUTORS);
+		return this;
 	}
 
-	public void addContactInformation(String key, String contactInformation) {
+	@Override
+	public ModMetadataBuilder addContactInfo(String key, String contactInformation) {
 		this.contactInformation.put(key, contactInformation);
+		fieldPresent(ModMetadataField.CONTACT_INFO);
+		return this;
 	}
 
-	public void putContactInformation(Map<String, String> contactInformation) {
+	@Override
+	public ModMetadataBuilder putContactInfo(Map<String, String> contactInformation) {
 		this.contactInformation.putAll(contactInformation);
+		fieldPresent(ModMetadataField.CONTACT_INFO);
+		return this;
 	}
 
-	public void addDepends(ModDependency depends) {
+	@Override
+	public ModMetadataBuilder addDepends(ModDependency depends) {
 		this.depends.add(depends);
+		fieldPresent(ModMetadataField.DEPENDS);
+		return this;
 	}
 
-	public void addDepends(Collection<ModDependency> depends) {
+	public ModMetadataBuilder addDepends(Collection<ModDependency> depends) {
 		this.depends.addAll(depends);
+		fieldPresent(ModMetadataField.DEPENDS);
+		return this;
 	}
 
 	public void addBreaks(ModDependency breaks) {
@@ -130,7 +168,7 @@ public final class V1ModMetadataBuilder implements ModMetadataBuilder {
 		this.icons = icons;
 	}
 
-	public void loadTYpe(ModLoadType loadType) {
+	public void loadType(ModLoadType loadType) {
 		this.loadType = loadType;
 	}
 

@@ -21,6 +21,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import java.net.URL;
 import java.util.function.BiConsumer;
 
+@Deprecated
 @FunctionalInterface
 public interface ModCandidateFinder {
 	void findCandidates(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> urlProposer);

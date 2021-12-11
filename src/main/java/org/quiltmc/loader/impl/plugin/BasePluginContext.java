@@ -5,15 +5,23 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 
 abstract class BasePluginContext implements QuiltPluginContext {
 
 	final QuiltPluginManagerImpl manager;
 	final String pluginId;
 	final Set<Path> modFolderSet = new ModFolderSet();
+	final RuleContext ruleContext = new ModRuleContext();
 
 	public BasePluginContext(QuiltPluginManagerImpl manager, String pluginId) {
 		this.manager = manager;
@@ -23,6 +31,54 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	@Override
 	public QuiltPluginManager manager() {
 		return manager;
+	}
+
+	@Override
+	public String pluginId() {
+		return pluginId;
+	}
+
+	@Override
+	public String toString() {
+		return "CTX:" + pluginId;
+	}
+
+	@Override
+	public void addFileToScan(Path file) {
+		// TODO: Log / store / do something to store the plugin
+		manager.scanModFile(file);
+	}
+
+	@Override
+	public void lockZip(Path path) {
+		// TODO Auto-generated method stub
+		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	@Override
+	public <V> Future<V> submit(Callable<V> task) {
+		// TODO Auto-generated method stub
+		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	@Override
+	public RuleContext ruleContext() {
+		return ruleContext;
+	}
+
+	@Override
+	public <T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option) {
+		addTentativeOption0(option);
+	}
+
+	private void addTentativeOption0(LoadOption option) {
+		manager.addLoadOption(option, this);
+	}
+
+	@Override
+	public void blameRule(Rule rule) {
+		// TODO Auto-generated method stub
+		throw new AbstractMethodError("// TODO: Implement this!");
 	}
 
 	class ModFolderSet implements Set<Path> {
@@ -94,6 +150,58 @@ abstract class BasePluginContext implements QuiltPluginContext {
 		@Override
 		public void clear() {
 			throw new UnsupportedOperationException();
+		}
+	}
+
+	class ModRuleContext implements RuleContext {
+
+		@Override
+		public void addOption(LoadOption option) {
+			if (option instanceof TentativeLoadOption) {
+				addTentativeOption0(option);
+			} else if (option instanceof ModLoadOption) {
+				ModLoadOption mod = (ModLoadOption) option;
+				Path from = mod.from();
+				manager.addSingleModOption(from, mod, BasePluginContext.this);
+			} else {
+				manager.addLoadOption(option, BasePluginContext.this);
+			}
+		}
+
+		@Override
+		public void addOption(LoadOption option, int weight) {
+			addOption(option);
+			setWeight(option, weight);
+		}
+
+		@Override
+		public void setWeight(LoadOption option, int weight) {
+			manager.solver.setWeight(option, weight);
+		}
+
+		@Override
+		public void removeOption(LoadOption option) {
+			manager.removeLoadOption(option);
+		}
+
+		@Override
+		public void addRule(Rule rule) {
+			manager.addRule(rule);
+		}
+
+		@Override
+		public void redefine(Rule rule) {
+			manager.solver.redefine(rule);
+		}
+
+		@Override
+		public boolean isNegated(LoadOption option) {
+			return manager.solver.isNegated(option);
+		}
+
+		@Override
+		public LoadOption negate(LoadOption option) {
+			return manager.solver.negate(option);
 		}
 	}
 }

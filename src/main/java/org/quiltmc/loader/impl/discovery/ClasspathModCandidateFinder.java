@@ -33,6 +33,10 @@ import java.util.stream.Stream;
 public class ClasspathModCandidateFinder implements ModCandidateFinder {
 	@Override
 	public void findCandidates(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> appender) {
+		findCandidatesStatic(loader, appender);
+	}
+	// Just to keep git happy
+	public static void findCandidatesStatic(QuiltLoaderImpl loader, BiConsumer<URL, Boolean> appender) {
 		Stream<URL> urls;
 
 		URL fabricCodeSource;
@@ -112,7 +116,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 		});
 	}
 
-	protected void addModSources(QuiltLoaderImpl loader, Set<URL> modsList, String name) throws IOException {
+	protected static void addModSources(QuiltLoaderImpl loader, Set<URL> modsList, String name) throws IOException {
 		Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources(name);
 		while (mods.hasMoreElements()) {
 			try {

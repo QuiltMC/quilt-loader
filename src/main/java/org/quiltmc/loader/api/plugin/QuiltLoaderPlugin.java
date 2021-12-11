@@ -1,5 +1,6 @@
 package org.quiltmc.loader.api.plugin;
 
+import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,11 +72,14 @@ public interface QuiltLoaderPlugin {
 	 * aren't system files.
 	 * <p>
 	 * You can retrieve the file name of the original zip by using {@link QuiltPluginManager#getParent(Path)}.
+	 * <p>
+	 * Note that this will be called for <em>all</em> plugins, even if previous plugins loaded the zip as a mod!
 	 * 
 	 * @param root The root of the zip file.
-	 * @return A {@link ModLoadOption} if this plugin could load the given zip as a mod, or null if it couldn't. */
+	 * @return A {@link ModLoadOption} if this plugin could load the given zip as a mod, or null if it couldn't.
+	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
 	@Nullable
-	default ModLoadOption scanZip(Path root) {
+	default ModLoadOption scanZip(Path root) throws IOException {
 		return null;
 	}
 
@@ -83,9 +87,21 @@ public interface QuiltLoaderPlugin {
 	 * {@link #scanZip(Path)}). However system files are not passed here.
 	 * 
 	 * @param file
-	 * @return A {@link ModLoadOption} if this plugin could load the given file as a mod, or null if it couldn't. */
+	 * @return A {@link ModLoadOption} if this plugin could load the given file as a mod, or null if it couldn't.
+	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
 	@Nullable
-	default ModLoadOption scanUnknownFile(Path file) {
+	default ModLoadOption scanUnknownFile(Path file) throws IOException {
+		return null;
+	}
+
+	/** Called once per folder found on the classpath. Both zips and other files found on the classpath are passed to
+	 * {@link #scanZip(Path)} and {@link #scanUnknownFile(Path)} as normal.
+	 * 
+	 * @param folder
+	 * @return A {@link ModLoadOption} if this plugin could load the given folder as a mod, or null if it couldn't.
+	 * @throws IOException if something went wrong while reading the contents of the folder and so an error message
+	 *             should be displayed. */
+	default ModLoadOption scanClasspathFolder(Path folder) throws IOException {
 		return null;
 	}
 

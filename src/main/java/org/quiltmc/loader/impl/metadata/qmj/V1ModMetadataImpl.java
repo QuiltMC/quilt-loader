@@ -16,16 +16,26 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LObject;
+import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModMetadataBuilder;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 import net.fabricmc.api.EnvType;
-
-import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.*;
 
 final class V1ModMetadataImpl implements InternalModMetadata {
 	private final JsonLoaderValue.ObjectImpl root;
@@ -46,7 +56,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final ModLoadType loadType;
 	private final Collection<ModProvided> provides;
 	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
-	private final Collection<AdapterLoadableClassEntry> plugins;
+	private final ModPlugin plugin;
 	private final Collection<String> jars;
 	private final Map<String, String> languageAdapters;
 	private final Collection<String> repositories;
@@ -74,11 +84,11 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			this.description = "";
 		}
 
-		this.licenses = Collections.unmodifiableCollection(builder.licenses);
-		this.contributors = Collections.unmodifiableCollection(builder.contributors);
-		this.contactInformation = Collections.unmodifiableMap(builder.contactInformation);
-		this.depends = Collections.unmodifiableCollection(builder.depends);
-		this.breaks = Collections.unmodifiableCollection(builder.breaks);
+		this.licenses = uCopyList(builder.licenses);
+		this.contributors = uCopyList(builder.contributors);
+		this.contactInformation = uCopyHashMap(builder.contactInformation);
+		this.depends = uCopyList(builder.depends);
+		this.breaks = uCopyList(builder.breaks);
 
 		if (builder.icons != null) {
 			this.icons = builder.icons;
@@ -88,17 +98,37 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 		// Internal fields
 		this.loadType = builder.loadType;
-		this.provides = Collections.unmodifiableCollection(builder.provides);
-		this.entrypoints = Collections.unmodifiableMap(builder.entrypoints);
-		this.plugins = Collections.unmodifiableCollection(builder.plugins);
-		this.jars = Collections.unmodifiableCollection(builder.jars);
-		this.languageAdapters = Collections.unmodifiableMap(builder.languageAdapters);
-		this.repositories = Collections.unmodifiableCollection(builder.repositories);
+		this.provides = uCopyCollection(builder.provides);
+		this.entrypoints = uCopyHashMap(builder.entrypoints, list -> uCopyCollection(list));
+		this.plugin = builder.plugin;
+		this.jars = uCopyList(builder.jars);
+		this.languageAdapters = uCopyHashMap(builder.languageAdapters);
+		this.repositories = uCopyCollection(builder.repositories);
 
 		// Move to plugins
-		this.mixins = Collections.unmodifiableCollection(builder.mixins);
-		this.accessWideners = Collections.unmodifiableCollection(builder.accessWideners);
+		this.mixins = uCopyCollection(builder.mixins);
+		this.accessWideners = uCopyCollection(builder.accessWideners);
 		this.environment = builder.env;
+	}
+
+	private static <T> List<T> uCopyList(List<T> src) {
+		return Collections.unmodifiableList(new ArrayList<>(src));
+	}
+
+	private static <T> Collection<T> uCopyCollection(Collection<T> src) {
+		return Collections.unmodifiableCollection(new ArrayList<>(src));
+	}
+
+	private static <K, V> Map<K, V> uCopyHashMap(Map<K, V> src) {
+		return Collections.unmodifiableMap(new HashMap<>(src));
+	}
+
+	private static <K, VF, VT> Map<K, VT> uCopyHashMap(Map<K, VF> src, Function<VF, VT> valueFn) {
+		HashMap<K, VT> map = new HashMap<>();
+		for (Map.Entry<K, VF> entry : src.entrySet()) {
+			map.put(entry.getKey(), valueFn.apply(entry.getValue()));
+		}
+		return Collections.unmodifiableMap(map);
 	}
 
 	@Override
@@ -145,6 +175,11 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public Map<String, String> contactInfo() {
 		return this.contactInformation;
+	}
+
+	@Override
+	public boolean isQuiltDeps() {
+		return true;
 	}
 
 	@Override
@@ -197,9 +232,10 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		return this.entrypoints;
 	}
 
+	@Nullable
 	@Override
-	public Collection<AdapterLoadableClassEntry> getPlugins() {
-		return this.plugins;
+	public ModPlugin plugin() {
+		return plugin;
 	}
 
 	@Override
@@ -235,5 +271,16 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public boolean hasField(ModMetadataField field) {
 		return true;
+	}
+
+	@Override
+	public ModMetadataBuilder copyToBuilder() {
+		return copyToBuilder(root, id, group, version);
+	}
+
+	@Override
+	public ModMetadataBuilder copyToBuilder(LoaderValue.LObject root, String id, String group, Version version) {
+		ModMetadataBuilder builder = V1ModMetadataBuilder.of(root, id, group, version);
+		// TODO: Put every field into the builder!
 	}
 }

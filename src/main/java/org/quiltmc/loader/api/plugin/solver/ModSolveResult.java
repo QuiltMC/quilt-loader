@@ -6,9 +6,9 @@ public interface ModSolveResult {
 
 	// TODO: add mod map!
 
-	<O extends LoadOption> SpecificLoadOptionResult<O> getResult(Class<O> clazz);
+	<O> SpecificLoadOptionResult<O> getResult(Class<O> clazz);
 
-	public interface SpecificLoadOptionResult<O extends LoadOption> {
+	public interface SpecificLoadOptionResult<O> {
 		Collection<O> getOptions();
 
 		boolean isPresent(O option);

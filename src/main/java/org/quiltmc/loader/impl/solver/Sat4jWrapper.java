@@ -31,6 +31,7 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.core.Vec;
@@ -108,6 +109,10 @@ public class Sat4jWrapper implements RuleContext {
 		this.logger = logger;
 	}
 
+	public Sat4jWrapper() {
+		this(QuiltLoaderImpl.INSTANCE.getLogger());
+	}
+
 	public Sat4jSolveStep getStep() {
 		return step;
 	}
@@ -161,7 +166,11 @@ public class Sat4jWrapper implements RuleContext {
 	@Override
 	public void setWeight(LoadOption option, int weight) {
 		validateCanAdd();
-		optionToWeight.put(option, weight);
+		if (optionToWeight.containsKey(option)) {
+			optionToWeight.put(option, weight);
+		} else {
+			throw new IllegalArgumentException("Unknown LoadOption " + option);
+		}
 	}
 
 	@Override
@@ -229,6 +238,20 @@ public class Sat4jWrapper implements RuleContext {
 		ruleToDefinitions.put(rule, new ArrayList<>(1));
 		rulesChanged = true;
 		rule.define(new RuleDefinerInternal(rule));
+	}
+
+	@Override
+	public boolean isNegated(LoadOption option) {
+		return option instanceof NegatedLoadOption;
+	}
+
+	@Override
+	public LoadOption negate(LoadOption option) {
+		if (option instanceof NegatedLoadOption) {
+			return ((NegatedLoadOption) option).not;
+		} else {
+			return new NegatedLoadOption(option);
+		}
 	}
 
 	private void validateCanAdd() {
