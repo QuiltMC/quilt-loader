@@ -57,8 +57,6 @@ final class V1ModMetadataReader {
 		Version version = null;
 		V1ModMetadataBuilder builder;
 		/* Optional fields */
-		String name = null;
-		String description = null;
 		List<ModLicense> licenses = new ArrayList<>();
 		List<ModContributor> contributors = new ArrayList<>();
 		Map<String, String> contactInformation = new LinkedHashMap<>();
@@ -70,7 +68,6 @@ final class V1ModMetadataReader {
 		Collection<ModProvided> provides = new ArrayList<>();
 		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
 		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
-		List<String> jars = new ArrayList<>();
 		Map<String, String> languageAdapters = new LinkedHashMap<>();
 		List<String> repositories = new ArrayList<>();
 		/* TODO: Move to plugins */
@@ -254,8 +251,8 @@ final class V1ModMetadataReader {
 
 				JsonLoaderValue.ObjectImpl metadata = (JsonLoaderValue.ObjectImpl) metadataValue;
 
-				name = string(metadata, "name");
-				description = string(metadata, "description");
+				builder.name(string(metadata, "name"));
+				builder.description(string(metadata, "description"));
 
 				@Nullable
 				JsonLoaderValue contributorsValue = metadata.get("contributors");

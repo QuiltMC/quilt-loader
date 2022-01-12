@@ -2,6 +2,8 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.nio.file.Path;
 
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+
 /** A task that must be completed by the main quilt thread (I.E. load */
 abstract class MainThreadTask {
 
@@ -25,28 +27,32 @@ abstract class MainThreadTask {
 	static final class ScanZipTask extends MainThreadTask {
 		final Path zipFile;
 		final Path zipRoot;
+		final PluginGuiTreeNode guiNode;
 
-		public ScanZipTask(Path zipFile, Path zipRoot) {
+		public ScanZipTask(Path zipFile, Path zipRoot, PluginGuiTreeNode guiNode) {
 			this.zipFile = zipFile;
 			this.zipRoot = zipRoot;
+			this.guiNode = guiNode;
 		}
 
 		@Override
 		void execute(QuiltPluginManagerImpl manager) {
-			manager.scanZip(zipFile, zipRoot);
+			manager.scanZip(zipFile, zipRoot, guiNode);
 		}
 	}
 
 	static final class ScanUnknownFileTask extends MainThreadTask {
 		final Path file;
+		final PluginGuiTreeNode guiNode;
 
-		public ScanUnknownFileTask(Path file) {
+		public ScanUnknownFileTask(Path file, PluginGuiTreeNode guiNode) {
 			this.file = file;
+			this.guiNode = guiNode;
 		}
 
 		@Override
 		void execute(QuiltPluginManagerImpl manager) {
-			manager.scanUnknownFile(file);
+			manager.scanUnknownFile(file, guiNode);
 		}
 	}
 }

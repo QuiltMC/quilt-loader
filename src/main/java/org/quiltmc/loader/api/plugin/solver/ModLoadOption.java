@@ -5,14 +5,16 @@ import java.nio.file.Path;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.FullModMetadata;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 
 public abstract class ModLoadOption extends LoadOption {
 
 	public abstract FullModMetadata metadata();
 
 	/** @return The {@link Path} where this is loaded from. This should be either the Path that was passed to
-	 *         {@link QuiltLoaderPlugin#scanZip(Path)} or the Path that was passed to
-	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path)}. */
+	 *         {@link QuiltLoaderPlugin#scanZip(Path, PluginGuiTreeNode)} or the Path that was passed to
+	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path, PluginGuiTreeNode)}. */
 	public abstract Path from();
 
 	/** @return The {@link Path} where this mod's classes and resources can be loaded from. */
@@ -33,4 +35,6 @@ public abstract class ModLoadOption extends LoadOption {
 	public final Version version() {
 		return metadata().version();
 	}
+
+	public abstract PluginGuiIcon modTypeIcon();
 }

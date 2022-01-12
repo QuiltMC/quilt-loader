@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
@@ -37,8 +38,9 @@ public interface QuiltPluginContext {
 
 	/** Adds an additional file to scan for mods, which will go through the same steps as files found in mod folders.
 	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
-	 * or vice versa. Or any mod type of which a loader plugin can load). */
-	void addFileToScan(Path file);
+	 * or vice versa. Or any mod type of which a loader plugin can load). 
+	 * @param guiNode TODO*/
+	void addFileToScan(Path file, PluginGuiTreeNode guiNode);
 
 	/** "Locks" a zip file that has been opened by {@link QuiltPluginManager#loadZip(Path)} so that it won't be unloaded
 	 * if no loaded mod is using it.

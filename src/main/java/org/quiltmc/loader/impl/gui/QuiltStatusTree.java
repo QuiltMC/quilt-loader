@@ -33,8 +33,10 @@ import org.quiltmc.json5.JsonWriter;
 
 public final class QuiltStatusTree {
 	public enum FabricTreeWarningLevel {
+		FATAL,
 		ERROR,
 		WARN,
+		CONCERN,
 		INFO,
 		NONE;
 

@@ -12,6 +12,7 @@ import java.util.concurrent.Future;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -31,8 +32,8 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * <li>If it is a zip or jar file (or can be opened by {@link FileSystems#newFileSystem(Path, ClassLoader)}) then it
  * will be opened, and checked for a "quilt.mod.json" file. If one is found, then it is loaded as a quilt mod (and
  * possibly as a new plugin - which will be loaded instantly, rather than waiting until the next cycle).</li>
- * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to {@link #scanZip(Path)}</li>
- * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path)}</li>
+ * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to {@link #scanZip(Path, PluginGuiTreeNode)}</li>
+ * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, PluginGuiTreeNode)}</li>
  * </ol>
  * </li>
  * <li>{@link #beforeSolve()} is called.</li>
@@ -67,6 +68,8 @@ public interface QuiltLoaderPlugin {
 	 *            methods are supported. */
 	default void addModFolders(Set<Path> folders) {}
 
+	// FIXME: Change "scan*" to return a non-null array rather than a single object!
+
 	/** Called once per archival file found in any of the folders added by {@link #addModFolders(Set)} or
 	 * {@link #onModFolderAdded(Path, Set)}. This is only called for zips that aren't identified as quilt mods, and
 	 * aren't system files.
@@ -76,32 +79,35 @@ public interface QuiltLoaderPlugin {
 	 * Note that this will be called for <em>all</em> plugins, even if previous plugins loaded the zip as a mod!
 	 * 
 	 * @param root The root of the zip file.
+	 * @param guiNode TODO
 	 * @return A {@link ModLoadOption} if this plugin could load the given zip as a mod, or null if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
 	@Nullable
-	default ModLoadOption scanZip(Path root) throws IOException {
+	default ModLoadOption scanZip(Path root, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
 	/** Called once per file encountered which loader can't open (I.E. those which are not passed to
-	 * {@link #scanZip(Path)}). However system files are not passed here.
+	 * {@link #scanZip(Path, PluginGuiTreeNode)}). However system files are not passed here.
 	 * 
 	 * @param file
+	 * @param guiNode TODO
 	 * @return A {@link ModLoadOption} if this plugin could load the given file as a mod, or null if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
 	@Nullable
-	default ModLoadOption scanUnknownFile(Path file) throws IOException {
+	default ModLoadOption scanUnknownFile(Path file, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
 	/** Called once per folder found on the classpath. Both zips and other files found on the classpath are passed to
-	 * {@link #scanZip(Path)} and {@link #scanUnknownFile(Path)} as normal.
+	 * {@link #scanZip(Path, PluginGuiTreeNode)} and {@link #scanUnknownFile(Path, PluginGuiTreeNode)} as normal.
 	 * 
 	 * @param folder
+	 * @param guiNode TODO
 	 * @return A {@link ModLoadOption} if this plugin could load the given folder as a mod, or null if it couldn't.
 	 * @throws IOException if something went wrong while reading the contents of the folder and so an error message
 	 *             should be displayed. */
-	default ModLoadOption scanClasspathFolder(Path folder) throws IOException {
+	default ModLoadOption scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 

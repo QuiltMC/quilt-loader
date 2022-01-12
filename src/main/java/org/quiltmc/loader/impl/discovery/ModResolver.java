@@ -62,6 +62,7 @@ import static com.google.common.jimfs.Feature.SECURE_DIRECTORY_STREAM;
  * for the first job is {@link #resolve(QuiltLoaderImpl)} which performs all of the work for loading mods. */
 public class ModResolver {
 	// nested JAR store
+	@Deprecated
 	private static final FileSystem inMemoryFs = Jimfs.newFileSystem(
 		"nestedJarStore",
 		Configuration.builder(PathType.unix())

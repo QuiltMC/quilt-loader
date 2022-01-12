@@ -52,6 +52,8 @@ import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.knot.Knot;
@@ -214,7 +216,16 @@ public class QuiltLoaderImpl {
 		} catch (TimeoutException e) {
 			throw new ModSolvingError("Timout", e);
 		}
-		
+
+		QuiltStatusTree tree = new QuiltStatusTree();
+		QuiltStatusTab tab = tree.addTab("Plugins Test");
+		plugins.guiFileRoot.toNode(tab.node, false);
+		try {
+			QuiltGuiEntry.open(tree, null, true);
+		} catch (Exception e) {
+			throw new Error(e);
+		}
+
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
 		for (LoadOption op : spec.getOptions()) {

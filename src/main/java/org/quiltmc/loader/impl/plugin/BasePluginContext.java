@@ -10,6 +10,8 @@ import java.util.concurrent.Future;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -44,9 +46,9 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
-	public void addFileToScan(Path file) {
+	public void addFileToScan(Path file, PluginGuiTreeNode guiNode) {
 		// TODO: Log / store / do something to store the plugin
-		manager.scanModFile(file);
+		manager.scanModFile(file, guiNode);
 	}
 
 	@Override
@@ -162,7 +164,7 @@ abstract class BasePluginContext implements QuiltPluginContext {
 			} else if (option instanceof ModLoadOption) {
 				ModLoadOption mod = (ModLoadOption) option;
 				Path from = mod.from();
-				manager.addSingleModOption(from, mod, BasePluginContext.this);
+				manager.addSingleModOption(from, mod, BasePluginContext.this, null, guiNode);
 			} else {
 				manager.addLoadOption(option, BasePluginContext.this);
 			}

@@ -4,7 +4,9 @@ import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.FullModMetadata;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 
 public class QuiltModOption extends ModLoadOption {
 
@@ -37,5 +39,10 @@ public class QuiltModOption extends ModLoadOption {
 	@Override
 	public String toString() {
 		return "{QuiltModOption '" + metadata.id() + "' from " + pluginManager.describePath(from) + "}";
+	}
+
+	@Override
+	public PluginGuiIcon modTypeIcon() {
+		return GuiManagerImpl.ICON_QUILT;
 	}
 }
