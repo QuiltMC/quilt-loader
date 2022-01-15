@@ -16,30 +16,6 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
-import com.google.common.jimfs.PathType;
-
-import org.quiltmc.json5.exception.ParseException;
-
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
-import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
-import org.quiltmc.loader.impl.metadata.ParseMetadataException;
-import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
-import org.quiltmc.loader.impl.solver.ModSolver;
-import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.UrlConversionException;
-import org.quiltmc.loader.impl.util.UrlUtil;
-
-import org.apache.logging.log4j.Logger;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -48,29 +24,51 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipError;
 
-import static com.google.common.jimfs.Feature.FILE_CHANNEL;
-import static com.google.common.jimfs.Feature.SECURE_DIRECTORY_STREAM;
+import org.apache.logging.log4j.Logger;
+import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.memfilesys.QuiltMemoryFileSystem;
+import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
+import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
+import org.quiltmc.loader.impl.metadata.LoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.ParseMetadataException;
+import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
+import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.solver.ModSolver;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 /** The main "resolver" for mods. This class has 1 job: to find valid mod jar files from the filesystem and classpath,
  * and loading them into memory. This also includes loading mod jar files from within jar files. The main entry point
  * for the first job is {@link #resolve(QuiltLoaderImpl)} which performs all of the work for loading mods. */
 public class ModResolver {
 	// nested JAR store
-	private static final FileSystem inMemoryFs = Jimfs.newFileSystem(
-		"nestedJarStore",
-		Configuration.builder(PathType.unix())
-			.setRoots("/")
-			.setWorkingDirectory("/")
-			.setAttributeViews("basic")
-			.setSupportedFeatures(SECURE_DIRECTORY_STREAM, FILE_CHANNEL)
-			.build()
-	);
+	private static final FileSystem inMemoryFs = new QuiltMemoryFileSystem.ReadWrite("nestedJarStore");
 	private static final Map<String, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
 	private static final Map<String, String> readableNestedJarPaths = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
@@ -244,7 +242,7 @@ public class ModResolver {
 					quiltModJson = jarFs.get().getPath("quilt.mod.json");
 					rootDir = jarFs.get().getRootDirectories().iterator().next();
 				} catch (IOException e) {
-					throw new RuntimeException("Failed to open mod JAR at " + path + "!");
+					throw new RuntimeException("Failed to open mod JAR at " + path + "!", e);
 				} catch (ZipError e) {
 					throw new RuntimeException("Jar at " + path + " is corrupted, please redownload it!");
 				}

@@ -199,11 +199,11 @@ final class ModResolvingTests {
     		sb.append("Incorrectly resolved an invalid mod set!\n");
 
     		for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
-    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginUrl() + "\n");
+    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getPath() + "\n");
     		}
 
     		for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
-    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginUrl() + "\n");
+    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getPath() + "\n");
     		}
 
     		Assertions.fail(sb.toString());
