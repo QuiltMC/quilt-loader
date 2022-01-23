@@ -33,7 +33,6 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
-/** A simple, read-only file system. */
 public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 	public QuiltMemoryFileSystemProvider() {}
 

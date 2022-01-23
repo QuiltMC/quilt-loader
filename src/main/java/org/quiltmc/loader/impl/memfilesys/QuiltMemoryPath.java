@@ -12,8 +12,11 @@ import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
 public final class QuiltMemoryPath implements Path {
@@ -24,6 +27,9 @@ public final class QuiltMemoryPath implements Path {
 
 	final QuiltMemoryFileSystem fs;
 	final QuiltMemoryPath parent;
+
+	/** The {@link String} name of this path. For efficiency we set this to one of {@link #NAME_ROOT},
+	 * {@link #NAME_PARENT}, or {@link #NAME_SELF} if it matches. */
 	final String name;
 
 	final boolean absolute;
@@ -34,24 +40,43 @@ public final class QuiltMemoryPath implements Path {
 	QuiltMemoryPath(QuiltMemoryFileSystem fs, QuiltMemoryPath parent, String name) {
 		this.fs = fs;
 		this.parent = parent;
-		this.name = name;
 
-		int count = 0;
-		if (parent != null) {
-			count += parent.nameCount;
-		}
-		if (!name.isEmpty()) {
-			count++;
-		}
-		this.nameCount = count;
-
-		if (parent == null) {
-			absolute = NAME_ROOT.equals(name);
+		if (NAME_ROOT.equals(name)) {
+			if (parent != null) {
+				throw new IllegalArgumentException("Root paths cannot have a parent!");
+			}
+			this.name = NAME_ROOT;
+			this.nameCount = 0;
+			this.absolute = true;
 		} else {
-			absolute = parent != null && parent.absolute;
+			if (name.equals(NAME_PARENT)) {
+				this.name = NAME_PARENT;
+			} else if (name.equals(NAME_SELF)) {
+				this.name = NAME_SELF;
+			} else {
+				this.name = name;
+			}
+			int count = 0;
+			if (parent != null) {
+				count += parent.nameCount;
+			}
+			if (!name.isEmpty()) {
+				count++;
+			}
+			this.nameCount = count;
+
+			if (parent == null) {
+				absolute = false;
+			} else {
+				absolute = parent.absolute;
+			}
 		}
 
 		this.hash = fs.hashCode() * 31 + (parent == null ? name.hashCode() : (parent.hash * 31 + name.hashCode()));
+	}
+
+	private boolean isRoot() {
+		return NAME_ROOT == name;
 	}
 
 	@Override
@@ -102,7 +127,7 @@ public final class QuiltMemoryPath implements Path {
 
 	@Override
 	public String toString() {
-		if (NAME_ROOT.equals(name)) {
+		if (isRoot()) {
 			return NAME_ROOT;
 		}
 
@@ -123,7 +148,7 @@ public final class QuiltMemoryPath implements Path {
 			}
 			sb.insert(0, '/');
 
-			if (upper.name.length() > 0 && !NAME_ROOT.equals(upper.name)) {
+			if (upper.name.length() > 0 && !upper.isRoot()) {
 				sb.insert(0, upper.name);
 			}
 
@@ -149,15 +174,15 @@ public final class QuiltMemoryPath implements Path {
 			throw new IllegalArgumentException("index out of bounds");
 		}
 
-		if (absolute && index == 0) {
-			return fs.root;
+		if (index == 0 && parent == null) {
+			return this;
 		}
 		if (index == nameCount - 1) {
 			return getFileName();
 		}
 
 		QuiltMemoryPath p = this;
-		for (int i = 0; i < index; i++) {
+		for (int i = index + 1; i < nameCount; i++) {
 			p = p.parent;
 		}
 
@@ -180,18 +205,26 @@ public final class QuiltMemoryPath implements Path {
 			end = end.parent;
 		}
 
-		if (beginIndex == 0) {
-			return end;
-		} else {
-			QuiltMemoryPath from = end;
+		QuiltMemoryPath from = end;
 
-			for (int i = endIndex; i > beginIndex; i--) {
-				from = from.parent;
-			}
-
-			// TODO: Implement this!
-			// TODO: Test this!
+		for (int i = endIndex - 1; i > beginIndex; i--) {
+			from = from.parent;
 		}
+
+		String fromS = from.name;
+		if (fromS.startsWith("/")) {
+			fromS = fromS.substring(1);
+		}
+
+		QuiltMemoryPath path = new QuiltMemoryPath(fs, null, fromS);
+		List<String> names = end.names();
+		names = names.subList(beginIndex + 1, names.size());
+
+		for (String sub : names) {
+			path = path.resolve(sub);
+		}
+
+		return path;
 	}
 
 	@Override
@@ -204,6 +237,8 @@ public final class QuiltMemoryPath implements Path {
 			if (o.nameCount > nameCount) {
 				return false;
 			}
+
+			throw new AbstractMethodError("// TODO: Implement this!");
 
 		} else {
 			return false;
@@ -320,6 +355,50 @@ public final class QuiltMemoryPath implements Path {
 
 	@Override
 	public QuiltMemoryPath relativize(Path other) {
+		if (!(other instanceof QuiltMemoryPath)) {
+			throw new IllegalArgumentException("You can only relativize paths from the same provider!");
+		}
+		QuiltMemoryPath o = (QuiltMemoryPath) other;
+		if (o.equals(this)) {
+			return new QuiltMemoryPath(fs, null, "");
+		}
+
+		if (absolute != o.absolute) {
+			throw new IllegalArgumentException(
+				"You can only relativize paths if they are both absolute, OR both relative - not one and the other!"
+			);
+		}
+
+		List<String> names = normalize().names();
+		List<String> oNames = o.normalize().names();
+
+		int i;
+		for (i = 0; i < Math.min(names.size(), oNames.size()); i++) {
+			String a = names.get(i);
+			String b = oNames.get(i);
+			if (!a.equals(b)) {
+				break;
+			}
+		}
+
+		QuiltMemoryPath path = null;
+		for (int j = i; j < names.size(); j++) {
+			if (path == null) {
+				path = new QuiltMemoryPath(fs, null, NAME_PARENT);
+			} else {
+				path = path.resolve(NAME_PARENT);
+			}
+		}
+
+		for (int j = i; j < oNames.size(); j++) {
+			if (path == null) {
+				path = new QuiltMemoryPath(fs, null, oNames.get(j));
+			} else {
+				path = path.resolve(oNames.get(j));
+			}
+		}
+
+		return path;
 
 	}
 
@@ -355,21 +434,57 @@ public final class QuiltMemoryPath implements Path {
 
 	@Override
 	public WatchKey register(WatchService watcher, Kind<?>[] events, Modifier... modifiers) throws IOException {
-		return new QuiltWatchKey(this);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public WatchKey register(WatchService watcher, Kind<?>... events) throws IOException {
-		return new QuiltWatchKey(this);
+		throw new UnsupportedOperationException();
+	}
+
+	private List<String> names() {
+		if (parent == null) {
+			if (isRoot()) {
+				return Collections.emptyList();
+			} else {
+				return Collections.singletonList(name);
+			}
+		}
+		List<String> list = new ArrayList<>(nameCount);
+		QuiltMemoryPath p = this;
+		do {
+			if (p.isRoot()) {
+				break;
+			}
+			list.add(p.name);
+		} while ((p = p.getParent()) != null);
+		Collections.reverse(list);
+		return list;
 	}
 
 	@Override
 	public Iterator<Path> iterator() {
-
+		if (parent == null) {
+			if (isRoot()) {
+				return Collections.emptyIterator();
+			} else {
+				return Collections.<Path> singleton(this).iterator();
+			}
+		}
+		List<Path> list = new ArrayList<>(nameCount);
+		QuiltMemoryPath p = this;
+		do {
+			if (p.isRoot()) {
+				break;
+			}
+			list.add(p.getFileName());
+		} while ((p = p.getParent()) != null);
+		Collections.reverse(list);
+		return list.iterator();
 	}
 
 	@Override
 	public int compareTo(Path other) {
-
+		return toString().compareTo(other.toString());
 	}
 }
