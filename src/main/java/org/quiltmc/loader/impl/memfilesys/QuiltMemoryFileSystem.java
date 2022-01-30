@@ -16,7 +16,6 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -25,15 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-
-// FIXME: This doesn't seem to solve the problem in the way I thought we solved it before
-// instead of expanding jars, fabric *actually* just copied the whole zip into memory.
-// Technically ReadWrite would suffice for this, but we're not setup for this at all
-// basically we could just remove a bit of copy-code, and remove the read-only parts
-// that way we only have a single FileSystem.
-// Technically we could do some perf testing... but this is FS stuff anyway, we expect it to be slow right?
-
+import java.util.regex.Pattern;
 
 public abstract class QuiltMemoryFileSystem extends FileSystem {
 
@@ -41,6 +32,8 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 
 	enum OpenState {
 		OPEN,
+		/** Used by {@link ReadWrite#replaceWithReadOnly()} when moving from one filesystem to another - since we need
+		 * to remove the old file system from the provider while still being able to read it. */
 		MOVING,
 		CLOSED;
 	}
@@ -144,8 +137,14 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 
 	@Override
 	public PathMatcher getPathMatcher(String syntaxAndPattern) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		if (syntaxAndPattern.startsWith("regex:")) {
+			Pattern pattern = Pattern.compile(syntaxAndPattern.substring("regex:".length()));
+			return path -> pattern.matcher(path.toString()).matches();
+		} else if (syntaxAndPattern.startsWith("glob:")) {
+			throw new AbstractMethodError("// TODO: Implement glob syntax matching!");
+		} else {
+			throw new UnsupportedOperationException("Unsupported syntax or pattern: '" + syntaxAndPattern + "'");
+		}
 	}
 
 	@Override

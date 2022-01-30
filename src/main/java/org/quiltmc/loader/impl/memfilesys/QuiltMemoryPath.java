@@ -238,7 +238,17 @@ public final class QuiltMemoryPath implements Path {
 				return false;
 			}
 
-			throw new AbstractMethodError("// TODO: Implement this!");
+			// TODO: Optimise this!
+
+			QuiltMemoryPath p = this;
+
+			do {
+				if (other.equals(p)) {
+					return true;
+				}
+			} while ((p = p.parent) != null);
+
+			return false;
 
 		} else {
 			return false;
