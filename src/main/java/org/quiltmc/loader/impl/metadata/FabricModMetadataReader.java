@@ -51,14 +51,7 @@ public final class FabricModMetadataReader {
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 
 	public static FabricLoaderModMetadata parseMetadata(Path path) throws ParseMetadataException, IOException {
-		try {
-			return parseMetadata(Files.newInputStream(path));
-		} catch (ParseMetadataException | IOException e) {
-			ParseMetadataException ex = new ParseMetadataException(e);
-			//ex.setModPaths(modPath, modParentPaths);
-			throw ex;
-
-		}
+		return parseMetadata(Files.newInputStream(path));
 	}
 	// Per the ECMA-404 (www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf), the JSON spec does not prohibit duplicate keys.
 	// For all intents and purposes of replicating the logic of Gson's fromJson before we have migrated to JsonReader, duplicate keys will replace previous entries.

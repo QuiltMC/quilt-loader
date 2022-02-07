@@ -59,7 +59,7 @@ public final class BrandingPatch extends GamePatch {
 				while (it.hasNext()) {
 					if (it.next().getOpcode() == Opcodes.ARETURN) {
 						it.previous();
-						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/minecraft/Hooks", "insertBranding", "(Ljava/lang/String;)Ljava/lang/String;", false));
+						it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/Hooks", "insertBranding", "(Ljava/lang/String;)Ljava/lang/String;", false));
 						it.next();
 					}
 				}

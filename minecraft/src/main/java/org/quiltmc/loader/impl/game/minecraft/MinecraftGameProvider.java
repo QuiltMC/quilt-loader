@@ -495,7 +495,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 	private void setupLog4jLogHandler(QuiltLauncher launcher, boolean useTargetCl) {
 		try {
-			final String logHandlerClsName = "net.fabricmc.loader.impl.game.minecraft.Log4jLogHandler";
+			final String logHandlerClsName = "org.quiltmc.loader.impl.game.minecraft.Log4jLogHandler";
 			Class<?> logHandlerCls;
 
 			if (useTargetCl) {

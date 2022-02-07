@@ -210,16 +210,13 @@ public class QuiltLoaderImpl {
 	}
 
 	private void setup() throws ModResolutionException {
-//		ModResolver resolver = new ModResolver(this);
-//		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
-//		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
-//		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-//		ModSolveResult result = resolver.resolve(this);
-		Map<String, ModCandidate> candidateMap = null;
-		if (true)
-		throw new RuntimeException();
-
-
+		ModResolver resolver = new ModResolver(this);
+		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
+		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
+		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
+		ModSolveResult result = resolver.resolve(this);
+		Map<String, ModCandidate> candidateMap = result.modMap;
+		modCandidates = new ArrayList<>(candidateMap.values());
 		// dump mod list
 
 		StringBuilder modListText = new StringBuilder();
@@ -294,7 +291,7 @@ public class QuiltLoaderImpl {
 			addMod(mod);
 		}
 
-		modCandidates = null;
+		//modCandidates = null;
 	}
 
 	protected void finishModLoading() {
