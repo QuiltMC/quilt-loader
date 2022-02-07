@@ -17,11 +17,13 @@
 package org.quiltmc.loader.impl.discovery;
 
 
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
 import java.nio.file.Path;
 
 @FunctionalInterface
 public interface ModCandidateFinder {
-	void findCandidates(ModCandidateConsumer out);
+	void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out);
 
 	interface ModCandidateConsumer {
 		void accept(Path path, boolean requiresRemap);

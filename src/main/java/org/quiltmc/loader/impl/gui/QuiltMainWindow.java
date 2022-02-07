@@ -100,7 +100,7 @@ class QuiltMainWindow {
 	private static void createUi(CountDownLatch onCloseLatch, QuiltStatusTree tree) {
 		JFrame window = new JFrame();
 		window.setVisible(false);
-		window.setTitle("Quilt Loader");
+		window.setTitle(tree.title);
 
 		try {
 			List<BufferedImage> images = new ArrayList<BufferedImage>();
@@ -159,7 +159,7 @@ class QuiltMainWindow {
 				JButton btn = new JButton(button.text);
 				buttons.add(btn);
 				btn.addActionListener(event -> {
-					if (button.type == FabricBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
+					if (button.type == QuiltStatusTree.QuiltBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
 
 					if (button.clipboard != null) {
 						try {

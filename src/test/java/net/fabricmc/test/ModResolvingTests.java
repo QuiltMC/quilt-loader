@@ -20,8 +20,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Map.Entry;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -33,7 +31,6 @@ import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 
 final class ModResolvingTests {
-	private static final Logger LOGGER = LogManager.getLogger();
 
 	private static Path testLocation;
 
@@ -199,11 +196,11 @@ final class ModResolvingTests {
     		sb.append("Incorrectly resolved an invalid mod set!\n");
 
     		for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
-    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginUrl() + "\n");
+    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getPath() + "\n");
     		}
 
     		for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
-    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginUrl() + "\n");
+    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getPath() + "\n");
     		}
 
     		Assertions.fail(sb.toString());

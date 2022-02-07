@@ -205,7 +205,7 @@ final class V1ModMetadataParser {
 				reader.skipValue();
 				break;
 			default:
-				if (!ModMetadataParser.IGNORED_KEYS.contains(key)) {
+				if (!FabricModMetadataReader.IGNORED_KEYS.contains(key)) {
 					warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
 				}
 				reader.skipValue();

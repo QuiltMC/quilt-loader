@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 
 final class V1ModJsonParsingTests {
@@ -182,7 +183,7 @@ final class V1ModJsonParsingTests {
 
 	private static FabricLoaderModMetadata parseMetadata(Path path) throws IOException, ParseMetadataException {
 		try (InputStream is = Files.newInputStream(path)) {
-			return ModMetadataParser.parseMetadata(null, "dummy", Collections.emptyList());
+			return FabricModMetadataReader.parseMetadata(is);
 		}
 	}
 }

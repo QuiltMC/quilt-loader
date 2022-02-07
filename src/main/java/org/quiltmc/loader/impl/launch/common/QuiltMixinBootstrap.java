@@ -21,8 +21,10 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.VersionParsingException;
 
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.ModContainerImpl;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
@@ -40,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class QuiltMixinBootstrap {
 	private QuiltMixinBootstrap() { }
@@ -51,12 +54,12 @@ public final class QuiltMixinBootstrap {
 	}
 
 	static Set<String> getMixinConfigs(QuiltLoaderImpl loader, EnvType type) {
-//		return loader.getAllMods().stream()
-//				.map(ModContainer::metadata)
-//				.filter((m) -> m instanceof FabricLoaderModMetadata)
-//				.flatMap((m) -> ((FabricLoaderModMetadata) m).getMixinConfigs(type).stream())
-//				.filter(s -> s != null && !s.isEmpty())
-//				.collect(Collectors.toSet());
+		return loader.getAllMods().stream()
+				.map(ModContainer::metadata)
+				.filter((m) -> m instanceof FabricLoaderModMetadata)
+				.flatMap((m) -> ((FabricLoaderModMetadata) m).getMixinConfigs(type).stream())
+				.filter(s -> s != null && !s.isEmpty())
+				.collect(Collectors.toSet());
 	}
 
 	public static void init(EnvType side, QuiltLoaderImpl loader) {
@@ -92,14 +95,15 @@ public final class QuiltMixinBootstrap {
 		Map<String, ModContainerImpl> configToModMap = new HashMap<>();
 
 		for (ModContainerImpl mod : loader.getMods()) {
-			for (String config : mod.metadata().getMixinConfigs(side)) {
+			for (String config : mod.getInternalMeta().mixins(side)) {
 				ModContainerImpl prev = configToModMap.putIfAbsent(config, mod);
-				if (prev != null) throw new RuntimeException(String.format("Non-unique Mixin config name %s used by the mods %s and %s", config, prev.getMetadata().getId(), mod.getMetadata().getId()));
+				if (prev != null) throw new RuntimeException(String.format("Non-unique Mixin config name %s used by the mods %s and %s",
+						config, prev.metadata().id(), mod.metadata().id()));
 
 				try {
 					Mixins.addConfiguration(config);
 				} catch (Throwable t) {
-					throw new RuntimeException(String.format("Error creating Mixin config %s for mod %s", config, mod.getMetadata().getId()), t);
+					throw new RuntimeException(String.format("Error creating Mixin config %s for mod %s", config, mod.metadata().id()), t);
 				}
 			}
 		}

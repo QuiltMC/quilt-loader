@@ -20,9 +20,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Map;
@@ -30,6 +36,7 @@ import java.util.Map;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.impl.FormattedException;
 
 public final class QuiltStatusTree {
 	public enum FabricTreeWarningLevel {
@@ -85,9 +92,11 @@ public final class QuiltStatusTree {
 		}
 	}
 
-	public enum FabricBasicButtonType {
+	public enum QuiltBasicButtonType {
 		/** Sends the status message to the main application, then disables itself. */
-		CLICK_ONCE;
+		CLICK_ONCE,
+		/** Sends the status message to the main application, remains enabled. */
+		CLICK_MANY
 	}
 
 	/** No icon is displayed. */
@@ -142,9 +151,13 @@ public final class QuiltStatusTree {
 	public final List<QuiltStatusTab> tabs = new ArrayList<>();
 	public final List<QuiltStatusButton> buttons = new ArrayList<>();
 
-	public String mainText = null;
+	public final String title;
+	public final String mainText;
 
-	public QuiltStatusTree() {}
+	public QuiltStatusTree(String title, String mainText) {
+		this.title = title;
+		this.mainText = mainText;
+	}
 
 
 	public QuiltStatusTab addTab(String name) {
@@ -153,14 +166,16 @@ public final class QuiltStatusTree {
 		return tab;
 	}
 
-	public QuiltStatusButton addButton(String text) {
-		QuiltStatusButton button = new QuiltStatusButton(text);
+	public QuiltStatusButton addButton(String text, QuiltBasicButtonType type) {
+		QuiltStatusButton button = new QuiltStatusButton(text, type);
 		buttons.add(button);
 		return button;
 	}
 
 	public QuiltStatusTree(JsonReader reader) throws IOException {
 		reader.beginObject();
+		expectName(reader, "title");
+		title = reader.nextString();
 		// As we write ourselves we mandate the order
 		// (This also makes everything a lot simpler)
 		expectName(reader, "mainText");
@@ -186,6 +201,7 @@ public final class QuiltStatusTree {
 	/** Writes this tree out as a single json object. */
 	public void write(JsonWriter writer) throws IOException {
 		writer.beginObject();
+		writer.name("title").value(title);
 		writer.name("mainText").value(mainText);
 		writer.name("tabs").beginArray();
 		for (QuiltStatusTab tab : tabs) {
@@ -218,10 +234,13 @@ public final class QuiltStatusTree {
 
 	public static final class QuiltStatusButton {
 		public final String text;
+		public final QuiltBasicButtonType type;
+		public String clipboard = "";
 		public boolean shouldClose, shouldContinue;
 
-		public QuiltStatusButton(String text) {
+		public QuiltStatusButton(String text, QuiltBasicButtonType type) {
 			this.text = text;
+			this.type = type;
 		}
 
 		public QuiltStatusButton makeClose() {
@@ -238,19 +257,30 @@ public final class QuiltStatusTree {
 			reader.beginObject();
 			expectName(reader, "text");
 			text = reader.nextString();
+			expectName(reader, "type");
+			type = QuiltBasicButtonType.valueOf(reader.nextString());
 			expectName(reader, "shouldClose");
 			shouldClose = reader.nextBoolean();
 			expectName(reader, "shouldContinue");
 			shouldContinue = reader.nextBoolean();
+			expectName(reader, "clipboard");
+			clipboard = reader.nextString();;
 			reader.endObject();
 		}
 
 		void write(JsonWriter writer) throws IOException {
 			writer.beginObject();
 			writer.name("text").value(text);
+			writer.name("type").value(type.name());
 			writer.name("shouldClose").value(shouldClose);
 			writer.name("shouldContinue").value(shouldContinue);
+			writer.name("clipboard").value(clipboard);
 			writer.endObject();
+		}
+
+		public QuiltStatusButton withClipboard(String clipboard) {
+			this.clipboard = clipboard;
+			return this;
 		}
 	}
 
@@ -449,22 +479,99 @@ public final class QuiltStatusTree {
 		}
 
 		public QuiltStatusNode addException(Throwable exception) {
-			QuiltStatusNode sub = new QuiltStatusNode(this, "...");
-			children.add(sub);
+			return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity(), new StackTraceElement[0]);
+		}
 
-			sub.setError();
-			String msg = exception.getMessage();
-			String[] lines = (msg == null ? exception.toString() : msg).split("\n");
+		public QuiltStatusNode addCleanedException(Throwable exception) {
+			return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, e -> {
+				// Remove some self-repeating exception traces from the tree
+				// (for example the RuntimeException that is is created unnecessarily by ForkJoinTask)
+				Throwable cause;
 
-			if (lines.length == 0) {
-				sub.name = exception.toString();
-			} else {
-				sub.name = lines[0];
+				while ((cause = e.getCause()) != null) {
+					if (e.getSuppressed().length > 0) {
+						break;
+					}
 
-				for (int i = 1; i < lines.length; i++) {
-					sub.addChild(lines[i]);
+					String msg = e.getMessage();
+
+					if (msg == null) {
+						msg = e.getClass().getName();
+					}
+
+					if (!msg.equals(cause.getMessage()) && !msg.equals(cause.toString())) {
+						break;
+					}
+
+					e = cause;
 				}
+
+				return e;
+			}, new StackTraceElement[0]);
+		}
+
+		private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception, UnaryOperator<Throwable> filter, StackTraceElement[] parentTrace) {
+			if (!seen.add(exception)) {
+				return node;
 			}
+
+			exception = filter.apply(exception);
+			QuiltStatusNode sub = node.addException(exception, parentTrace);
+			StackTraceElement[] trace = exception.getStackTrace();
+
+			for (Throwable t : exception.getSuppressed()) {
+				QuiltStatusNode suppressed = addException(sub, seen, t, filter, trace);
+				suppressed.name += " (suppressed)";
+				suppressed.expandByDefault = false;
+			}
+
+			if (exception.getCause() != null) {
+				addException(sub, seen, exception.getCause(), filter, trace);
+			}
+
+			return sub;
+		}
+
+		private QuiltStatusNode addException(Throwable exception, StackTraceElement[] parentTrace) {
+			String msg;
+
+			if (exception instanceof FormattedException) {
+				msg = Objects.toString(exception.getMessage());
+			} else if (exception.getMessage() == null || exception.getMessage().isEmpty()) {
+				msg = exception.toString();
+			} else {
+				msg = String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage());
+			}
+
+			String[] lines = msg.split("\n");
+
+			QuiltStatusNode sub = new QuiltStatusNode(this, lines[0]);
+			children.add(sub);
+			sub.setError();
+
+			for (int i = 1; i < lines.length; i++) {
+				sub.addChild(lines[i]);
+			}
+
+			StackTraceElement[] trace = exception.getStackTrace();
+			int uniqueFrames = trace.length - 1;
+
+			for (int i = parentTrace.length - 1; uniqueFrames >= 0 && i >= 0 && trace[uniqueFrames].equals(parentTrace[i]); i--) {
+				uniqueFrames--;
+			}
+
+			StringJoiner frames = new StringJoiner("<br/>", "<html>", "</html>");
+			int inheritedFrames = trace.length - 1 - uniqueFrames;
+
+			for (int i = 0; i <= uniqueFrames; i++) {
+				frames.add("at " + trace[i]);
+			}
+
+			if (inheritedFrames > 0) {
+				frames.add("... " + inheritedFrames + " more");
+			}
+
+			sub.addChild(frames.toString()).iconType = ICON_TYPE_JAVA_CLASS;
 
 			StringWriter sw = new StringWriter();
 			exception.printStackTrace(new PrintWriter(sw));

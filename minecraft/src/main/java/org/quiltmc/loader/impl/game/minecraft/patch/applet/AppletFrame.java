@@ -14,12 +14,6 @@ package org.quiltmc.loader.impl.game.minecraft.patch.applet;/*
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/patch/applet/AppletFrame.java
-package org.quiltmc.loader.impl.game.minecraft.patch.applet;
-========
-package net.fabricmc.loader.impl.game.minecraft.applet;
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/applet/AppletFrame.java
-
 import org.quiltmc.loader.impl.util.Arguments;
 
 import javax.swing.*;

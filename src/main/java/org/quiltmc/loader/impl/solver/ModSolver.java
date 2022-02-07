@@ -16,17 +16,19 @@
 
 package org.quiltmc.loader.impl.solver;
 
-import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
@@ -55,7 +57,7 @@ public final class ModSolver {
 
 	/** Primarily used by {@link ModResolver#resolve(QuiltLoaderImpl)} to find a valid map of mod ids to a single mod candidate, where
 	 * all of the dependencies are present and no "breaking" mods are present.
-	 * 
+	 *
 	 * @return A valid list of mods.
 	 * @throws ModResolutionException if that is impossible. */
 	public ModSolveResult findCompatibleSet(Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
@@ -84,8 +86,8 @@ public final class ModSolver {
 		 *	 present "breaking" mods then we only need to perform the validation at the end of resolving.
 		 */
 		// modCandidateMap doesn't contain provided mods, whereas fullCandidateMap does.
-		Map<String, List<ModCandidate>> modCandidateMap = new HashMap<>();
-		Map<String, List<ModCandidate>> fullCandidateMap = new HashMap<>();
+		Map<String, List<ModCandidate>> modCandidateMap = new LinkedHashMap<>();
+		Map<String, List<ModCandidate>> fullCandidateMap = new LinkedHashMap<>();
 
 		Map<String, ModCandidate> mandatoryMods = new HashMap<>();
 		List<ModSolvingException> errors = new ArrayList<>();
@@ -416,11 +418,11 @@ public final class ModSolver {
 			depCandidate = provided.get(depModId);
 			if (depCandidate != null) {
 				if(QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
-					Log.warn(LogCategory.SOLVING, "Mod " + candidate.getInfo().getId() + " is using the provided alias " + depModId + " in place of the real mod id " + depCandidate.getInfo().getId() + ".  Please use the mod id instead of a provided alias.");
+					Log.warn(LogCategory.SOLVING, "Mod " + candidate.getMetadata().id() + " is using the provided alias " + depModId + " in place of the real mod id " + depCandidate.getMetadata().id() + ".  Please use the mod id instead of a provided alias.");
 				}
 			}
 		}
-		boolean isPresent = depCandidate != null && dependency.matches(depCandidate.getInfo().getVersion());
+		boolean isPresent = depCandidate != null && dependency.matches(depCandidate.getMetadata().asFabricModMetadata().getVersion());
 
 		if (isPresent != cond) {
 			errors.append("\n - Mod ").append(getCandidateName(candidate)).append(" ").append(errorType).append(" ")
@@ -466,7 +468,7 @@ public final class ModSolver {
 
 	private void appendBreakingError(StringBuilder errors, ModCandidate candidate, ModCandidate depCandidate) {
 		final String depCandidateVer = getCandidateFriendlyVersion(depCandidate);
-		errors.append("but a matching version is present: ").append(depCandidate.getInfo().getVersion()).append("!");
+		errors.append("but a matching version is present: ").append(depCandidate.getVersion()).append("!");
 		errors.append("\n\t - The developer(s) of ").append(getCandidateName(candidate));
 		errors.append(" have found that version ").append(depCandidateVer).append(" of ").append(getCandidateName(depCandidate));
 		errors.append(" critically conflicts with their mod.");
@@ -480,87 +482,85 @@ public final class ModSolver {
 					.append(" is being loaded from the user's mod directory.");
 			return;
 		}
-		URL originUrl = candidate.getOriginUrl();
-		// step 1: try to find source mod's URL
-		URL sourceUrl = getSourceURL(originUrl);
-		if (sourceUrl == null) {
-			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
-					.append(" v").append(getCandidateFriendlyVersion(candidate))
-					.append(" is being provided by <unknown mod>.");
-			return;
-		}
-		// step 2: try to find source mod candidate
-		ModCandidate srcCandidate = null;
-		for (Map.Entry<String, ModCandidate> entry : result.entrySet()) {
-			if (sourceUrl.equals(entry.getValue().getOriginUrl())) {
-				srcCandidate = entry.getValue();
-				break;
-			}
-		}
-		if (srcCandidate == null) {
-			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
-					.append(" v").append(getCandidateFriendlyVersion(candidate))
-					.append(" is being provided by <unknown mod: ")
-					.append(sourceUrl).append(">.");
-			return;
-		}
-		// now we have the proper data, yay
-		errors.append("\n\t - Mod ").append(getCandidateName(candidate))
-				.append(" v").append(getCandidateFriendlyVersion(candidate))
-				.append(" is being provided by ").append(getCandidateName(srcCandidate))
-				.append(" v").append(getCandidateFriendlyVersion(candidate))
-				.append('.');
-	}
-
-	private URL getSourceURL(URL originUrl) {
-		return ModResolver.getSourceURL(originUrl);
+		Path origin = candidate.getPath();
+		errors.append("TODO implement");
+		return;
+//		// step 1: try to find source mod's URL
+//		if (sourceUrl == null) {
+//			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
+//					.append(" v").append(getCandidateFriendlyVersion(candidate))
+//					.append(" is being provided by <unknown mod>.");
+//			return;
+//		}
+//		// step 2: try to find source mod candidate
+//		ModCandidate srcCandidate = null;
+//		for (Map.Entry<String, ModCandidate> entry : result.entrySet()) {
+//			if (sourceUrl.equals(entry.getValue().getOriginUrl())) {
+//				srcCandidate = entry.getValue();
+//				break;
+//			}
+//		}
+//		if (srcCandidate == null) {
+//			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
+//					.append(" v").append(getCandidateFriendlyVersion(candidate))
+//					.append(" is being provided by <unknown mod: ")
+//					.append(sourceUrl).append(">.");
+//			return;
+//		}
+//		// now we have the proper data, yay
+//		errors.append("\n\t - Mod ").append(getCandidateName(candidate))
+//				.append(" v").append(getCandidateFriendlyVersion(candidate))
+//				.append(" is being provided by ").append(getCandidateName(srcCandidate))
+//				.append(" v").append(getCandidateFriendlyVersion(candidate))
+//				.append('.');
 	}
 
 	static String getCandidateName(ModCandidate candidate) {
-		return "'" + candidate.getInfo().getName() + "' (" + candidate.getInfo().getId() + ")";
+		return "'" + candidate.getMetadata().name() + "' (" + candidate.getId() + ")";
 	}
 
 	static String getCandidateFriendlyVersion(ModCandidate candidate) {
-		return candidate.getInfo().getVersion().getFriendlyString();
+		return candidate.getVersion().raw();
 	}
 
 	static String getDependencyVersionRequirements(ModDependency dependency) {
-		return dependency.getVersionRequirements().stream().map(predicate -> {
-			String version = predicate.getVersion();
-			String[] parts;
-			switch(predicate.getType()) {
-			case ANY:
-				return "any version";
-			case EQUALS:
-				return "version " + version;
-			case GREATER_THAN:
-				return "any version after " + version;
-			case LESSER_THAN:
-				return "any version before " + version;
-			case GREATER_THAN_OR_EQUAL:
-				return "version " + version + " or later";
-			case LESSER_THAN_OR_EQUAL:
-				return "version " + version + " or earlier";
-			case SAME_MAJOR:
-				parts = version.split("\\.");
-
-				for (int i = 1; i < parts.length; i++) {
-					parts[i] = "x";
-				}
-
-				return "version " + String.join(".", parts);
-			case SAME_MAJOR_AND_MINOR:
-				parts = version.split("\\.");
-
-				for (int i = 2; i < parts.length; i++) {
-					parts[i] = "x";
-				}
-
-				return "version " + String.join(".", parts);
-			default:
-				return "unknown version"; // should be unreachable
-			}
-		}).collect(Collectors.joining(" or "));
+		return "TODO wtf";
+//		return dependency.getVersionRequirements().stream().map(VersionPredicate::getTerms).map(predicate -> {
+//
+//			String[] parts;
+//			switch(predicate.getType()) {
+//			case ANY:
+//				return "any version";
+//			case EQUALS:
+//				return "version " + version;
+//			case GREATER_THAN:
+//				return "any version after " + version;
+//			case LESSER_THAN:
+//				return "any version before " + version;
+//			case GREATER_THAN_OR_EQUAL:
+//				return "version " + version + " or later";
+//			case LESSER_THAN_OR_EQUAL:
+//				return "version " + version + " or earlier";
+//			case SAME_MAJOR:
+//				parts = version.split("\\.");
+//
+//				for (int i = 1; i < parts.length; i++) {
+//					parts[i] = "x";
+//				}
+//
+//				return "version " + String.join(".", parts);
+//			case SAME_MAJOR_AND_MINOR:
+//				parts = version.split("\\.");
+//
+//				for (int i = 2; i < parts.length; i++) {
+//					parts[i] = "x";
+//				}
+//
+//				return "version " + String.join(".", parts);
+//			default:
+//				return "unknown version"; // should be unreachable
+//			}
+//		}).collect(Collectors.joining(" or "));
 	}
 
 	/** @param errorList The list of errors. The returned list of errors all need to be prefixed with "it " in order to make sense. */
@@ -593,7 +593,7 @@ public final class ModSolver {
 			cause.fallbackErrorDescription(errors);
 		}
 
-		// TODO: See if I can get results similar to appendJiJInfo (which requires a complete "mod ID -> candidate" map)
+//		 //TODO: See if I can get results similar to appendJiJInfo (which requires a complete "mod ID -> candidate" map)
 //		HashSet<String> listedSources = new HashSet<>();
 //		for (ModLoadOption involvedMod : roots.keySet()) {
 //			appendLoadSourceInfo(errors, listedSources, involvedMod);

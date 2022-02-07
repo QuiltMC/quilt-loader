@@ -1,4 +1,5 @@
-package org.quiltmc.loader.impl.game.minecraft.patch;/*
+package org.quiltmc.loader.impl.game.minecraft.patch;
+/*
  * Copyright 2016 FabricMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,41 +15,24 @@ package org.quiltmc.loader.impl.game.minecraft.patch;/*
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/patch/BrandingPatch.java
-package org.quiltmc.loader.impl.game.minecraft.patch;
-
-import org.quiltmc.loader.impl.entrypoint.GamePatch;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-========
-package net.fabricmc.loader.impl.game.minecraft.patch;
-
-import java.util.ListIterator;
-import java.util.function.Consumer;
-
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/BrandingPatch.java
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/patch/BrandingPatch.java
+import org.quiltmc.loader.impl.entrypoint.GamePatch;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
-========
-import net.fabricmc.loader.impl.game.patch.GamePatch;
-import net.fabricmc.loader.impl.launch.FabricLauncher;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogCategory;
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/BrandingPatch.java
+
+import java.util.ListIterator;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public final class BrandingPatch extends GamePatch {
 	@Override
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/patch/BrandingPatch.java
-	public void process(QuiltLauncher launcher, Consumer<ClassNode> classEmitter) {
-========
-	public void process(FabricLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/patch/BrandingPatch.java
+	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
 		for (String brandClassName : new String[] {
 				"net.minecraft.client.ClientBrandRetriever",
 				"net.minecraft.server.MinecraftServer"

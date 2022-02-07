@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,6 +28,7 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.spongepowered.include.com.google.common.base.Charsets;
 
 /**
  * The central class used to read a {@code quilt.mod.json}.
@@ -39,6 +41,10 @@ public final class ModMetadataReader {
 	 */
 	private static final String SCHEMA_VERSION = "schema_version";
 
+	public static InternalModMetadata read(Path json) throws IOException, ParseException {
+		return read(Files.newInputStream(json));
+	}
+
 	/**
 	 * Reads the {@code quilt.mod.json} at the supplied path
 	 *
@@ -48,10 +54,10 @@ public final class ModMetadataReader {
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
 	@SuppressWarnings("SwitchStatementWithTooFewBranches") // Switch statement intentionally used for future expandability
-	public static InternalModMetadata read(Path json) throws IOException, ParseException {
+	public static InternalModMetadata read(InputStream json) throws IOException, ParseException {
 		JsonLoaderValue value;
 
-		try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(json), StandardCharsets.UTF_8))) {
+		try (JsonReader reader = JsonReader.json(new InputStreamReader(json, StandardCharsets.UTF_8))) {
 			// Root must be an object
 			if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 				throw new ParseException(reader, "A quilt.mod.json must have an object at the root");

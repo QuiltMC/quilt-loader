@@ -29,6 +29,8 @@ import java.util.regex.Pattern;
 
 import net.fabricmc.loader.api.VersionParsingException;
 
+import net.fabricmc.loader.impl.util.LoaderUtil;
+
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -39,19 +41,10 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/McVersionLookup.java
+import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
-========
-import net.fabricmc.loader.impl.FabricLoaderImpl;
-import net.fabricmc.loader.impl.lib.gson.JsonReader;
-import net.fabricmc.loader.impl.lib.gson.JsonToken;
-import net.fabricmc.loader.impl.util.FileSystemUtil;
-import net.fabricmc.loader.impl.util.LoaderUtil;
-import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
-import net.fabricmc.loader.impl.util.version.VersionPredicateParser;
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/McVersionLookup.java
+import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
 @SuppressWarnings("deprecation")
 public final class McVersionLookup {
@@ -374,11 +367,7 @@ public final class McVersionLookup {
 					boolean legacyVersion;
 
 					try {
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/McVersionLookup.java
-						legacyVersion = FabricSemanticVersionPredicateParser.create("<=1.16").test(new FabricSemanticVersionImpl(release, false));
-========
-						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new SemanticVersionImpl(release, false));
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/McVersionLookup.java
+						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new FabricSemanticVersionImpl(release, false));
 					} catch (VersionParsingException e) {
 						throw new RuntimeException("Failed to parse version: " + release);
 					}

@@ -23,6 +23,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -49,9 +50,19 @@ public final class FabricModMetadataReader {
 
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 
+	public static FabricLoaderModMetadata parseMetadata(Path path) throws ParseMetadataException, IOException {
+		try {
+			return parseMetadata(Files.newInputStream(path));
+		} catch (ParseMetadataException | IOException e) {
+			ParseMetadataException ex = new ParseMetadataException(e);
+			//ex.setModPaths(modPath, modParentPaths);
+			throw ex;
+
+		}
+	}
 	// Per the ECMA-404 (www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf), the JSON spec does not prohibit duplicate keys.
 	// For all intents and purposes of replicating the logic of Gson's fromJson before we have migrated to JsonReader, duplicate keys will replace previous entries.
-	public static FabricLoaderModMetadata parseMetadata(InputStream is, String modPath, List<String> modParentPaths) throws ParseMetadataException {
+	public static FabricLoaderModMetadata parseMetadata(InputStream is /*String modPath, List<String> modParentPaths*/) throws ParseMetadataException {
 		try {
 			FabricLoaderModMetadata ret = readModMetadata(is);
 
@@ -73,94 +84,94 @@ public final class FabricModMetadataReader {
 
 			return ret;
 		} catch (ParseMetadataException e) {
-			e.setModPaths(modPath, modParentPaths);
+			//e.setModPaths(modPath, modParentPaths);
 			throw e;
 		} catch (Throwable t) {
 			ParseMetadataException e = new ParseMetadataException(t);
-			e.setModPaths(modPath, modParentPaths);
+			//e.setModPaths(modPath, modParentPaths);
 			throw e;
 		}
 	}
 
 	// TODO: revert this back to the quilt version since we aren't using GSON with rewind
 	private static FabricLoaderModMetadata readModMetadata(InputStream is) throws IOException, ParseMetadataException {
-		return;
-		// So some context:
-		// Per the json specification, ordering of fields is not typically enforced.
-		// Furthermore we cannot guarantee the `schemaVersion` is the first field in every `fabric.mod.json`
-		//
-		// To work around this, we do the following:
-		// Try to read first field
-		// If the first field is the schemaVersion, read the file normally.
-		//
-		// If the first field is not the schema version, fallback to a more exhaustive check.
-		// Read the rest of the file, looking for the `schemaVersion` field.
-		// If we find the field, cache the value
-		// If there happens to be another `schemaVersion` that has a differing value, then fail.
-		// At the end, if we find no `schemaVersion` then assume the `schemaVersion` is 0
-		// Re-read the JSON file.
-		int schemaVersion = 0;
-
-		try (JsonReader reader = JsonReader.json(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-			reader.setRewindEnabled(true);
-
-			if (reader.peek() != JsonToken.BEGIN_OBJECT) {
-				throw new ParseMetadataException("Root of \"fabric.mod.json\" must be an object", reader);
-			}
-
-			reader.beginObject();
-
-			boolean firstField = true;
-
-			while (reader.hasNext()) {
-				// Try to read the schemaVersion
-				String nextName = reader.nextName();
-
-				if (nextName.equals("schemaVersion")) {
-					if (reader.peek() != JsonToken.NUMBER) {
-						throw new ParseMetadataException("\"schemaVersion\" must be a number.", reader);
-					}
-
-					schemaVersion = reader.nextInt();
-
-					if (firstField) {
-						reader.setRewindEnabled(false);
-						// Finish reading the metadata
-						FabricLoaderModMetadata ret = readModMetadata(reader, schemaVersion);
-						reader.endObject();
-
-						return ret;
-					}
-				} else if (nextName.equals("$schema")) {
-					reader.skipValue();
-					// Avoid setting firstField to false, to prevent using the slow route when $schema is before schemaVersion
-					continue;
-
-					// schemaVersion found, but after some content -> start over to parse all data with the detected version
-					break;
-				} else {
-					reader.skipValue();
-				}
-
-				if (!IGNORED_KEYS.contains(key)) {
-					firstField = false;
-				}
-			}
-
-			// Slow path, schema version wasn't specified early enough, re-read with detected/inferred version
-			try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
-				// No need to check if the start of the json file as it has already been checked
-				reader.beginObject();
-				final FabricLoaderModMetadata ret = readModMetadata(reader, schemaVersion);
-				reader.endObject();
-
-				if (QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
-					Log.warn(LogCategory.METADATA, "\"fabric.mod.json\" from mod %s did not have \"schemaVersion\" as first field.", ret.getId());
-				}
-
-				return ret;
-			}
-		}
+		throw new RuntimeException();
+//		// So some context:
+//		// Per the json specification, ordering of fields is not typically enforced.
+//		// Furthermore we cannot guarantee the `schemaVersion` is the first field in every `fabric.mod.json`
+//		//
+//		// To work around this, we do the following:
+//		// Try to read first field
+//		// If the first field is the schemaVersion, read the file normally.
+//		//
+//		// If the first field is not the schema version, fallback to a more exhaustive check.
+//		// Read the rest of the file, looking for the `schemaVersion` field.
+//		// If we find the field, cache the value
+//		// If there happens to be another `schemaVersion` that has a differing value, then fail.
+//		// At the end, if we find no `schemaVersion` then assume the `schemaVersion` is 0
+//		// Re-read the JSON file.
+//		int schemaVersion = 0;
+//
+//		try (JsonReader reader = JsonReader.json(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+//			reader.setRewindEnabled(true);
+//
+//			if (reader.peek() != JsonToken.BEGIN_OBJECT) {
+//				throw new ParseMetadataException("Root of \"fabric.mod.json\" must be an object", reader);
+//			}
+//
+//			reader.beginObject();
+//
+//			boolean firstField = true;
+//
+//			while (reader.hasNext()) {
+//				// Try to read the schemaVersion
+//				String nextName = reader.nextName();
+//
+//				if (nextName.equals("schemaVersion")) {
+//					if (reader.peek() != JsonToken.NUMBER) {
+//						throw new ParseMetadataException("\"schemaVersion\" must be a number.", reader);
+//					}
+//
+//					schemaVersion = reader.nextInt();
+//
+//					if (firstField) {
+//						reader.setRewindEnabled(false);
+//						// Finish reading the metadata
+//						FabricLoaderModMetadata ret = readModMetadata(reader, schemaVersion);
+//						reader.endObject();
+//
+//						return ret;
+//					}
+//				} else if (nextName.equals("$schema")) {
+//					reader.skipValue();
+//					// Avoid setting firstField to false, to prevent using the slow route when $schema is before schemaVersion
+//					continue;
+//
+//					// schemaVersion found, but after some content -> start over to parse all data with the detected version
+//					break;
+//				} else {
+//					reader.skipValue();
+//				}
+//
+//				if (!IGNORED_KEYS.contains(key)) {
+//					firstField = false;
+//				}
+//			}
+//
+//			// Slow path, schema version wasn't specified early enough, re-read with detected/inferred version
+//			try (JsonReader reader = JsonReader.json(new InputStreamReader(Files.newInputStream(modJson), StandardCharsets.UTF_8))) {
+//				// No need to check if the start of the json file as it has already been checked
+//				reader.beginObject();
+//				final FabricLoaderModMetadata ret = readModMetadata(reader, schemaVersion);
+//				reader.endObject();
+//
+//				if (QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) {
+//					Log.warn(LogCategory.METADATA, "\"fabric.mod.json\" from mod %s did not have \"schemaVersion\" as first field.", ret.getId());
+//				}
+//
+//				return ret;
+//			}
+//		}
 	}
 
 	private static FabricLoaderModMetadata readModMetadata(JsonReader reader, int schemaVersion) throws IOException, ParseMetadataException {

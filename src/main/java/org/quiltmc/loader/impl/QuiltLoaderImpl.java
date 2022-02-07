@@ -21,7 +21,6 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.impl.discovery.ArgumentModCandidateFinder;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.objectweb.asm.Opcodes;
@@ -72,7 +71,7 @@ public class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = new QuiltLoaderImpl();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
-
+	public static final String VERSION = "dev"; //TODO
 
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -211,12 +210,14 @@ public class QuiltLoaderImpl {
 	}
 
 	private void setup() throws ModResolutionException {
-		ModResolver resolver = new ModResolver(this);
-		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
-		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
-		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-		ModSolveResult result = resolver.resolve(this);
-		Map<String, ModCandidate> candidateMap = result.modMap;
+//		ModResolver resolver = new ModResolver(this);
+//		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
+//		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
+//		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
+//		ModSolveResult result = resolver.resolve(this);
+		Map<String, ModCandidate> candidateMap = null;
+		if (true)
+		throw new RuntimeException();
 
 
 		// dump mod list
@@ -230,11 +231,11 @@ public class QuiltLoaderImpl {
 			modListText.append(mod.getId());
 			modListText.append(' ');
 			modListText.append(mod.getVersion().raw());
-
-			if (!mod.getParentMods().isEmpty()) {
-				modListText.append(" via ");
-				modListText.append(mod.getParentMods().iterator().next().getId());
-			}
+// TODO
+//			if (!mod.getParentMods().isEmpty()) {
+//				modListText.append(" via ");
+//				modListText.append(mod.getParentMods().iterator().next().getId());
+//			}
 		}
 
 		int count = modCandidates.size();
@@ -253,7 +254,7 @@ public class QuiltLoaderImpl {
 			if (System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
 				Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
 			} else {
-				RuntimeModRemapper.remap(modCandidates, cacheDir.resolve(TMP_DIR_NAME), outputdir);
+				RuntimeModRemapper.remap(modCandidates, ModResolver.getInMemoryFs());
 			}
 		}
 
@@ -282,13 +283,13 @@ public class QuiltLoaderImpl {
 		// add mods
 
 		for (ModCandidate mod : modCandidates) {
-			if (!mod.hasPath() && !mod.isBuiltin()) {
-				try {
-					mod.setPath(mod.copyToDir(outputdir, false));
-				} catch (IOException e) {
-					throw new RuntimeException("Error extracting mod "+mod, e);
-				}
-			}
+//			if (!mod.hasPath() && !mod.isBuiltin()) {
+//				try {
+//					mod.setPath(mod.copyToDir(outputdir, false));
+//				} catch (IOException e) {
+//					throw new RuntimeException("Error extracting mod "+mod, e);
+//				}
+//			}
 
 			addMod(mod);
 		}

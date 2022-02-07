@@ -41,7 +41,7 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 	}
 
 	@Override
-	public void findCandidates(ModCandidateConsumer out) {
+	public void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out) {
 		if (!Files.exists(path)) {
 			try {
 				Files.createDirectory(path);

@@ -40,7 +40,7 @@ class MainModLoadOption extends ModLoadOption {
 
 	@Override
 	String getSpecificInfo() {
-		FabricLoaderModMetadata info = candidate.getInfo();
+		FabricLoaderModMetadata info = candidate.getMetadata().asFabricModMetadata();
 		return "version " + info.getVersion() + " loaded from " + getLoadSource();
 	}
 

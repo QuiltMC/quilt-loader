@@ -16,16 +16,13 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import com.google.common.jimfs.Configuration;
-import com.google.common.jimfs.Jimfs;
-import com.google.common.jimfs.PathType;
-
 import org.quiltmc.json5.exception.ParseException;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.memfilesys.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
@@ -43,8 +40,6 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -55,25 +50,15 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipError;
 
-import static com.google.common.jimfs.Feature.FILE_CHANNEL;
-import static com.google.common.jimfs.Feature.SECURE_DIRECTORY_STREAM;
 
 /** The main "resolver" for mods. This class has 1 job: to find valid mod jar files from the filesystem and classpath,
  * and loading them into memory. This also includes loading mod jar files from within jar files. The main entry point
  * for the first job is {@link #resolve(QuiltLoaderImpl)} which performs all of the work for loading mods. */
 public class ModResolver {
 	// nested JAR store
-	private static final FileSystem inMemoryFs = Jimfs.newFileSystem(
-		"nestedJarStore",
-		Configuration.builder(PathType.unix())
-			.setRoots("/")
-			.setWorkingDirectory("/")
-			.setAttributeViews("basic")
-			.setSupportedFeatures(SECURE_DIRECTORY_STREAM, FILE_CHANNEL)
-			.build()
-	);
+	private static final FileSystem inMemoryFs = new QuiltMemoryFileSystem.ReadWrite("nestedJarStore");
 	private static final Map<String, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
-	private static final Map<String, String> readableNestedJarPaths = new ConcurrentHashMap<>();
+	private static final Map<String, String> readableNestedJarPaths2 = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
 
@@ -95,17 +80,17 @@ public class ModResolver {
 		candidateFinders.add(f);
 	}
 
-	private static String getReadablePath(Path gameDir, Path original) {
-		Path truncated = original;
+	private static String getReadablePath(Path gameDir, Path path) {
+		Path relativized = path;
 		if (gameDir != null) {
 			gameDir = gameDir.normalize();
 
-			if (original.startsWith(gameDir)) {
-				truncated = gameDir.relativize(original);
+			if (path.startsWith(gameDir)) {
+				relativized = gameDir.relativize(path);
 			}
 		}
 
-		return readableNestedJarPaths.getOrDefault(original.toString(), truncated.toString());
+		return readableNestedJarPaths2.getOrDefault(path.toString(), relativized.toString());
 	}
 
 	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
@@ -117,19 +102,14 @@ public class ModResolver {
 	}
 
 	/** Only exposed for {@link ModSolver}. This is also intended to be temporary. */
-	public static URL getSourceURL(URL originUrl) {
+	public static Path getSourcePath(Path originPath) {
 		// FIXME: Make ModSolver use a different method to get the source URL from an original URL - perhaps via the ModCandidate?
-		try {
-			for (Map.Entry<String, List<Path>> entry : inMemoryCache.entrySet()) {
-				for (Path path : entry.getValue()) {
-					URL url = UrlUtil.asUrl(path.normalize());
-					if (originUrl.equals(url)) {
-						return new URL(entry.getKey());
-					}
+		for (Map.Entry<String, List<Path>> entry : inMemoryCache.entrySet()) {
+			for (Path path : entry.getValue()) {
+				if (originPath.equals(path)) {
+					return path;
 				}
 			}
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
 		}
 		return null;
 	}
@@ -184,15 +164,15 @@ public class ModResolver {
 	 * if it contains a fabric.mod.json file, and as such if it can be loaded. Instances of this are created by
 	 * {@link ModResolver#resolve(FabricLoader)} and recursively if the scanned mod contains other jar files. */
 	@SuppressWarnings("serial")
-	class UrlProcessAction extends RecursiveAction {
+	class ProcessAction extends RecursiveAction {
 		private final Map<String, ModCandidateSet> candidatesById;
-		private final URL url;
+		private final Path path;
 		private final int depth;
 		private final boolean requiresRemap;
 
-		UrlProcessAction(Map<String, ModCandidateSet> candidatesById, URL url, int depth, boolean requiresRemap) {
+		ProcessAction(Map<String, ModCandidateSet> candidatesById, Path path, int depth, boolean requiresRemap) {
 			this.candidatesById = candidatesById;
-			this.url = url;
+			this.path = path;
 			this.depth = depth;
 			this.requiresRemap = requiresRemap;
 		}
@@ -200,18 +180,9 @@ public class ModResolver {
 		@Override
 		protected void compute() {
 			FileSystemUtil.FileSystemDelegate jarFs;
-			final Path path, fabricModJson, quiltModJson, rootDir;
-			URL normalizedUrl;
+			final Path fabricModJson, quiltModJson, rootDir;
 
-			Log.debug(LogCategory.RESOLUTION, "Testing " + url);
-
-			try {
-				path = UrlUtil.asPath(url).normalize();
-				// normalize URL (used as key for nested JAR lookup)
-				normalizedUrl = UrlUtil.asUrl(path);
-			} catch (UrlConversionException e) {
-				throw new RuntimeException("Failed to convert URL " + url + "!", e);
-			}
+			Log.debug(LogCategory.RESOLUTION, "Testing " + path);
 
 			if (Files.isDirectory(path)) {
 				// Directory
@@ -224,7 +195,7 @@ public class ModResolver {
 					synchronized (launcherSyncObject) {
 						QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 						if (launcher != null) {
-							launcher.propose(url);
+							launcher.addToClassPath(path);
 						}
 					}
 				}
@@ -236,7 +207,7 @@ public class ModResolver {
 					quiltModJson = jarFs.get().getPath("quilt.mod.json");
 					rootDir = jarFs.get().getRootDirectories().iterator().next();
 				} catch (IOException e) {
-					throw new RuntimeException("Failed to open mod JAR at " + path + "!");
+					throw new RuntimeException("Failed to open mod JAR at " + path + "!", e);
 				} catch (ZipError e) {
 					throw new RuntimeException("Jar at " + path + " is corrupted, please redownload it!");
 				}
@@ -252,12 +223,12 @@ public class ModResolver {
 
 				try {
 					info = new FabricLoaderModMetadata[] { FabricModMetadataReader.parseMetadata(fabricModJson) };
-				} catch (ParseMetadataException.MissingRequired e){
+				} catch (ParseMetadataException.MissingField e){
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file! The mod is missing the following required field!", path), e);
 				} catch (ParseException | ParseMetadataException e) {
 					throw new RuntimeException(String.format("Mod at \"%s\" has an invalid fabric.mod.json file!", path), e);
 				} catch (NoSuchFileException e) {
-					Log.warn(LogCategory.RESOLUTION, "Neither a fabric nor a quilt JAR at \"%s\", ignoring", path);
+					Log.warn(LogCategory.RESOLUTION, String.format("Neither a fabric nor a quilt JAR at \"%s\", ignoring", path));
 					info = new FabricLoaderModMetadata[0];
 				} catch (IOException e) {
 					throw new RuntimeException(String.format("Failed to open fabric.mod.json for mod at \"%s\"!", path), e);
@@ -272,11 +243,11 @@ public class ModResolver {
 			}
 
 			for (FabricLoaderModMetadata i : info) {
-				ModCandidate candidate = new ModCandidate(i, normalizedUrl, depth, requiresRemap);
+				ModCandidate candidate = new ModCandidate(i, path, depth, requiresRemap);
 				boolean added;
 
 				if (candidate.getInfo().getId() == null || candidate.getInfo().getId().isEmpty()) {
-					throw new RuntimeException(String.format("Mod file `%s` has no id", candidate.getOriginUrl().getFile()));
+					throw new RuntimeException(String.format("Mod file `%s` has no id", path));
 				}
 
 				if (!MOD_ID_PATTERN.matcher(candidate.getInfo().getId()).matches()) {
@@ -321,60 +292,52 @@ public class ModResolver {
 				added = candidatesById.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
 
 				if (!added) {
-					Log.debug(LogCategory.RESOLUTION, candidate.getOriginUrl() + " already present as " + candidate);
+					Log.debug(LogCategory.RESOLUTION, candidate.getPath() + " already present as " + candidate);
 				} else {
-					Log.debug(LogCategory.RESOLUTION, "Adding " + candidate.getOriginUrl() + " as " + candidate);
+					Log.debug(LogCategory.RESOLUTION, "Adding " + candidate.getPath() + " as " + candidate);
 
-					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getOriginUrl().toString(), (u) -> {
+					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getPath().toString(), (u) -> {
 						Log.debug(LogCategory.RESOLUTION, "Searching for nested JARs in " + candidate);
 						Log.debug(LogCategory.RESOLUTION, u);
 						Collection<String> jars = candidate.getMetadata().jars();
 						List<Path> list = new ArrayList<>(jars.size());
 
 						jars.stream()
-							.map((j) -> rootDir.resolve(j.replace("/", rootDir.getFileSystem().getSeparator())))
-							.forEach((modPath) -> {
-								if (!modPath.toString().endsWith(".jar")) {
-									Log.warn(LogCategory.RESOLUTION, "Found nested jar entry that didn't end with '.jar': " + modPath);
-									return;
-								}
-
-								if (Files.isDirectory(modPath)) {
-									list.add(modPath);
-								} else {
-									// TODO: pre-check the JAR before loading it, if possible
-									Log.debug(LogCategory.RESOLUTION, "Found nested JAR: " + modPath);
-									Path dest = inMemoryFs.getPath(UUID.randomUUID() + ".jar");
-
-									try {
-										Files.copy(modPath, dest);
-									} catch (IOException e) {
-										throw new RuntimeException("Failed to load nested JAR " + modPath + " into memory (" + dest + ")!", e);
+								.map((j) -> rootDir.resolve(j.replace("/", rootDir.getFileSystem().getSeparator())))
+								.forEach((modPath) -> {
+									if (!modPath.toString().endsWith(".jar")) {
+										Log.warn(LogCategory.RESOLUTION, "Found nested jar entry that didn't end with '.jar': " + modPath);
+										return;
 									}
 
-									list.add(dest);
+									if (Files.isDirectory(modPath)) {
+										list.add(modPath);
+									} else {
+										// TODO: pre-check the JAR before loading it, if possible
+										Log.debug(LogCategory.RESOLUTION, "Found nested JAR: " + modPath);
+										Path dest = inMemoryFs.getPath(UUID.randomUUID() + ".jar");
 
-									try {
-										readableNestedJarPaths.put(UrlUtil.asUrl(dest).toString(), String.format("%s!%s", getReadablePath(candidate.getOriginUrl()), modPath));
-									} catch (UrlConversionException e) {
-										e.printStackTrace();
+										try {
+											Files.copy(modPath, dest);
+										} catch (IOException e) {
+											throw new RuntimeException("Failed to load nested JAR " + modPath + " into memory (" + dest + ")!", e);
+										}
+
+										list.add(dest);
+
+										Log.error(LogCategory.RESOLUTION, "SKIPPIGN ADDING READABLE PATH");
+//											readableNestedJarPaths.put(UrlUtil.asUrl(dest).toString(), String.format("%s!%s", getReadablePath(candidate.getOriginUrl()), modPath));
 									}
-								}
-							});
+								});
 
 						return list;
 					});
 
 					if (!jarInJars.isEmpty()) {
 						invokeAll(
-							jarInJars.stream()
-								.map((p) -> {
-									try {
-										return new UrlProcessAction(candidatesById, UrlUtil.asUrl(p.normalize()), depth + 1, requiresRemap);
-									} catch (UrlConversionException e) {
-										throw new RuntimeException("Failed to turn path '" + p.normalize() + "' into URL!", e);
-									}
-								}).collect(Collectors.toList())
+								jarInJars.stream()
+										.map((p) -> new ProcessAction(candidatesById, p.normalize(), depth + 1, requiresRemap))
+										.collect(Collectors.toList())
 						);
 					}
 				}
@@ -387,7 +350,7 @@ public class ModResolver {
 	}
 
 	/** The main entry point for finding mods from both the classpath, the game provider, and the filesystem.
-	 * 
+	 *
 	 * @param loader The loader. If this is null then none of the builtin mods will be added. (Primarily useful during
 	 *			tests).
 	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
@@ -396,11 +359,11 @@ public class ModResolver {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
 		long time1 = System.currentTimeMillis();
-		Queue<UrlProcessAction> allActions = new ConcurrentLinkedQueue<>();
+		Queue<ProcessAction> allActions = new ConcurrentLinkedQueue<>();
 		ForkJoinPool pool = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1));
 		for (ModCandidateFinder f : candidateFinders) {
-			f.findCandidates(loader, (u, requiresRemap) -> {
-				UrlProcessAction action = new UrlProcessAction(candidatesById, u, 0, requiresRemap);
+			f.findCandidates(loader, (path, requiresRemap) -> {
+				ProcessAction action = new ProcessAction(candidatesById, path, 0, requiresRemap);
 				allActions.add(action);
 				pool.execute(action);
 			});
@@ -411,17 +374,13 @@ public class ModResolver {
 			for (BuiltinMod mod : loader.getGameProvider().getBuiltinMods()) {
 				addBuiltinMod(candidatesById, mod);
 			}
-	
+
 			// Add the current Java version
-			try {
-				addBuiltinMod(candidatesById, new BuiltinMod(
-						new File(System.getProperty("java.home")).toURI().toURL(),
-						new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
+			addBuiltinMod(candidatesById, new BuiltinMod(
+					new File(System.getProperty("java.home")).toPath(),
+					new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
 							.setName(System.getProperty("java.vm.name"))
 							.build()));
-			} catch (MalformedURLException e) {
-				throw new ModResolutionException("Could not add Java to the dependency constraints", e);
-			}
 		}
 
 		boolean tookTooLong = false;
@@ -430,7 +389,7 @@ public class ModResolver {
 			pool.shutdown();
 			// Comment out for debugging
 			pool.awaitTermination(30, TimeUnit.SECONDS);
-			for (UrlProcessAction action : allActions) {
+			for (ProcessAction action : allActions) {
 				if (!action.isDone()) {
 					tookTooLong = true;
 				} else {
@@ -471,7 +430,7 @@ public class ModResolver {
 
 	private void addBuiltinMod(ConcurrentMap<String, ModCandidateSet> candidatesById, BuiltinMod mod) {
 		candidatesById.computeIfAbsent(mod.metadata.getId(), ModCandidateSet::new)
-				.add(new ModCandidate(new BuiltinMetadataWrapper(mod.metadata), mod.url, 0, false));
+				.add(new ModCandidate(new BuiltinMetadataWrapperFabric(mod.metadata), mod.path, 0, false));
 	}
 
 	public static FileSystem getInMemoryFs() {

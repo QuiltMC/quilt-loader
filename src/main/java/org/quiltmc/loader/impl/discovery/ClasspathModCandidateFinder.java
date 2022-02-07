@@ -31,8 +31,8 @@ import java.util.Set;
 
 public class ClasspathModCandidateFinder implements ModCandidateFinder {
 	@Override
-	public void findCandidates(ModCandidateFinder.ModCandidateConsumer out) {
-		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
+	public void findCandidates(QuiltLoaderImpl loader, ModCandidateFinder.ModCandidateConsumer out) {
+		if (loader.isDevelopmentEnvironment()) {
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
 				Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");

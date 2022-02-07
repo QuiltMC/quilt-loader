@@ -29,7 +29,7 @@ public final class SystemProperties {
 	public static final String CONFIG_DIRECTORY = "quilt.configDir";
 	public static final String LOG_FILE = "quilt.log.file";
 	public static final String LOG_LEVEL = "quilt.log.level";
-
+	public static final String SKIP_MC_PROVIDER = "quilt.skipMcProvider";
 	// TODO: check which of these is used
 	// additional mods to load (path separator separated paths, @ prefix for meta-file with each line referencing an actual file)
 	public static final String ADD_MODS = "quilt.addMods";

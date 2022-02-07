@@ -1,19 +1,3 @@
-/*
- * Copyright 2016 FabricMC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.quiltmc.loader.impl.discovery;
 
 import java.util.ArrayList;
@@ -24,7 +8,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
@@ -37,13 +20,12 @@ public class ModCandidateSet {
 	private final Set<ModCandidate> depthZeroCandidates = new HashSet<>();
 	private final Map<String, ModCandidate> candidates = new HashMap<>();
 
-	@SuppressWarnings("unchecked")
 	private static int compare(ModCandidate a, ModCandidate b) {
 		Version av = a.getInfo().getVersion();
 		Version bv = b.getInfo().getVersion();
 
-		if (av instanceof Comparable && bv instanceof Comparable) {
-			return ((Comparable<Version>) bv).compareTo(av);
+		if (av != null && bv != null) {
+			return bv.compareTo(av);
 		} else {
 			return 0;
 		}
@@ -64,7 +46,6 @@ public class ModCandidateSet {
 	public synchronized boolean add(ModCandidate candidate) {
 		String version = candidate.getInfo().getVersion().getFriendlyString();
 		ModCandidate oldCandidate = candidates.get(version);
-
 		if (oldCandidate != null) {
 			int oldDepth = oldCandidate.getDepth();
 			int newDepth = candidate.getDepth();
@@ -73,7 +54,6 @@ public class ModCandidateSet {
 				return false;
 			} else {
 				candidates.remove(version);
-
 				if (oldDepth > 0) {
 					depthZeroCandidates.remove(oldCandidate);
 				}
@@ -81,11 +61,9 @@ public class ModCandidateSet {
 		}
 
 		candidates.put(version, candidate);
-
 		for (ModProvided provided : candidate.getMetadata().provides()) {
 			modProvides.add(provided.id);
 		}
-
 		if (candidate.getDepth() == 0) {
 			depthZeroCandidates.add(candidate);
 		}
@@ -101,7 +79,7 @@ public class ModCandidateSet {
 		if (depthZeroCandidates.size() > 1) {
 			StringBuilder sb = new StringBuilder("Duplicate mandatory mods found for '" + modId + "':");
 			for (ModCandidate mc : depthZeroCandidates) {
-				sb.append("\n" + mc.getInfo().getVersion() + " from " + ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, mc));
+				sb.append("\n").append(mc.getInfo().getVersion()).append(" from ").append(ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, mc));
 			}
 			throw new ModSolvingException(sb.toString());
 		} else if (candidates.size() > 1) {

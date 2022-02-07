@@ -14,14 +14,9 @@ package org.quiltmc.loader.impl.game.minecraft.patch.applet;/*
  * limitations under the License.
  */
 
-<<<<<<<< HEAD:src/main/java/org/quiltmc/loader/impl/game/minecraft/patch/applet/AppletLauncher.java
-package org.quiltmc.loader.impl.game.minecraft.patch.applet;
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-========
-package net.fabricmc.loader.impl.game.minecraft.applet;
->>>>>>>> fabric-master:minecraft/src/main/java/net/fabricmc/loader/impl/game/minecraft/applet/AppletLauncher.java
 
 import java.applet.Applet;
 import java.applet.AppletStub;

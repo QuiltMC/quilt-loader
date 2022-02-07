@@ -226,7 +226,7 @@ class KnotClassDelegate {
 			return getMixinTransformer().transformClassBytes(name, name, transformedClassArray);
 		} catch (Throwable t) {
 			String msg = String.format("Mixin transformation of %s failed", name);
-			if (LOG_TRANSFORM_ERRORS) Log.warn(LogCategory.KNOT, msg, t);
+			Log.warn(LogCategory.KNOT, msg, t);
 
 			throw new RuntimeException(msg, t);
 		}

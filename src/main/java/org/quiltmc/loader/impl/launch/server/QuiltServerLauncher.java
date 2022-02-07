@@ -56,8 +56,6 @@ public class QuiltServerLauncher {
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to setup Fabric server environment!", e);
 			}
-		} else {
-			launch(mainClass, QuiltServerLauncher.class.getClassLoader(), args);
 		}
 
 		try {

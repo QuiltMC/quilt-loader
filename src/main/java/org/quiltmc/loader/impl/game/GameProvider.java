@@ -20,11 +20,11 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
 
+import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import net.fabricmc.loader.api.metadata.ModMetadata;
 
 import org.quiltmc.loader.impl.util.Arguments;
 

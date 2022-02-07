@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.discovery;
+package org.quiltmc.loader.impl.discovery;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -45,7 +45,7 @@ public class ArgumentModCandidateFinder implements ModCandidateFinder {
 	}
 
 	@Override
-	public void findCandidates(ModCandidateConsumer out) {
+	public void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out) {
 		String list = System.getProperty(SystemProperties.ADD_MODS);
 		if (list != null) addMods(list, "system property", out);
 

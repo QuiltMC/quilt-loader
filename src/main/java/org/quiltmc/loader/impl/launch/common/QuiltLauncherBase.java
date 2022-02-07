@@ -101,7 +101,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 
 					if (Thread.currentThread() == mainThread
 							&& (gameProvider == null || !gameProvider.displayCrash(e, mainText))) {
-						FabricGuiEntry.displayError(mainText, e, false);
+						QuiltGuiEntry.displayError(mainText, e, false);
 					}
 				}
 			} catch (Throwable e2) { // just in case

@@ -23,8 +23,6 @@ import org.quiltmc.loader.impl.util.SystemProperties;
 
 public class KnotServer {
 	public static void main(String[] args) {
-		String gameJarPath = System.getProperty(SystemProperties.GAME_JAR_PATH);
-		Knot knot = new Knot(EnvType.SERVER, gameJarPath != null ? new File(gameJarPath) : null);
-		knot.launch(knot.init(args));
+		Knot.launch(args, EnvType.SERVER);
 	}
 }

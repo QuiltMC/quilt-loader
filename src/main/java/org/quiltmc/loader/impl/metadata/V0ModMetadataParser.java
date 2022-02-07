@@ -200,7 +200,7 @@ final class V0ModMetadataParser {
 				license = reader.nextString();
 				break;
 			default:
-				if (!ModMetadataParser.IGNORED_KEYS.contains(key)) {
+				if (!FabricModMetadataReader.IGNORED_KEYS.contains(key)) {
 					warnings.add(new ParseWarning(reader.locationString(), key, "Unsupported root entry"));
 				}
 				reader.skipValue();
