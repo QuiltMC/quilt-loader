@@ -1,11 +1,20 @@
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
+repositories {
+	maven {
+		name = 'Mojang'
+		url = 'https://libraries.minecraft.net/'
+	}
+}
+
 dependencies {
 	api project(":")
 
 	// log4j wrapper
 	compileOnly 'org.apache.logging.log4j:log4j-api:2.8.1'
+	// slf4j wrapper
+	compileOnly 'org.slf4j:slf4j-api:1.8.0-beta4'
 
 	// launchwrapper + dependencies
 	compileOnly ('net.minecraft:launchwrapper:1.12') {

@@ -14,35 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl;
-
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.ObjectShare;
-import net.fabricmc.loader.api.SemanticVersion;
-
-import org.jetbrains.annotations.ApiStatus;
-import org.objectweb.asm.Opcodes;
-import org.quiltmc.loader.api.LanguageAdapter;
-import org.quiltmc.loader.api.MappingResolver;
-import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
-import org.quiltmc.loader.impl.discovery.*;
-import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
-import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.launch.knot.Knot;
-import org.quiltmc.loader.impl.metadata.DependencyOverrides;
-import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
-import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
-import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
-import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
+package net.fabricmc.loader.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -53,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -61,18 +32,46 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-/**
- * The main class for mod loading operations.
- */
-@ApiStatus.Internal
-public class QuiltLoaderImpl {
-	public static final QuiltLoaderImpl INSTANCE = new QuiltLoaderImpl();
+import org.objectweb.asm.Opcodes;
+
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.LanguageAdapter;
+import net.fabricmc.loader.api.MappingResolver;
+import net.fabricmc.loader.api.ModContainer;
+import net.fabricmc.loader.api.ObjectShare;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
+import net.fabricmc.loader.impl.discovery.ArgumentModCandidateFinder;
+import net.fabricmc.loader.impl.discovery.ClasspathModCandidateFinder;
+import net.fabricmc.loader.impl.discovery.DirectoryModCandidateFinder;
+import net.fabricmc.loader.impl.discovery.ModCandidate;
+import net.fabricmc.loader.impl.discovery.ModDiscoverer;
+import net.fabricmc.loader.impl.discovery.ModResolutionException;
+import net.fabricmc.loader.impl.discovery.ModResolver;
+import net.fabricmc.loader.impl.discovery.RuntimeModRemapper;
+import net.fabricmc.loader.impl.entrypoint.EntrypointStorage;
+import net.fabricmc.loader.impl.game.GameProvider;
+import net.fabricmc.loader.impl.launch.FabricLauncherBase;
+import net.fabricmc.loader.impl.launch.knot.Knot;
+import net.fabricmc.loader.impl.metadata.DependencyOverrides;
+import net.fabricmc.loader.impl.metadata.EntrypointMetadata;
+import net.fabricmc.loader.impl.metadata.LoaderModMetadata;
+import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
+import net.fabricmc.loader.impl.util.SystemProperties;
+import net.fabricmc.loader.impl.util.log.Log;
+import net.fabricmc.loader.impl.util.log.LogCategory;
+
+@SuppressWarnings("deprecation")
+public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
+	public static final FabricLoaderImpl INSTANCE = InitHelper.get();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
-	public static final String VERSION = "dev"; //TODO
 
+	public static final String VERSION = "dev";
+	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
 
@@ -85,7 +84,9 @@ public class QuiltLoaderImpl {
 	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to cache dir
 	private static final String TMP_DIR_NAME = "tmp"; // relative to cache dir
 
+	protected final Map<String, ModContainerImpl> modMap = new HashMap<>();
 	private List<ModCandidate> modCandidates;
+	protected List<ModContainerImpl> mods = new ArrayList<>();
 
 	private final Map<String, LanguageAdapter> adapterMap = new HashMap<>();
 	private final EntrypointStorage entrypointStorage = new EntrypointStorage();
@@ -157,6 +158,7 @@ public class QuiltLoaderImpl {
 	/**
 	 * @return The game instance's root directory.
 	 */
+	@Override
 	public Path getGameDir() {
 		return gameDir;
 	}
@@ -205,7 +207,7 @@ public class QuiltLoaderImpl {
 		try {
 			setup();
 		} catch (ModResolutionException exception) {
-			QuiltGuiEntry.displayCriticalError(exception, true);
+			throw new FormattedException("Incompatible mod set!", exception);
 		}
 	}
 
@@ -282,7 +284,7 @@ public class QuiltLoaderImpl {
 		for (ModCandidate mod : modCandidates) {
 //			if (!mod.hasPath() && !mod.isBuiltin()) {
 //				try {
-//					mod.setPath(mod.copyToDir(outputdir, false));
+//					mod.setPaths(Collections.singletonList(mod.copyToDir(outputdir, false)));
 //				} catch (IOException e) {
 //					throw new RuntimeException("Error extracting mod "+mod, e);
 //				}
@@ -317,7 +319,7 @@ public class QuiltLoaderImpl {
 
 			// suppress fabric loader explicitly in case its fabric.mod.json is in a different folder from the classes
 			Path fabricLoaderPath = ClasspathModCandidateFinder.getLoaderPath();
-			if (fabricLoaderPath != null) knownModPaths.add(fabricLoaderPath);
+			if (fabricLoaderPath != null) knownModPaths.add(fabricLoaderPath.toAbsolutePath().normalize());
 
 			for (String pathName : System.getProperty("java.class.path", "").split(File.pathSeparator)) {
 				if (pathName.isEmpty() || pathName.endsWith("*")) continue;
@@ -339,14 +341,17 @@ public class QuiltLoaderImpl {
 		return entrypointStorage.hasEntrypoints(key);
 	}
 
+	@Override
 	public <T> List<T> getEntrypoints(String key, Class<T> type) {
 		return entrypointStorage.getEntrypoints(key, type);
 	}
 
+	@Override
 	public <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		return entrypointStorage.getEntrypointContainers(key, type);
 	}
 
+	@Override
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
 			mappingResolver = new QuiltMappingResolver(
@@ -478,7 +483,7 @@ public class QuiltLoaderImpl {
 					}
 				}
 			} catch (Exception e) {
-				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.getOriginPath()), e);
+				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.getOrigin()), e);
 			}
 		}
 	}
@@ -577,5 +582,18 @@ public class QuiltLoaderImpl {
 
 	public String[] getLaunchArguments(boolean sanitize) {
 		return getGameProvider().getLaunchArguments(sanitize);
+	}
+
+	/**
+	 * Provides singleton for static init assignment regardless of load order.
+	 */
+	public static class InitHelper {
+		private static FabricLoaderImpl instance;
+
+		public static FabricLoaderImpl get() {
+			if (instance == null) instance = new FabricLoaderImpl();
+
+			return instance;
+		}
 	}
 }

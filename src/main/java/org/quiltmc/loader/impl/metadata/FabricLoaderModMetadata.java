@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.metadata.ModDependency;
 
 /**
  * Internal variant of the ModMetadata interface.
@@ -64,4 +65,5 @@ public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMeta
 	}
 
 	void setVersion(Version version);
+	void setDependencies(Collection<ModDependency> dependencies);
 }

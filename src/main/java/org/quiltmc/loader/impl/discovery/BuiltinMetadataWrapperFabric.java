@@ -38,11 +38,13 @@ import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 class BuiltinMetadataWrapperFabric extends AbstractModMetadata implements FabricLoaderModMetadata {
 	private final ModMetadata parent;
 	private Version version;
+	private Collection<ModDependency> dependencies;
 
 	BuiltinMetadataWrapperFabric(ModMetadata parent) {
 		this.parent = parent;
 
 		version = parent.getVersion();
+		dependencies = parent.getDependencies();
 	}
 
 	@Override
@@ -77,7 +79,12 @@ class BuiltinMetadataWrapperFabric extends AbstractModMetadata implements Fabric
 
 	@Override
 	public Collection<ModDependency> getDependencies() {
-		return parent.getDependencies();
+		return dependencies;
+	}
+
+	@Override
+	public void setDependencies(Collection<ModDependency> dependencies) {
+		this.dependencies = Collections.unmodifiableCollection(dependencies);
 	}
 
 	@Override

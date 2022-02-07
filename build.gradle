@@ -1,12 +1,13 @@
 buildscript {
 	dependencies {
+		classpath 'org.kohsuke:github-api:1.114'
 		classpath 'com.guardsquare:proguard-gradle:' + (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_11) ? '7.2.0-beta2' : '7.1.0')
 	}
 }
 
 plugins {
-	id "java-library"
-	id 'idea'
+	id 'java'
+	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
 	id 'checkstyle'
@@ -15,10 +16,12 @@ plugins {
 	id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
-def javaVersion = JavaVersion.VERSION_1_8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
-archivesBaseName = "quilt-loader"
+archivesBaseName = "fabric-loader"
 
+// Fetch build number from Jenkins
 def ENV = System.getenv()
 
 allprojects {
@@ -26,7 +29,7 @@ allprojects {
 	apply plugin: 'eclipse'
 	apply plugin: 'checkstyle'
 
-	version = version + (ENV.GITHUB_ACTIONS ? (ENV.SNAPSHOTS_URL ? "-SNAPSHOT" : "") : "+local")
+	version = version + (ENV.GITHUB_ACTIONS ? "" : "+local")
 
 	repositories {
 		maven {
@@ -38,10 +41,6 @@ allprojects {
 			url = 'https://maven.quiltmc.org/repository/release'
 		}
 		mavenCentral()
-		maven {
-			name = 'mojang'
-			url = 'https://libraries.minecraft.net/'
-		}
 	}
 }
 
@@ -56,31 +55,25 @@ configurations {
 
 dependencies {
 	// fabric-loader dependencies
-	api "org.ow2.asm:asm:${project.asmVersion}"
-	api "org.ow2.asm:asm-analysis:${project.asmVersion}"
-	api "org.ow2.asm:asm-commons:${project.asmVersion}"
-	api "org.ow2.asm:asm-tree:${project.asmVersion}"
-	api "org.ow2.asm:asm-util:${project.asmVersion}"
+	api "org.ow2.asm:asm:${project.asm_version}"
+	api "org.ow2.asm:asm-analysis:${project.asm_version}"
+	api "org.ow2.asm:asm-commons:${project.asm_version}"
+	api "org.ow2.asm:asm-tree:${project.asm_version}"
+	api "org.ow2.asm:asm-util:${project.asm_version}"
 
-	api('net.fabricmc:sponge-mixin:0.10.6+mixin.0.8.4') {
+	api("net.fabricmc:sponge-mixin:${project.mixin_version}") {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}
-
-	// FIXME: Upstream has a version that doesn't require jimfs; we should use that instead
-	implementation("com.google.jimfs:jimfs:1.2") {
-		exclude module: "guava"
-	}
-
-	implementation("com.google.guava:guava:21.0")
-
 	api 'net.fabricmc:tiny-mappings-parser:0.3.0+build.17'
-	api 'net.fabricmc:tiny-remapper:0.6.0'
-	api 'net.fabricmc:access-widener:2.0.1'
+	api 'net.fabricmc:tiny-remapper:0.8.1'
+	api 'net.fabricmc:access-widener:2.1.0'
+
 	api 'org.quiltmc:quilt-json5:1.0.0'
 	include 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
-	testCompileOnly 'org.jetbrains:annotations:21.0.1'
+
+	testCompileOnly 'org.jetbrains:annotations:23.0.0'
 
 	// Unit testing
 	testImplementation(platform("org.junit:junit-bom:$project.junitVersion"))
@@ -111,6 +104,10 @@ jar {
 	enabled = false
 	// Set the classifier to fix gradle task validation confusion.
 	archiveClassifier = "disabled"
+}
+
+test {
+	useJUnitPlatform()
 }
 
 shadowJar {
@@ -207,8 +204,8 @@ task testJar(type: Jar) {
 
 
 task copyJson() {
-	def inJson = file('src/main/resources/quilt-installer.json')
-	def inLwJson = file('src/main/resources/quilt-installer.launchwrapper.json')
+	def inJson = file('src/main/resources/fabric-installer.json')
+	def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 
 	def outJson = file("build/libs/${archivesBaseName}-${version}.json")
 	def outLwJson = file("build/libs/${archivesBaseName}-${version}.launchwrapper.json")
@@ -259,6 +256,11 @@ javadoc {
 	failOnError false
 }
 
+task javadocJar(type: Jar) {
+	dependsOn javadoc
+	from javadoc.destinationDir
+	archiveClassifier = 'javadoc'
+}
 
 build.dependsOn javadocJar
 

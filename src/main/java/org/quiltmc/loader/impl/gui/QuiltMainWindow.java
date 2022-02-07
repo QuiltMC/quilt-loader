@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import javax.imageio.ImageIO;
+import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -68,6 +69,7 @@ import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusButton;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
+import net.fabricmc.loader.impl.util.StringUtil;
 
 class QuiltMainWindow {
 	static Icon missingIcon = null;
@@ -113,6 +115,7 @@ class QuiltMainWindow {
 		}
 
 		window.setMinimumSize(new Dimension(640, 480));
+		window.setPreferredSize(new Dimension(800, 480));
 		window.setLocationByPlatform(true);
 		window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		window.addWindowListener(new WindowAdapter() {
@@ -181,6 +184,7 @@ class QuiltMainWindow {
 			}
 		}
 
+		window.pack();
 		window.setVisible(true);
 		window.requestFocus();
 	}
@@ -428,6 +432,8 @@ class QuiltMainWindow {
 				boolean leaf, int row, boolean hasFocus) {
 			super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
 
+			setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+
 			if (value instanceof CustomTreeNode) {
 				CustomTreeNode c = (CustomTreeNode) value;
 				setIcon(iconSet.get(c.getIconInfo()));
@@ -435,22 +441,25 @@ class QuiltMainWindow {
 				if (c.node.details == null || c.node.details.isEmpty()) {
 					setToolTipText(null);
 				} else {
-					if (c.node.details.contains("\n")) {
-						// It's a bit odd but it's easier than creating a custom tooltip
-						String replaced = c.node.details//
-								.replace("&", "&amp;")//
-								.replace("<", "&lt;")//
-								.replace(">", "&gt;")//
-								.replace("\n", "<br>");
-						setToolTipText("<html>" + replaced + "</html>");
-					} else {
-						setToolTipText(c.node.details);
-					}
+					setToolTipText(applyWrapping(c.node.details));
 				}
 			}
 
 			return this;
 		}
+	}
+
+	private static String applyWrapping(String str) {
+		if (str.indexOf('\n') < 0) {
+			return str;
+		}
+
+		str = str.replace("&", "&amp;")
+				.replace("<", "&lt;")
+				.replace(">", "&gt;")
+				.replace("\n", "<br>");
+
+		return "<html>" + str + "</html>";
 	}
 
 	static class CustomTreeNode implements TreeNode {
@@ -482,7 +491,7 @@ class QuiltMainWindow {
 
 		@Override
 		public String toString() {
-			return node.name;
+			return applyWrapping(StringUtil.wrapLines(node.name, 120));
 		}
 
 		@Override

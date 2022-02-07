@@ -20,12 +20,18 @@ package org.quiltmc.loader.impl.discovery;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
 
 @FunctionalInterface
 public interface ModCandidateFinder {
 	void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out);
 
 	interface ModCandidateConsumer {
-		void accept(Path path, boolean requiresRemap);
+		default void accept(Path path, boolean requiresRemap) {
+			accept(Collections.singletonList(path), requiresRemap);
+		}
+
+		void accept(List<Path> paths, boolean requiresRemap);
 	}
 }

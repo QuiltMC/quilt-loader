@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.game.minecraft;
+package net.fabricmc.loader.impl.game.minecraft;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -27,13 +27,6 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.fabricmc.loader.api.VersionParsingException;
-
-import net.fabricmc.loader.impl.util.LoaderUtil;
-
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonToken;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -41,12 +34,17 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
-import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
-@SuppressWarnings("deprecation")
+import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.impl.FabricLoaderImpl;
+import net.fabricmc.loader.impl.lib.gson.JsonReader;
+import net.fabricmc.loader.impl.lib.gson.JsonToken;
+import net.fabricmc.loader.impl.util.ExceptionUtil;
+import net.fabricmc.loader.impl.util.FileSystemUtil;
+import net.fabricmc.loader.impl.util.LoaderUtil;
+import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
+import net.fabricmc.loader.impl.util.version.VersionPredicateParser;
+
 public final class McVersionLookup {
 	private static final Pattern VERSION_PATTERN = Pattern.compile(
 			"0\\.\\d+(\\.\\d+)?a?(_\\d+)?|" // match classic versions first: 0.1.2a_34
@@ -68,7 +66,7 @@ public final class McVersionLookup {
 	private static final Pattern INDEV_PATTERN = Pattern.compile("(?:inf-|Inf?dev )(?:0\\.31 )?(\\d+(-\\d+)?)");
 	private static final String STRING_DESC = "Ljava/lang/String;";
 
-	public static McVersion getVersion(Path gameJar, String[] entrypointClasses, String versionName) {
+	public static McVersion getVersion(Path gameJar, String entrypointClass, String versionName) {
 		McVersion.Builder builder = new McVersion.Builder();
 
 		if (versionName != null) {
@@ -79,19 +77,15 @@ public final class McVersionLookup {
 			FileSystem fs = jarFs.get();
 
 			// Determine class version
-			for (String entrypointClass : entrypointClasses) {
+			if (entrypointClass != null) {
 				Path file = fs.getPath(LoaderUtil.getClassFileName(entrypointClass));
 
 				if (Files.isRegularFile(file)) {
 					try (DataInputStream is = new DataInputStream(Files.newInputStream(file))) {
-						if (is.readInt() != 0xCAFEBABE) {
-							continue;
+						if (is.readInt() == 0xCAFEBABE) {
+							is.readUnsignedShort();
+							builder.setClassVersion(is.readUnsignedShort());
 						}
-
-						is.readUnsignedShort();
-						builder.setClassVersion(is.readUnsignedShort());
-
-						break;
 					}
 				}
 			}
@@ -101,7 +95,7 @@ public final class McVersionLookup {
 				fillVersionFromJar(gameJar, fs, builder);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw ExceptionUtil.wrap(e);
 		}
 
 		return builder.build();
@@ -113,7 +107,7 @@ public final class McVersionLookup {
 		try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(gameJar, false)) {
 			fillVersionFromJar(gameJar, jarFs.get(), builder);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw ExceptionUtil.wrap(e);
 		}
 
 		return builder.build();
@@ -162,7 +156,7 @@ public final class McVersionLookup {
 	}
 
 	private static boolean fromVersionJson(InputStream is, McVersion.Builder builder) {
-		try (JsonReader reader = JsonReader.json(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+		try (JsonReader reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
 			String id = null;
 			String name = null;
 			String release = null;
@@ -200,14 +194,19 @@ public final class McVersionLookup {
 
 			reader.endObject();
 
-			if (name == null) {
-				name = id;
-			} else if (id != null) {
-				if (id.length() < name.length()) name = id;
+			String version;
+
+			if (name == null
+					|| id != null && id.length() < name.length()) {
+				version = id;
+			} else {
+				version = name;
 			}
 
-			if (name != null && release != null) {
+			if (version != null && release != null) {
+				builder.setId(id);
 				builder.setName(name);
+				builder.setVersion(version);
 				builder.setRelease(release);
 
 				return true;
@@ -367,7 +366,7 @@ public final class McVersionLookup {
 					boolean legacyVersion;
 
 					try {
-						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new FabricSemanticVersionImpl(release, false));
+						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new SemanticVersionImpl(release, false));
 					} catch (VersionParsingException e) {
 						throw new RuntimeException("Failed to parse version: " + release);
 					}
@@ -557,7 +556,7 @@ public final class McVersionLookup {
 
 	private static final class FieldStringConstantVisitor extends ClassVisitor implements Analyzer {
 		FieldStringConstantVisitor(String fieldName) {
-			super(QuiltLoaderImpl.ASM_VERSION);
+			super(FabricLoaderImpl.ASM_VERSION);
 
 			this.fieldName = fieldName;
 		}
@@ -628,7 +627,7 @@ public final class McVersionLookup {
 
 	private static final class MethodStringConstantContainsVisitor extends ClassVisitor implements Analyzer {
 		MethodStringConstantContainsVisitor(String methodOwner, String methodName) {
-			super(QuiltLoaderImpl.ASM_VERSION);
+			super(FabricLoaderImpl.ASM_VERSION);
 
 			this.methodOwner = methodOwner;
 			this.methodName = methodName;
@@ -683,7 +682,7 @@ public final class McVersionLookup {
 
 	private static final class MethodConstantRetVisitor extends ClassVisitor implements Analyzer {
 		MethodConstantRetVisitor(String methodName) {
-			super(QuiltLoaderImpl.ASM_VERSION);
+			super(FabricLoaderImpl.ASM_VERSION);
 
 			this.methodName = methodName;
 		}
@@ -741,7 +740,7 @@ public final class McVersionLookup {
 
 	private static final class MethodConstantVisitor extends ClassVisitor implements Analyzer {
 		MethodConstantVisitor(String methodNameHint) {
-			super(QuiltLoaderImpl.ASM_VERSION);
+			super(FabricLoaderImpl.ASM_VERSION);
 
 			this.methodNameHint = methodNameHint;
 		}
@@ -759,7 +758,7 @@ public final class McVersionLookup {
 				return null;
 			}
 
-			return new MethodVisitor(QuiltLoaderImpl.ASM_VERSION) {
+			return new MethodVisitor(FabricLoaderImpl.ASM_VERSION) {
 				@Override
 				public void visitLdcInsn(Object value) {
 					String str;
@@ -781,7 +780,7 @@ public final class McVersionLookup {
 
 	private abstract static class InsnFwdMethodVisitor extends MethodVisitor {
 		InsnFwdMethodVisitor() {
-			super(QuiltLoaderImpl.ASM_VERSION);
+			super(FabricLoaderImpl.ASM_VERSION);
 		}
 
 		protected abstract void visitAnyInsn();

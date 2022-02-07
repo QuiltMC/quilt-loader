@@ -74,12 +74,13 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 	}
 
 	protected static void handleFormattedException(FormattedException exc) {
-		Log.error(LogCategory.GENERAL, exc.getMainText(), exc.getCause());
+		Throwable actualExc = exc.getMessage() != null ? exc : exc.getCause();
+		Log.error(LogCategory.GENERAL, exc.getMainText(), actualExc);
 
 		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
-		if (gameProvider == null || !gameProvider.displayCrash(exc.getCause(), exc.getMainText())) {
-			QuiltGuiEntry.displayError(exc.getMainText(), exc.getCause(), true);
+		if (gameProvider == null || !gameProvider.displayCrash(actualExc, exc.getMainText())) {
+			QuiltGuiEntry.displayError(exc.getMainText(), actualExc, true);
 		} else {
 			System.exit(1);
 		}

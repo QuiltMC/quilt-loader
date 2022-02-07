@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.game;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -63,15 +64,15 @@ public interface GameProvider {
 	}
 
 	class BuiltinMod {
-		public BuiltinMod(Path path, ModMetadata metadata) {
-			Objects.requireNonNull(path, "null path");
+		public BuiltinMod(List<Path> paths, ModMetadata metadata) {
+			Objects.requireNonNull(paths, "null paths");
 			Objects.requireNonNull(metadata, "null metadata");
 
-			this.path = path;
+			this.paths = paths;
 			this.metadata = metadata;
 		}
 
-		public final Path path;
+		public final List<Path> paths;
 		public final ModMetadata metadata;
 	}
 }

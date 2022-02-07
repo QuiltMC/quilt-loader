@@ -20,6 +20,18 @@ package org.quiltmc.loader.impl;
 public final class FormattedException extends RuntimeException {
 	private final String mainText;
 
+	public FormattedException(String mainText, String message) {
+		super(message);
+
+		this.mainText = mainText;
+	}
+
+	public FormattedException(String mainText, String format, Object... args) {
+		super(String.format(format, args));
+
+		this.mainText = mainText;
+	}
+
 	public FormattedException(String mainText, String message, Throwable cause) {
 		super(message, cause);
 
