@@ -283,6 +283,12 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 			}
 		}
 
+		void copyFrom(ReadOnly src) {
+			int offset = src.bytesOffset();
+			this.bytes = Arrays.copyOfRange(src.byteArray(), offset, offset + src.bytesLength());
+			this.length = src.bytesLength();
+		}
+
 		private void expand(int to) throws IOException {
 			if (to > MAX_FILE_SIZE) {
 				throw new IOException("File too big!");
@@ -373,6 +379,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 						expand(newLength);
 						System.arraycopy(b, off, bytes, position, len);
 						position += len;
+						length += len;
 					}
 				}
 			};
@@ -402,6 +409,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 						expand(newLength);
 						src.get(bytes, position, len);
 						position += len;
+						length = Math.max(length, position);
 						return len;
 					}
 				}
@@ -440,7 +448,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				@Override
 				public SeekableByteChannel position(long newPosition) throws IOException {
 					synchronized (sync()) {
-						this.position = (int) Math.max(newPosition, MAX_FILE_SIZE);
+						this.position = (int) Math.min(newPosition, MAX_FILE_SIZE);
 					}
 					return this;
 				}

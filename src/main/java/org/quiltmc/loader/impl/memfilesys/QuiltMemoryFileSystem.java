@@ -1,6 +1,8 @@
 package org.quiltmc.loader.impl.memfilesys;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
@@ -22,18 +24,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 public abstract class QuiltMemoryFileSystem extends FileSystem {
 
 	private static final Set<String> FILE_ATTRS = Collections.singleton("basic");
 
+	enum OpenState {
+		OPEN,
+		/** Used by {@link ReadWrite#replaceWithReadOnly()} when moving from one filesystem to another - since we need
+		 * to remove the old file system from the provider while still being able to read it. */
+		MOVING,
+		CLOSED;
+	}
+
 	final String name;
 	final QuiltMemoryPath root = new QuiltMemoryPath(this, null, "/");
 	final Map<QuiltMemoryPath, QuiltMemoryEntry> files;
 
+	volatile OpenState openState = OpenState.OPEN;
+
 	private QuiltMemoryFileSystem(String name, Map<QuiltMemoryPath, QuiltMemoryEntry> fileMap) {
 		this.name = name;
 		this.files = fileMap;
+		QuiltMemoryFileSystemProvider.register(this);
+	}
+
+	public String getName() {
+		return name;
 	}
 
 	public Path getRoot() {
@@ -42,17 +60,39 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 
 	@Override
 	public FileSystemProvider provider() {
-		return QuiltMemoryFileSystemProvider.INSTANCE;
+		return QuiltMemoryFileSystemProvider.instance();
 	}
 
 	@Override
-	public void close() throws IOException {
-		// No.
+	public synchronized void close() {
+		if (openState == OpenState.OPEN) {
+			openState = OpenState.CLOSED;
+			QuiltMemoryFileSystemProvider.closeFileSystem(this);
+		}
+	}
+
+	synchronized void beginMove() {
+		if (openState == OpenState.OPEN) {
+			openState = OpenState.MOVING;
+			QuiltMemoryFileSystemProvider.closeFileSystem(this);
+		}
+	}
+
+	synchronized void endMove() {
+		if (openState == OpenState.MOVING) {
+			openState = OpenState.CLOSED;
+		}
 	}
 
 	@Override
 	public boolean isOpen() {
-		return true;
+		return openState != OpenState.CLOSED;
+	}
+
+	void checkOpen() throws ClosedFileSystemException {
+		if (!isOpen()) {
+			throw new ClosedFileSystemException();
+		}
 	}
 
 	@Override
@@ -72,14 +112,39 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 
 	@Override
 	public Path getPath(String first, String... more) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		if (first.isEmpty()) {
+			return new QuiltMemoryPath(this, null, "");
+		}
+
+		if (more.length == 0) {
+			QuiltMemoryPath path = first.startsWith("/") ? root : null;
+			for (String sub : first.split("/")) {
+				if (path == null) {
+					path = new QuiltMemoryPath(this, null, sub);
+				} else {
+					path = path.resolve(sub);
+				}
+			}
+			return path;
+		} else {
+			QuiltMemoryPath path = new QuiltMemoryPath(this, null, first);
+			for (String sub : more) {
+				path = path.resolve(sub);
+			}
+			return path;
+		}
 	}
 
 	@Override
 	public PathMatcher getPathMatcher(String syntaxAndPattern) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		if (syntaxAndPattern.startsWith("regex:")) {
+			Pattern pattern = Pattern.compile(syntaxAndPattern.substring("regex:".length()));
+			return path -> pattern.matcher(path.toString()).matches();
+		} else if (syntaxAndPattern.startsWith("glob:")) {
+			throw new AbstractMethodError("// TODO: Implement glob syntax matching!");
+		} else {
+			throw new UnsupportedOperationException("Unsupported syntax or pattern: '" + syntaxAndPattern + "'");
+		}
 	}
 
 	@Override
@@ -92,13 +157,24 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 		throw new UnsupportedOperationException();
 	}
 
-	public BasicFileAttributes readAttributes(QuiltMemoryPath qmp) {
+	public BasicFileAttributes readAttributes(QuiltMemoryPath qmp) throws IOException {
+		checkOpen();
 		QuiltMemoryEntry entry = files.get(qmp);
 
 		if (entry != null) {
 			return entry.createAttributes();
 		} else {
-			return QuiltFileAttributes.MISSING;
+			throw new FileNotFoundException();
+		}
+	}
+
+	static final class DirBuildState {
+
+		final QuiltMemoryPath folder;
+		final List<QuiltMemoryPath> children = new ArrayList<>();
+
+		public DirBuildState(QuiltMemoryPath folder) {
+			this.folder = folder;
 		}
 	}
 
@@ -131,6 +207,10 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 
 			int[] stats = new int[3];
 			stats[STAT_MEMORY] = 60;
+
+			if (!Files.isDirectory(from)) {
+				throw new IOException(from + " is not a directory!");
+			}
 
 			final Deque<DirBuildState> stack = new ArrayDeque<>();
 
@@ -219,16 +299,6 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 			fileStoreItr = Collections.singleton(fileStore);
 		}
 
-		static final class DirBuildState {
-
-			final QuiltMemoryPath folder;
-			final List<QuiltMemoryPath> children = new ArrayList<>();
-
-			public DirBuildState(QuiltMemoryPath folder) {
-				this.folder = folder;
-			}
-		}
-
 		@Override
 		public boolean isReadOnly() {
 			return true;
@@ -255,6 +325,42 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 		public Iterable<FileStore> getFileStores() {
 			return fileStoreItr;
 		}
+
+		public QuiltMemoryFileSystem.ReadWrite copyToWriteable(String newName) {
+			QuiltMemoryFileSystem.ReadWrite fs = new QuiltMemoryFileSystem.ReadWrite(newName);
+			copyPath(root, fs.root);
+			return fs;
+		}
+
+		/** Replaces this filesystem with a writable version, at least from the perspective of URL handling. This
+		 * {@link FileSystem} will be closed, although existing usages of this filesystem's {@link Path}s won't be
+		 * modified. (In other words, this should only be called by the owner of this filesystem). */
+		public QuiltMemoryFileSystem.ReadWrite replaceWithWritable() {
+			close();
+			QuiltMemoryFileSystem.ReadWrite fs = new QuiltMemoryFileSystem.ReadWrite(name);
+			copyPath(root, fs.root);
+			return fs;
+		}
+
+		private void copyPath(QuiltMemoryPath src, QuiltMemoryPath dst) {
+			QuiltMemoryEntry entrySrc = src.fs.files.get(src);
+			if (entrySrc instanceof QuiltMemoryFile) {
+				QuiltMemoryFile.ReadOnly fileSrc = (QuiltMemoryFile.ReadOnly) entrySrc;
+				QuiltMemoryFile.ReadWrite fileDst = new QuiltMemoryFile.ReadWrite(dst);
+				fileDst.copyFrom(fileSrc);
+				dst.fs.files.put(dst, fileDst);
+			} else {
+				QuiltMemoryFolder.ReadOnly folderSrc = (QuiltMemoryFolder.ReadOnly) entrySrc;
+				QuiltMemoryFolder.ReadWrite folderDst = new QuiltMemoryFolder.ReadWrite(dst);
+				dst.fs.files.put(dst, folderDst);
+
+				for (QuiltMemoryPath pathSrc : folderSrc.children) {
+					QuiltMemoryPath pathDst = dst.resolve(pathSrc.name);
+					folderDst.children.add(pathDst);
+					copyPath(pathSrc, pathDst);
+				}
+			}
+		}
 	}
 
 	public static final class ReadWrite extends QuiltMemoryFileSystem {
@@ -266,18 +372,87 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 			super(name, new ConcurrentHashMap<>());
 			fileStore = new QuiltMemoryFileStore.ReadWrite(name, this);
 			fileStoreItr = Collections.singleton(fileStore);
+			files.put(root, new QuiltMemoryFolder.ReadWrite(root));
+		}
+
+		public ReadWrite(String name, Path from) throws IOException {
+			this(name);
+
+			if (!Files.isDirectory(from)) {
+				throw new IOException(from + " is not a directory!");
+			}
+
+			final Deque<DirBuildState> stack = new ArrayDeque<>();
+
+			Files.walkFileTree(from, new SimpleFileVisitor<Path>() {
+
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					Path relative = from.relativize(dir);
+
+					if (stack.isEmpty()) {
+						stack.push(new DirBuildState(root));
+					} else {
+						String pathName = relative.getFileName().toString();
+						stack.push(new DirBuildState(stack.peek().folder.resolve(pathName)));
+					}
+
+					return super.preVisitDirectory(dir, attrs);
+				}
+
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					DirBuildState state = stack.peek();
+					String fileName = file.getFileName().toString();
+					QuiltMemoryPath childPath = state.folder.resolve(fileName);
+					state.children.add(childPath);
+					QuiltMemoryFile.ReadWrite qmf = new QuiltMemoryFile.ReadWrite(childPath);
+					qmf.createOutputStream(false).write(Files.readAllBytes(file));
+					files.put(childPath, qmf);
+					return super.visitFile(file, attrs);
+				}
+
+				@Override
+				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+					DirBuildState state = stack.pop();
+					QuiltMemoryFolder.ReadWrite qmf = new QuiltMemoryFolder.ReadWrite(state.folder);
+					files.put(state.folder, qmf);
+					qmf.children.addAll(state.children);
+					return super.postVisitDirectory(dir, exc);
+				}
+			});
+
+			if (!stack.isEmpty()) {
+				throw new IllegalStateException("Stack is not empty!");
+			}
 		}
 
 		/** Creates a new read-only version of this file system, copying the entire directory structure and file content
 		 * into it. This also compresses the files (if they can be compressed), and trims every byte array used to store
 		 * files down to the minimum required length. */
-		public QuiltMemoryFileSystem.ReadOnly optimizeToReadOnly() {
+		public QuiltMemoryFileSystem.ReadOnly optimizeToReadOnly(String newName) {
+			try {
+				return new ReadOnly(newName, root);
+			} catch (IOException e) {
+				throw new RuntimeException(
+					"For some reason the in-memory file system threw an IOException while reading!", e
+				);
+			}
+		}
+
+		/** Creates a new read-only version of this file system, copying the entire directory structure and file content
+		 * into it. This also compresses the files (if they can be compressed), and trims every byte array used to store
+		 * files down to the minimum required length. */
+		public QuiltMemoryFileSystem.ReadOnly replaceWithReadOnly() {
+			beginMove();
 			try {
 				return new ReadOnly(name, root);
 			} catch (IOException e) {
 				throw new RuntimeException(
 					"For some reason the in-memory file system threw an IOException while reading!", e
 				);
+			} finally {
+				endMove();
 			}
 		}
 

@@ -2,6 +2,7 @@ package org.quiltmc.loader.impl.memfilesys;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.AccessMode;
@@ -30,18 +31,71 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-/** A simple, read-only file system. */
+import org.jetbrains.annotations.Nullable;
+
 public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
-	private QuiltMemoryFileSystemProvider() {}
+	public QuiltMemoryFileSystemProvider() {}
 
-	public static final QuiltMemoryFileSystemProvider INSTANCE = new QuiltMemoryFileSystemProvider();
+	public static final String SCHEME = "quilt.mfs";
 
-	static final String URI_EXCEPTION = "Only 'Path's are supported";
-	static final String READ_ONLY_EXCEPTION = "QuiltFileSystem is read-only";
+	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
+
+	private static final Map<String, WeakReference<QuiltMemoryFileSystem>> ACTIVE_FILESYSTEMS = new HashMap<>();
+
+	static {
+		// Java requires we create a class named "Handler"
+		// in the package "<system-prop>.<scheme>"
+		// See java.net.URL#URL(java.lang.String, java.lang.String, int, java.lang.String)
+		final String key = "java.protocol.handler.pkgs";
+		final String pkg = "org.quiltmc.loader.impl.memfilesys";
+		String prop = System.getProperty(key);
+		if (prop == null) {
+			System.setProperty(key, pkg);
+		} else if (!prop.contains(pkg)) {
+			System.setProperty(key, prop + "|" + pkg);
+		}
+	}
+
+	synchronized static void register(QuiltMemoryFileSystem fs) {
+		URI uri = URI.create(SCHEME + "://" + fs.name + "/hello");
+		if (!"/hello".equals(uri.getPath())) {
+			throw new IllegalArgumentException("Not a valid name - it includes a path! '" + fs.name + "'");
+		}
+		WeakReference<QuiltMemoryFileSystem> oldRef = ACTIVE_FILESYSTEMS.get(fs.name);
+		if (oldRef != null) {
+			QuiltMemoryFileSystem old = oldRef.get();
+			if (old != null) {
+				throw new IllegalStateException("Multiple registered file systems for name '" + fs.name + "'");
+			}
+		}
+		ACTIVE_FILESYSTEMS.put(fs.name, new WeakReference<>(fs));
+	}
+
+	@Nullable
+	synchronized static QuiltMemoryFileSystem getFileSystem(String name) {
+		WeakReference<QuiltMemoryFileSystem> ref = ACTIVE_FILESYSTEMS.get(name);
+		return ref != null ? ref.get() : null;
+	}
+
+	static synchronized void closeFileSystem(QuiltMemoryFileSystem fs) {
+		WeakReference<QuiltMemoryFileSystem> removedRef = ACTIVE_FILESYSTEMS.remove(fs.name);
+		if (removedRef.get() != fs) {
+			throw new IllegalStateException("FileSystem already removed!");
+		}
+	}
+
+	public static QuiltMemoryFileSystemProvider instance() {
+		for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
+			if (provider instanceof QuiltMemoryFileSystemProvider) {
+				return (QuiltMemoryFileSystemProvider) provider;
+			}
+		}
+		throw new IllegalStateException("Unable to load QuiltMemoryFileSystemProvider via services!");
+	}
 
 	@Override
 	public String getScheme() {
-		return "quilt://yes_this_is_an_invalid_scheme:)";
+		return SCHEME;
 	}
 
 	@Override
@@ -55,8 +109,20 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 	}
 
 	@Override
-	public Path getPath(URI uri) {
-		throw new IllegalArgumentException(URI_EXCEPTION);
+	public QuiltMemoryPath getPath(URI uri) {
+		if (!SCHEME.equals(uri.getScheme())) {
+			throw new IllegalArgumentException("Wrong scheme! " + uri);
+		}
+		String host = uri.getHost();
+		WeakReference<QuiltMemoryFileSystem> fsRef;
+		synchronized (this) {
+			fsRef = ACTIVE_FILESYSTEMS.get(host);
+		}
+		QuiltMemoryFileSystem fs;
+		if (fsRef == null || (fs = fsRef.get()) == null) {
+			throw new IllegalArgumentException("Unknown file system name '" + host + "'");
+		}
+		return fs.root.resolve(uri.getPath());
 	}
 
 	@Override
@@ -290,6 +356,10 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		QuiltMemoryPath src = toAbsQuiltPath(source);
 		QuiltMemoryPath dst = toAbsQuiltPath(target);
 
+		if (src.equals(dst)) {
+			return;
+		}
+
 		QuiltMemoryEntry srcEntry = src.fs.files.get(src);
 		QuiltMemoryEntry dstEntry = src.fs.files.get(dst);
 
@@ -356,6 +426,11 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		if (target.getFileSystem().isReadOnly()) {
 			throw new IOException(READ_ONLY_EXCEPTION);
 		}
+
+		if (isSameFile(source, target)) {
+			return;
+		}
+
 		copy(source, target, options);
 		delete(source);
 	}
@@ -384,6 +459,11 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 			if (mode == AccessMode.WRITE && path.getFileSystem().isReadOnly()) {
 				throw new IOException(READ_ONLY_EXCEPTION);
 			}
+		}
+		QuiltMemoryPath quiltPath = toAbsQuiltPath(path);
+		QuiltMemoryEntry entry = quiltPath.fs.files.get(quiltPath);
+		if (entry == null) {
+			throw new NoSuchFileException(quiltPath.toString());
 		}
 	}
 

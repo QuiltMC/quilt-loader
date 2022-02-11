@@ -58,13 +58,6 @@ dependencies {
 	implementation("org.quiltmc:tiny-remapper:$project.tinyRemapperVersion")
 	implementation("org.quiltmc:access-widener:$project.accessWidenerVersion")
 
-	implementation("com.google.jimfs:jimfs:$project.jimfsVersion") {
-		exclude module: "guava"
-	}
-
-	// FIXME: Shadow this in jimfs
-	implementation("com.google.guava:guava:21.0")
-
 	implementation("org.quiltmc:quilt-loader-sat4j:$project.sat4jVersion")
 
 	// launchwrapper + dependencies
