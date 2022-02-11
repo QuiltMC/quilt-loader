@@ -16,31 +16,78 @@
 
 package org.quiltmc.loader.api;
 
+import net.fabricmc.loader.api.metadata.ModOrigin;
+
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 public interface ModContainer {
 
 	ModMetadata metadata();
 
 	/**
-	 * Returns the root directory of the mod.
-	 * 
-	 * <p>It may be the root directory of the mod JAR or the folder of the mod.</p>
+	 * Returns the root directories of the mod (inside JAR/folder), exposing its contents.
 	 *
-	 * @return the root directory of the mod
+	 * <p>The paths may point to regular folders or into mod JARs. Multiple root paths may occur in development
+	 * environments with {@code -Dfabric.classPathGroups} as used in multi-project mod setups.
+	 *
+	 * <p>A path returned by this method may be incompatible with {@link Path#toFile} as its FileSystem doesn't
+	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
+	 *
+	 * @return the root directories of the mod, may be empty for builtin or other synthetic mods
 	 */
-	Path rootPath();
+	List<Path> rootPaths();
 
 	/**
-	 * Gets an NIO reference to a file inside the JAR.
-	 * 
-	 * <p>The path is not guaranteed to exist!</p>
+	 * Gets an NIO reference to a file inside the JAR/folder.
 	 *
-	 * @param file The location from root, using {@code /} as a separator.
-	 * @return the path to a given file
+	 * <p>The path, if present, is guaranteed to exist!
+	 *
+	 * <p>A path returned by this method may be incompatible with {@link Path#toFile} as its FileSystem doesn't
+	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
+	 *
+	 * @param file The location from a root path, using {@code /} as a separator.
+	 * @return optional containing the path to a given file or empty if it can't be found
 	 */
-	default Path getPath(String file) {
-		Path root = rootPath();
-		return root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
+	default Optional<Path> findPath(String file) {
+		for (Path root : rootPaths()) {
+			Path path = root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
+			if (Files.exists(path)) return Optional.of(path);
+		}
+
+		return Optional.empty();
 	}
+
+	/**
+	 * Gets where the mod was loaded from originally, the mod jar/folder itself.
+	 *
+	 * <p>This location is not necessarily identical to the code source used at runtime, a mod may get copied or
+	 * otherwise transformed before being put on the class path. It thus mostly represents the installation and initial
+	 * loading, not what is being directly accessed at runtime.
+	 *
+	 * <p>The mod origin is provided for working with the installation like telling the user where a mod has been
+	 * installed at. Accessing the files inside a mod jar/folder should use {@link #findPath} and {@link #rootPaths}
+	 * instead. Those also abstract jar accesses through the virtual {@code ZipFileSystem} away.
+	 *
+	 * @return mod origin
+	 */
+	// TODO: fabric class
+	ModOrigin origin();
+
+	/**
+	 * Get the mod containing this mod (nested jar parent).
+	 *
+	 * @return mod containing this mod or empty if not nested
+	 */
+	Optional<ModContainer> containingMod();
+
+	/**
+	 * Get the active mods contained within this mod (nested jar children).
+	 *
+	 * @return active contained mods within this mod's jar
+	 */
+	Collection<ModContainer> containedMods();
 }

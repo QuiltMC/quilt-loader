@@ -36,7 +36,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.impl.FabricLoaderImpl;
+import net.fabricmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.impl.lib.gson.JsonReader;
 import net.fabricmc.loader.impl.lib.gson.JsonToken;
 import net.fabricmc.loader.impl.util.ExceptionUtil;
@@ -556,7 +556,7 @@ public final class McVersionLookup {
 
 	private static final class FieldStringConstantVisitor extends ClassVisitor implements Analyzer {
 		FieldStringConstantVisitor(String fieldName) {
-			super(FabricLoaderImpl.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.fieldName = fieldName;
 		}
@@ -627,7 +627,7 @@ public final class McVersionLookup {
 
 	private static final class MethodStringConstantContainsVisitor extends ClassVisitor implements Analyzer {
 		MethodStringConstantContainsVisitor(String methodOwner, String methodName) {
-			super(FabricLoaderImpl.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodOwner = methodOwner;
 			this.methodName = methodName;
@@ -682,7 +682,7 @@ public final class McVersionLookup {
 
 	private static final class MethodConstantRetVisitor extends ClassVisitor implements Analyzer {
 		MethodConstantRetVisitor(String methodName) {
-			super(FabricLoaderImpl.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodName = methodName;
 		}
@@ -740,7 +740,7 @@ public final class McVersionLookup {
 
 	private static final class MethodConstantVisitor extends ClassVisitor implements Analyzer {
 		MethodConstantVisitor(String methodNameHint) {
-			super(FabricLoaderImpl.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 
 			this.methodNameHint = methodNameHint;
 		}
@@ -758,7 +758,7 @@ public final class McVersionLookup {
 				return null;
 			}
 
-			return new MethodVisitor(FabricLoaderImpl.ASM_VERSION) {
+			return new MethodVisitor(QuiltLoaderImpl.ASM_VERSION) {
 				@Override
 				public void visitLdcInsn(Object value) {
 					String str;
@@ -780,7 +780,7 @@ public final class McVersionLookup {
 
 	private abstract static class InsnFwdMethodVisitor extends MethodVisitor {
 		InsnFwdMethodVisitor() {
-			super(FabricLoaderImpl.ASM_VERSION);
+			super(QuiltLoaderImpl.ASM_VERSION);
 		}
 
 		protected abstract void visitAnyInsn();

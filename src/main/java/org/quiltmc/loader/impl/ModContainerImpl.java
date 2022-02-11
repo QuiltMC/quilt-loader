@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl;
 
 import org.quiltmc.loader.api.ModMetadata;
+import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -24,19 +25,23 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 	private final InternalModMetadata meta;
 	private final FabricLoaderModMetadata fabricMeta;
-	private final Path originPath;
-	private volatile Path root;
+	private final List<Path> codeSourcePaths;
+	private volatile List<Path> roots;
 
-	public ModContainerImpl(InternalModMetadata meta, Path originPath) {
-		this.meta = meta;
+	public ModContainerImpl(ModCandidate candidate) {
+		this.meta = candidate.getMetadata();
 		this.fabricMeta = meta.asFabricModMetadata();
-		this.originPath = originPath;
+		this.codeSourcePaths = candidate.getOriginPaths();
 	}
 
 	@Override
@@ -44,45 +49,81 @@ public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 		return meta;
 	}
 
-	public Path getOriginPath() {
-		return originPath;
-	}
 
+	private static boolean warnedMultiPath = false;
+	private static boolean warnedClose = false;
 	@Override
-	public Path rootPath() {
-		Path ret = root;
+	public List<Path> rootPaths() {
+		List<Path> ret = roots;
 
-		if (ret == null || !ret.getFileSystem().isOpen()) {
-			if (ret != null && !warned) {
-				if (!QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) warned = true;
-				Log.warn(LogCategory.GENERAL, "FileSystem for %s has been closed unexpectedly, existing root path references may break!", this);
-			}
-
-			root = ret = obtainRootPath(); // obtainRootPath is thread safe, but we need to avoid plain or repeated reads to root
+		if (ret == null || !checkFsOpen(ret)) {
+			roots = ret = obtainRootPaths(); // obtainRootPaths is thread safe, but we need to avoid plain or repeated reads to root
 		}
 
 		return ret;
 	}
 
-	private boolean warned = false;
+	public List<Path> codeSourcePaths() {
+		return codeSourcePaths;
+	}
+	private boolean checkFsOpen(List<Path> paths) {
+		for (Path path : paths) {
+			if (path.getFileSystem().isOpen()) continue;
 
-	private Path obtainRootPath() {
+			if (!warnedClose) {
+				if (!QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) warnedClose = true;
+				Log.warn(LogCategory.GENERAL, "FileSystem for %s has been closed unexpectedly, existing root path references may break!", this);
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private List<Path> obtainRootPaths() {
+		boolean allDirs = true;
+
+		for (Path path : codeSourcePaths) {
+			if (!Files.isDirectory(path)) {
+				allDirs = false;
+				break;
+			}
+		}
+
+		if (allDirs) return codeSourcePaths;
+
 		try {
-			if (Files.isDirectory(originPath)) {
-				return originPath;
-			} else /* JAR */ {
-				FileSystemUtil.FileSystemDelegate delegate = FileSystemUtil.getJarFileSystem(originPath, false);
+			if (codeSourcePaths.size() == 1) {
+				return Collections.singletonList(obtainRootPath(codeSourcePaths.get(0)));
+			} else {
+				List<Path> ret = new ArrayList<>(codeSourcePaths.size());
 
-				if (delegate.get() == null) {
-					throw new RuntimeException("Could not open JAR file " + originPath + " for NIO reading!");
+				for (Path path : codeSourcePaths) {
+					ret.add(obtainRootPath(path));
 				}
 
-				return delegate.get().getRootDirectories().iterator().next();
-
-				// We never close here. It's fine. getJarFileSystem() will handle it gracefully, and so should mods
+				return Collections.unmodifiableList(ret);
 			}
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to find root directory for mod '" + fabricMeta.getId() + "'!", e);
+			throw new RuntimeException("Failed to obtain root directory for mod '" + fabricMeta.getId() + "'!", e);
+		}
+	}
+
+	private static Path obtainRootPath(Path path) throws IOException {
+		if (Files.isDirectory(path)) {
+			return path;
+		} else /* JAR */ {
+			FileSystemUtil.FileSystemDelegate delegate = FileSystemUtil.getJarFileSystem(path, false);
+			FileSystem fs = delegate.get();
+
+			if (fs == null) {
+				throw new RuntimeException("Could not open JAR file " + path + " for NIO reading!");
+			}
+
+			return fs.getRootDirectories().iterator().next();
+
+			// We never close here. It's fine. getJarFileSystem() will handle it gracefully, and so should mods
 		}
 	}
 

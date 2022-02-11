@@ -482,7 +482,7 @@ public final class ModSolver {
 					.append(" is being loaded from the user's mod directory.");
 			return;
 		}
-		Path origin = candidate.getPath();
+		//Path origin = candidate.getPath();
 		errors.append("TODO implement");
 		return;
 //		// step 1: try to find source mod's URL

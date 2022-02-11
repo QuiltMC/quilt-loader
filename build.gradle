@@ -76,7 +76,7 @@ dependencies {
 	testCompileOnly 'org.jetbrains:annotations:23.0.0'
 
 	// Unit testing
-	testImplementation(platform("org.junit:junit-bom:$project.junitVersion"))
+	testImplementation(platform("org.junit:junit-bom:5.7.2"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
@@ -93,8 +93,8 @@ processResources {
 }
 
 java {
-	sourceCompatibility = javaVersion
-	targetCompatibility = javaVersion
+	sourceCompatibility = 17
+	targetCompatibility = 17
 
 	withJavadocJar()
 	withSourcesJar()
@@ -225,7 +225,7 @@ tasks.withType(JavaCompile).configureEach {
 
 	// Target JDK 8
 	if (JavaVersion.current().isJava9Compatible()) {
-		it.options.release = 8
+		it.options.release.set(8)
 	}
 }
 
@@ -255,14 +255,6 @@ javadoc {
 	// workaround as one of the api stuff use that package
 	failOnError false
 }
-
-task javadocJar(type: Jar) {
-	dependsOn javadoc
-	from javadoc.destinationDir
-	archiveClassifier = 'javadoc'
-}
-
-build.dependsOn javadocJar
 
 allprojects {
 	checkstyle {

@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.metadata;
+
+import org.quiltmc.loader.api.ModOrigin;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import net.fabricmc.loader.api.metadata.ModOrigin;
 
 public final class ModOriginImpl implements ModOrigin {
 	private final Kind kind;

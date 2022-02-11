@@ -69,7 +69,7 @@ import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusButton;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
-import net.fabricmc.loader.impl.util.StringUtil;
+import org.quiltmc.loader.impl.util.StringUtil;
 
 class QuiltMainWindow {
 	static Icon missingIcon = null;

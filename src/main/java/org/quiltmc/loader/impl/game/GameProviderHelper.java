@@ -25,6 +25,7 @@ import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
+import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.MappingConfiguration;
@@ -43,6 +44,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -225,7 +227,7 @@ public final class GameProviderHelper {
 	}
 
 	private static Path getDeobfJarDir(Path gameDir, String gameId, String gameVersion) {
-		Path ret = gameDir.resolve(FabricLoaderImpl.CACHE_DIR_NAME).resolve(FabricLoaderImpl.REMAPPED_JARS_DIR_NAME);
+		Path ret = gameDir.resolve(QuiltLoaderImpl.CACHE_DIR_NAME).resolve(QuiltLoaderImpl.REMAPPED_JARS_DIR_NAME);
 		StringBuilder versionDirName = new StringBuilder();
 
 		if (!gameId.isEmpty()) {
@@ -238,7 +240,7 @@ public final class GameProviderHelper {
 		}
 
 		if (versionDirName.length() > 0) versionDirName.append('-');
-		versionDirName.append(FabricLoaderImpl.VERSION);
+		versionDirName.append(QuiltLoaderImpl.VERSION);
 
 		return ret.resolve(versionDirName.toString().replaceAll("[^\\w\\-\\. ]+", "_"));
 	}

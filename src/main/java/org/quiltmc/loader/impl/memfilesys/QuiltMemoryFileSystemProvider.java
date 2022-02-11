@@ -33,6 +33,7 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("unchecked") // TODO make more specific
 public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 	public QuiltMemoryFileSystemProvider() {}
 

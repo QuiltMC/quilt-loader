@@ -20,8 +20,11 @@ import net.fabricmc.loader.api.VersionParsingException;
 
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
+import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
+
+import org.quiltmc.loader.impl.discovery.ModCandidate;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -206,11 +209,11 @@ public final class DependencyOverrides {
 		if (dependencyOverrides.isEmpty()) return;
 
 		for (ModCandidate mod : mods) {
-			apply(mod.getMetadata());
+			apply(mod.getMetadata().asFabricModMetadata());
 		}
 	}
 
-	private void apply(LoaderModMetadata metadata) {
+	private void apply(FabricLoaderModMetadata metadata) {
 		List<Entry> modOverrides = dependencyOverrides.get(metadata.getId());
 		if (modOverrides == null) return;
 
@@ -219,13 +222,7 @@ public final class DependencyOverrides {
 		for (Entry entry : modOverrides) {
 			switch (entry.operation) {
 			case REPLACE:
-				for (Iterator<ModDependency> it = deps.iterator(); it.hasNext(); ) {
-					ModDependency dep = it.next();
-
-					if (dep.getKind() == entry.kind) {
-						it.remove();
-					}
-				}
+				deps.removeIf(dep -> dep.getKind() == entry.kind);
 
 				deps.addAll(entry.values);
 				break;

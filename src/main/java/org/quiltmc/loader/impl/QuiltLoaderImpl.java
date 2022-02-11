@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl;
+package org.quiltmc.loader.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,40 +33,43 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+
 import org.objectweb.asm.Opcodes;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.LanguageAdapter;
-import net.fabricmc.loader.api.MappingResolver;
-import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.entrypoint.EntrypointContainer;
-import net.fabricmc.loader.impl.discovery.ArgumentModCandidateFinder;
-import net.fabricmc.loader.impl.discovery.ClasspathModCandidateFinder;
-import net.fabricmc.loader.impl.discovery.DirectoryModCandidateFinder;
-import net.fabricmc.loader.impl.discovery.ModCandidate;
-import net.fabricmc.loader.impl.discovery.ModDiscoverer;
-import net.fabricmc.loader.impl.discovery.ModResolutionException;
-import net.fabricmc.loader.impl.discovery.ModResolver;
-import net.fabricmc.loader.impl.discovery.RuntimeModRemapper;
-import net.fabricmc.loader.impl.entrypoint.EntrypointStorage;
-import net.fabricmc.loader.impl.game.GameProvider;
-import net.fabricmc.loader.impl.launch.FabricLauncherBase;
-import net.fabricmc.loader.impl.launch.knot.Knot;
-import net.fabricmc.loader.impl.metadata.DependencyOverrides;
-import net.fabricmc.loader.impl.metadata.EntrypointMetadata;
-import net.fabricmc.loader.impl.metadata.LoaderModMetadata;
-import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
-import net.fabricmc.loader.impl.util.SystemProperties;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogCategory;
 
-@SuppressWarnings("deprecation")
-public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
-	public static final FabricLoaderImpl INSTANCE = InitHelper.get();
+import org.quiltmc.loader.api.LanguageAdapter;
+import org.quiltmc.loader.api.MappingResolver;
+import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
+import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
+import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
+import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.discovery.ModResolutionException;
+import org.quiltmc.loader.impl.discovery.ModResolver;
+import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
+import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.knot.Knot;
+import org.quiltmc.loader.impl.metadata.DependencyOverrides;
+import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
+import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+
+public final class QuiltLoaderImpl {
+	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
@@ -74,10 +77,6 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
-
-	protected final Map<String, ModContainerImpl> modMap = new HashMap<>();
-	protected List<ModContainerImpl> mods = new ArrayList<>();
-	public static final String MOD_ID = "quilt_loader";
 
 	public static final String CACHE_DIR_NAME = ".fabric"; // relative to game dir
 	private static final String PROCESSED_MODS_DIR_NAME = "processedMods"; // relative to cache dir
@@ -158,7 +157,6 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 	/**
 	 * @return The game instance's root directory.
 	 */
-	@Override
 	public Path getGameDir() {
 		return gameDir;
 	}
@@ -240,9 +238,10 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 		int count = modCandidates.size();
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
 
-		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
-			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides()));
-		}
+		// TODO
+//		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
+//			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides()));
+//		}
 
 		Path cacheDir = gameDir.resolve(CACHE_DIR_NAME);
 		Path outputdir = cacheDir.resolve(PROCESSED_MODS_DIR_NAME);
@@ -301,7 +300,8 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerImpl mod : mods) {
 			if (!mod.metadata().id().equals(MOD_ID) && !mod.getInfo().getType().equals("builtin")) {
-				QuiltLauncherBase.getLauncher().addToClassPath(mod.getOriginPath());
+				for (Path path : mod.codeSourcePaths())
+				QuiltLauncherBase.getLauncher().addToClassPath(path);
 			}
 		}
 
@@ -314,12 +314,14 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 			Set<Path> knownModPaths = new HashSet<>();
 
 			for (ModContainerImpl mod : mods) {
-				knownModPaths.add(mod.getOriginPath().toAbsolutePath().normalize());
+								for (Path path : mod.codeSourcePaths()) {
+					knownModPaths.add(path.toAbsolutePath().normalize());
+				}
 			}
 
 			// suppress fabric loader explicitly in case its fabric.mod.json is in a different folder from the classes
-			Path fabricLoaderPath = ClasspathModCandidateFinder.getLoaderPath();
-			if (fabricLoaderPath != null) knownModPaths.add(fabricLoaderPath.toAbsolutePath().normalize());
+			Path loaderPath = ClasspathModCandidateFinder.getLoaderPath();
+			if (loaderPath != null) knownModPaths.add(loaderPath.toAbsolutePath().normalize());
 
 			for (String pathName : System.getProperty("java.class.path", "").split(File.pathSeparator)) {
 				if (pathName.isEmpty() || pathName.endsWith("*")) continue;
@@ -341,17 +343,14 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 		return entrypointStorage.hasEntrypoints(key);
 	}
 
-	@Override
 	public <T> List<T> getEntrypoints(String key, Class<T> type) {
 		return entrypointStorage.getEntrypoints(key, type);
 	}
 
-	@Override
 	public <T> List<EntrypointContainer<T>> getEntrypointContainers(String key, Class<T> type) {
 		return entrypointStorage.getEntrypointContainers(key, type);
 	}
 
-	@Override
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
 			mappingResolver = new QuiltMappingResolver(
@@ -416,22 +415,21 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 
 	protected void addMod(ModCandidate candidate) throws ModResolutionException {
 		InternalModMetadata meta = candidate.getMetadata();
-		File origin = candidate.getPath().toFile();
 		if (modMap.containsKey(meta.id())) {
-			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "! (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")");
+			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "!"/* + " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
 		}
 
 		if (!meta.environment().matches(getEnvironmentType())) {
 			return;
 		}
 
-		ModContainerImpl container = new ModContainerImpl(meta, candidate.getPath());
+		ModContainerImpl container = new ModContainerImpl(candidate);
 		mods.add(container);
 		modMap.put(meta.id(), container);
 
 		for (ModProvided provided : meta.provides()) {
 			if (modMap.containsKey(provided.id)) {
-				throw new ModSolvingError("Duplicate provided alias: " + provided + "! (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")");
+				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
 			}
 
 			modMap.put(provided.id, container);
@@ -483,7 +481,7 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 					}
 				}
 			} catch (Exception e) {
-				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.getOrigin()), e);
+				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.origin()), e);
 			}
 		}
 	}
@@ -588,10 +586,10 @@ public final class FabricLoaderImpl extends net.fabricmc.loader.FabricLoader {
 	 * Provides singleton for static init assignment regardless of load order.
 	 */
 	public static class InitHelper {
-		private static FabricLoaderImpl instance;
+		private static QuiltLoaderImpl instance;
 
-		public static FabricLoaderImpl get() {
-			if (instance == null) instance = new FabricLoaderImpl();
+		public static QuiltLoaderImpl get() {
+			if (instance == null) instance = new QuiltLoaderImpl();
 
 			return instance;
 		}

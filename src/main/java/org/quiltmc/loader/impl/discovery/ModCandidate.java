@@ -22,24 +22,28 @@ import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 
 import java.nio.file.Path;
+import java.util.List;
 
 public class ModCandidate {
 	private final FabricLoaderModMetadata info;
-	private final Path origin;
+	private final List<Path> originPaths;
 	private final int depth;
 	private final boolean requiresRemap;
 
-	public ModCandidate(FabricLoaderModMetadata info, Path origin, int depth, boolean requiresRemap) {
+	public ModCandidate(List<Path> paths, FabricLoaderModMetadata info, int depth, boolean requiresRemap) {
+		this.originPaths = paths;
 		this.info = info;
-		this.origin = origin;
 		this.depth = depth;
 		this.requiresRemap = requiresRemap;
 	}
 
-	public Path getPath() {
-		return origin;
+	public List<Path> getOriginPaths() {
+		return originPaths;
 	}
 
+	public List<Path> getPaths() {
+		return originPaths; // TODO
+	}
 	@Deprecated
 	public FabricLoaderModMetadata getInfo() {
 		return info;

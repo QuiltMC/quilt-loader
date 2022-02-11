@@ -58,7 +58,7 @@ public class ModResolver {
 	// nested JAR store
 	private static final FileSystem inMemoryFs = new QuiltMemoryFileSystem.ReadWrite("nestedJarStore");
 	private static final Map<String, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
-	private static final Map<String, String> readableNestedJarPaths2 = new ConcurrentHashMap<>();
+	//private static final Map<String, String> readableNestedJarPaths2 = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
 
@@ -80,26 +80,26 @@ public class ModResolver {
 		candidateFinders.add(f);
 	}
 
-	private static String getReadablePath(Path gameDir, Path path) {
-		Path relativized = path;
-		if (gameDir != null) {
-			gameDir = gameDir.normalize();
+//	private static String getReadablePath(Path gameDir, Path path) {
+//		Path relativized = path;
+//		if (gameDir != null) {
+//			gameDir = gameDir.normalize();
+//
+//			if (path.startsWith(gameDir)) {
+//				relativized = gameDir.relativize(path);
+//			}
+//		}
+//
+//		return readableNestedJarPaths2.getOrDefault(path.toString(), relativized.toString());
+//	}
 
-			if (path.startsWith(gameDir)) {
-				relativized = gameDir.relativize(path);
-			}
-		}
+//	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
+//		return getReadablePath(loader.getGameDir(), c.getPath());
+//	}
 
-		return readableNestedJarPaths2.getOrDefault(path.toString(), relativized.toString());
-	}
-
-	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
-		return getReadablePath(loader.getGameDir(), c.getPath());
-	}
-
-	public String getReadablePath(Path path) {
-		return getReadablePath(gameDir, path);
-	}
+//	public String getReadablePath(Path path) {
+//		return getReadablePath(gameDir, path);
+//	}
 
 	/** Only exposed for {@link ModSolver}. This is also intended to be temporary. */
 	public static Path getSourcePath(Path originPath) {
@@ -243,7 +243,7 @@ public class ModResolver {
 			}
 
 			for (FabricLoaderModMetadata i : info) {
-				ModCandidate candidate = new ModCandidate(i, path, depth, requiresRemap);
+				ModCandidate candidate = new ModCandidate(path, i, depth, requiresRemap);
 				boolean added;
 
 				if (candidate.getInfo().getId() == null || candidate.getInfo().getId().isEmpty()) {

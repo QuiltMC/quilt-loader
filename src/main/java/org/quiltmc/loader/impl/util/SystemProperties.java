@@ -33,8 +33,6 @@ public final class SystemProperties {
 	// TODO: check which of these is used
 	// additional mods to load (path separator separated paths, @ prefix for meta-file with each line referencing an actual file)
 	public static final String ADD_MODS = "fabric.addMods";
-	// file containing the class path for in-dev runtime mod remapping
-	public static final String REMAP_CLASSPATH_FILE = "fabric.remapClasspathFile";
 	// class path groups to map multiple class path entries to a mod (paths separated by path separator, groups by double path separator)
 	public static final String PATH_GROUPS = "fabric.classPathGroups";
 	// throw exceptions from entrypoints, discovery etc. directly instead of gathering and attaching as suppressed

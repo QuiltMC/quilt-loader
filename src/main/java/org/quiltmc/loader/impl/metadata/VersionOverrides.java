@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.metadata;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,9 +23,10 @@ import java.util.Map;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.impl.discovery.ModCandidate;
-import net.fabricmc.loader.impl.util.SystemProperties;
-import net.fabricmc.loader.impl.util.version.VersionParser;
+
+import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.version.VersionParser;
 
 public final class VersionOverrides {
 	private final Map<String, Version> replacements = new HashMap<>();
@@ -59,7 +60,7 @@ public final class VersionOverrides {
 			Version replacement = replacements.get(mod.getId());
 
 			if (replacement != null) {
-				mod.getMetadata().setVersion(replacement);
+				mod.getInfo().setVersion(replacement);
 			}
 		}
 	}

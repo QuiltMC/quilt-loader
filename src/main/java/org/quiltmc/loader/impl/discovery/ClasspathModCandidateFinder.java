@@ -18,37 +18,52 @@ package org.quiltmc.loader.impl.discovery;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
 
 public class ClasspathModCandidateFinder implements ModCandidateFinder {
 	@Override
-	public void findCandidates(QuiltLoaderImpl loader, ModCandidateFinder.ModCandidateConsumer out) {
-		if (loader.isDevelopmentEnvironment()) {
+	public void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out) {
+		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
+			Map<Path, List<Path>> pathGroups = getPathGroups();
+
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
 				Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
-				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
-				while (quiltMods.hasMoreElements()) {
-					try {
-						out.accept(UrlUtil.getSourcePath("quilt.mod.json", mods.nextElement()), false);
-					} catch (UrlConversionException e) {
-						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json", e);
-					}
-				}
+
 				while (mods.hasMoreElements()) {
+					URL url = mods.nextElement();
+
 					try {
-						out.accept(UrlUtil.getSourcePath("fabric.mod.json", mods.nextElement()), false);
+						Path path = UrlUtil.getSourcePath("fabric.mod.json", url).toAbsolutePath().normalize();
+						List<Path> paths = pathGroups.get(path);
+
+						if (paths == null) {
+							out.accept(path, false);
+						} else {
+							out.accept(paths, false);
+						}
 					} catch (UrlConversionException e) {
-						Log.debug(LogCategory.DISCOVERY, "Error determining location for fabric.mod.json", e);
+						Log.debug(LogCategory.DISCOVERY, "Error determining location for fabric.mod.json from %s", url, e);
 					}
 				}
 			} catch (IOException e) {
@@ -63,24 +78,54 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 		}
 	}
 
+	/**
+	 * Parse fabric.classPathGroups system property into a path group lookup map.
+	 *
+	 * <p>This transforms {@code a:b::c:d:e} into {@code a=[a,b],b=[a,b],c=[c,d,e],d=[c,d,e],e=[c,d,e]}
+	 */
+	private static Map<Path, List<Path>> getPathGroups() {
+		String prop = System.getProperty(SystemProperties.PATH_GROUPS);
+		if (prop == null) return Collections.emptyMap();
+
+		Map<Path, List<Path>> ret = new HashMap<>();
+
+		for (String group : prop.split(File.pathSeparator+File.pathSeparator)) {
+			Set<Path> paths = new LinkedHashSet<>();
+
+			for (String path : group.split(File.pathSeparator)) {
+				if (path.isEmpty()) continue;
+
+				Path resolvedPath = Paths.get(path).toAbsolutePath().normalize();
+
+				if (!Files.exists(resolvedPath)) {
+					Log.warn(LogCategory.DISCOVERY, "Skipping missing class path group entry %s", path);
+					continue;
+				}
+
+				paths.add(resolvedPath);
+			}
+
+			if (paths.size() < 2) {
+				Log.warn(LogCategory.DISCOVERY, "Skipping class path group with no effect: %s", group);
+				continue;
+			}
+
+			List<Path> pathList = new ArrayList<>(paths);
+
+			for (Path path : pathList) {
+				ret.put(path, pathList);
+			}
+		}
+
+		return ret;
+	}
+
 	public static Path getLoaderPath() {
 		try {
 			return UrlUtil.asPath(QuiltLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation());
 		} catch (Throwable t) {
 			Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			return null;
-		}
-	}
-
-	protected void addModSources(QuiltLoaderImpl loader, Set<URL> modsList, String name) throws IOException {
-		Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources(name);
-
-		while (mods.hasMoreElements()) {
-			try {
-				modsList.add(UrlUtil.getSource(name, mods.nextElement()));
-			} catch (UrlConversionException e) {
-				Log.debug(LogCategory.DISCOVERY, "%s", e);
-			}
 		}
 	}
 }

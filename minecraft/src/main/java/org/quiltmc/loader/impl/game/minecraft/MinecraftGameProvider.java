@@ -37,7 +37,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import net.fabricmc.loader.impl.FabricLoaderImpl;
+import net.fabricmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.GameProviderHelper;
@@ -218,7 +218,7 @@ public class MinecraftGameProvider implements GameProvider {
 		}
 
 		// expose obfuscated jar locations for mods to more easily remap code from obfuscated to intermediary
-		ObjectShare share = FabricLoaderImpl.INSTANCE.getObjectShare();
+		ObjectShare share = QuiltLoaderImpl.INSTANCE.getObjectShare();
 		share.put("fabric-loader:inputGameJar", gameJar);
 		if (realmsJar != null) share.put("fabric-loader:inputRealmsJar", realmsJar);
 

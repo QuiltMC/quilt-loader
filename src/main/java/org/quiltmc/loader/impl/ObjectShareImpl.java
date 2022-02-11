@@ -25,7 +25,7 @@ import java.util.function.BiConsumer;
 
 import net.fabricmc.loader.api.ObjectShare;
 
-final class ObjectShareImpl implements ObjectShare {
+public final class ObjectShareImpl implements ObjectShare {
 	private final Map<String, Object> values = new HashMap<>();
 	private final Map<String, List<BiConsumer<String, Object>>> pendingMap = new HashMap<>();
 
