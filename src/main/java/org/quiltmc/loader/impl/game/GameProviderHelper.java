@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.game;
 
-import net.fabricmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import net.fabricmc.mapping.tree.TinyTree;
 

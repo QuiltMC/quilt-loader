@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.impl.game.minecraft.LibClassifier.Lib;
-import net.fabricmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 
 final class BundlerProcessor {
 	private static final String MAIN_CLASS_PROPERTY = "bundlerMainClass";

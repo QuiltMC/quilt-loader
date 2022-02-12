@@ -17,7 +17,7 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;

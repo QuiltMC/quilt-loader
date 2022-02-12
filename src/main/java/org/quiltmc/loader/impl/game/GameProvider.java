@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Objects;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.fabricmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;

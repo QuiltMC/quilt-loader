@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.entrypoint;
 
-import net.fabricmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
