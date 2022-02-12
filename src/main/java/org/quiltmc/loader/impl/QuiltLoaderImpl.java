@@ -492,7 +492,11 @@ public final class QuiltLoaderImpl {
 		for (ModContainerImpl mod : mods) {
 			for (String accessWidener : mod.getInternalMeta().accessWideners()) {
 
-				Path path = mod.getPath(accessWidener);
+				Path path = mod.findPath(accessWidener).orElse(null);
+
+				if (path == null) {
+					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.getInternalMeta().id() + " '" + accessWidener + "'");
+				}
 
 				try (BufferedReader reader = Files.newBufferedReader(path)) {
 					accessWidenerReader.read(reader, getMappingResolver().getCurrentRuntimeNamespace());
