@@ -1,4 +1,4 @@
-package org.quiltmc.loader.impl.filesystem.memory.quilt.mfs;
+package org.quiltmc.loader.impl.filesystem.quilt.mfs;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,8 +9,8 @@ import java.net.URLStreamHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.quiltmc.loader.impl.filesystem.memory.QuiltMemoryFileSystem;
-import org.quiltmc.loader.impl.filesystem.memory.QuiltMemoryFileSystemProvider;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystemProvider;
 
 /** {@link URLStreamHandler} for {@link QuiltMemoryFileSystem}. */
 public class Handler extends URLStreamHandler {

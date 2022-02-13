@@ -1,4 +1,4 @@
-package org.quiltmc.loader.impl.filesystem.memory;
+package org.quiltmc.loader.impl.filesystem;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-public final class QuiltMemoryPath implements Path {
+public final class QuiltMemoryPath extends QuiltBasePath<QuiltMemoryFileSystem> {
 
 	static final String NAME_ROOT = "/";
 	static final String NAME_SELF = ".";

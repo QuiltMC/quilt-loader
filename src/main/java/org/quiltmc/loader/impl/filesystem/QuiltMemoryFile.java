@@ -1,4 +1,4 @@
-package org.quiltmc.loader.impl.filesystem.memory;
+package org.quiltmc.loader.impl.filesystem;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

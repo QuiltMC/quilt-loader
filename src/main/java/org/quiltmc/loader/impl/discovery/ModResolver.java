@@ -183,11 +183,19 @@ public class ModResolver {
 		protected void compute() {
 			FileSystemUtil.FileSystemDelegate jarFs;
 			final Path fabricModJson, quiltModJson, rootDir;
+			final Path path;
 
 			Log.debug(LogCategory.RESOLUTION, "Testing " + paths);
 
 			if (paths.size() != 1 || Files.isDirectory(paths.get(0))) {
 				// Directory
+
+				if (paths.size() == 1) {
+					path = paths.get(0);
+				} else {
+//					path = // TODO: Joined FileSystem
+				}
+
 				fabricModJson = path.resolve("fabric.mod.json");
 				quiltModJson = path.resolve("quilt.mod.json");
 				rootDir = path;
@@ -202,7 +210,7 @@ public class ModResolver {
 					}
 				}
 			} else {
-				Path path = paths.get(0);
+				path = paths.get(0);
 				// JAR file
 				try {
 					jarFs = FileSystemUtil.getJarFileSystem(path, false);

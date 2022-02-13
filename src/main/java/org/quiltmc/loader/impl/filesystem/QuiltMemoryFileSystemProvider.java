@@ -1,4 +1,4 @@
-package org.quiltmc.loader.impl.filesystem.memory;
+package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +48,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		// in the package "<system-prop>.<scheme>"
 		// See java.net.URL#URL(java.lang.String, java.lang.String, int, java.lang.String)
 		final String key = "java.protocol.handler.pkgs";
-		final String pkg = "org.quiltmc.loader.impl.filesystem.memory";
+		final String pkg = "org.quiltmc.loader.impl.filesystem";
 		String prop = System.getProperty(key);
 		if (prop == null) {
 			System.setProperty(key, pkg);

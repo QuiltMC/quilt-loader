@@ -1,4 +1,4 @@
-package org.quiltmc.loader.impl.filesystem.memory;
+package org.quiltmc.loader.impl.filesystem;
 
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
