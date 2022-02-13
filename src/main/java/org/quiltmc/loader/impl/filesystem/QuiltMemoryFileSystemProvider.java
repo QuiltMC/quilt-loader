@@ -18,6 +18,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -245,7 +246,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 								entries = ((QuiltMemoryFolder.ReadWrite) entry).children//
 										.toArray(new QuiltMemoryPath[0]);
 							} else {
-								throw new DirectoryIteratorException(new IOException("Not a directory: " + dir));
+								throw new DirectoryIteratorException(new NotDirectoryException("Not a directory: " + dir));
 							}
 						}
 
