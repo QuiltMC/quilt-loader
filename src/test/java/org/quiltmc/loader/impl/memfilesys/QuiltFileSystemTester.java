@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.quiltmc.loader.impl.filesystem.memory.QuiltMemoryFileSystem;
 
 public class QuiltFileSystemTester {
 

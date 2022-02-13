@@ -19,10 +19,10 @@ package org.quiltmc.loader.impl.discovery;
 import org.quiltmc.json5.exception.ParseException;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.filesystem.memory.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.memfilesys.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
@@ -37,6 +37,8 @@ import org.quiltmc.loader.impl.util.UrlUtil;
 
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+
+import net.fabricmc.loader.impl.discovery.ModDiscoverer.ModScanTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -166,13 +168,13 @@ public class ModResolver {
 	@SuppressWarnings("serial")
 	class ProcessAction extends RecursiveAction {
 		private final Map<String, ModCandidateSet> candidatesById;
-		private final Path path;
+		private final List<Path> paths;
 		private final int depth;
 		private final boolean requiresRemap;
 
-		ProcessAction(Map<String, ModCandidateSet> candidatesById, Path path, int depth, boolean requiresRemap) {
+		ProcessAction(Map<String, ModCandidateSet> candidatesById, List<Path> paths, int depth, boolean requiresRemap) {
 			this.candidatesById = candidatesById;
-			this.path = path;
+			this.paths = paths;
 			this.depth = depth;
 			this.requiresRemap = requiresRemap;
 		}
@@ -182,9 +184,9 @@ public class ModResolver {
 			FileSystemUtil.FileSystemDelegate jarFs;
 			final Path fabricModJson, quiltModJson, rootDir;
 
-			Log.debug(LogCategory.RESOLUTION, "Testing " + path);
+			Log.debug(LogCategory.RESOLUTION, "Testing " + paths);
 
-			if (Files.isDirectory(path)) {
+			if (paths.size() != 1 || Files.isDirectory(paths.get(0))) {
 				// Directory
 				fabricModJson = path.resolve("fabric.mod.json");
 				quiltModJson = path.resolve("quilt.mod.json");
@@ -200,6 +202,7 @@ public class ModResolver {
 					}
 				}
 			} else {
+				Path path = paths.get(0);
 				// JAR file
 				try {
 					jarFs = FileSystemUtil.getJarFileSystem(path, false);
@@ -361,11 +364,22 @@ public class ModResolver {
 		long time1 = System.currentTimeMillis();
 		Queue<ProcessAction> allActions = new ConcurrentLinkedQueue<>();
 		ForkJoinPool pool = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1));
+		Set<Path> processedPaths = new HashSet<>();
 		for (ModCandidateFinder f : candidateFinders) {
-			f.findCandidates(loader, (path, requiresRemap) -> {
-				ProcessAction action = new ProcessAction(candidatesById, path, 0, requiresRemap);
-				allActions.add(action);
-				pool.execute(action);
+			f.findCandidates(loader, (paths, requiresRemap) -> {
+				// Make sure we can modify the list
+				List<Path> normalizedPaths = new ArrayList<>(paths.size());
+
+				for (Path path : paths) {
+					normalizedPaths.add(path.toAbsolutePath().normalize());
+				}
+
+				if (!processedPaths.containsAll(normalizedPaths)) {
+					processedPaths.addAll(normalizedPaths);
+					ProcessAction action = new ProcessAction(candidatesById, paths, 0, requiresRemap);
+					allActions.add(action);
+					pool.execute(action);
+				}
 			});
 		}
 
@@ -377,7 +391,7 @@ public class ModResolver {
 
 			// Add the current Java version
 			addBuiltinMod(candidatesById, new BuiltinMod(
-					new File(System.getProperty("java.home")).toPath(),
+					Collections.singletonList(new File(System.getProperty("java.home")).toPath()),
 					new BuiltinModMetadata.Builder("java", System.getProperty("java.specification.version").replaceFirst("^1\\.", ""))
 							.setName(System.getProperty("java.vm.name"))
 							.build()));
@@ -430,7 +444,7 @@ public class ModResolver {
 
 	private void addBuiltinMod(ConcurrentMap<String, ModCandidateSet> candidatesById, BuiltinMod mod) {
 		candidatesById.computeIfAbsent(mod.metadata.getId(), ModCandidateSet::new)
-				.add(new ModCandidate(new BuiltinMetadataWrapperFabric(mod.metadata), mod.path, 0, false));
+				.add(new ModCandidate(mod.paths, new BuiltinMetadataWrapperFabric(mod.metadata), 0, false));
 	}
 
 	public static FileSystem getInMemoryFs() {

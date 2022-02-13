@@ -1,4 +1,4 @@
-package org.quiltmc.loader.impl.memfilesys;
+package org.quiltmc.loader.impl.filesystem.memory;
 
 import java.io.File;
 import java.io.IOException;
