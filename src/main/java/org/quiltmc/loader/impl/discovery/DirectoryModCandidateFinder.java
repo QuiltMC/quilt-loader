@@ -80,8 +80,6 @@ public class DirectoryModCandidateFinder implements ModCandidateFinder {
 		 * MacOS: Exclude hidden + startsWith "." since Mac OS names their metadata files in the form of `.mod.jar`
 		 */
 
-		if (!Files.isRegularFile(path)) return false;
-
 		try {
 			if (Files.isHidden(path)) return false;
 		} catch (IOException e) {
