@@ -233,11 +233,11 @@ public class MinecraftGameProvider implements GameProvider {
 		switch (envType) {
 		case CLIENT:
 			if (!argMap.containsKey("accessToken")) {
-				argMap.put("accessToken", "FabricMC");
+				argMap.put("accessToken", "QuiltMC");
 			}
 
 			if (!argMap.containsKey("version")) {
-				argMap.put("version", "Fabric");
+				argMap.put("version", "Quilt");
 			}
 
 			String versionType = "";
@@ -246,7 +246,7 @@ public class MinecraftGameProvider implements GameProvider {
 				versionType = argMap.get("versionType") + "/";
 			}
 
-			argMap.put("versionType", versionType + "Fabric");
+			argMap.put("versionType", versionType + "Quilt");
 
 			if (!argMap.containsKey("gameDir")) {
 				argMap.put("gameDir", getLaunchDirectory(argMap).toAbsolutePath().normalize().toString());
@@ -309,9 +309,9 @@ public class MinecraftGameProvider implements GameProvider {
 			final String logHandlerClsName;
 
 			if (log4jAvailable) {
-				logHandlerClsName = "net.fabricmc.loader.impl.game.minecraft.Log4jLogHandler";
+				logHandlerClsName = "org.quiltmc.loader.impl.game.minecraft.Log4jLogHandler";
 			} else if (slf4jAvailable) {
-				logHandlerClsName = "net.fabricmc.loader.impl.game.minecraft.Slf4jLogHandler";
+				logHandlerClsName = "org.quiltmc.loader.impl.game.minecraft.Slf4jLogHandler";
 			} else {
 				return;
 			}
@@ -405,7 +405,7 @@ public class MinecraftGameProvider implements GameProvider {
 		String targetClass = entrypoint;
 
 		if (envType == EnvType.CLIENT && targetClass.contains("Applet")) {
-			targetClass = "net.fabricmc.loader.impl.game.minecraft.applet.AppletMain";
+			targetClass = "org.quiltmc.loader.impl.game.minecraft.applet.AppletMain";
 		}
 
 		try {
