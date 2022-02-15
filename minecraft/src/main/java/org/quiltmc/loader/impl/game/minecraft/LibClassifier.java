@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.game.minecraft;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -31,7 +31,7 @@ import java.util.zip.ZipError;
 import java.util.zip.ZipFile;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 final class LibClassifier {
 	private final Map<Lib, Path> matches = new EnumMap<>(Lib.class);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.game.minecraft;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -37,24 +37,23 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
-import net.fabricmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.impl.FormattedException;
-import net.fabricmc.loader.impl.game.GameProvider;
-import net.fabricmc.loader.impl.game.GameProviderHelper;
-import net.fabricmc.loader.impl.game.minecraft.LibClassifier.Lib;
-import net.fabricmc.loader.impl.game.minecraft.patch.BrandingPatch;
-import net.fabricmc.loader.impl.game.minecraft.patch.EntrypointPatch;
-import net.fabricmc.loader.impl.game.minecraft.patch.EntrypointPatchFML125;
-import net.fabricmc.loader.impl.game.patch.GameTransformer;
-import net.fabricmc.loader.impl.launch.FabricLauncher;
-import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
-import net.fabricmc.loader.impl.metadata.ModDependencyImpl;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.GameProviderHelper;
+import org.quiltmc.loader.impl.game.minecraft.LibClassifier.Lib;
+import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
+import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
+import org.quiltmc.loader.impl.metadata.ModDependencyImpl;
 import org.quiltmc.loader.impl.util.Arguments;
-import net.fabricmc.loader.impl.util.ExceptionUtil;
+import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
-import net.fabricmc.loader.impl.util.SystemProperties;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogHandler;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogHandler;
 
 public class MinecraftGameProvider implements GameProvider {
 	private static final String[] ALLOWED_EARLY_CLASS_PREFIXES = { "org.apache.logging.log4j.", "com.mojang.util." };
@@ -85,8 +84,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 	private static final GameTransformer TRANSFORMER = new GameTransformer(
 			new EntrypointPatch(),
-			new BrandingPatch(),
-			new EntrypointPatchFML125());
+			new BrandingPatch());
 
 	@Override
 	public String getGameId() {
@@ -160,7 +158,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean locateGame(FabricLauncher launcher, String[] args) {
+	public boolean locateGame(QuiltLauncher launcher, String[] args) {
 		this.envType = launcher.getEnvironmentType();
 		this.arguments = new Arguments();
 		arguments.parse(args);
@@ -268,7 +266,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public void initialize(FabricLauncher launcher) {
+	public void initialize(QuiltLauncher launcher) {
 		Map<String, Path> gameJars = new HashMap<>(2);
 		String name = envType.name().toLowerCase(Locale.ENGLISH);
 		gameJars.put(name, gameJar);
@@ -304,7 +302,7 @@ public class MinecraftGameProvider implements GameProvider {
 		TRANSFORMER.locateEntrypoints(launcher, gameJar);
 	}
 
-	private void setupLogHandler(FabricLauncher launcher, boolean useTargetCl) {
+	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {
 		System.setProperty("log4j2.formatMsgNoLookups", "true"); // lookups are not used by mc and cause issues with older log4j2 versions
 
 		try {
@@ -388,7 +386,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public void unlockClassPath(FabricLauncher launcher) {
+	public void unlockClassPath(QuiltLauncher launcher) {
 		if (useGameJarForLogging) {
 			launcher.setAllowedPrefixes(gameJar);
 		} else {

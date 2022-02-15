@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package net.fabricmc.loader.impl.game.minecraft;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +25,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.impl.game.minecraft.LibClassifier.Lib;
+import org.quiltmc.loader.impl.game.minecraft.LibClassifier.Lib;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 
 final class BundlerProcessor {

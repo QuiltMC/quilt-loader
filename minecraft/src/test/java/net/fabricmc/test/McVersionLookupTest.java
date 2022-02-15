@@ -31,9 +31,9 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import net.fabricmc.loader.impl.game.minecraft.McVersion;
-import net.fabricmc.loader.impl.game.minecraft.McVersionLookup;
-import net.fabricmc.loader.impl.lib.gson.JsonReader;
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.loader.impl.game.minecraft.McVersion;
+import org.quiltmc.loader.impl.game.minecraft.McVersionLookup;
 
 public final class McVersionLookupTest {
 	public static void main(String[] args) throws IOException {
@@ -80,7 +80,7 @@ public final class McVersionLookupTest {
 			ZipEntry entry = zf.getEntry("version.json");
 
 			if (entry != null) {
-				try (JsonReader reader = new JsonReader(new InputStreamReader(zf.getInputStream(entry), StandardCharsets.UTF_8))) {
+				try (JsonReader reader = JsonReader.json(new InputStreamReader(zf.getInputStream(entry), StandardCharsets.UTF_8))) {
 					reader.beginObject();
 
 					while (reader.hasNext()) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.game.minecraft;
+package org.quiltmc.loader.impl.game.minecraft;
 
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -33,11 +33,11 @@ import org.apache.logging.log4j.spi.LoggerContext;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.impl.util.ManifestUtil;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.log.LogCategory;
-import net.fabricmc.loader.impl.util.log.LogHandler;
-import net.fabricmc.loader.impl.util.log.LogLevel;
+import org.quiltmc.loader.impl.util.ManifestUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.impl.util.log.LogHandler;
+import org.quiltmc.loader.impl.util.log.LogLevel;
 
 public final class Log4jLogHandler implements LogHandler {
 	@Override
