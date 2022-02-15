@@ -257,12 +257,6 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		// shuffle mods in-dev to reduce the risk of false order reliance, apply late load requests
-
-		if (isDevelopmentEnvironment() && System.getProperty(SystemProperties.DEBUG_DISABLE_MOD_SHUFFLE) == null) {
-			Collections.shuffle(modCandidates);
-		}
-
 		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
 
 		if (modsToLoadLate != null) {

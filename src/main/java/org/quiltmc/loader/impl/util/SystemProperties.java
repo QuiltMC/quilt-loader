@@ -39,8 +39,6 @@ public final class SystemProperties {
 	public static final String DEBUG_THROW_DIRECTLY = "fabric.debug.throwDirectly";
 	// logs class transformation errors to uncover caught exceptions without adequate logging
 	public static final String DEBUG_LOG_TRANSFORM_ERRORS = "fabric.debug.logTransformErrors";
-	// disables mod load order shuffling to be the same in-dev as in production
-	public static final String DEBUG_DISABLE_MOD_SHUFFLE = "fabric.debug.disableModShuffle";
 	// workaround for bad load order dependencies
 	public static final String DEBUG_LOAD_LATE = "fabric.debug.loadLate";
 	// override the mod discovery timeout, unit in seconds, <= 0 to disable

@@ -23,10 +23,13 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.version.VersionComparisonOperator;
+import net.fabricmc.loader.api.metadata.version.VersionInterval;
 import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.*;
+import org.quiltmc.loader.api.VersionConstraint.Type;
+import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
@@ -190,45 +193,48 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		for (net.fabricmc.loader.api.metadata.ModDependency f : from) {
 			Collection<VersionConstraint> constraints = new ArrayList<>();
 			for (VersionPredicate predicate : f.getVersionRequirements()) {
-				for (VersionPredicate.PredicateTerm term : predicate.getTerms()) {
-					VersionConstraint.Type type = convertOperator(term.getOperator());
-					constraints.add(new VersionConstraint() {
-						@Override
-						public String version() {
-							return term.getReferenceVersion().getFriendlyString();
-						}
-
-						@Override
-						public Type type() {
-							return type;
-						}
-
-						@Override
-						public boolean matches(Version version) {
-							if (type() == Type.ANY) {
-								return true;
+				if (predicate.getInterval().equals(VersionInterval.INFINITE)) {
+					constraints.add(VersionConstraintImpl.ANY);
+				} else {
+					for (VersionPredicate.PredicateTerm term : predicate.getTerms()) {
+						VersionConstraint.Type type = convertOperator(term.getOperator());
+						constraints.add(new VersionConstraint() {
+							@Override
+							public String version() {
+								return term.getReferenceVersion().getFriendlyString();
 							}
-
-							net.fabricmc.loader.api.Version fVersion;
-
-							try {
-								// fabric's semantic versioning is not spec-compliant (it adds arbitrary amounts of dot-separated versions)
-								// so we can't use version.isSemantic for conversion
-								fVersion = new FabricSemanticVersionImpl(version.raw(), false);
-							} catch (VersionParsingException ignored) {
-								fVersion = new StringVersion(version.raw());
+	
+							@Override
+							public Type type() {
+								return type;
 							}
-							return ((VersionPredicate)term).test(fVersion) || // All PredicateTerms seem to be VersionPredicates in their own right
-									version.raw().equals("${version}") && FabricLoader.getInstance().isDevelopmentEnvironment();
-						}
-
-						@Override
-						public String toString() {
-							return type.prefix() + version();
-						}
-					});
+	
+							@Override
+							public boolean matches(Version version) {
+								if (type() == Type.ANY) {
+									return true;
+								}
+	
+								net.fabricmc.loader.api.Version fVersion;
+	
+								try {
+									// fabric's semantic versioning is not spec-compliant (it adds arbitrary amounts of dot-separated versions)
+									// so we can't use version.isSemantic for conversion
+									fVersion = new FabricSemanticVersionImpl(version.raw(), false);
+								} catch (VersionParsingException ignored) {
+									fVersion = new StringVersion(version.raw());
+								}
+								return ((VersionPredicate)term).test(fVersion) || // All PredicateTerms seem to be VersionPredicates in their own right
+										version.raw().equals("${version}") && FabricLoader.getInstance().isDevelopmentEnvironment();
+							}
+	
+							@Override
+							public String toString() {
+								return type.prefix() + version();
+							}
+						});
+					}
 				}
-
 			}
 			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dep 1", new ModDependencyIdentifierImpl(f.getModId()), constraints, null, false, null));
 		}

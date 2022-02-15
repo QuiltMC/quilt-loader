@@ -88,7 +88,7 @@ public final class RuntimeModRemapper {
 
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
-				info.inputPath = mod.getInnerPath();
+				info.inputPath = mod.getOriginPath();
 
 				remapper.readInputsAsync(tag, info.inputPath);
 			}
