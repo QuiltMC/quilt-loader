@@ -54,7 +54,7 @@ public final class Quilt2FabricModContainer implements net.fabricmc.loader.api.M
 
 	@Override
 	public ModOrigin getOrigin() {
-		throw new UnsupportedOperationException("not implemented");
+		return new Quilt2FabricModOrigin(quilt);
 	}
 
 	@Override

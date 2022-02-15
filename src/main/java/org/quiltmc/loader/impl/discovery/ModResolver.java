@@ -58,7 +58,7 @@ import java.util.zip.ZipError;
 public class ModResolver {
 	// nested JAR store
 	private static final FileSystem inMemoryFs = new QuiltMemoryFileSystem.ReadWrite("nestedJarStore");
-	private static final Map<String, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
+	private static final Map<Path, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
 	//private static final Map<String, String> readableNestedJarPaths2 = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
@@ -101,19 +101,6 @@ public class ModResolver {
 //	public String getReadablePath(Path path) {
 //		return getReadablePath(gameDir, path);
 //	}
-
-	/** Only exposed for {@link ModSolver}. This is also intended to be temporary. */
-	public static Path getSourcePath(Path originPath) {
-		// FIXME: Make ModSolver use a different method to get the source URL from an original URL - perhaps via the ModCandidate?
-		for (Map.Entry<String, List<Path>> entry : inMemoryCache.entrySet()) {
-			for (Path path : entry.getValue()) {
-				if (originPath.equals(path)) {
-					return path;
-				}
-			}
-		}
-		return null;
-	}
 
 	/** @param errorList The list of errors. The returned list of errors all need to be prefixed with "it " in order to make sense. */
 	public static boolean isModIdValid(String modId, List<String> errorList) {
@@ -249,7 +236,7 @@ public class ModResolver {
 			}
 
 			for (FabricLoaderModMetadata i : info) {
-				ModCandidate candidate = new ModCandidate(path, i, depth, requiresRemap);
+				ModCandidate candidate = new ModCandidate(path, rootDir, i, depth, requiresRemap);
 				boolean added;
 
 				if (candidate.getInfo().getId() == null || candidate.getInfo().getId().isEmpty()) {
@@ -298,13 +285,13 @@ public class ModResolver {
 				added = candidatesById.computeIfAbsent(candidate.getInfo().getId(), ModCandidateSet::new).add(candidate);
 
 				if (!added) {
-					Log.debug(LogCategory.RESOLUTION, candidate.getPath() + " already present as " + candidate);
+					Log.debug(LogCategory.RESOLUTION, candidate.getOriginPath() + " already present as " + candidate);
 				} else {
-					Log.debug(LogCategory.RESOLUTION, "Adding " + candidate.getPath() + " as " + candidate);
+					Log.debug(LogCategory.RESOLUTION, "Adding " + candidate.getOriginPath() + " as " + candidate);
 
-					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getPath().toString(), (u) -> {
+					List<Path> jarInJars = inMemoryCache.computeIfAbsent(candidate.getOriginPath(), (u) -> {
 						Log.debug(LogCategory.RESOLUTION, "Searching for nested JARs in " + candidate);
-						Log.debug(LogCategory.RESOLUTION, u);
+						Log.debug(LogCategory.RESOLUTION, u.toString());
 						Collection<String> jars = candidate.getMetadata().jars();
 						List<Path> list = new ArrayList<>(jars.size());
 
@@ -455,8 +442,9 @@ public class ModResolver {
 	}
 
 	private void addBuiltinMod(ConcurrentMap<String, ModCandidateSet> candidatesById, BuiltinMod mod) {
+		Path path = mergeMultiplePaths(mod.paths);
 		candidatesById.computeIfAbsent(mod.metadata.getId(), ModCandidateSet::new)
-				.add(new ModCandidate(mergeMultiplePaths(mod.paths), new BuiltinMetadataWrapperFabric(mod.metadata), 0, false));
+				.add(new ModCandidate(path, path, new BuiltinMetadataWrapperFabric(mod.metadata), 0, false));
 	}
 
 	public static FileSystem getInMemoryFs() {

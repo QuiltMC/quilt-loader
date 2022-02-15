@@ -19,17 +19,17 @@ package net.fabricmc.loader.api.metadata;
 import java.nio.file.Path;
 import java.util.List;
 
-import org.quiltmc.loader.api.ModSource;
+import org.quiltmc.loader.api.ModContainer;
 
-/**
- * Representation of the various locations a mod was loaded from originally.
- *
- * <p>This location is not necessarily identical to the code source used at runtime, a mod may get copied or otherwise
+/** Representation of the various locations a mod was loaded from originally.
+ * <p>
+ * This location is not necessarily identical to the code source used at runtime, a mod may get copied or otherwise
  * transformed before being put on the class path. It thus mostly represents the installation and initial loading, not
  * what is being directly accessed at runtime.
  * 
- * @deprecated Please use quilt's {@link ModSource} instead.
- */
+ * @deprecated This is part of fabric-loader's API - a full quilt replacement will be available after quilt gets
+ *             plugins. Up until that point {@link ModContainer#getSourcePaths()} can be used to obtain the origin
+ *             paths. */
 @Deprecated
 public interface ModOrigin {
 	/**

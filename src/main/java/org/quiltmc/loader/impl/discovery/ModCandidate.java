@@ -24,12 +24,13 @@ import java.nio.file.Path;
 
 public class ModCandidate {
 	private final FabricLoaderModMetadata info;
-	private final Path originPath;
+	private final Path originPath, innerPath;
 	private final int depth;
 	private final boolean requiresRemap;
 
-	public ModCandidate(Path path, FabricLoaderModMetadata info, int depth, boolean requiresRemap) {
+	public ModCandidate(Path path, Path innerPath, FabricLoaderModMetadata info, int depth, boolean requiresRemap) {
 		this.originPath = path;
+		this.innerPath = innerPath;
 		this.info = info;
 		this.depth = depth;
 		this.requiresRemap = requiresRemap;
@@ -39,8 +40,11 @@ public class ModCandidate {
 		return originPath;
 	}
 
-	public Path getPath() {
-		return originPath;
+	/**
+	 * @return The path to the inside of a jar. If the origin path is a directory then this will be the same as the origin path.
+	 */
+	public Path getInnerPath() {
+		return innerPath;
 	}
 
 	@Deprecated

@@ -54,6 +54,7 @@ import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
+import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -300,8 +301,7 @@ public final class QuiltLoaderImpl {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerImpl mod : mods) {
 			if (!mod.metadata().id().equals(MOD_ID) && !mod.getInfo().getType().equals("builtin")) {
-				for (Path path : mod.codeSourcePaths())
-				QuiltLauncherBase.getLauncher().addToClassPath(path);
+				QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath());
 			}
 		}
 
@@ -314,8 +314,13 @@ public final class QuiltLoaderImpl {
 			Set<Path> knownModPaths = new HashSet<>();
 
 			for (ModContainerImpl mod : mods) {
-								for (Path path : mod.codeSourcePaths()) {
-					knownModPaths.add(path.toAbsolutePath().normalize());
+				if (mod.rootPath() instanceof QuiltJoinedPath) {
+					QuiltJoinedPath joined = (QuiltJoinedPath) mod.rootPath();
+					for (int i = 0; i < joined.getFileSystem().getBackingPathCount(); i++) {
+						knownModPaths.add(joined.getFileSystem().getBackingPath(i, joined));
+					}
+				} else {
+					knownModPaths.add(mod.rootPath());
 				}
 			}
 
@@ -481,7 +486,7 @@ public final class QuiltLoaderImpl {
 					}
 				}
 			} catch (Exception e) {
-				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.origin()), e);
+				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.rootPath()), e);
 			}
 		}
 	}
@@ -492,9 +497,9 @@ public final class QuiltLoaderImpl {
 		for (ModContainerImpl mod : mods) {
 			for (String accessWidener : mod.getInternalMeta().accessWideners()) {
 
-				Path path = mod.findPath(accessWidener).orElse(null);
+				Path path = mod.getPath(accessWidener);
 
-				if (path == null) {
+				if (!Files.isRegularFile(path)) {
 					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.getInternalMeta().id() + " '" + accessWidener + "'");
 				}
 

@@ -16,13 +16,8 @@
 
 package org.quiltmc.loader.api;
 
-import net.fabricmc.loader.api.metadata.ModOrigin;
-
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public interface ModContainer {
 
@@ -55,18 +50,18 @@ public interface ModContainer {
 	}
 
 	/**
-	 * Gets where the mod was loaded from originally, the mod jar/folder itself.
-	 *
-	 * <p>This location is not necessarily identical to the code source used at runtime, a mod may get copied or
-	 * otherwise transformed before being put on the class path. It thus mostly represents the installation and initial
-	 * loading, not what is being directly accessed at runtime.
-	 *
-	 * <p>The mod origin is provided for working with the installation like telling the user where a mod has been
-	 * installed at. Accessing the files inside a mod jar/folder should use {@link #getPath} and {@link #rootPath}
-	 * instead. Those also abstract jar accesses through the virtual {@code ZipFileSystem} away.
-	 *
-	 * @return mod origin
-	 */
-	// TODO: fabric class
-	ModOrigin origin();
+	 * Gets where the mod was loaded from. Each sub-list is a full path from the root of the filesystem, up through any
+	 * jar-in-jars that the mod may be contained by.
+	 * 
+	 * <p> This location is not necessarily identical to the code source used at runtime, a mod may get copied or otherwise
+	 * transformed before being put on the class path. It thus mostly represents the installation and initial loading,
+	 * not what is being directly accessed at runtime.
+	 * <p>
+	 * The mod origin is provided for working with the installation like telling the user where a mod has been installed
+	 * at. Accessing the files inside a mod jar/folder should use {@link #getPath} and {@link #rootPath} instead. Those
+	 * also abstract jar accesses through the virtual {@code ZipFileSystem} away.
+	 * 
+	 * @return A list of every source path this mod is loaded from. May be empty if we can't turn the sources into a
+	 *         path. */
+	List<List<Path>> getSourcePaths();
 }

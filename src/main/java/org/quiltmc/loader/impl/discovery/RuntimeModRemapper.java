@@ -88,7 +88,7 @@ public final class RuntimeModRemapper {
 
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
-				info.inputPath = mod.getPath();
+				info.inputPath = mod.getInnerPath();
 
 				remapper.readInputsAsync(tag, info.inputPath);
 			}
@@ -147,7 +147,7 @@ public final class RuntimeModRemapper {
 					}
 				}
 
-				remappedMods.add(new ModCandidate(info.outputPath, mod.getInfo(), 0, false));
+				remappedMods.add(new ModCandidate(mod.getOriginPath(), info.outputPath, mod.getInfo(), 0, false));
 			}
 
 		} catch (IOException e) {
