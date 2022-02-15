@@ -29,36 +29,29 @@ public interface ModContainer {
 	ModMetadata metadata();
 
 	/**
-	 * Returns the root directories of the mod (inside JAR/folder), exposing its contents.
-	 *
-	 * <p>The paths may point to regular folders or into mod JARs. Multiple root paths may occur in development
-	 * environments with {@code -Dfabric.classPathGroups} as used in multi-project mod setups.
+	 * Returns the root directory of the mod (inside JAR/folder), exposing its contents.
 	 *
 	 * <p>A path returned by this method may be incompatible with {@link Path#toFile} as its FileSystem doesn't
 	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
 	 *
-	 * @return the root directories of the mod, may be empty for builtin or other synthetic mods
+	 * @return the root directory of the mod.
 	 */
-	List<Path> rootPaths();
+	Path rootPath();
 
 	/**
-	 * Gets an NIO reference to a file inside the JAR/folder.
-	 *
-	 * <p>The path, if present, is guaranteed to exist!
+	 * Gets an NIO reference to a file inside the JAR.
+	 * 
+	 * <p>The path is not guaranteed to exist!</p>
 	 *
 	 * <p>A path returned by this method may be incompatible with {@link Path#toFile} as its FileSystem doesn't
 	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
 	 *
-	 * @param file The location from a root path, using {@code /} as a separator.
-	 * @return optional containing the path to a given file or empty if it can't be found
+	 * @param file The location from root, using {@code /} as a separator.
+	 * @return the path to a given file
 	 */
-	default Optional<Path> findPath(String file) {
-		for (Path root : rootPaths()) {
-			Path path = root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
-			if (Files.exists(path)) return Optional.of(path);
-		}
-
-		return Optional.empty();
+	default Path getPath(String file) {
+		Path root = rootPath();
+		return root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
 	}
 
 	/**
@@ -69,25 +62,11 @@ public interface ModContainer {
 	 * loading, not what is being directly accessed at runtime.
 	 *
 	 * <p>The mod origin is provided for working with the installation like telling the user where a mod has been
-	 * installed at. Accessing the files inside a mod jar/folder should use {@link #findPath} and {@link #rootPaths}
+	 * installed at. Accessing the files inside a mod jar/folder should use {@link #getPath} and {@link #rootPath}
 	 * instead. Those also abstract jar accesses through the virtual {@code ZipFileSystem} away.
 	 *
 	 * @return mod origin
 	 */
 	// TODO: fabric class
 	ModOrigin origin();
-
-	/**
-	 * Get the mod containing this mod (nested jar parent).
-	 *
-	 * @return mod containing this mod or empty if not nested
-	 */
-	Optional<ModContainer> containingMod();
-
-	/**
-	 * Get the active mods contained within this mod (nested jar children).
-	 *
-	 * @return active contained mods within this mod's jar
-	 */
-	Collection<ModContainer> containedMods();
 }

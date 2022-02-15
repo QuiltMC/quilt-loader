@@ -19,13 +19,18 @@ package net.fabricmc.loader.api.metadata;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.quiltmc.loader.api.ModSource;
+
 /**
  * Representation of the various locations a mod was loaded from originally.
  *
  * <p>This location is not necessarily identical to the code source used at runtime, a mod may get copied or otherwise
  * transformed before being put on the class path. It thus mostly represents the installation and initial loading, not
  * what is being directly accessed at runtime.
+ * 
+ * @deprecated Please use quilt's {@link ModSource} instead.
  */
+@Deprecated
 public interface ModOrigin {
 	/**
 	 * Get the kind of this origin, determines the available methods.

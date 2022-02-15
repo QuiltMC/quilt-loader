@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.metadata;
 
-import org.quiltmc.loader.api.ModOrigin;
+import org.quiltmc.loader.api.ModSource;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
-public final class ModOriginImpl implements ModOrigin {
+public final class ModOriginImpl implements ModSource {
 	private final Kind kind;
 	private List<Path> paths;
 	private String parentModId;

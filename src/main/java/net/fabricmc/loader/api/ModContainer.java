@@ -45,7 +45,9 @@ public interface ModContainer {
 	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
 	 *
 	 * @return the root directories of the mod, may be empty for builtin or other synthetic mods
+	 * @deprecated Quilt loader merges multiple root paths into a single one: so this will always be a list of size 1.
 	 */
+	@Deprecated
 	List<Path> getRootPaths();
 
 	/**
@@ -97,25 +99,11 @@ public interface ModContainer {
 	 */
 	Collection<ModContainer> getContainedMods();
 
-	// deprecated methods
-
-	/**
-	 * @deprecated use {@link #getRootPaths()} instead
-	 */
-	@Deprecated
 	default Path getRoot() {
 		return getRootPath();
 	}
 
-	/**
-	 * @deprecated use {@link #getRootPaths()} instead
-	 */
-	@Deprecated
 	Path getRootPath();
 
-	/**
-	 * @deprecated use {@link #findPath} instead
-	 */
-	@Deprecated
 	Path getPath(String file);
 }

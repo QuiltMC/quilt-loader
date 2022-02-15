@@ -11,7 +11,7 @@ import java.util.List;
  * transformed before being put on the class path. It thus mostly represents the installation and initial loading, not
  * what is being directly accessed at runtime.
  */
-public interface ModOrigin {
+public interface ModSource {
 	/**
 	 * Get the kind of this origin, determines the available methods.
 	 *
@@ -20,7 +20,7 @@ public interface ModOrigin {
 	Kind getKind();
 
 	/**
-	 * Get the jar or folder paths for a {@link org.quiltmc.loader.api.ModOrigin.Kind#PATH} origin.
+	 * Get the jar or folder paths for a {@link org.quiltmc.loader.api.ModSource.Kind#PATH} origin.
 	 *
 	 * @return jar or folder paths
 	 * @throws UnsupportedOperationException for incompatible kinds
@@ -28,7 +28,7 @@ public interface ModOrigin {
 	List<Path> getPaths();
 
 	/**
-	 * Get the parent mod for a {@link org.quiltmc.loader.api.ModOrigin.Kind#NESTED} origin.
+	 * Get the parent mod for a {@link org.quiltmc.loader.api.ModSource.Kind#NESTED} origin.
 	 *
 	 * @return parent mod
 	 * @throws UnsupportedOperationException for incompatible kinds
@@ -36,7 +36,7 @@ public interface ModOrigin {
 	String getParentModId();
 
 	/**
-	 * Get the jar or folder paths for a {@link org.quiltmc.loader.api.ModOrigin.Kind#PATH} origin.
+	 * Get the jar or folder paths for a {@link org.quiltmc.loader.api.ModSource.Kind#PATH} origin.
 	 *
 	 * @return jar or folder paths
 	 * @throws UnsupportedOperationException for incompatible kinds
@@ -44,7 +44,7 @@ public interface ModOrigin {
 	String getParentSubLocation();
 
 	/**
-	 * Non-exhaustive list of possible {@link org.quiltmc.loader.api.ModOrigin} kinds.
+	 * Non-exhaustive list of possible {@link org.quiltmc.loader.api.ModSource} kinds.
 	 *
 	 * <p>New kinds may be added in the future, use a default switch case!
 	 */

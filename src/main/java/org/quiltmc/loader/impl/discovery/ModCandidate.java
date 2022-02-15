@@ -16,34 +16,33 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 
 import java.nio.file.Path;
-import java.util.List;
 
 public class ModCandidate {
 	private final FabricLoaderModMetadata info;
-	private final List<Path> originPaths;
+	private final Path originPath;
 	private final int depth;
 	private final boolean requiresRemap;
 
-	public ModCandidate(List<Path> paths, FabricLoaderModMetadata info, int depth, boolean requiresRemap) {
-		this.originPaths = paths;
+	public ModCandidate(Path path, FabricLoaderModMetadata info, int depth, boolean requiresRemap) {
+		this.originPath = path;
 		this.info = info;
 		this.depth = depth;
 		this.requiresRemap = requiresRemap;
 	}
 
-	public List<Path> getOriginPaths() {
-		return originPaths;
+	public Path getOriginPath() {
+		return originPath;
 	}
 
-	public List<Path> getPaths() {
-		return originPaths; // TODO
+	public Path getPath() {
+		return originPath;
 	}
+
 	@Deprecated
 	public FabricLoaderModMetadata getInfo() {
 		return info;
@@ -60,6 +59,7 @@ public class ModCandidate {
 	public Version getVersion() {
 		return getMetadata().version();
 	}
+
 	public int getDepth() {
 		return depth;
 	}

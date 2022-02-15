@@ -5,14 +5,18 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
 /** A {@link FileSystem} that exposes multiple {@link Path}s in a single */
 public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> {
+
+	private static final Map<String, Integer> uniqueNames = new HashMap<>();
 
 	final Path[] from;
 	final boolean[] shouldCloseFroms;
@@ -30,6 +34,17 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 			shouldCloseFroms[i] = shouldClose != null && shouldClose.get(i);
 		}
 		QuiltJoinedFileSystemProvider.register(this);
+	}
+
+	public static synchronized String uniqueOf(String name) {
+		Integer current = uniqueNames.get(name);
+		if (current != null) {
+			current++;
+		} else {
+			current = 0;
+		}
+		uniqueNames.put(name, current);
+		return name + "." + current;
 	}
 
 	@Override

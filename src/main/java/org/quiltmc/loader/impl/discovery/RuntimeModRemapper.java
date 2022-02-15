@@ -147,7 +147,7 @@ public final class RuntimeModRemapper {
 					}
 				}
 
-				remappedMods.add(new ModCandidate(mod.getInfo(), info.outputPath, 0, false));
+				remappedMods.add(new ModCandidate(info.outputPath, mod.getInfo(), 0, false));
 			}
 
 		} catch (IOException e) {

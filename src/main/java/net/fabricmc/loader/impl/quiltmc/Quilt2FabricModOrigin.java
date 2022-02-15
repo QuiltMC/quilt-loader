@@ -1,15 +1,15 @@
 package net.fabricmc.loader.impl.quiltmc;
 
 
-import org.quiltmc.loader.api.ModOrigin;
+import org.quiltmc.loader.api.ModSource;
 
 import java.nio.file.Path;
 import java.util.List;
 
 public final class Quilt2FabricModOrigin implements net.fabricmc.loader.api.metadata.ModOrigin {
-	private final ModOrigin quilt;
+	private final ModSource quilt;
 	private final Kind fabricKind;
-	public Quilt2FabricModOrigin(ModOrigin quilt) {
+	public Quilt2FabricModOrigin(ModSource quilt) {
 		this.quilt = quilt;
 		this.fabricKind = net.fabricmc.loader.api.metadata.ModOrigin.Kind.valueOf(quilt.getKind().toString());
 	}

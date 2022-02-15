@@ -19,7 +19,8 @@ package org.quiltmc.loader.impl.discovery;
 import org.quiltmc.json5.exception.ParseException;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.filesystem.memory.QuiltMemoryFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -37,8 +38,6 @@ import org.quiltmc.loader.impl.util.UrlUtil;
 
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
-
-import net.fabricmc.loader.impl.discovery.ModDiscoverer.ModScanTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -190,11 +189,7 @@ public class ModResolver {
 			if (paths.size() != 1 || Files.isDirectory(paths.get(0))) {
 				// Directory
 
-				if (paths.size() == 1) {
-					path = paths.get(0);
-				} else {
-//					path = // TODO: Joined FileSystem
-				}
+				path = mergeMultiplePaths(paths);
 
 				fabricModJson = path.resolve("fabric.mod.json");
 				quiltModJson = path.resolve("quilt.mod.json");
@@ -347,7 +342,7 @@ public class ModResolver {
 					if (!jarInJars.isEmpty()) {
 						invokeAll(
 								jarInJars.stream()
-										.map((p) -> new ProcessAction(candidatesById, p.normalize(), depth + 1, requiresRemap))
+										.map((p) -> new ProcessAction(candidatesById, Collections.singletonList(p.normalize()), depth + 1, requiresRemap))
 										.collect(Collectors.toList())
 						);
 					}
@@ -357,6 +352,15 @@ public class ModResolver {
 			/* if (jarFs != null) {
 				jarFs.close();
 			} */
+		}
+	}
+
+	private static Path mergeMultiplePaths(List<Path> paths) {
+		if (paths.size() == 1) {
+			return paths.get(0);
+		} else {
+			String name = QuiltJoinedFileSystem.uniqueOf(paths.get(0).getFileName().toString());
+			return new QuiltJoinedFileSystem(name, paths).getRoot();
 		}
 	}
 
@@ -452,7 +456,7 @@ public class ModResolver {
 
 	private void addBuiltinMod(ConcurrentMap<String, ModCandidateSet> candidatesById, BuiltinMod mod) {
 		candidatesById.computeIfAbsent(mod.metadata.getId(), ModCandidateSet::new)
-				.add(new ModCandidate(mod.paths, new BuiltinMetadataWrapperFabric(mod.metadata), 0, false));
+				.add(new ModCandidate(mergeMultiplePaths(mod.paths), new BuiltinMetadataWrapperFabric(mod.metadata), 0, false));
 	}
 
 	public static FileSystem getInMemoryFs() {
