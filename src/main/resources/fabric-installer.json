@@ -21,7 +21,7 @@
         "url": "https://maven.quiltmc.org/repository/fabricmc/"
       },
       {
-        "name": "org.quiltmc.quilt-json5:1.0.0",
+        "name": "org.quiltmc:quilt-json5:1.0.0",
         "url": "https://maven.quiltmc.org/repository/release"
       },
       {
