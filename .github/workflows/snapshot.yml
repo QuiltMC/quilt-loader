@@ -1,0 +1,19 @@
+name: Release Snapshot
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    container:
+      image: openjdk:16-jdk
+      options: --user root
+    steps:
+      - uses: actions/checkout@v1
+      - uses: gradle/wrapper-validation-action@v1
+      - run: ./gradlew build publish refreshMeta --stacktrace
+        env:
+          SNAPSHOTS_URL: ${{ secrets.SNAPSHOTS_URL }}
+          SNAPSHOTS_USERNAME: ${{ secrets.SNAPSHOTS_USERNAME }}
+          SNAPSHOTS_PASSWORD: ${{ secrets.SNAPSHOTS_PASSWORD }}

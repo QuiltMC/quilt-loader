@@ -18,8 +18,8 @@ plugins {
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
-archivesBaseName = "fabric-loader"
-
+archivesBaseName = "quilt-loader"
+version = "0.14.0"
 // Fetch build number from Jenkins
 def ENV = System.getenv()
 
@@ -27,7 +27,12 @@ allprojects {
 	apply plugin: 'java-library'
 	apply plugin: 'eclipse'
 
-	version = version + (ENV.GITHUB_ACTIONS ? "" : "+local")
+	if (ENV.SNAPSHOTS_URL) {
+		version = version + "-SNAPSHOT"
+	}
+	if (!ENV.GITHUB_ACTIONS) {
+		version = version + "+local"
+	}
 
 	repositories {
 		maven {
