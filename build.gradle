@@ -11,7 +11,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id 'org.cadixdev.licenser' version '0.6.1'
-	id 'fabric-loom' version '0.9-SNAPSHOT' apply false
+	id 'fabric-loom' version '0.11-SNAPSHOT' apply false
 	id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 

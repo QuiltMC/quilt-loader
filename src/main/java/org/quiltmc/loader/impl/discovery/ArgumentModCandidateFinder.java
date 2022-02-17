@@ -95,7 +95,7 @@ public class ArgumentModCandidateFinder implements ModCandidateFinder {
 				return;
 			}
 
-			if (Files.exists(path.resolve("fabric.mod.json"))) { // extracted mod
+			if (Files.exists(path.resolve("quilt.mod.json")) || Files.exists(path.resolve("fabric.mod.json"))) { // extracted mod
 				out.accept(path, requiresRemap);
 			} else { // dir containing jars
 				try {

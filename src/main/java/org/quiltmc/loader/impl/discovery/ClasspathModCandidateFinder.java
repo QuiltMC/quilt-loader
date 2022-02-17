@@ -48,10 +48,26 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
-				Enumeration<URL> mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
+				Enumeration<URL> fabricMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
+				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
+				while (quiltMods.hasMoreElements()) {
+					URL url = quiltMods.nextElement();
 
-				while (mods.hasMoreElements()) {
-					URL url = mods.nextElement();
+					try {
+						Path path = UrlUtil.getSourcePath("quilt.mod.json", url).toAbsolutePath().normalize();
+						List<Path> paths = pathGroups.get(path);
+
+						if (paths == null) {
+							out.accept(path, false);
+						} else {
+							out.accept(paths, false);
+						}
+					} catch (UrlConversionException e) {
+						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json from %s", url, e);
+					}
+				}
+				while (fabricMods.hasMoreElements()) {
+					URL url = fabricMods.nextElement();
 
 					try {
 						Path path = UrlUtil.getSourcePath("fabric.mod.json", url).toAbsolutePath().normalize();
