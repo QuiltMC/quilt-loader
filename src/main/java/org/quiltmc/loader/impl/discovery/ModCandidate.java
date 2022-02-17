@@ -29,8 +29,8 @@ public class ModCandidate {
 	private final boolean requiresRemap;
 
 	public ModCandidate(Path path, Path innerPath, FabricLoaderModMetadata info, int depth, boolean requiresRemap) {
-		this.originPath = path;
-		this.innerPath = innerPath;
+		this.originPath = path.toAbsolutePath();
+		this.innerPath = innerPath.toAbsolutePath();
 		this.info = info;
 		this.depth = depth;
 		this.requiresRemap = requiresRemap;

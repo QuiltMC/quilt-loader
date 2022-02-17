@@ -1,7 +1,7 @@
 apply plugin: "fabric-loom"
 
-sourceCompatibility = JavaVersion.VERSION_16
-targetCompatibility = JavaVersion.VERSION_16
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
 
 loom {
 	runConfigs.configureEach {
@@ -10,8 +10,8 @@ loom {
 }
 
 dependencies {
-	minecraft "com.mojang:minecraft:1.18"
-	mappings "net.fabricmc:yarn:1.18+build.1:v2"
+	minecraft "com.mojang:minecraft:1.18.1"
+	mappings "net.fabricmc:yarn:1.18.1+build.22:v2"
 
 	implementation project(":minecraft")
 
@@ -34,5 +34,5 @@ dependencies {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release = 16
+	it.options.release.set(17)
 }

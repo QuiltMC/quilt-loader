@@ -71,13 +71,7 @@ public final class Quilt2FabricModContainer implements net.fabricmc.loader.api.M
 	private boolean warnedMultiPath;
 	@Override
 	public Path getRootPath() {
-		List<Path> paths = getRootPaths();
-		if (paths.size() != 1 && !warnedMultiPath) {
-			if (!QuiltLoaderImpl.INSTANCE.isDevelopmentEnvironment()) warnedMultiPath = true;
-			Log.warn(LogCategory.GENERAL, "getRootPath access for %s with multiple paths, returning only one which may incur unexpected behavior!", this);
-		}
-
-		return paths.get(0);
+		return quilt.rootPath();
 	}
 
 	@Override

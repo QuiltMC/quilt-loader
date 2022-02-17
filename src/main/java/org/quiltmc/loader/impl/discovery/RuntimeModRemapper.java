@@ -51,13 +51,13 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public final class RuntimeModRemapper {
 
-	public static Collection<ModCandidate> remap(Collection<ModCandidate> modCandidates, FileSystem fileSystem) {
+	public static void remap(List<ModCandidate> modCandidates, FileSystem fileSystem) {
 		List<ModCandidate> modsToRemap = modCandidates.stream()
 				.filter(ModCandidate::requiresRemap)
 				.collect(Collectors.toList());
 
 		if (modsToRemap.isEmpty()) {
-			return modCandidates;
+			return;
 		}
 
 		List<ModCandidate> modsToSkip = modCandidates.stream()
@@ -88,15 +88,14 @@ public final class RuntimeModRemapper {
 
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
-				info.inputPath = mod.getOriginPath();
-
+				info.inputPath = mod.getOriginPath().toAbsolutePath();
 				remapper.readInputsAsync(tag, info.inputPath);
 			}
 
 			//Done in a 2nd loop as we need to make sure all the inputs are present before remapping
 			for (ModCandidate mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-				info.outputPath = fileSystem.getPath(UUID.randomUUID() + ".jar");
+				info.outputPath = fileSystem.getPath(info.inputPath.getFileName().toString() + "-" + UUID.randomUUID() + "-remappedOutput.jar");
 				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).build();
 
 				FileSystemUtil.FileSystemDelegate delegate = FileSystemUtil.getJarFileSystem(info.inputPath, false);
@@ -145,17 +144,19 @@ public final class RuntimeModRemapper {
 						}
 					}
 				}
-
-				remappedMods.add(new ModCandidate(mod.getOriginPath(), info.outputPath, mod.getInfo(), 0, false));
+				// TODO: intentional leak?
+				FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.outputPath, false);
+				remappedMods.add(new ModCandidate(mod.getOriginPath(), jarFs.get().getPath("/"), mod.getInfo(), 0, false));
 			}
 
 		} catch (IOException e) {
 			remapper.finish();
 			throw new RuntimeException("Failed to remap mods", e);
 		}
-
-		return Stream.concat(remappedMods.stream(), modsToSkip.stream())
-				.collect(Collectors.toList());
+		// TODO: erases order
+		modCandidates.clear();
+		modCandidates.addAll(remappedMods);
+		modCandidates.addAll(modsToSkip);
 	}
 
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
