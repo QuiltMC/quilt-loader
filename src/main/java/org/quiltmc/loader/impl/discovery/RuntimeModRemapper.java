@@ -116,15 +116,13 @@ public final class RuntimeModRemapper {
 			//Done in a 3rd loop as this can happen when the remapper is doing its thing.
 			for (ModCandidate mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-
-				String accessWidener = mod.getInfo().getAccessWidener();
-
-				if (accessWidener != null) {
-					info.accessWidenerPath = accessWidener;
-
+				if (!mod.getMetadata().accessWideners().isEmpty()) {
+					info.accessWideners = new HashMap<>();
 					try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.inputPath, false)) {
 						FileSystem fs = jarFs.get();
-						info.accessWidener = remapAccessWidener(Files.readAllBytes(fs.getPath(accessWidener)), remapper.getRemapper());
+						for (String accessWidener : mod.getMetadata().accessWideners()) {
+							info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(fs.getPath(accessWidener)), remapper.getRemapper()));
+						}
 					} catch (Throwable t) {
 						throw new RuntimeException("Error remapping access widener for mod '"+mod.getId()+"'!", t);
 					}
@@ -138,12 +136,13 @@ public final class RuntimeModRemapper {
 
 				info.outputConsumerPath.close();
 
-				if (info.accessWidenerPath != null) {
+				if (info.accessWideners != null) {
 					try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.outputPath, false)) {
 						FileSystem fs = jarFs.get();
-
-						Files.delete(fs.getPath(info.accessWidenerPath));
-						Files.write(fs.getPath(info.accessWidenerPath), info.accessWidener);
+						for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
+							Files.delete(fs.getPath(entry.getKey()));
+							Files.write(fs.getPath(entry.getKey()), entry.getValue());
+						}
 					}
 				}
 
@@ -186,7 +185,6 @@ public final class RuntimeModRemapper {
 		Path inputPath;
 		Path outputPath;
 		OutputConsumerPath outputConsumerPath;
-		String accessWidenerPath;
-		byte[] accessWidener;
+		Map<String, byte[]> accessWideners;
 	}
 }
