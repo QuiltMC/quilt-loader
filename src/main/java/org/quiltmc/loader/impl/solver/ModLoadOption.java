@@ -61,8 +61,7 @@ abstract class ModLoadOption extends LoadOption {
 	}
 
 	String getLoadSource() {
-		// TODO: getReadablePath?
-		return candidate.getOriginPath().toString();
+		return ModResolver.getReadablePath(QuiltLoaderImpl.INSTANCE, candidate);
 	}
 
 	abstract String getSpecificInfo();

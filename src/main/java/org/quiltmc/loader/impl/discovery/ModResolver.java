@@ -33,8 +33,6 @@ import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.UrlConversionException;
-import org.quiltmc.loader.impl.util.UrlUtil;
 
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -59,7 +57,7 @@ public class ModResolver {
 	// nested JAR store
 	private static final FileSystem inMemoryFs = new QuiltMemoryFileSystem.ReadWrite("nestedJarStore");
 	private static final Map<Path, List<Path>> inMemoryCache = new ConcurrentHashMap<>();
-	//private static final Map<String, String> readableNestedJarPaths2 = new ConcurrentHashMap<>();
+	private static final Map<String, String> readableNestedJarPaths = new ConcurrentHashMap<>();
 	private static final Pattern MOD_ID_PATTERN = Pattern.compile("[a-z][a-z0-9-_]{1,63}");
 	private static final Object launcherSyncObject = new Object();
 
@@ -81,26 +79,26 @@ public class ModResolver {
 		candidateFinders.add(f);
 	}
 
-//	private static String getReadablePath(Path gameDir, Path path) {
-//		Path relativized = path;
-//		if (gameDir != null) {
-//			gameDir = gameDir.normalize();
-//
-//			if (path.startsWith(gameDir)) {
-//				relativized = gameDir.relativize(path);
-//			}
-//		}
-//
-//		return readableNestedJarPaths2.getOrDefault(path.toString(), relativized.toString());
-//	}
+	private static String getReadablePath(Path gameDir, Path path) {
+		Path relativized = path;
+		if (gameDir != null) {
+			gameDir = gameDir.normalize();
 
-//	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
-//		return getReadablePath(loader.getGameDir(), c.getPath());
-//	}
+			if (path.startsWith(gameDir)) {
+				relativized = gameDir.relativize(path);
+			}
+		}
 
-//	public String getReadablePath(Path path) {
-//		return getReadablePath(gameDir, path);
-//	}
+		return readableNestedJarPaths.getOrDefault(path.toString(), relativized.toString());
+	}
+
+	public static String getReadablePath(QuiltLoaderImpl loader, ModCandidate c) {
+		return getReadablePath(loader.getGameDir(), c.getOriginPath());
+	}
+
+	public String getReadablePath(Path path) {
+		return getReadablePath(gameDir, path);
+	}
 
 	/** @param errorList The list of errors. The returned list of errors all need to be prefixed with "it " in order to make sense. */
 	public static boolean isModIdValid(String modId, List<String> errorList) {
@@ -318,8 +316,8 @@ public class ModResolver {
 
 										list.add(dest);
 
-										Log.error(LogCategory.RESOLUTION, "SKIPPIGN ADDING READABLE PATH");
-//											readableNestedJarPaths.put(UrlUtil.asUrl(dest).toString(), String.format("%s!%s", getReadablePath(candidate.getOriginUrl()), modPath));
+										Log.warn(LogCategory.RESOLUTION, "SKIPPING ADDING READABLE PATH");
+											readableNestedJarPaths.put(dest.toString(), String.format("%s!%s", getReadablePath(candidate.getOriginPath()), modPath));
 									}
 								});
 
