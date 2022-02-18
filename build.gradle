@@ -189,7 +189,7 @@ task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
 build.dependsOn proguardJar
 
 jar {
-	disabled = true
+	enabled = false
 	// Set the classifier to fix gradle task validation confusion.
 	archiveClassifier = "disabled"
 }
