@@ -188,6 +188,11 @@ task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
 }
 build.dependsOn proguardJar
 
+jar {
+	from tasks["proguardJar"].outputs
+	// Set the classifier to fix gradle task validation confusion.
+	archiveClassifier = "disabled"
+}
 tasks.withType(AbstractArchiveTask) {
 	preserveFileTimestamps = false
 	reproducibleFileOrder = true

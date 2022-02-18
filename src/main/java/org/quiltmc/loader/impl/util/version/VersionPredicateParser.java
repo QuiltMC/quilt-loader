@@ -142,10 +142,19 @@ public final class VersionPredicateParser {
 	static class SingleVersionPredicate implements VersionPredicate, PredicateTerm {
 		private final VersionComparisonOperator operator;
 		private final Version refVersion;
-
+		private final VersionInterval interval;
 		SingleVersionPredicate(VersionComparisonOperator operator, Version refVersion) {
 			this.operator = operator;
 			this.refVersion = refVersion;
+
+			if (refVersion instanceof SemanticVersion) {
+				SemanticVersion version = (SemanticVersion) refVersion;
+
+				this.interval = new VersionIntervalImpl(operator.minVersion(version), operator.isMinInclusive(),
+						operator.maxVersion(version), operator.isMaxInclusive());
+			} else {
+				this.interval = new VersionIntervalImpl(refVersion, true, refVersion, true);
+			}
 		}
 
 		@Override
@@ -162,14 +171,7 @@ public final class VersionPredicateParser {
 
 		@Override
 		public VersionInterval getInterval() {
-			if (refVersion instanceof SemanticVersion) {
-				SemanticVersion version = (SemanticVersion) refVersion;
-
-				return new VersionIntervalImpl(operator.minVersion(version), operator.isMinInclusive(),
-						operator.maxVersion(version), operator.isMaxInclusive());
-			} else {
-				return new VersionIntervalImpl(refVersion, true, refVersion, true);
-			}
+			return interval;
 		}
 
 		@Override
@@ -206,9 +208,21 @@ public final class VersionPredicateParser {
 
 	static class MultiVersionPredicate implements VersionPredicate {
 		private final List<SingleVersionPredicate> predicates;
-
+		private final VersionInterval interval;
 		MultiVersionPredicate(List<SingleVersionPredicate> predicates) {
 			this.predicates = predicates;
+
+			if (predicates.isEmpty()) {
+				this.interval = AnyVersionPredicate.INSTANCE.getInterval();
+			} else {
+				VersionInterval ret = predicates.get(0).getInterval();
+
+				for (int i = 1; i < predicates.size(); i++) {
+					ret = VersionIntervalImpl.and(ret, predicates.get(i).getInterval());
+				}
+
+				this.interval = ret;
+			}
 		}
 
 		@Override
@@ -229,15 +243,7 @@ public final class VersionPredicateParser {
 
 		@Override
 		public VersionInterval getInterval() {
-			if (predicates.isEmpty()) return AnyVersionPredicate.INSTANCE.getInterval();
-
-			VersionInterval ret = predicates.get(0).getInterval();
-
-			for (int i = 1; i < predicates.size(); i++) {
-				ret = VersionIntervalImpl.and(ret, predicates.get(i).getInterval());
-			}
-
-			return ret;
+			return interval;
 		}
 
 		@Override

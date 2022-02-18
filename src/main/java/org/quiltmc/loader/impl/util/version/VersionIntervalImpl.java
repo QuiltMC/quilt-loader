@@ -35,9 +35,9 @@ public final class VersionIntervalImpl implements VersionInterval {
 	public VersionIntervalImpl(Version min, boolean minInclusive,
 			Version max, boolean maxInclusive) {
 		this.min = min;
-		this.minInclusive = min != null ? minInclusive : false;
+		this.minInclusive = min != null && minInclusive;
 		this.max = max;
-		this.maxInclusive = max != null ? maxInclusive : false;
+		this.maxInclusive = max != null && maxInclusive;
 
 		assert min != null || !minInclusive;
 		assert max != null || !maxInclusive;
