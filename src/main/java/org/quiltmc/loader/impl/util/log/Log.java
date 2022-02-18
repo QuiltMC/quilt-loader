@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.IllegalFormatException;
 
 public final class Log {
-	public static final String NAME = "FabricLoader";
+	public static final String NAME = "Quilt Loader";
 	private static final boolean CHECK_FOR_BRACKETS = true;
 
 	private static LogHandler handler = new BuiltinLogHandler();
