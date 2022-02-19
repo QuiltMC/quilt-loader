@@ -24,6 +24,7 @@ import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 /**
  * A mod that is provided from the jar of a different mod.
  */
+@Deprecated
 class ProvidedModOption extends ModLoadOptionCls implements AliasedLoadOption {
 	final ModLoadOptionCls provider;
 	final ModProvided provided;

@@ -32,7 +32,8 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * <li>If it is a zip or jar file (or can be opened by {@link FileSystems#newFileSystem(Path, ClassLoader)}) then it
  * will be opened, and checked for a "quilt.mod.json" file. If one is found, then it is loaded as a quilt mod (and
  * possibly as a new plugin - which will be loaded instantly, rather than waiting until the next cycle).</li>
- * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to {@link #scanZip(Path, PluginGuiTreeNode)}</li>
+ * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to
+ * {@link #scanZip(Path, PluginGuiTreeNode)}</li>
  * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, PluginGuiTreeNode)}</li>
  * </ol>
  * </li>
@@ -136,7 +137,7 @@ public interface QuiltLoaderPlugin {
 	 * 
 	 * @return A {@link Future} containing (or will contain) the {@link LoadOption} that will replace the
 	 *         {@link TentativeLoadOption} next cycle. */
-	default Future<? extends LoadOption> resolve(TentativeLoadOption from) {
+	default QuiltPluginTask<? extends LoadOption> resolve(TentativeLoadOption from) {
 		throw new IllegalStateException(
 			getClass() + " has added a TentativeLoadOption (" + from.getClass() + ") but can't resolve it!"
 		);

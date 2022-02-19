@@ -25,10 +25,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.zip.ZipException;
 
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +40,7 @@ import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
@@ -80,6 +81,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
+	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
 
 	final Map<Path, String> modFolders = new LinkedHashMap<>();
 	final Map<Path, ModLoadOption> modPaths = new LinkedHashMap<>();
@@ -141,9 +143,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// #######
 
 	@Override
-	public Path loadZip(Path zip) throws IOException, NonZipException {
-		// FIXME: Shouldn't this return a Future<Path> instead?
+	public QuiltPluginTask<Path> loadZip(Path zip) {
+		return submit(null, () -> loadZip0(zip));
+	}
 
+	private Path loadZip0(Path zip) throws IOException, NonZipException {
 		try {
 			// Cast to ClassLoader since newer versions of java added a conflicting method
 			// Java 8 - just "newFileSystem(Path, ClassLoader)"
@@ -155,7 +159,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				ZipLoadType loadType = config.innerZipLoadType;
 				switch (loadType) {
 					case COPY_TO_MEMORY: {
-						Path qRoot = new QuiltMemoryFileSystem("hi", root).getRoot();
+						String name = allocateFileSystemName(zip);
+						Path qRoot = new QuiltMemoryFileSystem.ReadOnly(name, root).getRoot();
 						pathParents.put(qRoot, zip);
 						return qRoot;
 					}
@@ -176,6 +181,19 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		} catch (ProviderNotFoundException e) {
 			throw new NonZipException(e);
 		}
+	}
+
+	private synchronized String allocateFileSystemName(Path from) {
+		String rawName = from.getFileName().toString();
+		Integer current = allocatedFileSystemIndices.get(rawName);
+		if (current == null) {
+			current = 1;
+		} else {
+			current++;
+		}
+		allocatedFileSystemIndices.put(rawName, current);
+		return rawName + "." + current;
+
 	}
 
 	// #################
@@ -499,7 +517,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 			for (TentativeLoadOption option : tentatives) {
 				QuiltPluginContext pluginSrc = tentativeLoadOptions.get(option);
-				Future<? extends LoadOption> resolution = pluginSrc.plugin().resolve(option);
+				QuiltPluginTask<? extends LoadOption> resolution = pluginSrc.plugin().resolve(option);
 			}
 
 			return true;
@@ -631,6 +649,19 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
+	// #########
+	// # Tasks #
+	// #########
+
+	<V> QuiltPluginTask<V> submit(BasePluginContext ctx, Callable<V> task) {
+
+	}
+
+	<V> QuiltPluginTask<V> submitAfter(BasePluginContext ctx, Callable<V> task, QuiltPluginTask<?>... deps) {
+
+	}
+
+
 	// ########
 	// # Mods #
 	// ########
@@ -757,7 +788,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	void scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) {
-		Map<ModLoadOption, QuiltPluginContext> map = null;
+		Map<ModLoadOption, QuiltPluginContext> map = new HashMap<>();
 
 		for (QuiltPluginContext ctx : plugins.values()) {
 			ModLoadOption mod;
@@ -770,14 +801,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			if (mod != null) {
-				if (map == null) {
-					map = Collections.singletonMap(mod, ctx);
-				} else if (map instanceof HashMap) {
-					map.put(mod, ctx);
-				} else {
-					map = new HashMap<>(map);
-					map.put(mod, ctx);
-				}
+				map.put(mod, ctx);
 
 				if (ctx == theQuiltPlugin.context()) {
 					break;
@@ -841,15 +865,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 
 		try {
-			Path zipRoot = loadZip(file);
+			Path zipRoot = loadZip0(file);
 			if (file.getFileName().toString().endsWith(".jar")) {
 				guiNode.mainIcon(guiNode.manager().iconJarFile());
 			} else {
 				guiNode.mainIcon(guiNode.manager().iconZipFile());
 			}
 
-			if (zipRoot.getFileSystem() instanceof QuiltMemoryFileSystem) {
-				QuiltMemoryFileSystem qmfs = (QuiltMemoryFileSystem) zipRoot.getFileSystem();
+			if (zipRoot.getFileSystem() instanceof QuiltMemoryFileSystem.ReadOnly) {
+				QuiltMemoryFileSystem.ReadOnly qmfs = (QuiltMemoryFileSystem.ReadOnly) zipRoot.getFileSystem();
 				PluginGuiTreeNode memNode = guiNode.addChild("Loaded into memory");
 				memNode.mainIcon(memNode.manager().iconPackage());
 				memNode.addChild("Used bytes: " + qmfs.getUsedSize());
@@ -897,7 +921,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		try {
 			state.push(guiNode);
 
-			Map<ModLoadOption, QuiltPluginContext> map = null;
+			Map<ModLoadOption, QuiltPluginContext> map = new HashMap<>();
 
 			for (QuiltPluginContext ctx : plugins.values()) {
 				ModLoadOption mod;
@@ -912,14 +936,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 
 				if (mod != null) {
-					if (map == null) {
-						map = Collections.singletonMap(mod, ctx);
-					} else if (map instanceof HashMap) {
-						map.put(mod, ctx);
-					} else {
-						map = new HashMap<>(map);
-						map.put(mod, ctx);
-					}
+					map.put(mod, ctx);
 
 					if (ctx == theQuiltPlugin.context()) {
 						break;
@@ -940,7 +957,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		try {
 			state.push(guiNode);
 
-			Map<ModLoadOption, QuiltPluginContext> map = null;
+			Map<ModLoadOption, QuiltPluginContext> map = new HashMap<>();
 
 			for (QuiltPluginContext ctx : plugins.values()) {
 				ModLoadOption mod;
@@ -953,14 +970,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 
 				if (mod != null) {
-					if (map == null) {
-						map = Collections.singletonMap(mod, ctx);
-					} else if (map instanceof HashMap) {
-						map.put(mod, ctx);
-					} else {
-						map = new HashMap<>(map);
-						map.put(mod, ctx);
-					}
+					map.put(mod, ctx);
 
 					if (ctx == theQuiltPlugin.context()) {
 						break;
@@ -975,7 +985,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	private void addModOption(Path fileFrom, Map<ModLoadOption, QuiltPluginContext> map, PluginGuiTreeNode guiNode) {
-		if (map == null) {
+		if (map == null || map.isEmpty()) {
 			guiNode.addChild("TODO:TRANSLATE('no-plugin-could-load')")//
 				.setDirectLevel(WarningLevel.WARN);
 		} else if (map.size() == 1) {

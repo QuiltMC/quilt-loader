@@ -6,12 +6,11 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -58,9 +57,13 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
-	public <V> Future<V> submit(Callable<V> task) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+	public <V> QuiltPluginTask<V> submit(Callable<V> task) {
+		return manager.submit(this, task);
+	}
+
+	@Override
+	public <V> QuiltPluginTask<V> submitAfter(Callable<V> task, QuiltPluginTask<?>... deps) {
+		return manager.submitAfter(this, task, deps);
 	}
 
 	@Override
