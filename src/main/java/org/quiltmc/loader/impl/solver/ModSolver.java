@@ -482,37 +482,35 @@ public final class ModSolver {
 					.append(" is being loaded from the user's mod directory.");
 			return;
 		}
-		//Path origin = candidate.getPath();
-		errors.append("TODO implement");
-		return;
-//		// step 1: try to find source mod's URL
-//		if (sourceUrl == null) {
-//			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
-//					.append(" v").append(getCandidateFriendlyVersion(candidate))
-//					.append(" is being provided by <unknown mod>.");
-//			return;
-//		}
-//		// step 2: try to find source mod candidate
-//		ModCandidate srcCandidate = null;
-//		for (Map.Entry<String, ModCandidate> entry : result.entrySet()) {
-//			if (sourceUrl.equals(entry.getValue().getOriginUrl())) {
-//				srcCandidate = entry.getValue();
-//				break;
-//			}
-//		}
-//		if (srcCandidate == null) {
-//			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
-//					.append(" v").append(getCandidateFriendlyVersion(candidate))
-//					.append(" is being provided by <unknown mod: ")
-//					.append(sourceUrl).append(">.");
-//			return;
-//		}
-//		// now we have the proper data, yay
-//		errors.append("\n\t - Mod ").append(getCandidateName(candidate))
-//				.append(" v").append(getCandidateFriendlyVersion(candidate))
-//				.append(" is being provided by ").append(getCandidateName(srcCandidate))
-//				.append(" v").append(getCandidateFriendlyVersion(candidate))
-//				.append('.');
+		Path origin = candidate.getOriginPath();
+		// step 1: try to find source mod's URL
+		if (origin == null) {
+			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
+					.append(" v").append(getCandidateFriendlyVersion(candidate))
+					.append(" is being provided by <unknown mod>.");
+			return;
+		}
+		// step 2: try to find source mod candidate
+		ModCandidate srcCandidate = null;
+		for (Map.Entry<String, ModCandidate> entry : result.entrySet()) {
+			if (origin.equals(entry.getValue().getOriginPath())) {
+				srcCandidate = entry.getValue();
+				break;
+			}
+		}
+		if (srcCandidate == null) {
+			errors.append("\n\t - Mod ").append(getCandidateName(candidate))
+					.append(" v").append(getCandidateFriendlyVersion(candidate))
+					.append(" is being provided by <unknown mod: ")
+					.append(origin).append(">.");
+			return;
+		}
+		// now we have the proper data, yay
+		errors.append("\n\t - Mod ").append(getCandidateName(candidate))
+				.append(" v").append(getCandidateFriendlyVersion(candidate))
+				.append(" is being provided by ").append(getCandidateName(srcCandidate))
+				.append(" v").append(getCandidateFriendlyVersion(candidate))
+				.append('.');
 	}
 
 	static String getCandidateName(ModCandidate candidate) {
