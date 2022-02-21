@@ -315,7 +315,7 @@ final class V1ModMetadataReader {
 					case "client":
 						environment = ModEnvironment.CLIENT;
 						break;
-					case "server":
+					case "dedicated_server":
 						environment = ModEnvironment.SERVER;
 						break;
 					case "*":

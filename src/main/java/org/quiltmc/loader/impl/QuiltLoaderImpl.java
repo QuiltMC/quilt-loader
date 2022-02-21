@@ -419,6 +419,15 @@ public final class QuiltLoaderImpl {
 		}
 
 		if (!meta.environment().matches(getEnvironmentType())) {
+			if (candidate.getDepth() < 1) {
+				Log.warn(LogCategory.DISCOVERY, "Not loading mod " + meta.id()
+						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
+			} else {
+
+				Log.debug(LogCategory.DISCOVERY, "Not loading mod " + meta.id() + "(from " + ModResolver.getReadablePath(this, candidate) + ") "
+						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
+
+			}
 			return;
 		}
 
