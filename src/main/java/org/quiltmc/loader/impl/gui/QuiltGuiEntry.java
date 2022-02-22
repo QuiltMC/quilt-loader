@@ -97,19 +97,25 @@ public final class QuiltGuiEntry {
 
 	/** @param exitAfter If true then this will call {@link System#exit(int)} after showing the gui, otherwise this will
 	 *            return normally. */
-	public static void displayCriticalError(Throwable exception, boolean exitAfter) {
-		Log.error(LogCategory.GUI, "A critical error occurred", exception);
+	public static void displayError(String mainText, Throwable exception, boolean warnEarly, boolean exitAfter) {
+		if (warnEarly) {
+			Log.error(LogCategory.GUI, "An error occurred: " + mainText, exception);
+		}
 
-		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
+		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
 		if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
-			QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", "Failed to launch!");
+			String title = "Quilt Loader " + QuiltLoaderImpl.VERSION;
+			QuiltStatusTree tree = new QuiltStatusTree(title, mainText);
 			QuiltStatusTab crashTab = tree.addTab("Crash");
 
-			addThrowable(crashTab.node, exception, new HashSet<>());
+			crashTab.node.addCleanedException(exception);
 
 			// Maybe add an "open mods folder" button?
 			// or should that be part of the main tree's right-click menu?
+			// TODO: Add crash report generation functionality?
+			// and then have a button to open a file explorer pointed to that file
+			// and a button to open that file directly
 			tree.addButton("Exit", QuiltStatusTree.QuiltBasicButtonType.CLICK_ONCE).makeClose();
 
 			try {
@@ -125,81 +131,6 @@ public final class QuiltGuiEntry {
 
 		if (exitAfter) {
 			System.exit(1);
-		}
-	}
-	public static void displayError(String mainText, Throwable exception, boolean exitAfter) {
-		displayError(mainText, exception, tree -> {
-			StringWriter error = new StringWriter();
-			exception.printStackTrace(new PrintWriter(error));
-			tree.addButton("Copy stacktrace", QuiltStatusTree.QuiltBasicButtonType.CLICK_MANY).withClipboard(error.toString());
-		}, exitAfter);
-	}
-
-	public static void displayError(String mainText, Throwable exception, Consumer<QuiltStatusTree> treeCustomiser, boolean exitAfter) {
-		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
-
-		if (!GraphicsEnvironment.isHeadless() && (provider == null || provider.canOpenErrorGui())) {
-			String title = "Quilt Loader " + QuiltLoaderImpl.VERSION;
-			QuiltStatusTree tree = new QuiltStatusTree(title, mainText);
-			QuiltStatusTab crashTab = tree.addTab("Crash");
-
-			crashTab.node.addCleanedException(exception);
-
-			// Maybe add an "open mods folder" button?
-			// or should that be part of the main tree's right-click menu?
-			tree.addButton("Exit", QuiltStatusTree.QuiltBasicButtonType.CLICK_ONCE).makeClose();
-			treeCustomiser.accept(tree);
-
-			try {
-				open(tree);
-			} catch (Exception e) {
-				if (exitAfter) {
-					Log.warn(LogCategory.GENERAL, "Failed to open the error gui!", e);
-				} else {
-					throw new RuntimeException("Failed to open the error gui!", e);
-				}
-			}
-		}
-
-		if (exitAfter) {
-			System.exit(1);
-		}
-	}
-	private static void addThrowable(QuiltStatusNode node, Throwable e, Set<Throwable> seen) {
-		if (!seen.add(e)) {
-			return;
-		}
-
-		// Remove some self-repeating exception traces from the tree
-		// (for example the RuntimeException that is is created unnecessarily by ForkJoinTask)
-		Throwable cause;
-
-		while ((cause = e.getCause()) != null) {
-			if (e.getSuppressed().length > 0) {
-				break;
-			}
-
-			String msg = e.getMessage();
-
-			if (msg == null) {
-				msg = e.getClass().getName();
-			}
-
-			if (!msg.equals(cause.getMessage()) && !msg.equals(cause.toString())) {
-				break;
-			}
-
-			e = cause;
-		}
-
-		QuiltStatusNode sub = node.addException(e);
-
-		if (e.getCause() != null) {
-			addThrowable(sub, e.getCause(), seen);
-		}
-
-		for (Throwable t : e.getSuppressed()) {
-			addThrowable(sub, t, seen);
 		}
 	}
 

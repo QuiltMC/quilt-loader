@@ -159,7 +159,6 @@ public final class QuiltStatusTree {
 		this.mainText = mainText;
 	}
 
-
 	public QuiltStatusTab addTab(String name) {
 		QuiltStatusTab tab = new QuiltStatusTab(name);
 		tabs.add(tab);
@@ -479,7 +478,7 @@ public final class QuiltStatusTree {
 		}
 
 		public QuiltStatusNode addException(Throwable exception) {
-			return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity(), new StackTraceElement[0]);
+			return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity());
 		}
 
 		public QuiltStatusNode addCleanedException(Throwable exception) {
@@ -507,32 +506,29 @@ public final class QuiltStatusTree {
 				}
 
 				return e;
-			}, new StackTraceElement[0]);
+			});
 		}
 
-		private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception, UnaryOperator<Throwable> filter, StackTraceElement[] parentTrace) {
+		private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception, UnaryOperator<Throwable> filter) {
 			if (!seen.add(exception)) {
 				return node;
 			}
 
 			exception = filter.apply(exception);
-			QuiltStatusNode sub = node.addException(exception, parentTrace);
-			StackTraceElement[] trace = exception.getStackTrace();
+			QuiltStatusNode sub = node.addExceptionNode(exception);
 
 			for (Throwable t : exception.getSuppressed()) {
-				QuiltStatusNode suppressed = addException(sub, seen, t, filter, trace);
-				suppressed.name += " (suppressed)";
-				suppressed.expandByDefault = false;
+				addException(sub, seen, t, filter);
 			}
 
 			if (exception.getCause() != null) {
-				addException(sub, seen, exception.getCause(), filter, trace);
+				addException(sub, seen, exception.getCause(), filter);
 			}
 
 			return sub;
 		}
 
-		private QuiltStatusNode addException(Throwable exception, StackTraceElement[] parentTrace) {
+		private QuiltStatusNode addExceptionNode(Throwable exception) {
 			String msg;
 
 			if (exception instanceof FormattedException) {
@@ -552,30 +548,6 @@ public final class QuiltStatusTree {
 			for (int i = 1; i < lines.length; i++) {
 				sub.addChild(lines[i]);
 			}
-
-			StackTraceElement[] trace = exception.getStackTrace();
-			int uniqueFrames = trace.length - 1;
-
-			for (int i = parentTrace.length - 1; uniqueFrames >= 0 && i >= 0 && trace[uniqueFrames].equals(parentTrace[i]); i--) {
-				uniqueFrames--;
-			}
-
-			StringJoiner frames = new StringJoiner("<br/>", "<html>", "</html>");
-			int inheritedFrames = trace.length - 1 - uniqueFrames;
-
-			for (int i = 0; i <= uniqueFrames; i++) {
-				frames.add("at " + trace[i]);
-			}
-
-			if (inheritedFrames > 0) {
-				frames.add("... " + inheritedFrames + " more");
-			}
-
-			sub.addChild(frames.toString()).iconType = ICON_TYPE_JAVA_CLASS;
-
-			StringWriter sw = new StringWriter();
-			exception.printStackTrace(new PrintWriter(sw));
-			sub.details = sw.toString();
 
 			return sub;
 		}

@@ -80,7 +80,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
 		if (gameProvider == null || !gameProvider.displayCrash(actualExc, exc.getMainText())) {
-			QuiltGuiEntry.displayError(exc.getMainText(), actualExc, true);
+			QuiltGuiEntry.displayError(exc.getMainText(), actualExc, false, true);
 		} else {
 			System.exit(1);
 		}
@@ -102,7 +102,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 
 					if (Thread.currentThread() == mainThread
 							&& (gameProvider == null || !gameProvider.displayCrash(e, mainText))) {
-						QuiltGuiEntry.displayError(mainText, e, false);
+						QuiltGuiEntry.displayError(mainText, e, false, false);
 					}
 				}
 			} catch (Throwable e2) { // just in case
