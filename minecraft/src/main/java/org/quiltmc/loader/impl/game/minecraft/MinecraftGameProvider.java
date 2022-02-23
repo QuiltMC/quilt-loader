@@ -204,6 +204,14 @@ public class MinecraftGameProvider implements GameProvider {
 				}
 			}
 
+			for (Lib lib : Lib.MODIFIABLE) {
+				Path path = classifier.getOrigin(lib);
+
+				if (path != null && !path.equals(gameJar)) {
+					miscGameLibraries.add(path);
+				}
+			}
+
 			for (Path path : classifier.getUnmatchedOrigins()) {
 				if (!lookupPaths.contains(path)) miscGameLibraries.add(path);
 			}

@@ -153,10 +153,13 @@ final class LibClassifier {
 		LOG4J_CONFIG("log4j2.xml"),
 		LOG4J_PLUGIN("com/mojang/util/QueueLogAppender.class"),
 		SLF4J_API("org/slf4j/Logger.class"),
-		SLF4J_CORE("META-INF/services/org.slf4j.spi.SLF4JServiceProvider");
+		SLF4J_CORE("META-INF/services/org.slf4j.spi.SLF4JServiceProvider"),
+		BRIGADIER("com/mojang/brigadier/Command.class"),
+		DATA_FIXER_UPPER("com/mojang/datafixers/schemas/Schema.class");
 
 		static final Lib[] VALUES = values();
 		static final Lib[] LOGGING = { LOG4J_API, LOG4J_CORE, LOG4J_CONFIG, LOG4J_PLUGIN, SLF4J_API, SLF4J_CORE };
+		static final Lib[] MODIFIABLE = { BRIGADIER, DATA_FIXER_UPPER };
 
 		final String[] paths;
 		final EnvType env;
