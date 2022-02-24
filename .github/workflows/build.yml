@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - uses: gradle/wrapper-validation-action@v1
-      - run: ./gradlew build publish refreshMeta --stacktrace
+      - run: ./gradlew build publish --stacktrace
         env:
           SNAPSHOTS_URL: ${{ secrets.SNAPSHOTS_URL }}
           SNAPSHOTS_USERNAME: ${{ secrets.SNAPSHOTS_USERNAME }}
