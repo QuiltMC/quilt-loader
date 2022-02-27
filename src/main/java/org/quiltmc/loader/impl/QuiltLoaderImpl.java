@@ -215,6 +215,7 @@ public final class QuiltLoaderImpl {
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
+		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir().resolve(provider.getRawGameVersion()), isDevelopmentEnvironment()));
 		ModSolveResult result = resolver.resolve(this);
 		Map<String, ModCandidate> candidateMap = result.modMap;
 		modCandidates = new ArrayList<>(candidateMap.values());
