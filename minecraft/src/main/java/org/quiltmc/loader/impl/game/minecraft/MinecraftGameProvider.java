@@ -53,6 +53,7 @@ import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.log.LogHandler;
 
 public class MinecraftGameProvider implements GameProvider {
@@ -244,8 +245,15 @@ public class MinecraftGameProvider implements GameProvider {
 				argMap.put("accessToken", "QuiltMC");
 			}
 
+
 			if (!argMap.containsKey("version")) {
-				argMap.put("version", "Quilt");
+				String version = System.getProperty(SystemProperties.LAUNCHER_NAME);
+				if (version == null) {
+					version = "Unknown";
+					Log.error(LogCategory.GENERAL, "Launcher version unknown! Please provide it by setting "
+					+ "the system property " + SystemProperties.LAUNCHER_NAME);
+				}
+				argMap.put("version", version);
 			}
 
 			String versionType = "";
@@ -254,7 +262,7 @@ public class MinecraftGameProvider implements GameProvider {
 				versionType = argMap.get("versionType") + "/";
 			}
 
-			argMap.put("versionType", versionType + "Quilt");
+			argMap.put("versionType", versionType + "Quilt Loader " + QuiltLoaderImpl.VERSION);
 
 			if (!argMap.containsKey("gameDir")) {
 				argMap.put("gameDir", getLaunchDirectory(argMap).toAbsolutePath().normalize().toString());
