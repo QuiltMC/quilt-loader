@@ -318,10 +318,12 @@ final class V1ModMetadataReader {
 					case "dedicated_server":
 						environment = ModEnvironment.SERVER;
 						break;
-					case "*":
 					case "":
+					case "*":
 						environment = ModEnvironment.UNIVERSAL;
-						break;
+					default:
+						throw parseException(object.get("environment"), env +
+								" is not a valid environment. Valid options are \"*\", \"client\", or \"dedicated_server\"")
 				}
 			}
 

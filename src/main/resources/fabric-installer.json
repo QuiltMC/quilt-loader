@@ -22,7 +22,7 @@
       },
       {
         "name": "org.quiltmc:quilt-json5:1.0.0",
-        "url": "https://maven.quiltmc.org/repository/release"
+        "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
         "name": "org.ow2.asm:asm:9.2",
