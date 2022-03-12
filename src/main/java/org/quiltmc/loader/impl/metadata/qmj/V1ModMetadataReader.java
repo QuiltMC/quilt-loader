@@ -323,7 +323,7 @@ final class V1ModMetadataReader {
 						environment = ModEnvironment.UNIVERSAL;
 					default:
 						throw parseException(object.get("environment"), env +
-								" is not a valid environment. Valid options are \"*\", \"client\", or \"dedicated_server\"")
+								" is not a valid environment. Valid options are \"*\", \"client\", or \"dedicated_server\"");
 				}
 			}
 
