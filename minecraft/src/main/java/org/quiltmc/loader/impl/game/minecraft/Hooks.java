@@ -15,15 +15,16 @@
  */
 package org.quiltmc.loader.impl.game.minecraft;
 
-import java.io.File;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.api.ModInitializer;
 
-import org.quiltmc.loader.api.minecraft.ClientModInitializer;
-import org.quiltmc.loader.api.minecraft.DedicatedServerModInitializer;
-import org.quiltmc.loader.api.minecraft.ModInitializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+
+import java.io.File;
 
 public final class Hooks {
 	public static final String INTERNAL_NAME = Hooks.class.getName().replace('.', '/');
@@ -48,8 +49,8 @@ public final class Hooks {
 		}
 
 		QuiltLoaderImpl.INSTANCE.prepareModInit(runDir.toPath(), gameInstance);
-		EntrypointUtils.invoke("main", ModInitializer.class, ModInitializer::onInitialize);
-		EntrypointUtils.invoke("client", ClientModInitializer.class, ClientModInitializer::onInitializeClient);
+		EntrypointUtils.invoke("main", ModInitializer.class, it -> it.onInitialize());
+		EntrypointUtils.invoke("client", ClientModInitializer.class, it -> it.onInitializeClient());
 	}
 
 	public static void startServer(File runDir, Object gameInstance) {
@@ -58,8 +59,8 @@ public final class Hooks {
 		}
 
 		QuiltLoaderImpl.INSTANCE.prepareModInit(runDir.toPath(), gameInstance);
-		EntrypointUtils.invoke("main", ModInitializer.class, ModInitializer::onInitialize);
-		EntrypointUtils.invoke("client", DedicatedServerModInitializer.class, DedicatedServerModInitializer::onInitializeServer);
+		EntrypointUtils.invoke("main", ModInitializer.class, it -> it.onInitialize());
+		EntrypointUtils.invoke("server", DedicatedServerModInitializer.class, it -> it.onInitializeServer());
 	}
 
 	public static void setGameInstance(Object gameInstance) {

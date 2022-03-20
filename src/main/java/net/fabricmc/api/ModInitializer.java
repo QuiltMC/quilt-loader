@@ -16,7 +16,7 @@
 
 package net.fabricmc.api;
 
-import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.entrypoint.GameEntrypoint;
 
 /**
  * A mod initializer.
@@ -26,18 +26,13 @@ import org.quiltmc.loader.api.ModContainer;
  * @see ClientModInitializer
  * @see DedicatedServerModInitializer
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
- * @deprecated Please migrate to the quilt version: {@link  org.quiltmc.loader.api.minecraft.ModInitializer}.
+ * @deprecated Please migrate to using QSL entrypoints, or use your own mixins.
  */
 @Deprecated
 @FunctionalInterface
-public interface ModInitializer extends org.quiltmc.loader.api.minecraft.ModInitializer {
+public interface ModInitializer extends GameEntrypoint {
 	/**
 	 * Runs the mod initializer.
 	 */
 	void onInitialize();
-
-	@Override
-	default void onInitialize(ModContainer mod) {
-		onInitialize();
-	}
 }
