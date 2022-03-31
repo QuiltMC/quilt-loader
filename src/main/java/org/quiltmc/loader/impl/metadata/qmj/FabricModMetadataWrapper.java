@@ -273,6 +273,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
+	public String intermediateMappings() {
+		return "intermediary";
+	}
+
+	@Override
 	public @Nullable String icon(int size) {
 		return fabricMeta.getIconPath(size).orElse(null);
 	}

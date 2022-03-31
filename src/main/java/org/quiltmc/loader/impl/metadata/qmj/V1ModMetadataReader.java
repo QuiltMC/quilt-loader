@@ -61,6 +61,7 @@ final class V1ModMetadataReader {
 		Map<String, String> contactInformation = new LinkedHashMap<>();
 		List<ModDependency> depends = new ArrayList<>();
 		List<ModDependency> breaks = new ArrayList<>();
+		String intermediateMappings = "intermediary";
 		Icons icons = null;
 		/* Internal fields */
 		ModLoadType loadType = ModLoadType.IF_REQUIRED;
@@ -237,6 +238,21 @@ final class V1ModMetadataReader {
 				}
 			}
 
+			@Nullable
+			JsonLoaderValue intermediateMappingsValue = quiltLoader.get("intermediate_mappings");
+
+			if (intermediateMappingsValue != null) {
+				String mappings = string(quiltLoader, "intermediate_mappings");
+
+				if (mappings.equals("hashed")) {
+					throw parseException(intermediateMappingsValue, "Oh no! This version of Quilt Loader doesn't support hashed mappings, please update Quilt Loader to use this mod.");
+				} else if (!mappings.equals("intermediary")) {
+					throw parseException(intermediateMappingsValue, "unknown intermediate mappings");
+				}
+
+				intermediateMappings = mappings;
+			}
+
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
 
@@ -356,6 +372,7 @@ final class V1ModMetadataReader {
 				contactInformation,
 				depends,
 				breaks,
+				intermediateMappings,
 				icons,
 				loadType,
 				provides,
