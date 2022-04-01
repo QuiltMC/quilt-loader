@@ -136,6 +136,10 @@ class Sat4jWrapper implements RuleContext {
 			}
 		}
 
+		if (LOG) {
+			Log.info(CATEGORY, "Finished adding option " + option + " with weight " + weight);
+		}
+
 		for (Rule rule : rulesToRedefine) {
 			redefine(rule);
 		}
@@ -521,6 +525,10 @@ class Sat4jWrapper implements RuleContext {
 
 		private void rule(RuleDefinition def) {
 			validateCanAdd();
+
+			if (LOG) {
+				Log.info(CATEGORY, "Rule " + def);
+			}
 
 			ruleToDefinitions.computeIfAbsent(rule, r -> new ArrayList<>()).add(def);
 
