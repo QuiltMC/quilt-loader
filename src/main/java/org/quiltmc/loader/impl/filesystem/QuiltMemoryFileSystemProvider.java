@@ -1,4 +1,20 @@
-package org.quiltmc.loader.impl.memfilesys;
+/*
+ * Copyright 2016 FabricMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +34,7 @@ import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -33,6 +50,7 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
+@SuppressWarnings("unchecked") // TODO make more specific
 public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 	public QuiltMemoryFileSystemProvider() {}
 
@@ -47,7 +65,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		// in the package "<system-prop>.<scheme>"
 		// See java.net.URL#URL(java.lang.String, java.lang.String, int, java.lang.String)
 		final String key = "java.protocol.handler.pkgs";
-		final String pkg = "org.quiltmc.loader.impl.memfilesys";
+		final String pkg = "org.quiltmc.loader.impl.filesystem";
 		String prop = System.getProperty(key);
 		if (prop == null) {
 			System.setProperty(key, pkg);
@@ -150,7 +168,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
-		throws IOException {
+			throws IOException {
 
 		if (!(path instanceof QuiltMemoryPath)) {
 			throw new IllegalArgumentException("The given path is not a QuiltMemoryPath!");
@@ -242,9 +260,9 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 								entries = ((QuiltMemoryFolder.ReadOnly) entry).children;
 							} else if (entry instanceof QuiltMemoryFolder.ReadWrite) {
 								entries = ((QuiltMemoryFolder.ReadWrite) entry).children//
-									.toArray(new QuiltMemoryPath[0]);
+										.toArray(new QuiltMemoryPath[0]);
 							} else {
-								throw new DirectoryIteratorException(new IOException("Not a directory: " + dir));
+								throw new DirectoryIteratorException(new NotDirectoryException("Not a directory: " + dir));
 							}
 						}
 
@@ -474,7 +492,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options)
-		throws IOException {
+			throws IOException {
 
 		if (type == BasicFileAttributes.class) {
 			QuiltMemoryPath qmp = (QuiltMemoryPath) path;

@@ -1,4 +1,20 @@
-package org.quiltmc.loader.impl.memfilesys;
+/*
+ * Copyright 2016 FabricMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.quiltmc.loader.impl.filesystem;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,7 +42,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
-public abstract class QuiltMemoryFileSystem extends FileSystem {
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> {
 
 	private static final Set<String> FILE_ATTRS = Collections.singleton("basic");
 
@@ -38,24 +57,20 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 		CLOSED;
 	}
 
-	final String name;
-	final QuiltMemoryPath root = new QuiltMemoryPath(this, null, "/");
 	final Map<QuiltMemoryPath, QuiltMemoryEntry> files;
 
 	volatile OpenState openState = OpenState.OPEN;
 
 	private QuiltMemoryFileSystem(String name, Map<QuiltMemoryPath, QuiltMemoryEntry> fileMap) {
-		this.name = name;
+		super(QuiltMemoryFileSystem.class, QuiltMemoryPath.class, name);
 		this.files = fileMap;
 		QuiltMemoryFileSystemProvider.register(this);
 	}
 
-	public String getName() {
-		return name;
-	}
-
-	public Path getRoot() {
-		return root;
+	@Override
+	@NotNull
+	QuiltMemoryPath createPath(@Nullable QuiltMemoryPath parent, String name) {
+		return new QuiltMemoryPath(this, parent, name);
 	}
 
 	@Override
@@ -89,72 +104,9 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 		return openState != OpenState.CLOSED;
 	}
 
-	void checkOpen() throws ClosedFileSystemException {
-		if (!isOpen()) {
-			throw new ClosedFileSystemException();
-		}
-	}
-
-	@Override
-	public String getSeparator() {
-		return QuiltMemoryPath.NAME_ROOT;
-	}
-
-	@Override
-	public Iterable<Path> getRootDirectories() {
-		return Collections.singleton(root);
-	}
-
 	@Override
 	public Set<String> supportedFileAttributeViews() {
 		return FILE_ATTRS;
-	}
-
-	@Override
-	public Path getPath(String first, String... more) {
-		if (first.isEmpty()) {
-			return new QuiltMemoryPath(this, null, "");
-		}
-
-		if (more.length == 0) {
-			QuiltMemoryPath path = first.startsWith("/") ? root : null;
-			for (String sub : first.split("/")) {
-				if (path == null) {
-					path = new QuiltMemoryPath(this, null, sub);
-				} else {
-					path = path.resolve(sub);
-				}
-			}
-			return path;
-		} else {
-			QuiltMemoryPath path = new QuiltMemoryPath(this, null, first);
-			for (String sub : more) {
-				path = path.resolve(sub);
-			}
-			return path;
-		}
-	}
-
-	@Override
-	public PathMatcher getPathMatcher(String syntaxAndPattern) {
-		if (syntaxAndPattern.startsWith("regex:")) {
-			Pattern pattern = Pattern.compile(syntaxAndPattern.substring("regex:".length()));
-			return path -> pattern.matcher(path.toString()).matches();
-		} else if (syntaxAndPattern.startsWith("glob:")) {
-			throw new AbstractMethodError("// TODO: Implement glob syntax matching!");
-		} else {
-			throw new UnsupportedOperationException("Unsupported syntax or pattern: '" + syntaxAndPattern + "'");
-		}
-	}
-
-	@Override
-	public UserPrincipalLookupService getUserPrincipalLookupService() {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public WatchService newWatchService() throws IOException {
-		throw new UnsupportedOperationException();
 	}
 
 	public BasicFileAttributes readAttributes(QuiltMemoryPath qmp) throws IOException {
@@ -200,7 +152,7 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 		final byte[] packedByteArray;
 
 		/** Creates a new read-only {@link FileSystem} that copies every file in the given directory.
-		 * 
+		 *
 		 * @throws IOException if any of the files in the given path could not be read. */
 		public ReadOnly(String name, Path from) throws IOException {
 			super(name, new HashMap<>());
@@ -283,9 +235,9 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 						int len = abs.bytesLength();
 						System.arraycopy(abs.byteArray(), 0, packedByteArray, pos, len);
 						entry.setValue(
-							new QuiltMemoryFile.ReadOnly.Relative(
-								abs.path, abs.isCompressed, abs.uncompressedSize, pos, len
-							)
+								new QuiltMemoryFile.ReadOnly.Relative(
+										abs.path, abs.isCompressed, abs.uncompressedSize, pos, len
+								)
 						);
 						pos += len;
 					}
@@ -435,7 +387,7 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 				return new ReadOnly(newName, root);
 			} catch (IOException e) {
 				throw new RuntimeException(
-					"For some reason the in-memory file system threw an IOException while reading!", e
+						"For some reason the in-memory file system threw an IOException while reading!", e
 				);
 			}
 		}
@@ -449,7 +401,7 @@ public abstract class QuiltMemoryFileSystem extends FileSystem {
 				return new ReadOnly(name, root);
 			} catch (IOException e) {
 				throw new RuntimeException(
-					"For some reason the in-memory file system threw an IOException while reading!", e
+						"For some reason the in-memory file system threw an IOException while reading!", e
 				);
 			} finally {
 				endMove();

@@ -1,10 +1,25 @@
-package org.quiltmc.loader.impl.memfilesys;
+/*
+ * Copyright 2016 FabricMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.quiltmc.loader.impl.filesystem;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
@@ -19,14 +34,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-public final class QuiltMemoryPath implements Path {
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+public abstract class QuiltBasePath
+<
+	FS extends QuiltBaseFileSystem<FS, P>,
+	P extends QuiltBasePath<FS, P>
+>
+implements Path
+{
 	static final String NAME_ROOT = "/";
 	static final String NAME_SELF = ".";
 	static final String NAME_PARENT = "..";
 
-	final QuiltMemoryFileSystem fs;
-	final QuiltMemoryPath parent;
+	final @NotNull FS fs;
+	final @Nullable P parent;
 
 	/** The {@link String} name of this path. For efficiency we set this to one of {@link #NAME_ROOT},
 	 * {@link #NAME_PARENT}, or {@link #NAME_SELF} if it matches. */
@@ -37,7 +60,10 @@ public final class QuiltMemoryPath implements Path {
 
 	final int hash;
 
-	QuiltMemoryPath(QuiltMemoryFileSystem fs, QuiltMemoryPath parent, String name) {
+	QuiltBasePath(FS fs, @Nullable P parent, String name) {
+		Objects.requireNonNull(fs, "filesystem");
+		Objects.requireNonNull(name, "name");
+
 		this.fs = fs;
 		this.parent = parent;
 
@@ -75,7 +101,13 @@ public final class QuiltMemoryPath implements Path {
 		this.hash = fs.hashCode() * 31 + (parent == null ? name.hashCode() : (parent.hash * 31 + name.hashCode()));
 	}
 
-	private boolean isRoot() {
+	@Override
+	@Nullable
+	public P getParent() {
+		return parent;
+	}
+
+	protected boolean isRoot() {
 		return NAME_ROOT == name;
 	}
 
@@ -88,15 +120,15 @@ public final class QuiltMemoryPath implements Path {
 	public boolean equals(Object obj) {
 		if (obj == this) return true;
 		if (obj == null) return false;
-		if (!(obj instanceof QuiltMemoryPath)) {
+		if (obj.getClass() != getClass()) {
 			return false;
 		}
-		QuiltMemoryPath o = (QuiltMemoryPath) obj;
+		QuiltBasePath<?,?> o = (QuiltBasePath<?, ?>) obj;
 		return fs == o.fs && nameCount == o.nameCount && name.equals(o.name) && Objects.equals(parent, o.parent);
 	}
 
 	@Override
-	public FileSystem getFileSystem() {
+	public FS getFileSystem() {
 		return fs;
 	}
 
@@ -106,7 +138,8 @@ public final class QuiltMemoryPath implements Path {
 	}
 
 	@Override
-	public QuiltMemoryPath getRoot() {
+	@Nullable
+	public P getRoot() {
 		if (isAbsolute()) {
 			return fs.root;
 		} else {
@@ -114,14 +147,18 @@ public final class QuiltMemoryPath implements Path {
 		}
 	}
 
+	/** Safely casts this path to "P" */
+	abstract P getThisPath();
+
 	@Override
-	public QuiltMemoryPath getFileName() {
+	@Nullable
+	public P getFileName() {
 		if (name.isEmpty()) {
 			return null;
 		} else if (parent == null) {
-			return this;
+			return getThisPath();
 		} else {
-			return new QuiltMemoryPath(fs, null, name);
+			return fs.createPath(null, name);
 		}
 	}
 
@@ -137,8 +174,8 @@ public final class QuiltMemoryPath implements Path {
 			sb.append(name);
 		}
 
-		QuiltMemoryPath p = this;
-		QuiltMemoryPath upper;
+		P p = getThisPath();
+		P upper;
 
 		while (true) {
 			upper = p.getParent();
@@ -159,38 +196,33 @@ public final class QuiltMemoryPath implements Path {
 	}
 
 	@Override
-	public QuiltMemoryPath getParent() {
-		return parent;
-	}
-
-	@Override
 	public int getNameCount() {
 		return nameCount;
 	}
 
 	@Override
-	public QuiltMemoryPath getName(int index) {
+	public P getName(int index) {
 		if (index < 0 || index >= nameCount) {
 			throw new IllegalArgumentException("index out of bounds");
 		}
 
 		if (index == 0 && parent == null) {
-			return this;
+			return getThisPath();
 		}
 		if (index == nameCount - 1) {
-			return getFileName();
+			return fs.createPath(null, name);
 		}
 
-		QuiltMemoryPath p = this;
+		P p = getThisPath();
 		for (int i = index + 1; i < nameCount; i++) {
 			p = p.parent;
 		}
 
-		return p.getFileName();
+		return fs.createPath(null, p.name);
 	}
 
 	@Override
-	public QuiltMemoryPath subpath(int beginIndex, int endIndex) {
+	public P subpath(int beginIndex, int endIndex) {
 		if (beginIndex < 0) {
 			throw new IllegalArgumentException("beginIndex < 0!");
 		}
@@ -199,13 +231,13 @@ public final class QuiltMemoryPath implements Path {
 			throw new IllegalArgumentException("endIndex > getNameCount()!");
 		}
 
-		QuiltMemoryPath end = this;
+		P end = getThisPath();
 
 		for (int i = nameCount; i > endIndex; i--) {
 			end = end.parent;
 		}
 
-		QuiltMemoryPath from = end;
+		P from = end;
 
 		for (int i = endIndex - 1; i > beginIndex; i--) {
 			from = from.parent;
@@ -216,7 +248,7 @@ public final class QuiltMemoryPath implements Path {
 			fromS = fromS.substring(1);
 		}
 
-		QuiltMemoryPath path = new QuiltMemoryPath(fs, null, fromS);
+		P path = fs.createPath(null, fromS);
 		List<String> names = end.names();
 		names = names.subList(beginIndex + 1, names.size());
 
@@ -229,8 +261,8 @@ public final class QuiltMemoryPath implements Path {
 
 	@Override
 	public boolean startsWith(Path other) {
-		if (other instanceof QuiltMemoryPath) {
-			QuiltMemoryPath o = (QuiltMemoryPath) other;
+		if (fs.pathClass.isInstance(other)) {
+			P o = fs.pathClass.cast(other);
 			if (absolute != o.absolute) {
 				return false;
 			}
@@ -240,7 +272,7 @@ public final class QuiltMemoryPath implements Path {
 
 			// TODO: Optimise this!
 
-			QuiltMemoryPath p = this;
+			P p = getThisPath();
 
 			do {
 				if (other.equals(p)) {
@@ -262,9 +294,9 @@ public final class QuiltMemoryPath implements Path {
 
 	@Override
 	public boolean endsWith(Path other) {
-		if (other instanceof QuiltMemoryPath) {
-			QuiltMemoryPath o = (QuiltMemoryPath) other;
-			QuiltMemoryPath t = this;
+		if (fs.pathClass.isInstance(other)) {
+			P o = fs.pathClass.cast(other);
+			P t = getThisPath();
 
 			while (o != null && t != null) {
 				if (!t.name.equals(o.name)) {
@@ -287,95 +319,92 @@ public final class QuiltMemoryPath implements Path {
 	}
 
 	@Override
-	public QuiltMemoryPath normalize() {
+	public P normalize() {
 		if (NAME_SELF.equals(name)) {
 			if (parent != null) {
 				return parent.normalize();
 			}
-			return this;
+			return getThisPath();
 		}
 		if (NAME_PARENT.equals(name)) {
 			if (parent != null && parent.parent != null) {
 				return parent.parent.normalize();
 			}
-			return this;
+			return getThisPath();
 		}
 
 		if (parent == null) {
-			return this;
+			return getThisPath();
 		}
 
-		QuiltMemoryPath p = parent.normalize();
+		P p = parent.normalize();
 		if (p == parent) {
-			return this;
+			return getThisPath();
 		} else {
 			return p.resolve(name);
 		}
 	}
 
 	@Override
-	public QuiltMemoryPath resolve(Path other) {
+	public P resolve(Path other) {
 		if (other.isAbsolute()) {
-			return (QuiltMemoryPath) other;
+			return fs.pathClass.cast(other);
 		}
 
 		if (other.getNameCount() == 0) {
-			return this;
+			return getThisPath();
 		}
-		QuiltMemoryPath o = (QuiltMemoryPath) other;
+		P o = fs.pathClass.cast(other);
 
-		Deque<QuiltMemoryPath> stack = new ArrayDeque<>();
+		Deque<P> stack = new ArrayDeque<>();
 
 		do {
 			stack.push(o);
 		} while ((o = o.parent) != null);
 
-		QuiltMemoryPath p = this;
+		P p = getThisPath();
 
 		while (!stack.isEmpty()) {
-			p = new QuiltMemoryPath(fs, p, stack.pop().name);
+			p = fs.createPath(p, stack.pop().name);
 		}
 
 		return p;
 	}
 
 	@Override
-	public QuiltMemoryPath resolve(String other) {
-		QuiltMemoryPath p = this;
+	public P resolve(String other) {
+		P p = getThisPath();
 		for (String s : other.split("/")) {
 			if (!s.isEmpty()) {
-				p = new QuiltMemoryPath(fs, p, s);
+				p = fs.createPath(p, s);
 			}
 		}
 		return p;
 	}
 
 	@Override
-	public QuiltMemoryPath resolveSibling(Path other) {
+	public P resolveSibling(Path other) {
 		if (other.isAbsolute() || parent == null) {
-			return (QuiltMemoryPath) other;
+			return fs.pathClass.cast(other);
 		}
 		return parent.resolve(other);
 	}
 
 	@Override
-	public QuiltMemoryPath resolveSibling(String other) {
+	public P resolveSibling(String other) {
 		return resolveSibling(fs.getPath(other));
 	}
 
 	@Override
-	public QuiltMemoryPath relativize(Path other) {
-		if (!(other instanceof QuiltMemoryPath)) {
-			throw new IllegalArgumentException("You can only relativize paths from the same provider!");
-		}
-		QuiltMemoryPath o = (QuiltMemoryPath) other;
+	public P relativize(Path other) {
+		P o = fs.pathClass.cast(other);
 		if (o.equals(this)) {
-			return new QuiltMemoryPath(fs, null, "");
+			return fs.createPath(null, "");
 		}
 
 		if (absolute != o.absolute) {
 			throw new IllegalArgumentException(
-				"You can only relativize paths if they are both absolute, OR both relative - not one and the other!"
+					"You can only relativize paths if they are both absolute, OR both relative - not one and the other!"
 			);
 		}
 
@@ -391,10 +420,10 @@ public final class QuiltMemoryPath implements Path {
 			}
 		}
 
-		QuiltMemoryPath path = null;
+		P path = null;
 		for (int j = i; j < names.size(); j++) {
 			if (path == null) {
-				path = new QuiltMemoryPath(fs, null, NAME_PARENT);
+				path = fs.createPath(null, NAME_PARENT);
 			} else {
 				path = path.resolve(NAME_PARENT);
 			}
@@ -402,7 +431,7 @@ public final class QuiltMemoryPath implements Path {
 
 		for (int j = i; j < oNames.size(); j++) {
 			if (path == null) {
-				path = new QuiltMemoryPath(fs, null, oNames.get(j));
+				path = fs.createPath(null, oNames.get(j));
 			} else {
 				path = path.resolve(oNames.get(j));
 			}
@@ -418,22 +447,22 @@ public final class QuiltMemoryPath implements Path {
 			return toAbsolutePath().toUri();
 		}
 		try {
-			return new URI(QuiltMemoryFileSystemProvider.SCHEME, fs.name, toString(), null);
+			return new URI(fs.provider().getScheme(), fs.name, toString(), null);
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	@Override
-	public QuiltMemoryPath toAbsolutePath() {
+	public P toAbsolutePath() {
 		if (isAbsolute()) {
-			return this;
+			return getThisPath();
 		}
 		return fs.root.resolve(this);
 	}
 
 	@Override
-	public QuiltMemoryPath toRealPath(LinkOption... options) throws IOException {
+	public P toRealPath(LinkOption... options) throws IOException {
 		return toAbsolutePath();
 	}
 
@@ -452,7 +481,7 @@ public final class QuiltMemoryPath implements Path {
 		throw new UnsupportedOperationException();
 	}
 
-	private List<String> names() {
+	protected List<String> names() {
 		if (parent == null) {
 			if (isRoot()) {
 				return Collections.emptyList();
@@ -461,7 +490,7 @@ public final class QuiltMemoryPath implements Path {
 			}
 		}
 		List<String> list = new ArrayList<>(nameCount);
-		QuiltMemoryPath p = this;
+		P p = getThisPath();
 		do {
 			if (p.isRoot()) {
 				break;
@@ -482,7 +511,7 @@ public final class QuiltMemoryPath implements Path {
 			}
 		}
 		List<Path> list = new ArrayList<>(nameCount);
-		QuiltMemoryPath p = this;
+		P p = getThisPath();
 		do {
 			if (p.isRoot()) {
 				break;
