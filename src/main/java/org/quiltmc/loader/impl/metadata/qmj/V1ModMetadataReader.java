@@ -61,7 +61,7 @@ final class V1ModMetadataReader {
 		Map<String, String> contactInformation = new LinkedHashMap<>();
 		List<ModDependency> depends = new ArrayList<>();
 		List<ModDependency> breaks = new ArrayList<>();
-		String intermediateMappings = "intermediary";
+		String intermediateMappings = null;
 		Icons icons = null;
 		/* Internal fields */
 		ModLoadType loadType = ModLoadType.IF_REQUIRED;
@@ -251,6 +251,9 @@ final class V1ModMetadataReader {
 				}
 
 				intermediateMappings = mappings;
+			} else {
+				// Fallback to default mappings
+				intermediateMappings = "hashed";
 			}
 
 			// Metadata
