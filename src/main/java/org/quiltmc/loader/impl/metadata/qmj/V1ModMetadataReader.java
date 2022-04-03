@@ -241,20 +241,29 @@ final class V1ModMetadataReader {
 			@Nullable
 			JsonLoaderValue intermediateMappingsValue = quiltLoader.get("intermediate_mappings");
 
-			if (intermediateMappingsValue != null) {
-				String mappings = string(quiltLoader, "intermediate_mappings");
+			String[] supported_mappings = { "hashed", "intermediary" };
+			String mappings;
 
-				if (mappings.equals("hashed")) {
-					throw parseException(intermediateMappingsValue, "Oh no! This version of Quilt Loader doesn't support hashed mappings, please update Quilt Loader to use this mod.");
-				} else if (!mappings.equals("intermediary")) {
-					throw parseException(intermediateMappingsValue, "unknown intermediate mappings");
+			if (intermediateMappingsValue != null) {
+				if (intermediateMappingsValue.type() != LoaderValue.LType.STRING) {
+					throw parseException(intermediateMappingsValue, "intermediate_mappings must be a string");
 				}
 
-				intermediateMappings = mappings;
+				mappings = intermediateMappingsValue.asString();
+
+				if (!Arrays.asList(supported_mappings).contains(mappings)) {
+					throw parseException(intermediateMappingsValue, "unknown intermediate mappings");
+				}
 			} else {
-				// Fallback to default mappings
-				intermediateMappings = "hashed";
+				mappings = "hashed";
 			}
+
+			// Until Loader supports hashed mappings
+			if (mappings.equals("hashed")) {
+				throw new ParseException("Oh no! This version of Quilt Loader doesn't support hashed mappings, please update Quilt Loader to use this mod.");
+			}
+
+			intermediateMappings = mappings;
 
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
