@@ -274,7 +274,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 	@Override
 	public String intermediateMappings() {
-		return "intermediary";
+		return "net.fabricmc:intermediary";
 	}
 
 	@Override
