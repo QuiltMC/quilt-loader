@@ -139,7 +139,7 @@ public class SemanticVersionImpl implements Version.Semantic {
 			return this.patch() - o.patch();
 		} else {
 			// TODO: if this code gets hot we can reduce allocations and use a fancy for loop with more guards
-			Iterator<String> leftIter = Arrays.stream(o.preRelease().split("\\.")).iterator();
+			Iterator<String> leftIter = Arrays.stream(this.preRelease().split("\\.")).iterator();
 			Iterator<String> rightIter = Arrays.stream(o.preRelease().split("\\.")).iterator();
 			while (true) {
 				if (!leftIter.hasNext() && !rightIter.hasNext()) {
