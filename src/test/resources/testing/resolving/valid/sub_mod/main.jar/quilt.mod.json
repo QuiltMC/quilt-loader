@@ -5,6 +5,7 @@
         "id": "mod-resolving-tests-main",
         "version": "1.0.0",
         "depends": [],
-        "jars": [ "sub.jar" ]
+        "jars": [ "sub.jar" ],
+        "intermediate_mappings": "net.fabricmc:intermediary"
     }
 }

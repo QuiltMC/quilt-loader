@@ -4,6 +4,7 @@
         "group": "org.quiltmc.test",
         "id": "mod-resolving-tests-main",
         "version": "1.0.0",
-        "jars": [ "library.jar" ]
+        "jars": [ "library.jar" ],
+        "intermediate_mappings": "net.fabricmc:intermediary"
     }
 }

@@ -4,6 +4,7 @@
     "group": "org.example",
     "id": "normal",
     "version": "1.0.0",
+    "intermediate_mappings": "net.fabricmc:intermediary",
     "breaks": [
         [ "part_1", "part_2" ]
     ]

@@ -5,6 +5,7 @@
     "id": "quilt_loader",
     "provides": [ "fabricloader" ],
     "version": "${version}",
+    "intermediate_mappings": "net.fabricmc:intermediary",
     "metadata": {
       "name": "Quilt Loader",
       "description": "The base mod loader.",

@@ -4,6 +4,7 @@
         "group": "two",
         "id": "mod_two",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "breaks": [
             {
                 "id": "dep",
