@@ -1,0 +1,9 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "org.quiltmc.test",
+        "id": "quilt-crash-handler",
+        "version": "1.0.0",
+        "provides": [ "fabric-crash-handler" ]
+    }
+}

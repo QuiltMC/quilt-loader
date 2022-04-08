@@ -116,100 +116,126 @@ final class ModResolvingTests {
 		}
 	}
 
-    @Test
-    public void quilt() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "quilt");
+	@Test
+	public void quilt() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt");
 
-        assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-quilt", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void dep_gte() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "dep_gte");
+	@Test
+	public void dep_gte() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "dep_gte");
 
-        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void extraLibs() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "extra_libs");
+	@Test
+	public void extraLibs() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "extra_libs");
 
-        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-        assertModMissing(modSet, "mod-resolving-tests-library");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModMissing(modSet, "mod-resolving-tests-library");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void subMod() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "sub_mod");
+	@Test
+	public void subMod() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "sub_mod");
 
-        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-        assertModPresent(modSet, "mod-resolving-tests-sub", "1.0.0");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-sub", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void quiltLoadType() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "quilt_load_type");
+	@Test
+	public void quiltLoadType() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_load_type");
 
-        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void quiltIncludedDep() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "quilt_included_dep");
+	@Test
+	public void quiltIncludedDep() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_included_dep");
 
-        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-        assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void quiltIncludedProvided() throws Exception {
-        ModSolveResult modSet = resolveModSet("valid", "quilt_included_provided");
+	@Test
+	public void quiltIncludedProvided() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_included_provided");
 
-        assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-        assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
-        assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
-        assertNoMoreMods(modSet);
-    }
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
+		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
 
-    @Test
-    public void breaksError() {
-    	resolveErrorSet("breaks");
-    }
+	@Test
+	public void qslProvidedOverFapi() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "qsl_provides");
 
-    @Test
-    public void multiBreaksError() {
-        resolveErrorSet("multi_breaks");
-    }
+		for (Entry<String, ModCandidate> entry : modSet.modMap.entrySet()) {
+			System.out.println(entry);
+		}
 
-    private static void resolveErrorSet(String subpath) {
-    	try {
-    		ModSolveResult result = resolveModSet("error", subpath);
+		for (Entry<String, ModCandidate> entry : modSet.providedMap.entrySet()) {
+			System.out.println(entry);
+		}
 
-    		StringBuilder sb = new StringBuilder();
-    		sb.append("Incorrectly resolved an invalid mod set!\n");
+		assertModPresent(modSet, "a_mod", "1.0.0");
+		assertModPresent(modSet, "quilt-standard-libraries", "1.0.0");
 
-    		for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
-    			sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginPath() + "\n");
-    		}
+		// The mod set (as provided) doesn't narrow this down enough
+		// so either mods being present would be okay as far as the solver is concerned
+		if (modSet.modMap.containsKey("quilt-crash-handler")) {
+			assertModPresent(modSet, "quilt-crash-handler", "1.0.0");
+			assertProvidedPresent(modSet, "fabric-crash-handler", "1.0.0");
+		} else {
+			assertModPresent(modSet, "fabric-crash-handler", "1.0.0");
+		}
+		assertNoMoreMods(modSet);
+	}
 
-    		for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
-    			sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginPath() + "\n");
-    		}
+	@Test
+	public void breaksError() {
+		resolveErrorSet("breaks");
+	}
 
-    		Assertions.fail(sb.toString());
-    	} catch (ModSolvingException ignored) {
-    		// Correct
-    	} catch (ModResolutionException setupError) {
-    		Assertions.fail("Failed to read the mod set!", setupError);
-    	}
-    }
+	@Test
+	public void multiBreaksError() {
+		resolveErrorSet("multi_breaks");
+	}
+
+	private static void resolveErrorSet(String subpath) {
+		try {
+			ModSolveResult result = resolveModSet("error", subpath);
+
+			StringBuilder sb = new StringBuilder();
+			sb.append("Incorrectly resolved an invalid mod set!\n");
+
+			for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
+				sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginPath() + "\n");
+			}
+
+			for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
+				sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginPath() + "\n");
+			}
+
+			Assertions.fail(sb.toString());
+		} catch (ModSolvingException ignored) {
+			// Correct
+		} catch (ModResolutionException setupError) {
+			Assertions.fail("Failed to read the mod set!", setupError);
+		}
+	}
 
 	private static ModSolveResult resolveModSet(String type, String subpath) throws ModResolutionException {
 
