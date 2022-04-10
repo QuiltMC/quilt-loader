@@ -4,6 +4,7 @@
         "group": "org.quiltmc.test",
         "id": "minecraft-test",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "entrypoints": {
             "preLaunch": [
                 "org.quiltmc.test.PrelaunchTest"

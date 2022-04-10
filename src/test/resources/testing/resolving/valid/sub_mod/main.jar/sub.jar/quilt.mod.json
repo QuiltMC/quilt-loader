@@ -4,6 +4,7 @@
         "group": "org.quiltmc",
         "id": "mod-resolving-tests-sub",
         "version": "1.0.0",
-        "load_type": "always"
+        "load_type": "always",
+        "intermediate_mappings": "net.fabricmc:intermediary"
     }
 }

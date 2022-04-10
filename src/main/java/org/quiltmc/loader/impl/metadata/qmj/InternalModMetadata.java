@@ -41,6 +41,8 @@ public interface InternalModMetadata extends ModMetadata, ModMetadataToBeMovedTo
 
 	Collection<String> repositories();
 
+	String intermediateMappings();
+
 
 	@Override
 	default FabricLoaderModMetadata asFabricModMetadata() {

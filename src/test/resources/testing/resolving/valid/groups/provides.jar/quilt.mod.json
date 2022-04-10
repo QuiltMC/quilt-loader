@@ -4,6 +4,7 @@
         "group": "combine",
         "id": "dep",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "provides": [
             "one:dep",
             "two:dep",

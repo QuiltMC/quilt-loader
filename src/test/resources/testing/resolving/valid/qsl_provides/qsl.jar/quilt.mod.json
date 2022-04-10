@@ -4,6 +4,7 @@
         "group": "org.quiltmc.test",
         "id": "quilt-standard-libraries",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "jars": [ "quilt-crash-handler.jar" ]
     }
 }

@@ -4,6 +4,7 @@
         "group": "org.quiltmc.test",
         "id": "a_mod",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "depends": [ "fabric-crash-handler" ],
         "jars": [ "fabric-crash-handler.jar" ]
     }

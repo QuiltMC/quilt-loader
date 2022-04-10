@@ -4,7 +4,7 @@
     "group": "org.example",
     "id": "some_id",
     "version": "1.0.0",
-    "intermediate_mappings": "net.fabricmc:intermediary",
+    "intermediate_mappings": "blah.blah:blah",
     "provides": [
       {
         "id": "another_mod"

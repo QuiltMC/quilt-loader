@@ -61,6 +61,7 @@ final class V1ModMetadataReader {
 		Map<String, String> contactInformation = new LinkedHashMap<>();
 		List<ModDependency> depends = new ArrayList<>();
 		List<ModDependency> breaks = new ArrayList<>();
+		String intermediateMappings = null;
 		Icons icons = null;
 		/* Internal fields */
 		ModLoadType loadType = ModLoadType.IF_REQUIRED;
@@ -237,6 +238,35 @@ final class V1ModMetadataReader {
 				}
 			}
 
+			@Nullable
+			JsonLoaderValue intermediateMappingsValue = quiltLoader.get("intermediate_mappings");
+
+			String[] supported_mappings = { "org.quiltmc:hashed", "net.fabricmc:intermediary" };
+			String mappings = "org.quiltmc:hashed";
+
+			if (intermediateMappingsValue != null) {
+				if (intermediateMappingsValue.type() != LoaderValue.LType.STRING) {
+					throw parseException(intermediateMappingsValue, "intermediate_mappings must be a string");
+				}
+
+				mappings = intermediateMappingsValue.asString();
+
+				if (!Patterns.VALID_INTERMEDIATE.matcher(mappings).matches()) {
+					throw parseException(intermediateMappingsValue, "intermediate_mappings must be a valid maven coordinate");
+				}
+
+				if (!Arrays.asList(supported_mappings).contains(mappings)) {
+					throw parseException(intermediateMappingsValue, "unknown intermediate mappings");
+				}
+			}
+
+			// Until Loader supports hashed mappings
+			if (mappings.equals("org.quiltmc:hashed")) {
+				throw new ParseException("Oh no! This version of Quilt Loader doesn't support hashed mappings, please update Quilt Loader to use this mod.");
+			}
+
+			intermediateMappings = mappings;
+
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
 
@@ -356,6 +386,7 @@ final class V1ModMetadataReader {
 				contactInformation,
 				depends,
 				breaks,
+				intermediateMappings,
 				icons,
 				loadType,
 				provides,

@@ -4,6 +4,7 @@
         "group": "org.quiltmc.test",
         "id": "quilt-crash-handler",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "provides": [ "fabric-crash-handler" ]
     }
 }

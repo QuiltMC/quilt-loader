@@ -42,6 +42,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Map<String, String> contactInformation;
 	private final Collection<ModDependency> depends;
 	private final Collection<ModDependency> breaks;
+	private final String intermediateMappings;
 	private final Icons icons;
 	/* Internal fields */
 	private final ModLoadType loadType;
@@ -68,6 +69,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			Map<String, String> contactInformation,
 			Collection<ModDependency> depends,
 			Collection<ModDependency> breaks,
+			String intermediateMappings,
 			@Nullable Icons icons,
 			/* Internal fields */
 			ModLoadType loadType,
@@ -107,6 +109,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		this.contactInformation = Collections.unmodifiableMap(contactInformation);
 		this.depends = Collections.unmodifiableCollection(depends);
 		this.breaks = Collections.unmodifiableCollection(breaks);
+		this.intermediateMappings = intermediateMappings;
 
 		if (icons != null) {
 			this.icons = icons;
@@ -183,6 +186,11 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public Collection<ModDependency> breaks() {
 		return this.breaks;
+	}
+
+	@Override
+	public String intermediateMappings() {
+		return this.intermediateMappings;
 	}
 
 	@Nullable

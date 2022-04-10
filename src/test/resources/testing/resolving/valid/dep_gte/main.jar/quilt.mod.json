@@ -4,6 +4,7 @@
         "group": "org.example",
         "id": "mod-resolving-tests-main",
         "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary",
         "depends": [
             {"id": "mod-resolving-tests-library", "versions": ">=1.0.0"}
         ]
