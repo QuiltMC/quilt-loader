@@ -1,9 +1,18 @@
 pluginManagement {
 	repositories {
 		maven {
-			url = "https://maven.fabricmc.net"
-			name = "FabricMC"
+			name = 'Quilt Releases'
+			url = 'https://maven.quiltmc.org/repository/release/'
 		}
+		maven {
+			name = "Fabric"
+			url = "https://maven.fabricmc.net"
+		}
+		maven {
+			name = "Cotton"
+			url = "https://server.bbkr.space/artifactory/libs-release"
+		}
+
 		gradlePluginPortal()
 	}
 }

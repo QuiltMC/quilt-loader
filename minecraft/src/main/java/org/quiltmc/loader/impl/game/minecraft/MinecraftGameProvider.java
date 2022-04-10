@@ -247,13 +247,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 
 			if (!argMap.containsKey("version")) {
-				String version = System.getProperty(SystemProperties.LAUNCHER_NAME);
-				if (version == null) {
-					version = "Unknown";
-					Log.error(LogCategory.GENERAL, "Launcher version unknown! Please provide it by setting "
-					+ "the system property " + SystemProperties.LAUNCHER_NAME);
-				}
-				argMap.put("version", version);
+				argMap.put("version", "Unknown");
 			}
 
 			String versionType = "";

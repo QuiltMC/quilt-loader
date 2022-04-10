@@ -1,4 +1,4 @@
-apply plugin: "fabric-loom"
+apply plugin: "org.quiltmc.loom"
 
 sourceCompatibility = JavaVersion.VERSION_17
 targetCompatibility = JavaVersion.VERSION_17

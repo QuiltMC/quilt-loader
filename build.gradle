@@ -11,7 +11,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id 'org.cadixdev.licenser' version '0.6.1'
-	id 'fabric-loom' version '0.11-SNAPSHOT' apply false
+	id 'org.quiltmc.loom' version '0.12.+' apply false
 	id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
@@ -19,8 +19,8 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
-version = "0.14.4"
-// Fetch build number from Jenkins
+// Don't forget to change this in the QuiltLoaderImpl class as well
+version = "0.15.0"
 def ENV = System.getenv()
 
 allprojects {
@@ -212,18 +212,18 @@ task testJar(type: Jar) {
 
 
 task copyJson() {
-	def inJson = file('src/main/resources/fabric-installer.json')
-	def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
+	def inJson = file('src/main/resources/quilt-installer.json')
+	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 
 	def outJson = file("build/libs/${archivesBaseName}-${version}.json")
-	def outLwJson = file("build/libs/${archivesBaseName}-${version}.launchwrapper.json")
+	//def outLwJson = file("build/libs/${archivesBaseName}-${version}.launchwrapper.json")
 
-	inputs.files (inJson, inLwJson)
-	outputs.files(outJson, outLwJson)
+	inputs.files (inJson, /*inLwJson*/)
+	outputs.files(outJson, /*outLwJson*/)
 
 	doLast {
 		outJson.text = inJson.text
-		outLwJson.text = inLwJson.text
+		//outLwJson.text = inLwJson.text
 	}
 }
 tasks.build.dependsOn "copyJson"
@@ -289,13 +289,13 @@ publishing {
 			}
 			artifact(sourcesJar)
 			artifact javadocJar
-			artifact(file('src/main/resources/fabric-installer.json')) {
+			artifact(file('src/main/resources/quilt_installer.json')) {
 				builtBy copyJson
 			}
-			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
-				builtBy copyJson
-				classifier = "launchwrapper"
-			}
+//			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
+//				builtBy copyJson
+//				classifier = "launchwrapper"
+//			}
 		}
 	}
 

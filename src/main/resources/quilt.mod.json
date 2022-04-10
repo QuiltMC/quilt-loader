@@ -3,7 +3,10 @@
   "quilt_loader": {
     "group": "org.quiltmc",
     "id": "quilt_loader",
-    "provides": [ "fabricloader" ],
+    "provides": [ {
+      "id": "fabricloader",
+      "version": "0.13.3"
+    } ],
     "version": "${version}",
     "intermediate_mappings": "net.fabricmc:intermediary",
     "metadata": {
