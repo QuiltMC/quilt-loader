@@ -45,6 +45,11 @@ allprojects {
 		}
 		mavenCentral()
 	}
+	java {
+		toolchain {
+			languageVersion = JavaLanguageVersion.of(17)
+		}
+	}
 }
 
 
@@ -98,11 +103,12 @@ processResources {
 java {
 	sourceCompatibility = 8
 	targetCompatibility = 8
-
 	withJavadocJar()
 	withSourcesJar()
 }
-
+compileJava {
+	options.release.set(8)
+}
 jar {
 	enabled = false
 	// Set the classifier to fix gradle task validation confusion.
@@ -212,7 +218,7 @@ task testJar(type: Jar) {
 
 
 task copyJson() {
-	def inJson = file('src/main/resources/quilt-installer.json')
+	def inJson = file('src/main/resources/quilt_installer.json')
 	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 
 	def outJson = file("build/libs/${archivesBaseName}-${version}.json")

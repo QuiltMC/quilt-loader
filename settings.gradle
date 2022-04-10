@@ -21,9 +21,4 @@ pluginManagement {
 rootProject.name = "quilt-loader"
 
 include "minecraft"
-
-if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
-	include "minecraft:minecraft-test"
-} else {
-	println("Minecraft test sub project requires java 17 or higher!")
-}
+include "minecraft:minecraft-test"
