@@ -37,7 +37,7 @@ allprojects {
 	repositories {
 		maven {
 			name = 'Fabric'
-			url = 'https://maven.quiltmc.org/repository/fabricmc'
+			url = 'https://maven.fabricmc.net/'
 		}
 		maven {
 			name = 'Quilt'
