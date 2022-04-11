@@ -19,7 +19,11 @@ package net.fabricmc.loader.launch.common;
 import net.fabricmc.api.EnvType;
 
 import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
+
+import net.fabricmc.loader.api.metadata.ModDependency;
+import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.ModContainerImpl;
@@ -38,6 +42,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfig;
 import org.spongepowered.asm.mixin.transformer.Config;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -149,33 +154,36 @@ public final class FabricMixinBootstrap {
 			// infer from loader dependency by determining the least relevant loader version the mod accepts
 			// AND any loader deps
 
-//			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
-//
-//			for (ModDependency dep : mod.metadata().depends()) {
-//				if (dep.getModId().equals("fabricloader") || dep.getModId().equals("fabric-loader")) {
-//					if (dep.getKind() == Kind.DEPENDS) {
-//						reqIntervals = VersionInterval.and(reqIntervals, dep.getVersionIntervals());
-//					} else if (dep.getKind() == Kind.BREAKS) {
-//						reqIntervals = VersionInterval.and(reqIntervals, VersionInterval.not(dep.getVersionIntervals()));
-//					}
-//				}
-//			}
-//
-//			if (reqIntervals.isEmpty()) throw new IllegalStateException("mod "+mod+" is incompatible with every loader version?"); // shouldn't get there
-//
-//			Version minLoaderVersion = reqIntervals.get(0).getMin(); // it is sorted, to 0 has the absolute lower bound
-//
-//			if (minLoaderVersion != null) { // has a lower bound
-//				for (LoaderMixinVersionEntry version : versions) {
-//					if (minLoaderVersion.compareTo(version.loaderVersion) >= 0) { // lower bound is >= current version
-//						return version.mixinVersion;
-//					} else {
-//						break;
-//					}
-//				}
-//			}
+			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
 
-			return FabricUtil.COMPATIBILITY_0_9_2;
+			for (ModDependency dep : mod.getInternalMeta().asFabricModMetadata().getDependencies()) {
+				if (dep.getModId().equals("fabricloader") || dep.getModId().equals("fabric-loader")) {
+					if (dep.getKind() == ModDependency.Kind.DEPENDS) {
+						reqIntervals = VersionInterval.and(reqIntervals, dep.getVersionIntervals());
+					} else if (dep.getKind() == ModDependency.Kind.BREAKS) {
+						reqIntervals = VersionInterval.and(reqIntervals, VersionInterval.not(dep.getVersionIntervals()));
+					}
+				}
+			}
+
+			if (reqIntervals.isEmpty()) throw new IllegalStateException("mod "+mod+" is incompatible with every loader version?"); // shouldn't get there
+
+			Version minLoaderVersion = reqIntervals.get(0).getMin(); // it is sorted, to 0 has the absolute lower bound
+
+			// Quilt: If we can't determine the minimum loader version, we prefer the latest compatibility
+			// instead of the lowest one.
+
+			if (minLoaderVersion != null) { // has a lower bound
+				for (LoaderMixinVersionEntry version : versions) {
+					if (minLoaderVersion.compareTo(version.loaderVersion) >= 0) { // lower bound is >= current version
+						return version.mixinVersion;
+					} else {
+						return FabricUtil.COMPATIBILITY_0_9_2;
+					}
+				}
+			}
+
+			return FabricUtil.COMPATIBILITY_LATEST;
 		}
 
 		private static void addVersion(String minLoaderVersion, int mixinCompat) {
