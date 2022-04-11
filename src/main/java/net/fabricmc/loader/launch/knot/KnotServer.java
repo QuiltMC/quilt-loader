@@ -16,10 +16,10 @@
 
 package net.fabricmc.loader.launch.knot;
 
-import net.fabricmc.api.EnvType;
+import org.quiltmc.loader.launch.knot.KnotHelper;
 
 public class KnotServer {
 	public static void main(String[] args) {
-		Knot.launch(args, EnvType.SERVER);
+		KnotHelper.launchServer(args);
 	}
 }

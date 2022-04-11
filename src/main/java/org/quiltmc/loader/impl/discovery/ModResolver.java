@@ -316,7 +316,7 @@ public class ModResolver {
 
 										list.add(dest);
 
-										Log.warn(LogCategory.RESOLUTION, "SKIPPING ADDING READABLE PATH");
+										//Log.warn(LogCategory.RESOLUTION, "SKIPPING ADDING READABLE PATH");
 											readableNestedJarPaths.put(dest.toString(), String.format("%s!%s", getReadablePath(candidate.getOriginPath()), modPath));
 									}
 								});
