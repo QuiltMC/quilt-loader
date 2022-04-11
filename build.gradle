@@ -154,7 +154,7 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 
 	manifest {
 		attributes (
-			"Main-Class": "org.quiltmc.loader.impl.launch.server.QuiltServerLauncher"
+			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher"
 		)
 	}
 

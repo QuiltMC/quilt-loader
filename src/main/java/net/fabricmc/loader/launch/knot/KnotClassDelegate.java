@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -220,7 +220,7 @@ class KnotClassDelegate {
 					} */
 				}
 			} catch (IOException | FileSystemNotFoundException | URISyntaxException e) {
-				if (QuiltLauncherBase.getLauncher().isDevelopment()) {
+				if (FabricLauncherBase.getLauncher().isDevelopment()) {
 					Log.warn(LogCategory.KNOT, "Failed to load manifest", e);
 				}
 			}

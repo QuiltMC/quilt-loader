@@ -25,18 +25,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.objectweb.asm.commons.Remapper;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
@@ -64,7 +61,7 @@ public final class RuntimeModRemapper {
 				.filter(mc -> !mc.requiresRemap())
 				.collect(Collectors.toList());
 
-		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+		FabricLauncher launcher = FabricLauncherBase.getLauncher();
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(launcher.getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))

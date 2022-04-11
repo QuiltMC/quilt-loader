@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.server;
+package net.fabricmc.loader.launch.server;
 
 import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.*;
 import java.net.URL;
@@ -27,9 +26,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-public class QuiltServerLauncher {
-	private static final ClassLoader parentLoader = QuiltServerLauncher.class.getClassLoader();
-	private static String mainClass = "org.quiltmc.loader.impl.launch.knot.KnotServer";
+public class FabricServerLauncher {
+	private static final ClassLoader parentLoader = FabricServerLauncher.class.getClassLoader();
+	private static String mainClass = "net.fabricmc.loader.launch.knot.KnotServer";
 
 	public static void main(String[] args) {
 		URL propUrl = parentLoader.getResource("fabric-server-launch.properties");

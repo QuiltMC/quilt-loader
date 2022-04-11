@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.common;
+package net.fabricmc.loader.launch.common;
 
 import net.fabricmc.api.EnvType;
 
@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.jar.Manifest;
 
-public interface QuiltLauncher {
+public interface FabricLauncher {
 	MappingConfiguration getMappingConfiguration();
 
 	void addToClassPath(Path path, String... allowedPrefixes);

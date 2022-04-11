@@ -21,7 +21,7 @@ import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncher;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -60,7 +60,7 @@ public class GameTransformer {
 		patchedClasses.put(key, writer.toByteArray());
 	}
 
-	public void locateEntrypoints(QuiltLauncher launcher, Path gameJar) {
+	public void locateEntrypoints(FabricLauncher launcher, Path gameJar) {
 		if (entrypointsLocated) {
 			return;
 		}

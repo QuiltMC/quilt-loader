@@ -56,10 +56,10 @@ import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.launch.knot.Knot;
-import org.quiltmc.loader.impl.metadata.DependencyOverrides;
+import net.fabricmc.loader.launch.common.FabricLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.launch.knot.Knot;
+
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
@@ -152,7 +152,7 @@ public final class QuiltLoaderImpl {
 	}
 
 	public EnvType getEnvironmentType() {
-		return QuiltLauncherBase.getLauncher().getEnvironmentType();
+		return FabricLauncherBase.getLauncher().getEnvironmentType();
 	}
 
 	/**
@@ -295,7 +295,7 @@ public final class QuiltLoaderImpl {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerImpl mod : mods) {
 			if (!mod.metadata().id().equals(MOD_ID) && !mod.getInfo().getType().equals("builtin")) {
-				QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath());
+				FabricLauncherBase.getLauncher().addToClassPath(mod.rootPath());
 			}
 		}
 
@@ -328,7 +328,7 @@ public final class QuiltLoaderImpl {
 				Path path = Paths.get(pathName).toAbsolutePath().normalize();
 
 				if (Files.isDirectory(path) && knownModPaths.add(path)) {
-					QuiltLauncherBase.getLauncher().addToClassPath(path);
+					FabricLauncherBase.getLauncher().addToClassPath(path);
 				}
 			}
 		}
@@ -353,8 +353,8 @@ public final class QuiltLoaderImpl {
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
 			mappingResolver = new QuiltMappingResolver(
-				QuiltLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
-				QuiltLauncherBase.getLauncher().getTargetNamespace()
+				FabricLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
+				FabricLauncherBase.getLauncher().getTargetNamespace()
 			);
 		}
 
@@ -390,7 +390,7 @@ public final class QuiltLoaderImpl {
 	}
 
 	public boolean isDevelopmentEnvironment() {
-		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+		FabricLauncher launcher = FabricLauncherBase.getLauncher();
 		if (launcher == null) {
 			// Most likely a test
 			return true;
@@ -467,7 +467,7 @@ public final class QuiltLoaderImpl {
 				}
 
 				try {
-					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
+					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to instantiate language adapter: " + laEntry.getKey(), e);
 				}
@@ -520,9 +520,9 @@ public final class QuiltLoaderImpl {
 			throw new RuntimeException("Cannot instantiate mods when not frozen!");
 		}
 
-		if (gameInstance != null && QuiltLauncherBase.getLauncher() instanceof Knot) {
+		if (gameInstance != null && FabricLauncherBase.getLauncher() instanceof Knot) {
 			ClassLoader gameClassLoader = gameInstance.getClass().getClassLoader();
-			ClassLoader targetClassLoader = QuiltLauncherBase.getLauncher().getTargetClassLoader();
+			ClassLoader targetClassLoader = FabricLauncherBase.getLauncher().getTargetClassLoader();
 			boolean matchesKnot = (gameClassLoader == targetClassLoader);
 			boolean containsKnot = false;
 
@@ -548,7 +548,7 @@ public final class QuiltLoaderImpl {
 							+ " - Expected game class loader: %s\n"
 							+ " - Actual game class loader: %s\n"
 							+ "Could not find the expected class loader in game class loader parents!\n",
-							QuiltLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
+							FabricLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
 				}
 			}
 		}

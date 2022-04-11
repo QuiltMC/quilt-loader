@@ -22,7 +22,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.quiltmc.loader.impl.entrypoint.GamePatch;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncher;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -32,7 +32,7 @@ import java.util.function.Function;
 
 public final class BrandingPatch extends GamePatch {
 	@Override
-	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
+	public void process(FabricLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
 		for (String brandClassName : new String[] {
 				"net.minecraft.client.ClientBrandRetriever",
 				"net.minecraft.server.MinecraftServer"

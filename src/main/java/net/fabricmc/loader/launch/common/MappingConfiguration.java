@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.common;
+package net.fabricmc.loader.launch.common;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -66,7 +66,7 @@ public final class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
-		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
+		return FabricLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
 	}
 
 	public boolean requiresPackageAccessHack() {

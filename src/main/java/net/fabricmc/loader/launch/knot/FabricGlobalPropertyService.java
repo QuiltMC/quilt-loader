@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.spongepowered.asm.service.IGlobalPropertyService;
 import org.spongepowered.asm.service.IPropertyKey;
 
-public class QuiltGlobalPropertyService implements IGlobalPropertyService {
+public class FabricGlobalPropertyService implements IGlobalPropertyService {
 	@Override
 	public IPropertyKey resolveKey(String name) {
 		return new MixinStringPropertyKey(name);
@@ -33,23 +33,23 @@ public class QuiltGlobalPropertyService implements IGlobalPropertyService {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T getProperty(IPropertyKey key) {
-		return (T) QuiltLauncherBase.getProperties().get(keyString(key));
+		return (T) FabricLauncherBase.getProperties().get(keyString(key));
 	}
 
 	@Override
 	public void setProperty(IPropertyKey key, Object value) {
-		QuiltLauncherBase.getProperties().put(keyString(key), value);
+		FabricLauncherBase.getProperties().put(keyString(key), value);
 	}
 
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T getProperty(IPropertyKey key, T defaultValue) {
-		return (T) QuiltLauncherBase.getProperties().getOrDefault(keyString(key), defaultValue);
+		return (T) FabricLauncherBase.getProperties().getOrDefault(keyString(key), defaultValue);
 	}
 
 	@Override
 	public String getPropertyString(IPropertyKey key, String defaultValue) {
-		Object o = QuiltLauncherBase.getProperties().get(keyString(key));
+		Object o = FabricLauncherBase.getProperties().get(keyString(key));
 		return o != null ? o.toString() : defaultValue;
 	}
 }

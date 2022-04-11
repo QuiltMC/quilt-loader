@@ -22,8 +22,8 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
@@ -183,7 +183,7 @@ public class ModResolver {
 				if (isDevelopment && !Files.exists(fabricModJson) && !Files.exists(quiltModJson)) {
 					Log.warn(LogCategory.RESOLUTION, "Adding directory " + path + " to mod classpath in development environment - workaround for Gradle splitting mods into two directories");
 					synchronized (launcherSyncObject) {
-						QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+						FabricLauncher launcher = FabricLauncherBase.getLauncher();
 						if (launcher != null) {
 							launcher.addToClassPath(path);
 						}

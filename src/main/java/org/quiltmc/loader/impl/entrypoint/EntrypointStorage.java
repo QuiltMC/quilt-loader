@@ -21,7 +21,7 @@ import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.impl.ModContainerImpl;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -62,7 +62,7 @@ public final class EntrypointStorage {
 		@Override
 		public <T> T getOrCreate(Class<T> type) throws Exception {
 			if (object == null) {
-				org.quiltmc.loader.impl.language.LanguageAdapter adapter = (org.quiltmc.loader.impl.language.LanguageAdapter) Class.forName(languageAdapter, true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
+				org.quiltmc.loader.impl.language.LanguageAdapter adapter = (org.quiltmc.loader.impl.language.LanguageAdapter) Class.forName(languageAdapter, true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
 				object = adapter.createInstance(value, options);
 			}
 

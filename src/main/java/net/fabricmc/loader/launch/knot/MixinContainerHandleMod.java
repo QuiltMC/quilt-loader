@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
-import java.io.File;
+import java.util.Collection;
+import java.util.Collections;
 
-import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.util.SystemProperties;
+import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 
-public class KnotServer {
-	public static void main(String[] args) {
-		Knot.launch(args, EnvType.SERVER);
+public class MixinContainerHandleMod implements IContainerHandle {
+	@Override
+	public String getAttribute(String name) {
+		return null;
+	}
+
+	@Override
+	public Collection<IContainerHandle> getNestedContainers() {
+		return Collections.emptyList();
 	}
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.common;
+package net.fabricmc.loader.launch.common;
 
 import net.fabricmc.api.EnvType;
 
@@ -44,8 +44,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class QuiltMixinBootstrap {
-	private QuiltMixinBootstrap() { }
+public final class FabricMixinBootstrap {
+	private FabricMixinBootstrap() { }
 
 	private static boolean initialized = false;
 
@@ -64,11 +64,11 @@ public final class QuiltMixinBootstrap {
 
 	public static void init(EnvType side, QuiltLoaderImpl loader) {
 		if (initialized) {
-			throw new IllegalStateException("QuiltMixinBootstrap has already been initialized!");
+			throw new IllegalStateException("FabricMixinBootstrap has already been initialized!");
 		}
 
-		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
-			MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
+		if (FabricLauncherBase.getLauncher().isDevelopment()) {
+			MappingConfiguration mappingConfiguration = FabricLauncherBase.getLauncher().getMappingConfiguration();
 			TinyTree mappings = mappingConfiguration.getMappings();
 
 			if (mappings != null) {
@@ -90,7 +90,7 @@ public final class QuiltMixinBootstrap {
 		}
 
 		MixinBootstrap.init();
-		getMixinConfigs(loader, side).forEach(QuiltMixinBootstrap::addConfiguration);
+		getMixinConfigs(loader, side).forEach(FabricMixinBootstrap::addConfiguration);
 
 		Map<String, ModContainerImpl> configToModMap = new HashMap<>();
 

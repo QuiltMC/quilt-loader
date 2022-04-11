@@ -18,7 +18,7 @@ package org.quiltmc.loader.impl.transformer;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -29,7 +29,7 @@ public final class QuiltTransformer {
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
 		// FIXME: Could use a better way to detect this...
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
-		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
+		boolean transformAccess = isMinecraftClass && FabricLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;
 		boolean applyAccessWidener = isMinecraftClass && QuiltLoaderImpl.INSTANCE.getAccessWidener().getTargets().contains(name);
 

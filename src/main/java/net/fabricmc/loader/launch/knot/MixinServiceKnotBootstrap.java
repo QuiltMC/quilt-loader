@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
-import java.io.File;
+import org.spongepowered.asm.service.IMixinServiceBootstrap;
 
-import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.util.SystemProperties;
+public class MixinServiceKnotBootstrap implements IMixinServiceBootstrap {
+	@Override
+	public String getName() {
+		return "Knot";
+	}
 
-public class KnotClient {
-	public static void main(String[] args) {
-		Knot.launch(args, EnvType.CLIENT);
+	@Override
+	public String getServiceClassName() {
+		return "net.fabricmc.loader.launch.knot.MixinServiceKnot";
+	}
+
+	@Override
+	public void bootstrap() {
+		// already done in Knot
 	}
 }

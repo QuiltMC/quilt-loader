@@ -16,7 +16,7 @@ package org.quiltmc.loader.impl.game.minecraft.patch.applet;/*
 
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
 import java.applet.Applet;
 import java.applet.AppletStub;
@@ -62,7 +62,7 @@ public class AppletLauncher extends Applet implements AppletStub {
 		params.put("demo", Boolean.toString(demo));
 
 		try {
-			mcApplet = (Applet) QuiltLauncherBase.getLauncher()
+			mcApplet = (Applet) FabricLauncherBase.getLauncher()
 					.getTargetClassLoader()
 					.loadClass(GameTransformer.appletMainClass)
 					.getDeclaredConstructor()

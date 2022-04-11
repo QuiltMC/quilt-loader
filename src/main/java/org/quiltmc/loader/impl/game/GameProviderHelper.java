@@ -27,8 +27,8 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.launch.common.MappingConfiguration;
+import net.fabricmc.loader.launch.common.FabricLauncher;
+import net.fabricmc.loader.launch.common.MappingConfiguration;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -51,7 +51,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
 import java.util.zip.ZipFile;
 
 public final class GameProviderHelper {
@@ -138,7 +137,7 @@ public final class GameProviderHelper {
 
 	private static boolean emittedInfo = false;
 
-	public static Map<String, Path> deobfuscate(Map<String, Path> inputFileMap, String gameId, String gameVersion, Path gameDir, QuiltLauncher launcher) {
+	public static Map<String, Path> deobfuscate(Map<String, Path> inputFileMap, String gameId, String gameVersion, Path gameDir, FabricLauncher launcher) {
 		Log.debug(LogCategory.GAME_REMAP, "Requesting deobfuscation of %s", inputFileMap);
 
 		if (launcher.isDevelopment()) { // in-dev is already deobfuscated
@@ -245,7 +244,7 @@ public final class GameProviderHelper {
 		return ret.resolve(versionDirName.toString().replaceAll("[^\\w\\-\\. ]+", "_"));
 	}
 
-	private static void deobfuscate0(List<Path> inputFiles, List<Path> outputFiles, List<Path> tmpFiles, TinyTree mappings, String targetNamespace, QuiltLauncher launcher) throws IOException {
+	private static void deobfuscate0(List<Path> inputFiles, List<Path> outputFiles, List<Path> tmpFiles, TinyTree mappings, String targetNamespace, FabricLauncher launcher) throws IOException {
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(mappings, "official", targetNamespace))
 				.rebuildSourceFilenames(true)

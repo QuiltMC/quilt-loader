@@ -20,7 +20,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.objectweb.asm.ClassReader;
 
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class JavaLanguageAdapter implements LanguageAdapter {
 			}
 		}
 
-		InputStream stream = QuiltLauncherBase.getLauncher().getResourceAsStream(LoaderUtil.getClassFileName(itfString));
+		InputStream stream = FabricLauncherBase.getLauncher().getResourceAsStream(LoaderUtil.getClassFileName(itfString));
 		if (stream == null) return false;
 
 		ClassReader reader = new ClassReader(stream);
@@ -62,7 +62,7 @@ public class JavaLanguageAdapter implements LanguageAdapter {
 	}
 
 	public static Class<?> getClass(String className, Options options) throws ClassNotFoundException, IOException {
-		InputStream stream = QuiltLauncherBase.getLauncher().getResourceAsStream(LoaderUtil.getClassFileName(className));
+		InputStream stream = FabricLauncherBase.getLauncher().getResourceAsStream(LoaderUtil.getClassFileName(className));
 		if (stream == null) throw new ClassNotFoundException("Could not find or load class " + className);
 
 		ClassReader reader = new ClassReader(stream);
@@ -82,7 +82,7 @@ public class JavaLanguageAdapter implements LanguageAdapter {
 		}
 
 		stream.close();
-		return QuiltLauncherBase.getClass(className);
+		return FabricLauncherBase.getClass(className);
 	}
 
 	@Override

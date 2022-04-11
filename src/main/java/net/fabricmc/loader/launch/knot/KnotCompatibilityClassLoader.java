@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.game.GameProvider;
@@ -24,34 +24,12 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
-import java.security.SecureClassLoader;
-import java.util.Enumeration;
-import java.util.Objects;
 
-class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterface {
-	private static class DynamicURLClassLoader extends URLClassLoader {
-		private DynamicURLClassLoader(URL[] urls) {
-			super(urls, new DummyClassLoader());
-		}
-
-		@Override
-		public void addURL(URL url) {
-			super.addURL(url);
-		}
-
-		static {
-			registerAsParallelCapable();
-		}
-	}
-
-	private final DynamicURLClassLoader urlLoader;
-	private final ClassLoader originalLoader;
+class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
 	private final KnotClassDelegate delegate;
 
-	KnotClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
-		super(new DynamicURLClassLoader(new URL[0]));
-		this.originalLoader = getClass().getClassLoader();
-		this.urlLoader = (DynamicURLClassLoader) getParent();
+	KnotCompatibilityClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
+		super(new URL[0], KnotCompatibilityClassLoader.class.getClassLoader());
 		this.delegate = new KnotClassDelegate(isDevelopment, envType, this, provider);
 	}
 
@@ -68,85 +46,6 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	}
 
 	@Override
-	public URL getResource(String name) {
-		Objects.requireNonNull(name);
-
-		URL url = urlLoader.getResource(name);
-
-		if (url == null) {
-			url = originalLoader.getResource(name);
-		}
-
-		return url;
-	}
-
-	@Override
-	public URL findResource(String name) {
-		Objects.requireNonNull(name);
-
-		return urlLoader.findResource(name);
-	}
-
-	@Override
-	public InputStream getResourceAsStream(String name) {
-		Objects.requireNonNull(name);
-
-		InputStream inputStream = urlLoader.getResourceAsStream(name);
-
-		if (inputStream == null) {
-			inputStream = originalLoader.getResourceAsStream(name);
-		}
-
-		return inputStream;
-	}
-
-	@Override
-	public Enumeration<URL> getResources(String name) throws IOException {
-		Objects.requireNonNull(name);
-
-		Enumeration<URL> first = urlLoader.getResources(name);
-		Enumeration<URL> second = originalLoader.getResources(name);
-		return new Enumeration<URL>() {
-			Enumeration<URL> current = first;
-
-			@Override
-			public boolean hasMoreElements() {
-				if (current == null) {
-					return false;
-				}
-
-				if (current.hasMoreElements()) {
-					return true;
-				}
-
-				if (current == first && second.hasMoreElements()) {
-					return true;
-				}
-
-				return false;
-			}
-
-			@Override
-			public URL nextElement() {
-				if (current == null) {
-					return null;
-				}
-
-				if (!current.hasMoreElements()) {
-					if (current == first) {
-						current = second;
-					} else {
-						current = null;
-						return null;
-					}
-				}
-
-				return current.nextElement();
-			}
-		};
-	}
-
-	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
 			Class<?> c = findLoadedClass(name);
@@ -155,7 +54,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 				c = delegate.tryLoadClass(name, false);
 
 				if (c == null) {
-					c = originalLoader.loadClass(name);
+					c = getParent().loadClass(name);
 				}
 			}
 
@@ -193,18 +92,18 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	@Override
 	public void addURL(URL url) {
-		urlLoader.addURL(url);
+		super.addURL(url);
 	}
 
 	@Override
 	public InputStream getResourceAsStream(String classFile, boolean allowFromParent) throws IOException {
-		InputStream inputStream = urlLoader.getResourceAsStream(classFile);
-
-		if (inputStream == null && allowFromParent) {
-			inputStream = originalLoader.getResourceAsStream(classFile);
+		if (!allowFromParent) {
+			if (findResource(classFile) == null) {
+				return null;
+			}
 		}
 
-		return inputStream;
+		return super.getResourceAsStream(classFile);
 	}
 
 	@Override

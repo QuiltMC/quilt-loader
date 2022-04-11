@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleURI;
@@ -52,11 +52,11 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	}
 
 	public byte[] getClassBytes(String name, String transformedName) throws IOException {
-		return QuiltLauncherBase.getLauncher().getClassByteArray(name, true);
+		return FabricLauncherBase.getLauncher().getClassByteArray(name, true);
 	}
 
 	public byte[] getClassBytes(String name, boolean runTransformers) throws ClassNotFoundException, IOException {
-		byte[] classBytes = QuiltLauncherBase.getLauncher().getClassByteArray(name, runTransformers);
+		byte[] classBytes = FabricLauncherBase.getLauncher().getClassByteArray(name, runTransformers);
 
 		if (classBytes != null) {
 			return classBytes;
@@ -87,12 +87,12 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public Class<?> findClass(String name) throws ClassNotFoundException {
-		return QuiltLauncherBase.getLauncher().getTargetClassLoader().loadClass(name);
+		return FabricLauncherBase.getLauncher().getTargetClassLoader().loadClass(name);
 	}
 
 	@Override
 	public Class<?> findClass(String name, boolean initialize) throws ClassNotFoundException {
-		return Class.forName(name, initialize, QuiltLauncherBase.getLauncher().getTargetClassLoader());
+		return Class.forName(name, initialize, FabricLauncherBase.getLauncher().getTargetClassLoader());
 	}
 
 	@Override
@@ -102,7 +102,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public String getName() {
-		return QuiltLauncherBase.getLauncher() instanceof Knot ? "Knot/Fabric" : "Launchwrapper/Fabric";
+		return FabricLauncherBase.getLauncher() instanceof Knot ? "Knot/Fabric" : "Launchwrapper/Fabric";
 	}
 
 	@Override
@@ -186,7 +186,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public InputStream getResourceAsStream(String name) {
-		return QuiltLauncherBase.getLauncher().getResourceAsStream(name);
+		return FabricLauncherBase.getLauncher().getResourceAsStream(name);
 	}
 
 	@Override
@@ -194,7 +194,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public boolean isClassLoaded(String className) {
-		return QuiltLauncherBase.getLauncher().isClassLoaded(className);
+		return FabricLauncherBase.getLauncher().isClassLoaded(className);
 	}
 
 	@Override
@@ -217,7 +217,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public String getSideName() {
-		return QuiltLauncherBase.getLauncher().getEnvironmentType().name();
+		return FabricLauncherBase.getLauncher().getEnvironmentType().name();
 	}
 
 	@Override

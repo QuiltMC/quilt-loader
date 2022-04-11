@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.common;
+package net.fabricmc.loader.launch.common;
 
 import java.lang.reflect.Method;
 import java.nio.file.Path;
@@ -28,15 +28,15 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 
-public abstract class QuiltLauncherBase implements QuiltLauncher {
+public abstract class FabricLauncherBase implements FabricLauncher {
 	public static Path minecraftJar;
 
 	private static boolean mixinReady;
 	private static Map<String, Object> properties;
-	private static QuiltLauncher launcher;
+	private static FabricLauncher launcher;
 	private static MappingConfiguration mappingConfiguration = new MappingConfiguration();
 
-	protected QuiltLauncherBase() {
+	protected FabricLauncherBase() {
 		setLauncher(this);
 	}
 
@@ -57,7 +57,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 		properties = propertiesA;
 	}
 
-	private static void setLauncher(QuiltLauncher launcherA) {
+	private static void setLauncher(FabricLauncher launcherA) {
 		if (launcher != null && launcher != launcherA) {
 			throw new RuntimeException("Duplicate setLauncher call!");
 		}
@@ -65,7 +65,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 		launcher = launcherA;
 	}
 
-	public static QuiltLauncher getLauncher() {
+	public static FabricLauncher getLauncher() {
 		return launcher;
 	}
 

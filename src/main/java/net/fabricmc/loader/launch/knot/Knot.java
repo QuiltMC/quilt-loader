@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
 import net.fabricmc.api.EnvType;
 
@@ -23,8 +23,8 @@ import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -53,7 +53,7 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public final class Knot extends QuiltLauncherBase {
+public final class Knot extends FabricLauncherBase {
 	protected Map<String, Object> properties = new HashMap<>();
 
 	private KnotClassLoaderInterface classLoader;
@@ -145,8 +145,8 @@ public final class Knot extends QuiltLauncherBase {
 		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
 
 		MixinBootstrap.init();
-		QuiltMixinBootstrap.init(getEnvironmentType(), loader);
-		QuiltLauncherBase.finishMixinBootstrapping();
+		FabricMixinBootstrap.init(getEnvironmentType(), loader);
+		FabricLauncherBase.finishMixinBootstrapping();
 
 		classLoader.getDelegate().initializeTransformers();
 

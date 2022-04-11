@@ -25,7 +25,7 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncher;
 
 import org.quiltmc.loader.impl.util.Arguments;
 
@@ -42,10 +42,10 @@ public interface GameProvider {
 	boolean requiresUrlClassLoader();
 
 	boolean isEnabled();
-	boolean locateGame(QuiltLauncher launcher, String[] args);
-	void initialize(QuiltLauncher launcher);
+	boolean locateGame(FabricLauncher launcher, String[] args);
+	void initialize(FabricLauncher launcher);
 	GameTransformer getEntrypointTransformer();
-	void unlockClassPath(QuiltLauncher launcher);
+	void unlockClassPath(FabricLauncher launcher);
 	void launch(ClassLoader loader);
 
 	default boolean displayCrash(Throwable exception, String context) {

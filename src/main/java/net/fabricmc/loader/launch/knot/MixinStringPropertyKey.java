@@ -14,21 +14,35 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.knot;
+package net.fabricmc.loader.launch.knot;
 
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Objects;
 
-import org.spongepowered.asm.launch.platform.container.IContainerHandle;
+import org.spongepowered.asm.service.IPropertyKey;
 
-public class MixinContainerHandleMod implements IContainerHandle {
-	@Override
-	public String getAttribute(String name) {
-		return null;
+public class MixinStringPropertyKey implements IPropertyKey {
+	public final String key;
+
+	public MixinStringPropertyKey(String key) {
+		this.key = key;
 	}
 
 	@Override
-	public Collection<IContainerHandle> getNestedContainers() {
-		return Collections.emptyList();
+	public boolean equals(Object obj) {
+		if (!(obj instanceof MixinStringPropertyKey)) {
+			return false;
+		} else {
+			return Objects.equals(this.key, ((MixinStringPropertyKey) obj).key);
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		return this.key.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return this.key;
 	}
 }
