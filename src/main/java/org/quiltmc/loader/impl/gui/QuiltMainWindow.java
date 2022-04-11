@@ -259,11 +259,7 @@ class QuiltMainWindow {
 			// TODO: HDPI
 
 			int scale = 16;
-			Map<Integer, Icon> map = icons.get(info);
-
-			if (map == null) {
-				icons.put(info, map = new HashMap<>());
-			}
+			Map<Integer, Icon> map = icons.computeIfAbsent(info, k -> new HashMap<>());
 
 			Icon icon = map.get(scale);
 
