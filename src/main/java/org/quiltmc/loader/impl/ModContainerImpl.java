@@ -18,8 +18,10 @@ package org.quiltmc.loader.impl;
 
 import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.metadata.AbstractModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.QuiltModMetadataWrapperFabric;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -29,6 +31,7 @@ public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 	private final InternalModMetadata meta;
 	private final FabricLoaderModMetadata fabricMeta;
 	private final List<List<Path>> sourcePaths;
+	private final BasicSourceType sourceType;
 	private final Path root;
 
 	public ModContainerImpl(ModCandidate candidate) {
@@ -39,6 +42,16 @@ public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 		// Yes, this is wrong.
 		// Ideally we'd iterate back across the whole path until we reached
 		this.sourcePaths = Collections.singletonList(Collections.singletonList(candidate.getOriginPath()));
+
+		if (fabricMeta instanceof QuiltModMetadataWrapperFabric) {
+			// A quilt mod
+			// builtin mods currently can't be anything other than fabric meta mods
+			sourceType = BasicSourceType.NORMAL_QUILT;
+		} else if (AbstractModMetadata.TYPE_BUILTIN.equals(fabricMeta.getType())) {
+			sourceType = BasicSourceType.BUILTIN;
+		} else {
+			sourceType = BasicSourceType.NORMAL_FABRIC;
+		}
 	}
 
 	@Override
@@ -54,6 +67,11 @@ public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 	@Override
 	public List<List<Path>> getSourcePaths() {
 		return sourcePaths;
+	}
+
+	@Override
+	public BasicSourceType getSourceType() {
+		return sourceType;
 	}
 
 	@Deprecated

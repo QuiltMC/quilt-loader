@@ -64,4 +64,21 @@ public interface ModContainer {
 	 * @return A list of every source path this mod is loaded from. May be empty if we can't turn the sources into a
 	 *         path. */
 	List<List<Path>> getSourcePaths();
+
+	/** Gets the "basic source type" of this mod, which represents where it comes from. Since plugins will come
+	 * eventually (and complicate the question of "what type is this mod") this is intentionally an enum, where
+	 * additional methods will be added instead of extending this one. */
+	BasicSourceType getSourceType();
+
+	public enum BasicSourceType {
+		/** A regular quilt mod, likely loaded from a mod jar file, but could be from the classpath instead. */
+		NORMAL_QUILT,
+		/** A regular fabric mod, likely loaded from a mod jar file, but could be from the classpath instead. */
+		NORMAL_FABRIC,
+		/** A "mod" that only exists to expose some internal library or game itself - for example quilt loader,
+		 * minecraft, and java all get exposed as BUILTINs. */
+		BUILTIN,
+		/** Something different than the above. Mods loaded by plugins will return this in the future. */
+		OTHER;
+	}
 }
