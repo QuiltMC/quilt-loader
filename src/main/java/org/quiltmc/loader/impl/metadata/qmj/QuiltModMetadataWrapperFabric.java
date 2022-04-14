@@ -145,7 +145,8 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getDependencies() {
-		throw new UnsupportedOperationException("Dependencies cannot be represented as a Fabric construct");
+		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
+		throw new UnsupportedOperationException("Quilt dependencies cannot be represented as a Fabric construct");
 	}
 
 	@Override
@@ -156,7 +157,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	@Override
 	public Collection<ModDependency> getDepends() {
 		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
-		throw new UnsupportedOperationException("Quilt dependencies can not be represented as a Fabric construct!");
+		throw new UnsupportedOperationException("Quilt dependencies cannot be represented as a Fabric construct!");
 	}
 
 	@Override
@@ -177,7 +178,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	@Override
 	public Collection<ModDependency> getBreaks() {
 		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
-		throw new UnsupportedOperationException("Quilt dependencies can not be represented as a Fabric construct!");
+		throw new UnsupportedOperationException("Quilt dependencies cannot be represented as a Fabric construct!");
 	}
 
 	@Override

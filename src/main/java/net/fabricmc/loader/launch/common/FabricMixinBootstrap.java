@@ -26,6 +26,7 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.impl.ModContainerImpl;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
@@ -157,11 +158,8 @@ public final class FabricMixinBootstrap {
 
 			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
 
-			Collection<ModDependency> deps;
-			try {
-				deps = mod.getInternalMeta().asFabricModMetadata().getDependencies();
-			} catch (UnsupportedOperationException e) {
-				// quilt mod, we can assume it uses latest compat
+			if (mod.getSourceType() != BasicSourceType.NORMAL_FABRIC) {
+				// quilt or builtin mod, we can assume it uses latest compat
 				return FabricUtil.COMPATIBILITY_LATEST;
 			}
 
