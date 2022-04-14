@@ -145,7 +145,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getDependencies() {
-		return null;
+		throw new UnsupportedOperationException("Dependencies cannot be represented as a Fabric construct");
 	}
 
 	@Override

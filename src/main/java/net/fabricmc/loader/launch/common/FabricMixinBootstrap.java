@@ -42,6 +42,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfig;
 import org.spongepowered.asm.mixin.transformer.Config;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -155,6 +156,14 @@ public final class FabricMixinBootstrap {
 			// AND any loader deps
 
 			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
+
+			Collection<ModDependency> deps;
+			try {
+				deps = mod.getInternalMeta().asFabricModMetadata().getDependencies();
+			} catch (UnsupportedOperationException e) {
+				// quilt mod, we can assume it uses latest compat
+				return FabricUtil.COMPATIBILITY_LATEST;
+			}
 
 			for (ModDependency dep : mod.getInternalMeta().asFabricModMetadata().getDependencies()) {
 				if (dep.getModId().equals("fabricloader") || dep.getModId().equals("fabric-loader")) {
