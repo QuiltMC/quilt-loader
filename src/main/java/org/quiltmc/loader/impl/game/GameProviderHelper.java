@@ -208,10 +208,10 @@ public final class GameProviderHelper {
 			return ret;
 		}
 
-		Log.debug(LogCategory.GAME_REMAP, "Fabric mapping file detected, applying...");
+		Log.debug(LogCategory.GAME_REMAP, "Mapping file detected, applying...");
 
 		if (!emittedInfo) {
-			Log.info(LogCategory.GAME_REMAP, "Fabric is preparing JARs on first launch, this may take a few seconds...");
+			Log.info(LogCategory.GAME_REMAP, "Preparing JARs on first launch, this may take a few seconds...");
 			emittedInfo = true;
 		}
 

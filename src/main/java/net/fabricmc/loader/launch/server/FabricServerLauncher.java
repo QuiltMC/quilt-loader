@@ -31,7 +31,7 @@ public class FabricServerLauncher {
 	private static String mainClass = "net.fabricmc.loader.launch.knot.KnotServer";
 
 	public static void main(String[] args) {
-		URL propUrl = parentLoader.getResource("fabric-server-launch.properties");
+		URL propUrl = parentLoader.getResource("quilt-server-launch.properties");
 
 		if (propUrl != null) {
 			Properties properties = new Properties();
@@ -53,7 +53,7 @@ public class FabricServerLauncher {
 			try {
 				setup(args);
 			} catch (Exception e) {
-				throw new RuntimeException("Failed to setup Fabric server environment!", e);
+				throw new RuntimeException("Failed to setup Quilt server environment!", e);
 			}
 		}
 
@@ -75,17 +75,17 @@ public class FabricServerLauncher {
 		if (!Files.exists(serverJar)) {
 			System.err.println("The Minecraft server .JAR is missing (" + serverJar + ")!");
 			System.err.println();
-			System.err.println("Fabric's server-side launcher expects the server .JAR to be provided.");
-			System.err.println("You can edit its location in fabric-server-launcher.properties.");
+			System.err.println("Quilt's server-side launcher expects the server .JAR to be provided.");
+			System.err.println("You can edit its location in quilt-server-launcher.properties.");
 			System.err.println();
-			System.err.println("Without the official Minecraft server .JAR, Fabric Loader cannot launch.");
+			System.err.println("Without the official Minecraft server .JAR, QUilt Loader cannot launch.");
 			throw new RuntimeException("Missing game jar at " + serverJar);
 		}
 	}
 
 	private static String getServerJarPath() throws IOException {
-		// Pre-load "fabric-server-launcher.properties"
-		Path propertiesFile = Paths.get("fabric-server-launcher.properties");
+		// Pre-load "quilt-server-launcher.properties"
+		Path propertiesFile = Paths.get("quilt-server-launcher.properties");
 		Properties properties = new Properties();
 
 		if (Files.exists(propertiesFile)) {
