@@ -60,7 +60,7 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 			current = 0;
 		}
 		uniqueNames.put(name, current);
-		return name + "." + current;
+		return name + current;
 	}
 
 	@Override
