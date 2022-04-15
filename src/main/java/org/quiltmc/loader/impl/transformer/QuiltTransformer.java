@@ -16,14 +16,18 @@
 
 package org.quiltmc.loader.impl.transformer;
 
-import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
+import net.fabricmc.api.EnvType;
 
 public final class QuiltTransformer {
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
@@ -38,9 +42,57 @@ public final class QuiltTransformer {
 		}
 
 		ClassReader classReader = new ClassReader(bytes);
-		ClassWriter classWriter = new ClassWriter(classReader, 0);
-		ClassVisitor visitor = classWriter;
+		ClassWriter classWriter = null;
+		ClassVisitor visitor = null;
 		int visitorCount = 0;
+
+		if (environmentStrip) {
+			EnvironmentStrippingData stripData = new EnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType);
+			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+
+			if (stripData.stripEntireClass()) {
+				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
+			}
+
+			Collection<String> stripMethods = stripData.getStripMethods();
+
+			boolean stripAnyLambdas = false;
+
+			if (!stripData.getStripMethodLambdas().isEmpty()) {
+				LambdaStripCalculator calc = new LambdaStripCalculator(visitorCount, stripData.getStripMethodLambdas());
+				classReader.accept(calc, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+				Collection<String> additionalStripMethods = calc.computeAdditionalMethodsToStrip();
+
+				if (!additionalStripMethods.isEmpty()) {
+					stripMethods = new HashSet<>(stripMethods);
+					stripMethods.addAll(additionalStripMethods);
+
+					stripAnyLambdas = true;
+				}
+			}
+
+			if (!stripData.isEmpty()) {
+
+				if (stripAnyLambdas) {
+					// ClassWriter has a (useful) optimisation that copies over the
+					// entire constant pool and bootstrap methods from the original one,
+					// as well as any untransformed methods.
+					// However we can't use the second one, since we may need to remove bootstrap methods
+					// that reference methods which are no longer present in the stripped version.
+					classWriter = new ClassWriter(0);
+				} else {
+					classWriter = new ClassWriter(classReader, 0);
+				}
+
+				visitor = new ClassStripper(QuiltLoaderImpl.ASM_VERSION, classWriter, stripData.getStripInterfaces(), stripData.getStripFields(), stripMethods);
+				visitorCount++;
+			}
+		}
+
+		if (classWriter == null) {
+			classWriter = new ClassWriter(classReader, 0);
+			visitor = classWriter;
+		}
 
 		if (applyAccessWidener) {
 			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, QuiltLoaderImpl.INSTANCE.getAccessWidener());
@@ -50,20 +102,6 @@ public final class QuiltTransformer {
 		if (transformAccess) {
 			visitor = new PackageAccessFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
 			visitorCount++;
-		}
-
-		if (environmentStrip) {
-			EnvironmentStrippingData stripData = new EnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType.toString());
-			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-
-			if (stripData.stripEntireClass()) {
-				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
-			}
-
-			if (!stripData.isEmpty()) {
-				visitor = new ClassStripper(QuiltLoaderImpl.ASM_VERSION, visitor, stripData.getStripInterfaces(), stripData.getStripFields(), stripData.getStripMethods());
-				visitorCount++;
-			}
 		}
 
 		if (visitorCount <= 0) {

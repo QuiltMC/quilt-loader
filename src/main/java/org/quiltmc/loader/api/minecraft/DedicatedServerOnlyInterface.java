@@ -14,31 +14,34 @@
  * limitations under the License.
  */
 
-package net.fabricmc.api;
+package org.quiltmc.loader.api.minecraft;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.ClientOnlyInterfaces;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnlyInterfaces;
-
 /**
- * A container of multiple {@link EnvironmentInterface} annotations on a class, often defined implicitly.
- * 
- * @deprecated Please use one of quilt's annotations: either {@link ClientOnlyInterfaces} or {@link DedicatedServerOnlyInterfaces}.
+ * Applied to declare that a class implements an interface only on the dedicated server.
+ *
+ * <p>Use with caution, as Quilt-loader will remove the interface from {@code implements} declaration
+ * of the class on the client.
+ *
+ * <p>Implemented methods are not removed. To remove implemented methods, use {@link ClientOnly}.</p>
+ *
+ * @see DedicatedServerOnly
+ * @see DedicatedServerOnlyInterfaces
  */
 @Retention(RetentionPolicy.CLASS)
+@Repeatable(DedicatedServerOnlyInterfaces.class)
 @Target(ElementType.TYPE)
 @Documented
-@Deprecated
-public @interface EnvironmentInterfaces {
+public @interface DedicatedServerOnlyInterface {
+
 	/**
-	 * Returns the {@link EnvironmentInterface} annotations it holds.
+	 * Returns the interface class.
 	 */
-	EnvironmentInterface[] value();
+	Class<?> value();
 }

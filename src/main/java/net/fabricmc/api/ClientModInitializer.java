@@ -31,6 +31,7 @@ import org.quiltmc.loader.api.entrypoint.GameEntrypoint;
  * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class)
  * @deprecated Please migrate to using QSL entrypoints, or use your own mixins.
  */
+@Deprecated
 @FunctionalInterface
 public interface ClientModInitializer extends GameEntrypoint {
 	/**

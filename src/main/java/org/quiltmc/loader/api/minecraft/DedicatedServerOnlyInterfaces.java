@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package net.fabricmc.api;
+package org.quiltmc.loader.api.minecraft;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -22,23 +22,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.ClientOnlyInterfaces;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnlyInterfaces;
-
 /**
- * A container of multiple {@link EnvironmentInterface} annotations on a class, often defined implicitly.
- * 
- * @deprecated Please use one of quilt's annotations: either {@link ClientOnlyInterfaces} or {@link DedicatedServerOnlyInterfaces}.
+ * A container of multiple {@link DedicatedServerOnlyInterface} annotations on a class, often defined implicitly.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 @Documented
-@Deprecated
-public @interface EnvironmentInterfaces {
+public @interface DedicatedServerOnlyInterfaces {
 	/**
-	 * Returns the {@link EnvironmentInterface} annotations it holds.
+	 * Returns the {@link DedicatedServerOnlyInterface} annotations it holds.
 	 */
-	EnvironmentInterface[] value();
+	DedicatedServerOnlyInterface[] value();
 }
