@@ -137,8 +137,10 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 
 	public FabricSemanticVersionImpl(org.quiltmc.loader.api.Version.Semantic quiltVersion) {
 		this.components = new int[] { quiltVersion.major(), quiltVersion.minor(), quiltVersion.patch() };
-		this.prerelease = quiltVersion.preRelease();
-		this.build = quiltVersion.buildMetadata();
+		String pre = quiltVersion.preRelease();
+		String buildMeta = quiltVersion.buildMetadata();
+		this.prerelease = pre.isEmpty() ? null : pre;
+		this.build = buildMeta.isEmpty() ? null : buildMeta;
 
 		buildFriendlyName();
 	}

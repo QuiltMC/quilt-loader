@@ -29,7 +29,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class VersionParsingTests {
+public class VersionParsingTests extends JsonTestBase {
 	static void quilt(String raw) {
 		System.out.println("Checking pass: " + raw);
 		try {
@@ -116,14 +116,4 @@ public class VersionParsingTests {
 		fabricOnly.close();
 	}
 
-
-	JsonReader get(String s) throws IOException {
-		Path path;
-		try {
-			path = Paths.get(getClass().getClassLoader().getResource(s).toURI());
-		} catch (URISyntaxException e) {
-			throw new IOException(e);
-		}
-		return JsonReader.json(path);
-	}
 }
