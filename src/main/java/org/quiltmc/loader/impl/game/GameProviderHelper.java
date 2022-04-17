@@ -183,7 +183,7 @@ public final class GameProviderHelper {
 			Path tmpFile = deobfJarDir.resolve(deobfJarFilename + ".tmp");
 
 			if (Files.exists(tmpFile)) { // previous unfinished remap attempt
-				Log.warn(LogCategory.GAME_REMAP, "Incomplete remapped file found! This means that the remapping process failed on the previous launch. If this persists, make sure to let us at Fabric know!");
+				Log.warn(LogCategory.GAME_REMAP, "Incomplete remapped file found! This means that the remapping process failed on the previous launch. If this persists, make sure to let us at Quilt know!");
 
 				try {
 					Files.deleteIfExists(outputFile);
