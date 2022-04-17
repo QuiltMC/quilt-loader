@@ -35,14 +35,9 @@ import org.quiltmc.loader.api.entrypoint.GameEntrypoint;
  */
 @Deprecated
 @FunctionalInterface
-public interface PreLaunchEntrypoint extends org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint {
+public interface PreLaunchEntrypoint extends GameEntrypoint {
 	/**
 	 * Runs the entrypoint.
 	 */
 	void onPreLaunch();
-
-	@Override
-	default void onPreLaunch(ModContainer mod) {
-		onPreLaunch();
-	}
 }
