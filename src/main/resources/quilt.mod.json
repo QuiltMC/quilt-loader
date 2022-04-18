@@ -21,7 +21,7 @@
         "sources": "https://github.com/QuiltMC/quilt-loader"
       },
       "license": "Apache-2.0",
-      "icon": "assets/quilt-loader/icon.png"
+      "icon": "assets/quilt_loader/icon.png"
     }
   }
 }
