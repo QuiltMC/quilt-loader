@@ -597,10 +597,6 @@ final class V1ModMetadataParser {
 			final SortedMap<Integer, String> iconMap = new TreeMap<>(Comparator.naturalOrder());
 
 			while (reader.hasNext()) {
-				if (reader.peek() != JsonToken.STRING) {
-					throw new ParseMetadataException("Icon path must be a string", reader);
-				}
-
 				String key = reader.nextName();
 
 				int size;
@@ -614,6 +610,12 @@ final class V1ModMetadataParser {
 				if (size < 1) {
 					throw new ParseMetadataException("Size must be positive!", reader);
 				}
+
+				if (reader.peek() != JsonToken.STRING) {
+					throw new ParseMetadataException("Icon path must be a string", reader);
+				}
+
+				iconMap.put(size, reader.nextString());
 			}
 
 			reader.endObject();
