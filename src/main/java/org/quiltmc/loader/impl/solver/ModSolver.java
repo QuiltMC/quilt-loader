@@ -140,6 +140,12 @@ public final class ModSolver {
 			for (ModCandidate m : candidates) {
 				MainModLoadOption cOption;
 
+				if (!modDefs.containsKey(modId)) {
+					OptionalModIdDefintion def = new OptionalModIdDefintion(modId);
+					modDefs.put(modId, def);
+					sat.addRule(def);
+				}
+
 				if (m == mandatedCandidate) {
 					cOption = new MainModLoadOption(mandatedCandidate, -1);
 
@@ -149,12 +155,6 @@ public final class ModSolver {
 				} else {
 					cOption = new MainModLoadOption(m, candidates.size() == 1 ? -1 : index);
 					sat.addOption(cOption);
-
-					if (!modDefs.containsKey(modId)) {
-						OptionalModIdDefintion def = new OptionalModIdDefintion(modId);
-						modDefs.put(modId, def);
-						sat.addRule(def);
-					}
 
 					// IF_REQUIRED uses a positive weight to discourage it from being chosen
 					// IF_POSSIBLE uses a negative weight to encourage it to be chosen
@@ -171,6 +171,12 @@ public final class ModSolver {
 				for (ModProvided provided : m.getMetadata().provides()) {
 					// Add provided mods as an available option for other dependencies to select from.
 					sat.addOption(new ProvidedModOption(cOption, provided));
+
+					if (!modDefs.containsKey(provided.id)) {
+						OptionalModIdDefintion def = new OptionalModIdDefintion(provided.id);
+						modDefs.put(provided.id, def);
+						sat.addRule(def);
+					}
 				}
 
 				for (org.quiltmc.loader.api.ModDependency dep : m.getMetadata().depends()) {
