@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 import org.objectweb.asm.Opcodes;
@@ -222,7 +224,7 @@ public final class QuiltLoaderImpl {
 
 		StringBuilder modListText = new StringBuilder();
 
-		for (ModCandidate mod : modCandidates) {
+		for (ModCandidate mod : modCandidates.stream().sorted(Comparator.comparing(ModCandidate::getId)).collect(Collectors.toList())) {
 			if (modListText.length() > 0) modListText.append('\n');
 
 			modListText.append("\t- ");
