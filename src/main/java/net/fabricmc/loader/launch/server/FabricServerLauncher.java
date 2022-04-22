@@ -78,7 +78,7 @@ public class FabricServerLauncher {
 			System.err.println("Quilt's server-side launcher expects the server .JAR to be provided.");
 			System.err.println("You can edit its location in quilt-server-launcher.properties.");
 			System.err.println();
-			System.err.println("Without the official Minecraft server .JAR, QUilt Loader cannot launch.");
+			System.err.println("Without the official Minecraft server .JAR, Quilt Loader cannot launch.");
 			throw new RuntimeException("Missing game jar at " + serverJar);
 		}
 	}
