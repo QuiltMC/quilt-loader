@@ -190,7 +190,7 @@ public final class FabricMixinBootstrap {
 				}
 			}
 
-			return FabricUtil.COMPATIBILITY_LATEST;
+			return FabricUtil.COMPATIBILITY_0_9_2;
 		}
 
 		private static void addVersion(String minLoaderVersion, int mixinCompat) {
