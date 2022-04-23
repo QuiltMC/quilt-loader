@@ -87,7 +87,9 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 			}
 		}
 
-		ModLoadOption[] array = sources.toArray(new ModLoadOption[0]);
+		LoadOption[] array = sources.toArray(new LoadOption[0]);
+
+		array = definer.deduplicate(array);
 
 		if (anyAreAlways) {
 			definer.exactly(1, array);
