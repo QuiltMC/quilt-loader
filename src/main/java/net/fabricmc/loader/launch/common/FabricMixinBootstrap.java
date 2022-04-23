@@ -160,6 +160,7 @@ public final class FabricMixinBootstrap {
 
 			if (mod.getSourceType() != BasicSourceType.NORMAL_FABRIC) {
 				// quilt or builtin mod, we can assume it uses latest compat
+				Log.debug(LogCategory.MIXIN, "Assuming Quilt mod %s uses latest mixin compatibility", mod.metadata().id());
 				return FabricUtil.COMPATIBILITY_LATEST;
 			}
 
@@ -183,13 +184,17 @@ public final class FabricMixinBootstrap {
 			if (minLoaderVersion != null) { // has a lower bound
 				for (LoaderMixinVersionEntry version : versions) {
 					if (minLoaderVersion.compareTo(version.loaderVersion) >= 0) { // lower bound is >= current version
+						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using mixin compatibility %s", mod.metadata().id(), minLoaderVersion, version.mixinVersion);
 						return version.mixinVersion;
 					} else {
+						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using 0.9.2 mixin compatability", mod.metadata().id(), minLoaderVersion);
 						return FabricUtil.COMPATIBILITY_0_9_2;
 					}
 				}
 			}
 
+			// Mod doesn't declare a dependency on a loader version; use oldest mixin compat version
+			Log.debug(LogCategory.MIXIN, "Mod %s doesn't declare a dependency on a loader version, using 0.9.2 mixin compatability", mod.metadata().id());
 			return FabricUtil.COMPATIBILITY_0_9_2;
 		}
 
