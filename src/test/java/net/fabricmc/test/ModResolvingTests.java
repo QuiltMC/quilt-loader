@@ -151,6 +151,26 @@ final class ModResolvingTests {
 		assertNoMoreMods(modSet);
 	}
 
+	// This currently fails
+//	@Test
+//	public void multiTarget() throws Exception {
+//		ModSolveResult modSet = resolveModSet("valid", "multi_target");
+//
+//		assertModPresent(modSet, "minecraft", "1.18.2");
+//		assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
+//		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+//		assertNoMoreMods(modSet);
+//	}
+
+	@Test
+	public void testJijProvided() throws ModResolutionException {
+		ModSolveResult modSet = resolveModSet("valid", "jij_provided");
+
+		assertModPresent(modSet, "number_overhaul", "1.0.0");
+		assertModPresent(modSet, "uwu-lib", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
 	@Test
 	public void quiltLoadType() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "quilt_load_type");

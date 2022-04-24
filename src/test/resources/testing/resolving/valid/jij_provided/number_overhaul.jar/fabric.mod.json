@@ -1,0 +1,8 @@
+{
+    "schemaVersion": 1,
+    "id": "number_overhaul",
+    "version": "1.0.0",
+    "jars": [
+        { "file": "uwu-sentinal.jar" }
+    ]
+}

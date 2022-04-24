@@ -1,0 +1,6 @@
+{
+    "schemaVersion": 1,
+    "id": "uwu-sentinal",
+    "provides": [ "uwu-lib" ],
+    "version": "1.0.0"
+}
