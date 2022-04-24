@@ -26,7 +26,7 @@ public final class ModDependencyIdentifierImpl implements ModDependencyIdentifie
 		int split = raw.indexOf(":");
 		if (split > 0) {
 			mavenGroup = raw.substring(0, split);
-			id = raw.substring(split);
+			id = raw.substring(split + 1);
 		} else {
 			mavenGroup = "";
 			id = raw;
