@@ -67,6 +67,10 @@ public final class Quilt2FabricModContainer implements net.fabricmc.loader.api.M
 		throw new UnsupportedOperationException("not implemented");
 	}
 
+	public ModContainer getQuiltModContainer() {
+		return quilt;
+	}
+
 	// copy + pasted from fabric
 	private boolean warnedMultiPath;
 	@Override
