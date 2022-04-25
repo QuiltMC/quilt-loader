@@ -189,6 +189,15 @@ final class ModResolvingTests {
 	}
 
 	@Test
+	public void quiltGroupDep() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_group_dep");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void quiltIncludedProvided() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "quilt_included_provided");
 
