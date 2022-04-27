@@ -33,6 +33,7 @@ public final class LogCategory {
 	public static final LogCategory RESOLUTION = new LogCategory("Resolution");
 	public static final LogCategory SOLVING = new LogCategory("Solving");
 	public static final LogCategory TEST = new LogCategory("Test");
+	public static final LogCategory CONFIG = new LogCategory("Config");
 
 	public static final String SEPARATOR = "/";
 
