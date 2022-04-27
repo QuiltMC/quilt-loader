@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.impl.solver;
 
+import net.fabricmc.loader.api.SemanticVersion;
+
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 
@@ -41,7 +43,12 @@ class MainModLoadOption extends ModLoadOption {
 	@Override
 	String getSpecificInfo() {
 		FabricLoaderModMetadata info = candidate.getMetadata().asFabricModMetadata();
-		return "version " + info.getVersion() + " loaded from " + getLoadSource();
+		if (info.getVersion() instanceof SemanticVersion) {
+			return "version " + info.getVersion() + " loaded from " + getLoadSource();
+		} else {
+			return "non-semantic version " + info.getVersion() + " loaded from " + getLoadSource();
+		}
+
 	}
 
 	@Override

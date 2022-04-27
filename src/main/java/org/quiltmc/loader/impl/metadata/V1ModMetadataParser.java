@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ContactInformation;
@@ -116,6 +117,11 @@ final class V1ModMetadataParser {
 
 				try {
 					version = VersionParser.parse(reader.nextString(), false);
+					if (!(version instanceof SemanticVersion)) {
+						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " does not respect SemVer -- comparison support is limited."));
+					} else if (((SemanticVersion) version).getVersionComponentCount() >= 4) {
+						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " has more than 3 version components, which may not be fully supported."));
+					}
 				} catch (VersionParsingException e) {
 					throw new ParseMetadataException("Failed to parse version", e);
 				}

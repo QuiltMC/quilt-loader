@@ -263,7 +263,7 @@ public final class FabricModMetadataReader {
 
 		final StringBuilder message = new StringBuilder();
 
-		message.append(String.format("The mod \"%s\" contains invalid entries in its mod json:", id));
+		message.append(String.format("Warnings for mod \"%s\"'s mod json:", id));
 
 		for (ParseWarning warning : warnings) {
 			message.append(String.format("\n- %s \"%s\" at %s",

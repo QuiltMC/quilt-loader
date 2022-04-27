@@ -447,15 +447,7 @@ public final class QuiltLoaderImpl {
 	}
 
 	protected void postprocessModMetadata() {
-		for (ModContainerImpl mod : mods) {
-			if (!(mod.getInfo().getVersion() instanceof SemanticVersion)) {
-				Log.warn(LogCategory.METADATA, "Mod `%s` (%s) does not respect SemVer - comparison support is limited.",
-						mod.getInfo().getId(), mod.getInfo().getVersion().getFriendlyString());
-			} else if (((SemanticVersion) mod.getInfo().getVersion()).getVersionComponentCount() >= 4) {
-				Log.warn(LogCategory.METADATA, "Mod `%s` (%s) uses more dot-separated version components than SemVer allows; support for this is currently not guaranteed.",
-						mod.getInfo().getId(), mod.getInfo().getVersion().getFriendlyString());
-			}
-		}
+		// do nothing for now; most warnings have been moved to V1ModMetadataParser
 	}
 
 	private void setupLanguageAdapters() {
