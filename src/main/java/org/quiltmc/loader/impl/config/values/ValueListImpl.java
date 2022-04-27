@@ -40,16 +40,15 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		this.defaultValue = defaultValue;
 		this.values = values;
 	}
-	
+
+	@SuppressWarnings("unchecked")
 	public ValueList<T> copy() {
 		List<T> values = new ArrayList<>(this.values.size());
 
 		for (T value : this.values) {
 			if (value instanceof ValueListImpl<?>) {
-				//noinspection unchecked
 				values.add((T) ((ValueListImpl<?>) value).copy());
 			} else if (value instanceof ValueMapImpl<?>) {
-				//noinspection unchecked
 				values.add((T) ((ValueMapImpl<?>) value).copy());
 			} else {
 				values.add(value);
@@ -294,12 +293,11 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void grow() {
 		if (this.defaultValue instanceof ValueListImpl<?>) {
-			//noinspection unchecked
 			this.values.add((T) ((ValueListImpl<?>) this.defaultValue).copy());
 		} else if (this.defaultValue instanceof ValueMapImpl<?>) {
-			//noinspection unchecked
 			this.values.add((T) ((ValueMapImpl<?>) this.defaultValue).copy());
 		} else {
 			this.values.add(this.defaultValue);

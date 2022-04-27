@@ -68,11 +68,11 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <M> Config.SectionBuilder metadata(MetadataType<M> type, M value) {
 		List<M> metadata;
 
 		if (this.metadata.containsKey(type)) {
-			//noinspection unchecked
 			metadata = (List<M>) this.metadata.get(type);
 		} else {
 			metadata = new ArrayList<>();

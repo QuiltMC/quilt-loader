@@ -48,9 +48,9 @@ public final class ConfigFieldAnnotationProcessors {
 		processor.process(annotation, builder);
 	}
 
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static void applyAnnotationProcessors(Annotation annotation, TrackedValue.Builder<?> builder) {
 		for (ConfigFieldAnnotationProcessor<?> processor : PROCESSORS.getOrDefault(annotation.annotationType(), Collections.emptyList())) {
-			//noinspection unchecked,rawtypes
 			process((ConfigFieldAnnotationProcessor) processor, annotation, builder);
 		}
 	}

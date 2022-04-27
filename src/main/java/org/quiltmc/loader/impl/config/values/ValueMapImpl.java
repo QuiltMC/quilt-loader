@@ -49,6 +49,7 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public ValueMap<T> copy() {
 		Map<String, T> values = new LinkedHashMap<>();
 
@@ -56,10 +57,8 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 			T value = entry.getValue();
 
 			if (value instanceof ValueListImpl<?>) {
-				//noinspection unchecked
 				values.put(entry.getKey(), (T) ((ValueListImpl<?>) value).copy());
 			} else if (value instanceof ValueMapImpl<?>) {
-				//noinspection unchecked
 				values.put(entry.getKey(), (T) ((ValueMapImpl<?>) value).copy());
 			} else {
 				values.put(entry.getKey(), value);
@@ -170,12 +169,11 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public void grow() {
 		if (this.defaultValue instanceof ValueListImpl<?>) {
-			//noinspection unchecked
 			this.values.put("", (T) ((ValueListImpl<?>) this.defaultValue).copy());
 		} else if (this.defaultValue instanceof ValueMapImpl<?>) {
-			//noinspection unchecked
 			this.values.put("", (T) ((ValueMapImpl<?>) this.defaultValue).copy());
 		} else {
 			this.values.put("", this.defaultValue);

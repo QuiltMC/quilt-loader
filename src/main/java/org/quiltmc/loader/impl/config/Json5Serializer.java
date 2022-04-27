@@ -176,7 +176,7 @@ public final class Json5Serializer implements Serializer {
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void deserialize(Config config, InputStream from) {
 		try {
 			JsonReader reader = JsonReader.json5(new InputStreamReader(from));
@@ -192,7 +192,6 @@ public final class Json5Serializer implements Serializer {
 					if (m.containsKey(k) && i != value.getKey().length() - 1) {
 						m = (Map<String, Object>) m.get(k);
 					} else if (m.containsKey(k)) {
-						//noinspection rawtypes
 						((TrackedValueImpl) value).setValue(this.coerce(m.get(k), value.getDefaultValue()), false);
 					}
 				}

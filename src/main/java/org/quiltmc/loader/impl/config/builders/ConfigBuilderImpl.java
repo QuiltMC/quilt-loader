@@ -77,11 +77,11 @@ public final class ConfigBuilderImpl implements Config.Builder {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <M> Config.Builder metadata(MetadataType<M> type, M value) {
 		List<M> metadata;
 
 		if (this.metadata.containsKey(type)) {
-			//noinspection unchecked
 			metadata = (List<M>) this.metadata.get(type);
 		} else {
 			metadata = new ArrayList<>();
