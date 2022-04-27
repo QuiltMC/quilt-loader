@@ -124,31 +124,21 @@ public final class Json5Serializer implements Serializer {
 	}
 
 	@Override
-	public void serialize(Config config) {
-		Path directory = QuiltLoader.getConfigDir().resolve(config.getModId()).resolve(config.getSavePath());
-		Path path = directory.resolve(config.getId() + "." + this.getFileExtension());
+	public void serialize(Config config, OutputStream to) throws IOException {
+		JsonWriter writer = JsonWriter.json5(new OutputStreamWriter(to));
 
-		try {
-			Files.createDirectories(directory);
-
-			OutputStream out = Files.newOutputStream(path);
-			JsonWriter writer = JsonWriter.json5(new OutputStreamWriter(out));
-
-			for (String comment : config.metadata(MetadataType.COMMENT)) {
-				writer.comment(comment);
-			}
-
-			writer.beginObject();
-
-			for (ValueTreeNode node : config.nodes()) {
-				this.serialize(writer, node);
-			}
-
-			writer.endObject();
-			writer.close();
-		} catch (Exception e) {
-			e.printStackTrace();
+		for (String comment : config.metadata(MetadataType.COMMENT)) {
+			writer.comment(comment);
 		}
+
+		writer.beginObject();
+
+		for (ValueTreeNode node : config.nodes()) {
+			this.serialize(writer, node);
+		}
+
+		writer.endObject();
+		writer.close();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -189,32 +179,23 @@ public final class Json5Serializer implements Serializer {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public void deserialize(Config config) {
-		Path directory = QuiltLoader.getConfigDir().resolve(config.getModId()).resolve(config.getSavePath());
-		Path path = directory.resolve(config.getId() + "." + this.getFileExtension());
-
+	public void deserialize(Config config, InputStream from) {
 		try {
-			Files.createDirectories(directory);
+			JsonReader reader = JsonReader.json5(new InputStreamReader(from));
 
-			if (Files.exists(path)) {
+			Map<String, Object> values = parseObject(reader);
 
-				InputStream in = Files.newInputStream(path);
-				JsonReader reader = JsonReader.json5(new InputStreamReader(in));
+			for (TrackedValue<?> value : config.values()) {
+				Map<String, Object> m = values;
 
-				Map<String, Object> values = parseObject(reader);
+				for (int i = 0; i < value.getKey().length(); ++i) {
+					String k = value.getKey().getKeyComponent(i);
 
-				for (TrackedValue<?> value : config.values()) {
-					Map<String, Object> m = values;
-
-					for (int i = 0; i < value.getKey().length(); ++i) {
-						String k = value.getKey().getKeyComponent(i);
-
-						if (m.containsKey(k) && i != value.getKey().length() - 1) {
-							m = (Map<String, Object>) m.get(k);
-						} else if (m.containsKey(k)) {
-							//noinspection rawtypes
-							((TrackedValueImpl) value).setValue(this.coerce(m.get(k), value.getDefaultValue()), false);
-						}
+					if (m.containsKey(k) && i != value.getKey().length() - 1) {
+						m = (Map<String, Object>) m.get(k);
+					} else if (m.containsKey(k)) {
+						//noinspection rawtypes
+						((TrackedValueImpl) value).setValue(this.coerce(m.get(k), value.getDefaultValue()), false);
 					}
 				}
 			}

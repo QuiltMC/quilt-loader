@@ -86,8 +86,18 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		return this.defaultFileType;
 	}
 
+	public Path getPath() {
+		return QuiltLoader.getConfigDir().resolve(this.modId).resolve(this.path).resolve(this.id + "." + ConfigSerializers.getSerializer(this.defaultFileType).getFileExtension());
+	}
+
 	public void serialize() {
-		ConfigSerializers.getSerializer(this.defaultFileType).serialize(this);
+		Path path = this.getPath();
+		try {
+			Files.createDirectories(path.getParent());
+			ConfigSerializers.getSerializer(this.defaultFileType).serialize(this, Files.newOutputStream(path));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public Iterable<TrackedValue<?>> values() {
@@ -187,19 +197,24 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 
 		Path directory = QuiltLoader.getConfigDir().resolve(config.getModId()).resolve(config.getSavePath());
 		Path defaultPath = directory.resolve(config.getId() + "." + defaultSerializer.getFileExtension());
+		Path path = directory.resolve(config.getId() + "." + serializer.getFileExtension());
 
-		if (defaultSerializer == serializer || !Files.exists(defaultPath)) {
-			serializer.deserialize(config);
-		} else {
-			defaultSerializer.deserialize(config);
+		try {
+			if ((defaultSerializer == serializer || !Files.exists(defaultPath)) && Files.exists(path)) {
+				serializer.deserialize(config, Files.newInputStream(path));
+			} else if (Files.exists(defaultPath)) {
+				defaultSerializer.deserialize(config, Files.newInputStream(defaultPath));
 
-			try {
-				Files.delete(defaultPath);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+				try {
+					Files.delete(defaultPath);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
 			}
-		}
 
-		serializer.serialize(config);
+			serializer.serialize(config, Files.newOutputStream(path));
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
