@@ -143,7 +143,7 @@ public final class RuntimeModRemapper {
 				}
 				// TODO: intentional leak?
 				FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.outputPath, false);
-				remappedMods.add(new ModCandidate(mod.getOriginPath(), jarFs.get().getPath("/"), mod.getInfo(), 0, false));
+				remappedMods.add(new ModCandidate(mod.getOriginPath(), jarFs.get().getPath("/"), mod.getInfo(), mod.getDepth(), false));
 			}
 
 		} catch (IOException e) {
