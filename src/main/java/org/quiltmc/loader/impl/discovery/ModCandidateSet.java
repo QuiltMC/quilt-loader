@@ -37,6 +37,13 @@ public class ModCandidateSet {
 	private final Map<String, ModCandidate> candidates = new HashMap<>();
 
 	private static int compare(ModCandidate a, ModCandidate b) {
+		// Mandatory mods are always first
+		if (a.getDepth() == 0) {
+			return -1;
+		} else if (b.getDepth() == 0) {
+			return 1;
+		}
+
 		Version av = a.getInfo().getVersion();
 		Version bv = b.getInfo().getVersion();
 
