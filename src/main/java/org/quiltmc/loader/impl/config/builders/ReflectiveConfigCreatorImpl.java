@@ -56,11 +56,11 @@ public class ReflectiveConfigCreatorImpl<C> {
 						add = true;
 					}
 
+					field.setAccessible(true);
+
 					valueBuilder.callback((k, oldValue, newValue) -> {
 						try {
-							field.setAccessible(true);
 							field.set(object, newValue);
-							field.setAccessible(false);
 						} catch (IllegalAccessException e) {
 							throw new RuntimeException(e);
 						}
