@@ -40,7 +40,7 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	final Trie values = new Trie();
 
-	private String fileType;
+	private String fileType = "json5";
 
 	public ConfigBuilderImpl(String modId, String id, Path path) {
 		this.modId = modId;
@@ -105,6 +105,6 @@ public final class ConfigBuilderImpl implements Config.Builder {
 	}
 
 	public ConfigImpl build() {
-		return new ConfigImpl(this.modId, this.id, this.path, this.flags, this.metadata, this.callbacks, this.values, ConfigSerializers.getSerializer(this.fileType));
+		return new ConfigImpl(this.modId, this.id, this.path, this.flags, this.metadata, this.callbacks, this.values, this.fileType);
 	}
 }

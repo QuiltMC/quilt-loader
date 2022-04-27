@@ -103,7 +103,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		this.value = newValue;
 
 		if (serialize) {
-			this.config.getSerializer().serialize(this.config);
+			this.config.serialize();
 		}
 
 		for (UpdateCallback<T> callback : this.callbacks) {
@@ -164,7 +164,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	}
 
 	public void update() {
-		this.config.getSerializer().serialize(this.config);
+		this.config.serialize();
 
 		for (UpdateCallback<T> callback : this.callbacks) {
 			callback.onUpdate(this.key, this.value, this.value);

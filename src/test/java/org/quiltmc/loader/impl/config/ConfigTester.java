@@ -131,7 +131,7 @@ public class ConfigTester {
 			}));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
-		})).printStackTrace();
+		}));
 
 		Assertions.assertThrows(RuntimeException.class, () -> {
 			Config.create("testmod", "testConfig5", builder -> {
@@ -146,7 +146,7 @@ public class ConfigTester {
 			});
 
 			TEST_INTEGER.setValue(1000, true);
-		}).printStackTrace();
+		});
 	}
 
 	@Test

@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.impl.config;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -24,13 +26,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.ConfigWrapper;
-import org.quiltmc.loader.api.config.Serializer;
-import org.quiltmc.loader.api.config.ValueTreeNode;
 import org.quiltmc.loader.api.config.MetadataType;
+import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.api.config.ValueTreeNode;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 public final class ConfigImpl extends AbstractMetadataContainer implements Config {
@@ -38,16 +40,16 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 	private final Path path;
 	private final List<Config.UpdateCallback> callbacks;
 	private final Trie values;
-	private final Serializer serializer;
+	private final String defaultFileType;
 
-	public ConfigImpl(String modId, String id, Path path, Set<String> flags, Map<MetadataType<?>, List<?>> metadata, List<UpdateCallback> callbacks, Trie values, Serializer serializer) {
+	public ConfigImpl(String modId, String id, Path path, Set<String> flags, Map<MetadataType<?>, List<?>> metadata, List<UpdateCallback> callbacks, Trie values, String defaultFileType) {
 		super(flags, metadata);
 		this.modId = modId;
 		this.id = id;
 		this.path = path;
 		this.callbacks = callbacks;
 		this.values = values;
-		this.serializer = serializer;
+		this.defaultFileType = defaultFileType;
 	}
 
 	@Override
@@ -80,8 +82,12 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		return this.metadata.containsKey(type) && !this.metadata.get(type).isEmpty();
 	}
 
-	public Serializer getSerializer() {
-		return this.serializer;
+	public String getDefaultFileType() {
+		return this.defaultFileType;
+	}
+
+	public void serialize() {
+		ConfigSerializers.getSerializer(this.defaultFileType).serialize(this);
 	}
 
 	public Iterable<TrackedValue<?>> values() {
@@ -142,8 +148,7 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 			((TrackedValueImpl<?>) value).setConfig(config);
 		}
 
-		config.getSerializer().deserialize(config);
-		config.getSerializer().serialize(config);
+		doInitialSerialization(config);
 
 		return config;
 	}
@@ -161,8 +166,7 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 			((TrackedValueImpl<?>) value).setConfig(config);
 		}
 
-		config.getSerializer().deserialize(config);
-		config.getSerializer().serialize(config);
+		doInitialSerialization(config);
 
 		return new ConfigWrapper<C>() {
 			@Override
@@ -175,5 +179,27 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 				return c;
 			}
 		};
+	}
+
+	private static void doInitialSerialization(ConfigImpl config) {
+		Serializer defaultSerializer = ConfigSerializers.getActualSerializer(config.getDefaultFileType());
+		Serializer serializer = ConfigSerializers.getSerializer(config.getDefaultFileType());
+
+		Path directory = QuiltLoader.getConfigDir().resolve(config.getModId()).resolve(config.getSavePath());
+		Path defaultPath = directory.resolve(config.getId() + "." + defaultSerializer.getFileExtension());
+
+		if (defaultSerializer == serializer || !Files.exists(defaultPath)) {
+			serializer.deserialize(config);
+		} else {
+			defaultSerializer.deserialize(config);
+
+			try {
+				Files.delete(defaultPath);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
+		serializer.serialize(config);
 	}
 }

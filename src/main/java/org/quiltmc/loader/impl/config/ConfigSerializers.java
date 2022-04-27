@@ -28,6 +28,11 @@ import java.util.Map;
 public final class ConfigSerializers {
 	private static final Map<String, Serializer> SERIALIZERS = new HashMap<>();
 
+	static {
+		// Needed for tests to pass
+		initialize();
+	}
+
 	public static void initialize() {
 		SERIALIZERS.put("json5", Json5Serializer.INSTANCE);
 
@@ -37,6 +42,14 @@ public final class ConfigSerializers {
 			if (oldValue != null) {
 				Log.warn(LogCategory.CONFIG, "Replacing {} serializer {} with {}", serializer.getFileExtension(), oldValue.getClass(), serializer.getClass());
 			}
+		}
+	}
+
+	public static Serializer getActualSerializer(String fileType) {
+		if (SERIALIZERS.containsKey(fileType)) {
+			return SERIALIZERS.get(fileType);
+		} else {
+			throw new RuntimeException("No serializer registered for extension '." + fileType + "'");
 		}
 	}
 
