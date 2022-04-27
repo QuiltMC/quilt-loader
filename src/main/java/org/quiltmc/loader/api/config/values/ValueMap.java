@@ -14,22 +14,26 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.config;
+package org.quiltmc.loader.api.config.values;
+
+import java.util.Map;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.impl.config.ConfigUtils;
-import org.quiltmc.loader.impl.config.ValueListImpl;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.quiltmc.loader.impl.config.util.ConfigUtils;
+import org.quiltmc.loader.impl.config.builders.ValueMapBuilderImpl;
 
 @ApiStatus.NonExtendable
-public interface ValueList<T> extends List<T>, CompoundConfigValue<T> {
-	@SafeVarargs
-	static <T> ValueList<T> create(T defaultValue, T... values) {
+public interface ValueMap<T> extends Iterable<Map.Entry<String, T>>, Map<String, T>, CompoundConfigValue<T> {
+	static <T> Builder<T> builder(T defaultValue) {
 		ConfigUtils.assertValueType(defaultValue);
 
-		return new ValueListImpl<>(defaultValue, new ArrayList<>(Arrays.asList(values)));
+		return new ValueMapBuilderImpl<>(defaultValue);
+	}
+
+	@ApiStatus.NonExtendable
+	interface Builder<T> {
+		Builder<T> put(String key, T value);
+
+		ValueMap<T> build();
 	}
 }

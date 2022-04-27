@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.values;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 import org.jetbrains.annotations.NotNull;
-import org.quiltmc.loader.api.config.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueKey;
 
 public final class ValueKeyImpl implements ValueKey {
 	private final String string;

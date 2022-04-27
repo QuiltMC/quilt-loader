@@ -17,7 +17,7 @@
 package org.quiltmc.loader.api.config.annotations;
 
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.impl.config.ConfigFieldAnnotationProcessors;
+import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
 
 import java.lang.annotation.Annotation;
 

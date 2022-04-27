@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.tree;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
@@ -26,8 +26,10 @@ import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueKey;
-import org.quiltmc.loader.api.config.ValueTreeNode;
+import org.quiltmc.loader.api.config.values.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueTreeNode;
+import org.quiltmc.loader.impl.config.builders.SectionBuilderImpl;
+import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
 
 public final class Trie {
 	private final Node root = new Node(null, null, null);
@@ -109,7 +111,7 @@ public final class Trie {
 			node = node.getOrCreateChild(keyComponent);
 		}
 
-		node.setValue(new ParentTreeNode(node, sectionBuilder.metadata, sectionBuilder.flags));
+		node.setValue(new ParentTreeNode(node, sectionBuilder.getMetadata(), sectionBuilder.getFlags()));
 	}
 
 	public TrackedValue<?> get(Iterable<String> key) {

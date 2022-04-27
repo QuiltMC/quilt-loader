@@ -32,7 +32,13 @@ import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueTreeNode;
+import org.quiltmc.loader.api.config.values.ValueTreeNode;
+import org.quiltmc.loader.impl.config.builders.ConfigBuilderImpl;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
+import org.quiltmc.loader.impl.config.tree.Trie;
+import org.quiltmc.loader.impl.config.util.ConfigSerializers;
+import org.quiltmc.loader.impl.config.builders.ReflectiveConfigCreatorImpl;
+import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 public final class ConfigImpl extends AbstractMetadataContainer implements Config {
@@ -154,6 +160,8 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 
 		ConfigImpl config = builder.build();
 
+		ConfigsImpl.put(modId, config);
+
 		for (TrackedValue<?> value : config.values()) {
 			((TrackedValueImpl<?>) value).setConfig(config);
 		}
@@ -171,6 +179,8 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		after.create(builder);
 
 		ConfigImpl config = builder.build();
+
+		ConfigsImpl.put(modId, config);
 
 		for (TrackedValue<?> value : config.values()) {
 			((TrackedValueImpl<?>) value).setConfig(config);

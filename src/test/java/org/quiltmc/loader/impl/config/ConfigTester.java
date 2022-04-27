@@ -23,7 +23,7 @@ import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueList;
+import org.quiltmc.loader.api.config.values.ValueList;
 
 import java.util.ArrayList;
 
@@ -120,7 +120,7 @@ public class ConfigTester {
 
 	@Test
 	public void testConstraints() {
-		Assertions.assertThrows(RuntimeException.class, () -> Config.create("testmod", "testConfig5", builder -> {
+		Assertions.assertThrows(RuntimeException.class, () -> Config.create("testmod", "testConfig6", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 				creator.flag("potato");
 				creator.flag("macaroni");
@@ -134,7 +134,7 @@ public class ConfigTester {
 		}));
 
 		Assertions.assertThrows(RuntimeException.class, () -> {
-			Config.create("testmod", "testConfig5", builder -> {
+			Config.create("testmod", "testConfig7", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 					creator.flag("potato");
 					creator.flag("macaroni");
@@ -147,11 +147,41 @@ public class ConfigTester {
 
 			TEST_INTEGER.setValue(1000, true);
 		});
+
+		Assertions.assertThrows(RuntimeException.class, () -> {
+			Config.create("testmod", "testConfig8", builder -> {
+				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
+					creator.flag("potato");
+					creator.flag("macaroni");
+					creator.flag("blueberry");
+					creator.constraint(Constraint.range(-10, 10));
+				}));
+				builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
+				builder.field(TEST_STRING  = TrackedValue.create("blah", "test", creator -> {
+					creator.constraint(Constraint.matching("[a-zA-Z0-9]+:[a-zA-Z0-9]+"));
+				}));
+			});
+
+			TEST_INTEGER.setValue(1000, true);
+		});
+
+		Config.create("testmod", "testConfig9", builder -> {
+			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
+				creator.flag("potato");
+				creator.flag("macaroni");
+				creator.flag("blueberry");
+				creator.constraint(Constraint.range(-10, 10));
+			}));
+			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
+			builder.field(TEST_STRING  = TrackedValue.create("test:id", "test", creator -> {
+				creator.constraint(Constraint.matching("[a-zA-Z0-9]+:[a-zA-Z0-9]+"));
+			}));
+		});
 	}
 
 	@Test
 	public void testReflectiveConfigs() {
-		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "config", TestReflectiveConfig.class);
+		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig10", TestReflectiveConfig.class);
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
 			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());

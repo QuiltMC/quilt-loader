@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.builders;
 
-import org.quiltmc.loader.api.config.ValueMap;
+import org.quiltmc.loader.api.config.values.ValueMap;
+import org.quiltmc.loader.impl.config.values.ValueMapImpl;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

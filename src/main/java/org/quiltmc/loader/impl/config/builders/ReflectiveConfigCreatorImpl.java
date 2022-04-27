@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.builders;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -24,6 +24,8 @@ import java.util.Deque;
 
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.impl.config.util.ConfigUtils;
+import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
 
 public class ReflectiveConfigCreatorImpl<C> {
 	private final Class<C> creatorClass;

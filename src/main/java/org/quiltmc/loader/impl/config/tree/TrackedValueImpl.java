@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.tree;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,9 @@ import java.util.Set;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueKey;
+import org.quiltmc.loader.impl.config.AbstractMetadataContainer;
+import org.quiltmc.loader.impl.config.ConfigImpl;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 public final class TrackedValueImpl<T> extends AbstractMetadataContainer implements TrackedValue<T> {

@@ -16,7 +16,8 @@
 
 package org.quiltmc.loader.impl.config;
 
-import org.quiltmc.loader.api.config.CompoundConfigValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
 public interface CompoundConfigValueImpl<T> extends CompoundConfigValue<T> {
 	void setValue(TrackedValueImpl<?> value);

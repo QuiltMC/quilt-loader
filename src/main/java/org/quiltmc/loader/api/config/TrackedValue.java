@@ -23,10 +23,14 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.impl.config.ConfigUtils;
-import org.quiltmc.loader.impl.config.TrackedValueBuilderImpl;
-import org.quiltmc.loader.impl.config.TrackedValueImpl;
-import org.quiltmc.loader.impl.config.ValueKeyImpl;
+import org.quiltmc.loader.api.config.values.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueList;
+import org.quiltmc.loader.api.config.values.ValueMap;
+import org.quiltmc.loader.api.config.values.ValueTreeNode;
+import org.quiltmc.loader.impl.config.util.ConfigUtils;
+import org.quiltmc.loader.impl.config.builders.TrackedValueBuilderImpl;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
+import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
 
 /**
  *

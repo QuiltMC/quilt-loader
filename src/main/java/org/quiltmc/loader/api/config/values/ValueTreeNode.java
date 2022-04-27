@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.api.config.values;
 
-import org.quiltmc.loader.api.config.ValueMap;
+import org.quiltmc.loader.api.config.MetadataType;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+public interface ValueTreeNode {
+	ValueKey getKey();
 
-public class TableBuilderImpl<T> implements ValueMap.Builder<T> {
-	private final T defaultValue;
-	private final Map<String, T> values = new LinkedHashMap<>();
+	Iterable<String> flags();
 
-	public TableBuilderImpl(T defaultValue) {
-		this.defaultValue = defaultValue;
-	}
+	boolean hasFlag(String flag);
 
-	@Override
-	public ValueMap.Builder<T> put(String key, T value) {
-		this.values.put(key, value);
+	<M> Iterable<M> metadata(MetadataType<M> type);
 
-		return this;
-	}
+	<M> boolean hasMetadata(MetadataType<M> type);
 
-	@Override
-	public ValueMap<T> build() {
-		return new ValueMapImpl<>(this.defaultValue, this.values);
+	interface Parent extends ValueTreeNode, Iterable<ValueTreeNode> {
+
 	}
 }

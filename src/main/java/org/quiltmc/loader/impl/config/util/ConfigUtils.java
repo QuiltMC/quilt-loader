@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.util;
 
-import org.quiltmc.loader.api.config.CompoundConfigValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 
 public final class ConfigUtils {
 	private static final Class<?>[] VALID_VALUE_CLASSES = new Class[] {

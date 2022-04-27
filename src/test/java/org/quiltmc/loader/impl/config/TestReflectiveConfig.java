@@ -16,8 +16,8 @@
 
 package org.quiltmc.loader.impl.config;
 
-import org.quiltmc.loader.api.config.ValueList;
-import org.quiltmc.loader.api.config.ValueMap;
+import org.quiltmc.loader.api.config.values.ValueList;
+import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.annotations.Comment;
 
 public final class TestReflectiveConfig {

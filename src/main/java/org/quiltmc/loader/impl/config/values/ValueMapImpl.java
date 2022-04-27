@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.values;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -24,7 +24,9 @@ import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.config.ValueMap;
+import org.quiltmc.loader.api.config.values.ValueMap;
+import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
 public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueImpl<T> {
 	private final T defaultValue;

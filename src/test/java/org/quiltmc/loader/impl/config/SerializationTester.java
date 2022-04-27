@@ -20,8 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueList;
-import org.quiltmc.loader.api.config.ValueMap;
+import org.quiltmc.loader.api.config.values.ValueList;
+import org.quiltmc.loader.api.config.values.ValueMap;
 
 public class SerializationTester {
 	static TrackedValue<String> TEST;

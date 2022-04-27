@@ -17,7 +17,7 @@
 package org.quiltmc.loader.api.config;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.impl.config.ConfigsImpl;
+import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 
 public class Configs {
 	public static Iterable<Config> getAll() {

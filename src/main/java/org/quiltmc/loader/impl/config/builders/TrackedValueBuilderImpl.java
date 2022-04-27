@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.builders;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,6 +26,8 @@ import java.util.Set;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
 public class TrackedValueBuilderImpl<T> implements TrackedValue.Builder<T> {
 	private final T defaultValue;

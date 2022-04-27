@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.tree;
 
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.MetadataType;
-import org.quiltmc.loader.api.config.ValueKey;
-import org.quiltmc.loader.api.config.ValueTreeNode;
+import org.quiltmc.loader.api.config.values.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueTreeNode;
+import org.quiltmc.loader.impl.config.AbstractMetadataContainer;
 
 import java.util.Iterator;
 import java.util.List;

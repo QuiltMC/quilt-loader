@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.util;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +30,10 @@ public final class ConfigsImpl {
 	private static final Map<String, Map<String, Config>> CONFIGS = new TreeMap<>();
 
 	public static void put(String modId, Config config) {
+		if (CONFIGS.containsKey(modId) && CONFIGS.get(modId).containsKey(config.getId())) {
+			throw new RuntimeException("Config '" + modId + ':' + config.getId() + "' already exists");
+		}
+
 		CONFIGS.computeIfAbsent(modId, id -> new TreeMap<>()).put(config.getId(), config);
 	}
 

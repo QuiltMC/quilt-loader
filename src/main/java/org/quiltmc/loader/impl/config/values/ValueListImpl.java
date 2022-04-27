@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.values;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +26,9 @@ import java.util.Spliterator;
 import java.util.function.UnaryOperator;
 
 import org.jetbrains.annotations.NotNull;
-import org.quiltmc.loader.api.config.ValueList;
+import org.quiltmc.loader.api.config.values.ValueList;
+import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
 public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValueImpl<T> {
 	private final T defaultValue;

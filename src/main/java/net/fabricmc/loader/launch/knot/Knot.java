@@ -20,7 +20,7 @@ import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.config.ConfigSerializers;
+import org.quiltmc.loader.impl.config.util.ConfigSerializers;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;

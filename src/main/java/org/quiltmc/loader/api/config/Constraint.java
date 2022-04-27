@@ -18,6 +18,7 @@ package org.quiltmc.loader.api.config;
 
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 public interface Constraint<T> {
 	/**
@@ -47,6 +48,26 @@ public interface Constraint<T> {
 		return new Range<>(from, to, Double::compareTo);
 	}
 
+	static Constraint<String> matching(String regex) {
+		return new Constraint<String>() {
+			private final Pattern pattern = Pattern.compile(regex);
+
+			@Override
+			public Optional<String> test(String value) {
+				if (pattern.matcher(value).matches()) {
+					return Optional.empty();
+				} else {
+					return Optional.of(String.format("Value '%s' does not match pattern '%s'", value, regex));
+				}
+			}
+
+			@Override
+			public String getRepresentation() {
+				return "matches" + regex;
+			}
+		};
+	}
+
 	class Range<T extends Number> implements Constraint<T> {
 		private final T min, max;
 		private final Comparator<T> comparator;
@@ -65,7 +86,7 @@ public interface Constraint<T> {
 			if (minTest <= 0 && maxTest >= 0) {
 				return Optional.empty();
 			} else {
-				return Optional.of(String.format("Value %s outside of range [%s, %s]", value, this.min, this.max));
+				return Optional.of(String.format("Value '%s' outside of range [%s, %s]", value, this.min, this.max));
 			}
 		}
 

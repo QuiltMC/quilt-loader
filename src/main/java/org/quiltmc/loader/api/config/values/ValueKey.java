@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.config;
+package org.quiltmc.loader.api.config.values;
 
 import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.NonExtendable
-public interface CompoundConfigValue<T> {
-	Class<T> getType();
+public interface ValueKey extends Iterable<String> {
+	int length();
 
-	T getDefaultValue();
+	String getKeyComponent(int i);
 
-	/**
-	 * Appends the default value to this collection
-	 */
-	void grow();
+	ValueKey child(String key);
+
+	boolean startsWith(ValueKey key);
+
+	boolean isSibling(ValueKey key);
+
+    String getLastComponent();
+
+	ValueKey child(ValueKey key);
 }

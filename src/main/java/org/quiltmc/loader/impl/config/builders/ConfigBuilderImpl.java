@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.builders;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -28,7 +28,10 @@ import java.util.function.Consumer;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueKey;
+import org.quiltmc.loader.impl.config.ConfigImpl;
+import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
+import org.quiltmc.loader.impl.config.tree.Trie;
 
 public final class ConfigBuilderImpl implements Config.Builder {
 	private final String modId, id;

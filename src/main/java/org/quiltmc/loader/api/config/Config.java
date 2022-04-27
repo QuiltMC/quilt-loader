@@ -21,6 +21,7 @@ import java.nio.file.Paths;
 import java.util.function.Consumer;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.api.config.values.ValueTreeNode;
 import org.quiltmc.loader.impl.config.ConfigImpl;
 
 @ApiStatus.NonExtendable

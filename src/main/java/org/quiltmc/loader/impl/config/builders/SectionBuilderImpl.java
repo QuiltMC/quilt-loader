@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config;
+package org.quiltmc.loader.impl.config.builders;
 
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.ValueKey;
+import org.quiltmc.loader.api.config.values.ValueKey;
+import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -81,5 +82,13 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 		metadata.add(value);
 
 		return this;
+	}
+
+	public Set<String> getFlags() {
+		return this.flags;
+	}
+
+	public Map<MetadataType<?>, List<?>> getMetadata() {
+		return this.metadata;
 	}
 }

@@ -14,20 +14,22 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.config;
+package org.quiltmc.loader.api.config.values;
 
-public interface ValueTreeNode {
-	ValueKey getKey();
+import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.impl.config.util.ConfigUtils;
+import org.quiltmc.loader.impl.config.values.ValueListImpl;
 
-	Iterable<String> flags();
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-	boolean hasFlag(String flag);
+@ApiStatus.NonExtendable
+public interface ValueList<T> extends List<T>, CompoundConfigValue<T> {
+	@SafeVarargs
+	static <T> ValueList<T> create(T defaultValue, T... values) {
+		ConfigUtils.assertValueType(defaultValue);
 
-	<M> Iterable<M> metadata(MetadataType<M> type);
-
-	<M> boolean hasMetadata(MetadataType<M> type);
-
-	interface Parent extends ValueTreeNode, Iterable<ValueTreeNode> {
-
+		return new ValueListImpl<>(defaultValue, new ArrayList<>(Arrays.asList(values)));
 	}
 }
