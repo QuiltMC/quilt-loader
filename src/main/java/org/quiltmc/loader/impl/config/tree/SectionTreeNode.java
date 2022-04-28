@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public final class ParentTreeNode extends AbstractMetadataContainer implements ValueTreeNode.Parent {
+public final class SectionTreeNode extends AbstractMetadataContainer implements ValueTreeNode.Section {
 	private final Trie.Node node;
 
-	protected ParentTreeNode(Trie.Node node, Map<MetadataType<?>, List<?>> metadata, Set<String> flags) {
+	protected SectionTreeNode(Trie.Node node, Map<MetadataType<?>, List<?>> metadata, Set<String> flags) {
 		super(flags, metadata);
 		this.node = node;
 	}
@@ -44,7 +44,7 @@ public final class ParentTreeNode extends AbstractMetadataContainer implements V
 	@Override
 	public Iterator<ValueTreeNode> iterator() {
 		return new Iterator<ValueTreeNode>() {
-			private final Iterator<Trie.Node> itr = ParentTreeNode.this.node.iterator();
+			private final Iterator<Trie.Node> itr = SectionTreeNode.this.node.iterator();
 
 			@Override
 			public boolean hasNext() {

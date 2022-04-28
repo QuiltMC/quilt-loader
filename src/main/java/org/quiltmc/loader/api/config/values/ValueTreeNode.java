@@ -16,20 +16,44 @@
 
 package org.quiltmc.loader.api.config.values;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.api.config.MetadataType;
+import org.quiltmc.loader.api.config.TrackedValue;
 
+/**
+ * An element in a config tree.
+ *
+ * <p>Will be either a {@link TrackedValue} or {@link Section}
+ */
 public interface ValueTreeNode {
 	ValueKey getKey();
 
+	/**
+	 * @return all flags associated with this {@link TrackedValue}
+	 */
 	Iterable<String> flags();
 
+	/**
+	 * @param flag a flag identifier
+	 * @return whether or not this value has the specified flag
+	 */
 	boolean hasFlag(String flag);
 
+	/**
+	 * @return all instances of metadata attached to this value for the specified type
+	 */
 	<M> Iterable<M> metadata(MetadataType<M> type);
 
+	/**
+	 * @return whether or not this value has any metadata of the specified type
+	 */
 	<M> boolean hasMetadata(MetadataType<M> type);
 
-	interface Parent extends ValueTreeNode, Iterable<ValueTreeNode> {
+	/**
+	 * A node that contains any number of child nodes.
+	 */
+	@ApiStatus.NonExtendable
+	interface Section extends ValueTreeNode, Iterable<ValueTreeNode> {
 
 	}
 }

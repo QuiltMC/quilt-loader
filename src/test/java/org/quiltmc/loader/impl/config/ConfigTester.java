@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Test;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.Constraint;
-import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.ValueList;
 
 import java.util.ArrayList;
@@ -80,9 +80,9 @@ public class ConfigTester {
 	public void testMetadata() {
 		Config config = Config.create("testmod", "testConfig4", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-				creator.metadata(MetadataType.COMMENT, "Comment one");
-				creator.metadata(MetadataType.COMMENT, "Comment two");
-				creator.metadata(MetadataType.COMMENT, "Comment three");
+				creator.metadata(Comment.TYPE, "Comment one");
+				creator.metadata(Comment.TYPE, "Comment two");
+				creator.metadata(Comment.TYPE, "Comment three");
 			}));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
@@ -91,7 +91,7 @@ public class ConfigTester {
 		for (TrackedValue<?> value : config.values()) {
 			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
 
-			for (String comment : value.metadata(MetadataType.COMMENT)) {
+			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);
 			}
 		}
@@ -112,7 +112,7 @@ public class ConfigTester {
 		for (TrackedValue<?> value : config.values()) {
 			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
 
-			for (String comment : value.metadata(MetadataType.COMMENT)) {
+			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);
 			}
 		}
@@ -186,7 +186,7 @@ public class ConfigTester {
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
 			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
 
-			for (String comment : value.metadata(MetadataType.COMMENT)) {
+			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);
 			}
 		}

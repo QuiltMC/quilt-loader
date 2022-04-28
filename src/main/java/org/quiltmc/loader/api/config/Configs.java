@@ -19,15 +19,26 @@ package org.quiltmc.loader.api.config;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 
-public class Configs {
+public final class Configs {
+	private Configs() {}
+
+	/**
+	 * @return all registered config files
+	 */
 	public static Iterable<Config> getAll() {
 		return ConfigsImpl.getAll();
 	}
 
+	/**
+	 * @return all registered config files for the given mod
+	 */
 	public static Iterable<Config> getConfigs(String modId) {
 		return ConfigsImpl.getConfigs(modId);
 	}
 
+	/**
+	 * @return the specified config, if it is registered
+	 */
 	public static @Nullable Config getConfig(String modId, String configId) {
 		return ConfigsImpl.getConfig(modId, configId);
 	}

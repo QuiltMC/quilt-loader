@@ -18,6 +18,14 @@ package org.quiltmc.loader.api.config.values;
 
 import org.jetbrains.annotations.ApiStatus;
 
+/**
+ * A collection of any number of basic or complex types that can be grown on demand.
+ *
+ * Will be either a {@link ValueList} or {@link ValueMap}
+ *
+ * Basic types: int, long, float, double, boolean, or String
+ * Complex types: a {@link ValueList} or {@link ValueMap} of basic or complex types
+ */
 @ApiStatus.NonExtendable
 public interface CompoundConfigValue<T> {
 	Class<T> getType();

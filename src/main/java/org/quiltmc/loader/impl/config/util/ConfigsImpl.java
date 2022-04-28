@@ -29,6 +29,8 @@ import java.util.TreeMap;
 public final class ConfigsImpl {
 	private static final Map<String, Map<String, Config>> CONFIGS = new TreeMap<>();
 
+	private ConfigsImpl() {}
+
 	public static void put(String modId, Config config) {
 		if (CONFIGS.containsKey(modId) && CONFIGS.get(modId).containsKey(config.getId())) {
 			throw new RuntimeException("Config '" + modId + ':' + config.getId() + "' already exists");

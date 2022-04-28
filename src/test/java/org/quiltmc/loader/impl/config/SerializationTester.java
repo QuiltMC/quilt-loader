@@ -18,8 +18,8 @@ package org.quiltmc.loader.impl.config;
 
 import org.junit.jupiter.api.Test;
 import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 
@@ -30,21 +30,21 @@ public class SerializationTester {
 	public void testSerializer() {
 		Config config = Config.create("testmod", "testConfig6", builder -> {
 			builder.field(TrackedValue.create(0, "testInteger", creator -> {
-				creator.metadata(MetadataType.COMMENT, "Comment one");
-				creator.metadata(MetadataType.COMMENT, "Comment two");
-				creator.metadata(MetadataType.COMMENT, "Comment three");
+				creator.metadata(Comment.TYPE, "Comment one");
+				creator.metadata(Comment.TYPE, "Comment two");
+				creator.metadata(Comment.TYPE, "Comment three");
 			}));
 			builder.section("super_awesome_section", section1 -> {
-				section1.metadata(MetadataType.COMMENT, "This is a section comment!");
+				section1.metadata(Comment.TYPE, "This is a section comment!");
 				section1.field(TrackedValue.create(1, "before"));
 				section1.section("less_awesome_section", section2 -> {
-					section2.metadata(MetadataType.COMMENT, "This is another section comment!");
+					section2.metadata(Comment.TYPE, "This is another section comment!");
 					section2.section("regular_section", section3 -> {
 						section3.field(TrackedValue.create(0, "water"));
 						section3.field(TrackedValue.create(0, "earth"));
 						section3.field(TrackedValue.create(0, "fire", creator -> {
-							creator.metadata(MetadataType.COMMENT, "This is a field comment!");
-							creator.metadata(MetadataType.COMMENT, "This is another field comment!");
+							creator.metadata(Comment.TYPE, "This is a field comment!");
+							creator.metadata(Comment.TYPE, "This is another field comment!");
 
 						}));
 						section3.field(TrackedValue.create(0, "air"));

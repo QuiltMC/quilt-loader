@@ -54,6 +54,10 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	}
 
 	public void setConfig(ConfigImpl config) {
+		if (this.config != null) {
+			throw new RuntimeException("TrackedValue '" + this.key + "' cannot be assigned to multiple configs");
+		}
+
 		this.config = config;
 	}
 

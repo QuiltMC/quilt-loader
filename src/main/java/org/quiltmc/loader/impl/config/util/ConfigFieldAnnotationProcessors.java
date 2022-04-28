@@ -16,11 +16,6 @@
 
 package org.quiltmc.loader.impl.config.util;
 
-import org.quiltmc.loader.api.config.MetadataType;
-import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.annotations.Comment;
-import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor;
-
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,15 +23,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.annotations.Comment;
+import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor;
+
 public final class ConfigFieldAnnotationProcessors {
 	private static final Map<Class<? extends Annotation>, List<ConfigFieldAnnotationProcessor<?>>> PROCESSORS = new HashMap<>();
 
 	static {
-		register(Comment.class, (comment, builder) -> {
-			for (String c : comment.value()) {
-				builder.metadata(MetadataType.COMMENT, c);
-			}
-		});
+		register(Comment.class, new Comment.Processor());
 	}
 
 	public static <T extends Annotation> void register(Class<T> annotationClass, ConfigFieldAnnotationProcessor<T> processor) {

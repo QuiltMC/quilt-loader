@@ -29,10 +29,10 @@ import java.util.Map;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.Constraint;
-import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.values.ValueList;
@@ -90,15 +90,15 @@ public final class Json5Serializer implements Serializer {
 	}
 
 	private void serialize(JsonWriter writer, ValueTreeNode node) throws IOException {
-		for (String comment : node.metadata(MetadataType.COMMENT)) {
+		for (String comment : node.metadata(Comment.TYPE)) {
 			writer.comment(comment);
 		}
 
-		if (node instanceof ValueTreeNode.Parent) {
+		if (node instanceof ValueTreeNode.Section) {
 			writer.name(node.getKey().getLastComponent());
 			writer.beginObject();
 
-			for (ValueTreeNode child : ((ValueTreeNode.Parent) node)) {
+			for (ValueTreeNode child : ((ValueTreeNode.Section) node)) {
 				serialize(writer, child);
 			}
 
@@ -125,7 +125,7 @@ public final class Json5Serializer implements Serializer {
 	public void serialize(Config config, OutputStream to) throws IOException {
 		JsonWriter writer = JsonWriter.json5(new OutputStreamWriter(to));
 
-		for (String comment : config.metadata(MetadataType.COMMENT)) {
+		for (String comment : config.metadata(Comment.TYPE)) {
 			writer.comment(comment);
 		}
 

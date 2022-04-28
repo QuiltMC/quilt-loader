@@ -21,6 +21,11 @@ import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
 
 import java.lang.annotation.Annotation;
 
+/**
+ * Converts data in an annotation on a field to metadata, flags, or constraints on a {@link TrackedValue}.
+ *
+ * <p>See {@link Comment}
+ */
 public interface ConfigFieldAnnotationProcessor<T extends Annotation> {
 	void process(T annotation, TrackedValue.Builder<?> builder);
 

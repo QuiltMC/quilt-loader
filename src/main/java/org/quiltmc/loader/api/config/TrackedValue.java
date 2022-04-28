@@ -33,7 +33,7 @@ import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
 
 /**
- *
+ * A value in a config tree.
  */
 @ApiStatus.NonExtendable
 public interface TrackedValue<T> extends ValueTreeNode {
@@ -86,12 +86,25 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 */
 	Iterable<String> flags();
 
+	/**
+	 * @param flag a flag identifier
+	 * @return whether or not this value has the specified flag
+	 */
 	boolean hasFlag(String flag);
 
+	/**
+	 * @return all instances of metadata attached to this value for the specified type
+	 */
 	<M> Iterable<M> metadata(MetadataType<M> type);
 
+	/**
+	 * @return whether or not this value has any metadata of the specified type
+	 */
 	<M> boolean hasMetadata(MetadataType<M> type);
 
+	/**
+	 * @return all constraints on this value
+	 */
 	Iterable<Constraint<T>> constraints();
 
 	/**
@@ -107,13 +120,8 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 *
 	 * Config values can be one of the following types:
 	 * <ul>
-	 *     <li>Integer</li>
-	 *     <li>Long</li>
-	 *     <li>Float</li>
-	 *     <li>Double</li>
-	 *     <li>Boolean</li>
-	 *     <li>String</li>
-	 *     <li>A {@link ValueList} or {@link ValueMap} of any of these types</li>
+	 *     <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 * </ul>
 	 *
 	 * @param defaultValue the default value of the new {@link TrackedValue} to create

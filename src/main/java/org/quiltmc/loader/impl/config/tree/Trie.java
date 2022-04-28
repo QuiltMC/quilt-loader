@@ -88,7 +88,7 @@ public final class Trie {
 
 		for (String keyComponent : key) {
 			if (node.value == null) {
-				node.setValue(new ParentTreeNode(node, Collections.emptyMap(), Collections.emptySet()));
+				node.setValue(new SectionTreeNode(node, Collections.emptyMap(), Collections.emptySet()));
 			}
 
 			node = node.getOrCreateChild(keyComponent);
@@ -111,7 +111,7 @@ public final class Trie {
 			node = node.getOrCreateChild(keyComponent);
 		}
 
-		node.setValue(new ParentTreeNode(node, sectionBuilder.getMetadata(), sectionBuilder.getFlags()));
+		node.setValue(new SectionTreeNode(node, sectionBuilder.getMetadata(), sectionBuilder.getFlags()));
 	}
 
 	public TrackedValue<?> get(Iterable<String> key) {
@@ -210,7 +210,7 @@ public final class Trie {
 					String key = keys[i];
 
 					if (i < keys.length - 1) {
-						n.setValue(new ParentTreeNode(n, Collections.emptyMap(), Collections.emptySet()));
+						n.setValue(new SectionTreeNode(n, Collections.emptyMap(), Collections.emptySet()));
 					}
 
 					n = n.getOrCreateChild(key);

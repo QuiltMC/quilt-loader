@@ -16,7 +16,10 @@
 
 package org.quiltmc.loader.api.config;
 
+/**
+ * A wrapper containing a {@link Config} object and an instance of the class that was used to construct it
+ */
 public interface ConfigWrapper<C> {
-	Config getConfig();
 	C getWrapped();
+	Config getConfig();
 }

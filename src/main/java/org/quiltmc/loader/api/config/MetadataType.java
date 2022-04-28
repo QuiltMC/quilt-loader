@@ -18,10 +18,11 @@ package org.quiltmc.loader.api.config;
 
 import org.jetbrains.annotations.ApiStatus;
 
+/**
+ * A typed key to be used for setting and getting object metadata.
+ */
 @ApiStatus.NonExtendable
 public interface MetadataType<T> {
-	MetadataType<String> COMMENT = MetadataType.create("comment");
-
 	String getId();
 
 	static <T> MetadataType<T> create(String id) {

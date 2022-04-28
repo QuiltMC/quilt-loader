@@ -16,10 +16,24 @@
 
 package org.quiltmc.loader.api.config.annotations;
 
+import org.quiltmc.loader.api.config.MetadataType;
+import org.quiltmc.loader.api.config.TrackedValue;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Comment {
+	MetadataType<String> TYPE = MetadataType.create("comment");
+
 	String[] value();
+
+	final class Processor implements ConfigFieldAnnotationProcessor<Comment> {
+		@Override
+		public void process(Comment comment, TrackedValue.Builder<?> builder) {
+			for (String c : comment.value()) {
+				builder.metadata(TYPE, c);
+			}
+		}
+	}
 }
