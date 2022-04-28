@@ -84,6 +84,8 @@ public final class Json5Serializer implements Serializer {
 			writer.endObject();
 		} else if (value == null) {
 			writer.nullValue();
+		} else if (value.getClass().isEnum()) {
+			writer.value(((Enum<?>) value).name());
 		} else {
 			throw new RuntimeException();
 		}
@@ -107,12 +109,29 @@ public final class Json5Serializer implements Serializer {
 			TrackedValue<?> trackedValue = ((TrackedValue<?>) node);
 			Object defaultValue = trackedValue.getDefaultValue();
 
-			if (!(defaultValue instanceof CompoundConfigValue<?>)) {
-				writer.comment("default: " + defaultValue);
+			if (defaultValue.getClass().isEnum()) {
+				StringBuilder options = new StringBuilder("options: ");
+				Object[] enumConstants = defaultValue.getClass().getEnumConstants();
+
+				for (int i = 0, enumConstantsLength = enumConstants.length; i < enumConstantsLength; i++) {
+					Object o = enumConstants[i];
+
+					options.append(o);
+
+					if (i < enumConstantsLength - 1) {
+						options.append(", ");
+					}
+				}
+
+				writer.comment(options.toString());
 			}
 
 			for (Constraint<?> constraint : trackedValue.constraints()) {
 				writer.comment(constraint.getRepresentation());
+			}
+
+			if (!(defaultValue instanceof CompoundConfigValue<?>)) {
+				writer.comment("default: " + defaultValue);
 			}
 
 			writer.name(node.getKey().getLastComponent());
@@ -170,8 +189,16 @@ public final class Json5Serializer implements Serializer {
 			}
 
 			return ValueList.create(((ValueList<?>) to).getDefaultValue(), values);
+		} else if (to.getClass().isEnum()) {
+			for (Object o : to.getClass().getEnumConstants()) {
+				if (((Enum<?>) o).name().equalsIgnoreCase((String) object)) {
+					return o;
+				}
+			}
+
+			throw new RuntimeException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
 		} else {
-			throw new RuntimeException();
+			throw new RuntimeException("Unexpected value type: " + to.getClass());
 		}
 	}
 

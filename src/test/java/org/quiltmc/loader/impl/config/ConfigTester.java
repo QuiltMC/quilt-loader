@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.config;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.Constraint;
@@ -57,6 +58,7 @@ public class ConfigTester {
 			builder.field(TEST_LIST = TrackedValue.create(
 					ValueList.create(0, 1, 2, 3, 4), "testList"
 			));
+			builder.field(TrackedValue.create(LoaderValue.LType.ARRAY, "testEnum"));
 		});
 
 		TEST_STRING.register((key, oldValue, newValue) ->

@@ -57,6 +57,10 @@ public final class ConfigUtils {
 	}
 
 	public static boolean isValidValueClass(Class<?> valueClass) {
+		if (valueClass.isEnum()) {
+			return true;
+		}
+
 		for (Class<?> clazz : VALID_VALUE_CLASSES) {
 			if (clazz == valueClass) {
 				return true;
