@@ -32,6 +32,7 @@ import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.ConfigImpl;
 import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
 import org.quiltmc.loader.impl.config.tree.Trie;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 public final class ConfigBuilderImpl implements Config.Builder {
 	private final String modId, id;
@@ -43,12 +44,16 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	final Trie values = new Trie();
 
-	private String fileType = "json5";
+	private String fileType = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION);
 
 	public ConfigBuilderImpl(String modId, String id, Path path) {
 		this.modId = modId;
 		this.id = id;
 		this.path = path;
+
+		if (this.fileType == null) {
+			this.fileType = "json5";
+		}
 	}
 
 	@Override
