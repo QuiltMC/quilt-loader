@@ -377,7 +377,9 @@ public interface Config {
 		Builder callback(UpdateCallback callback);
 
 		/**
+		 * Sets the default file type for the config file this config will be saved to
 		 *
+		 * Note that this can be overridden by the end user with a launch parameter
 		 *
 		 * @return this
 		 */
