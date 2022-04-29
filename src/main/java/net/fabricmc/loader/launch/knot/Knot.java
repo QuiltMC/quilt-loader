@@ -153,6 +153,16 @@ public final class Knot extends FabricLauncherBase {
 		unlocked = true;
 
 		try {
+			// If the very first class transformed by mixin is also referenced by a mixin config
+			// then we'll crash due to an "attempted duplicate class definition"
+			// Since this target class is *very unlikely* to be referenced by mixin we forcibly load it.
+			classLoader.loadIntoTarget("net.fabricmc.loader.launch.knot.UnusedEmptyTargetClass");
+		} catch (ClassNotFoundException cnfe) {
+			Log.warn(LogCategory.KNOT, "Early non-mixin-config related class failed to load!");
+			Log.warn(LogCategory.KNOT, "If you get a 'LinkageError' of 'attempted duplicated * definition' after this then this error is the cause!", cnfe);
+		}
+
+		try {
 			EntrypointUtils.invoke("pre_launch", org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint.class, org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
 			EntrypointUtils.invoke("preLaunch", net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint.class, net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
 		} catch (RuntimeException e) {
