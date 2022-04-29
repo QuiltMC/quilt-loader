@@ -33,7 +33,7 @@ public interface Config {
 	String getId();
 
 	/**
-	 * The path this config will be saved in, relative to Quilt Loaders config directory.
+	 * The path this config will be saved in, relative to Quilt Loader's config directory.
 	 *
 	 * @return a save path
 	 */
@@ -136,7 +136,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
@@ -164,7 +164,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
@@ -218,7 +218,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
@@ -244,7 +244,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
@@ -269,7 +269,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
@@ -293,7 +293,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
 	 * @return a {@link ConfigWrapper<C>}
@@ -317,7 +317,7 @@ public interface Config {
 	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
-	 * @param id the configs id
+	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
 	 */
