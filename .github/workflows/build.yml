@@ -6,21 +6,24 @@ on:
   pull_request:
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        java: [17-jdk]
-    runs-on: ubuntu-20.04
-    container:
-      image: openjdk:${{ matrix.java }}
-      options: --user root
-    steps:
-      - uses: actions/checkout@v1
-      - uses: gradle/wrapper-validation-action@v1
-      - run: ./gradlew build --stacktrace
+# Since both build and publish run on the same jvm, there's no reason to build twice.
+# If/when we want to run on multiple jvms again just uncomment this block, and the
+# "needs: build" line in "publish" to bring it back.
+#  build:
+#    strategy:
+#      matrix:
+#        java: [17-jdk]
+#    runs-on: ubuntu-20.04
+#    container:
+#      image: openjdk:${{ matrix.java }}
+#      options: --user root
+#    steps:
+#      - uses: actions/checkout@v1
+#      - uses: gradle/wrapper-validation-action@v1
+#      - run: ./gradlew build --stacktrace
 
   publish:
-    needs: build
+#    needs: build
     runs-on: ubuntu-20.04
     container:
       image: openjdk:17-jdk
