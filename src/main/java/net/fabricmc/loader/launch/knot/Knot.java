@@ -20,7 +20,6 @@ import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.config.util.ConfigSerializers;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
@@ -152,8 +151,6 @@ public final class Knot extends FabricLauncherBase {
 
 		provider.unlockClassPath(this);
 		unlocked = true;
-
-		ConfigSerializers.initialize();
 
 		try {
 			EntrypointUtils.invoke("pre_launch", org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint.class, org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);

@@ -33,11 +33,6 @@ public final class ConfigSerializers {
 	private static final Map<String, Serializer> SERIALIZERS = new HashMap<>();
 
 	static {
-		// Needed for tests to pass
-		initialize();
-	}
-
-	public static void initialize() {
 		SERIALIZERS.put("json5", Json5Serializer.INSTANCE);
 		SERIALIZERS.put("toml", new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
 
