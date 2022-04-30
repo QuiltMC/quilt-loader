@@ -16,9 +16,12 @@
 
 package org.quiltmc.loader.impl.config.util;
 
+import com.electronwill.nightconfig.toml.TomlParser;
+import com.electronwill.nightconfig.toml.TomlWriter;
 import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.config.Json5Serializer;
+import org.quiltmc.loader.api.config.NightConfigSerializer;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -36,6 +39,7 @@ public final class ConfigSerializers {
 
 	public static void initialize() {
 		SERIALIZERS.put("json5", Json5Serializer.INSTANCE);
+		SERIALIZERS.put("toml", new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
 
 		for (Serializer serializer : QuiltLoaderImpl.INSTANCE.getEntrypoints("config_serializer", Serializer.class)) {
 			Serializer oldValue = SERIALIZERS.put(serializer.getFileExtension(), serializer);

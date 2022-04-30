@@ -80,6 +80,8 @@ dependencies {
 	api 'org.quiltmc:quilt-json5:1.0.0'
 	include 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
+	api 'com.electronwill.night-config:core:3.6.5'
+	api 'com.electronwill.night-config:toml:3.6.5'
 
 	testCompileOnly 'org.jetbrains:annotations:23.0.0'
 

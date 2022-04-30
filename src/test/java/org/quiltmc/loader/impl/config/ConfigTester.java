@@ -59,6 +59,13 @@ public class ConfigTester {
 					ValueList.create(0, 1, 2, 3, 4), "testList"
 			));
 			builder.field(TrackedValue.create(LoaderValue.LType.ARRAY, "testEnum"));
+			builder.section("testSection", section -> {
+				section.metadata(Comment.TYPE, "Section comment 1");
+				section.metadata(Comment.TYPE, "Section comment 2");
+				section.metadata(Comment.TYPE, "Section comment 3");
+				section.field(TrackedValue.create("wooooh", "emote"));
+				section.field(TrackedValue.create("etrator", "perp"));
+			});
 		});
 
 		TEST_STRING.register((key, oldValue, newValue) ->
@@ -184,6 +191,21 @@ public class ConfigTester {
 	@Test
 	public void testReflectiveConfigs() {
 		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig10", TestReflectiveConfig.class);
+
+		for (TrackedValue<?> value : wrapper.getConfig().values()) {
+			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+
+			for (String comment : value.metadata(Comment.TYPE)) {
+				System.out.printf("\t// %s%n", comment);
+			}
+		}
+	}
+
+	@Test
+	public void testTomlConfigs() {
+		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig11", TestReflectiveConfig.class, builder -> {
+			builder.fileType("toml");
+		});
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
 			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());

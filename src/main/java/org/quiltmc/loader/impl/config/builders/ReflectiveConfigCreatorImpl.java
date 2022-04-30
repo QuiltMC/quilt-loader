@@ -71,6 +71,8 @@ public class ReflectiveConfigCreatorImpl<C> {
 					}
 				}));
 			} else {
+				// TODO: Add support for section comments on subclasses
+
 				for (Field f : defaultValue.getClass().getDeclaredFields()) {
 					if (!f.isSynthetic()) {
 						this.createField(builder, key, defaultValue, f);

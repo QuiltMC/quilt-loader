@@ -52,7 +52,7 @@ public final class ConfigBuilderImpl implements Config.Builder {
 		this.path = path;
 
 		if (this.fileType == null) {
-			this.fileType = "json5";
+			this.fileType = "toml";
 		}
 	}
 
