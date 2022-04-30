@@ -306,7 +306,7 @@ public class ModResolver {
 									} else {
 										// TODO: pre-check the JAR before loading it, if possible
 										Log.debug(LogCategory.RESOLUTION, "Found nested JAR: " + modPath);
-										Path dest = inMemoryFs.getPath(modPath.getFileName().toString() + "-" + UUID.randomUUID() + "-nested.jar");
+										Path dest = inMemoryFs.getPath(modPath.getFileName().toString() + "-" + UUID.randomUUID() + "-nested.jar").toAbsolutePath();
 
 										try {
 											Files.copy(modPath, dest);
