@@ -152,7 +152,7 @@ public final class Trie {
 
 			this.checkForComodification();
 
-			Iterator<Node> itr = this.iterators.getFirst();
+			Iterator<Node> itr = this.iterators.removeFirst();
 
 			Node n = itr.next();
 
