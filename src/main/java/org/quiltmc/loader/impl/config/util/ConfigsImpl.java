@@ -62,6 +62,8 @@ public final class ConfigsImpl {
 		private AllConfigsIterator() {
 			if (this.itr1.hasNext()) {
 				this.itr2 = this.itr1.next().values().iterator();
+			} else {
+				this.itr2 = Collections.emptyIterator();
 			}
 		}
 
