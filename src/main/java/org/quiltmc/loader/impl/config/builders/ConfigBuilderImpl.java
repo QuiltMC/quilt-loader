@@ -44,16 +44,12 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	final Trie values = new Trie();
 
-	private String fileType = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION);
+	private String fileType = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION, "toml");
 
 	public ConfigBuilderImpl(String modId, String id, Path path) {
 		this.modId = modId;
 		this.id = id;
 		this.path = path;
-
-		if (this.fileType == null) {
-			this.fileType = "toml";
-		}
 	}
 
 	@Override

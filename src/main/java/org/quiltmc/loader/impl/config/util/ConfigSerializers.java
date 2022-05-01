@@ -54,16 +54,6 @@ public final class ConfigSerializers {
 	}
 
 	public static Serializer getSerializer(String fileType) {
-		String globalFileType = System.getProperty(SystemProperties.GLOBAL_CONFIG_EXTENSION);
-
-		if (globalFileType != null) {
-			fileType = globalFileType;
-		}
-
-		if (SERIALIZERS.containsKey(fileType)) {
-			return SERIALIZERS.get(fileType);
-		} else {
-			throw new RuntimeException("No serializer registered for extension '." + fileType + "'");
-		}
+		return getActualSerializer(System.getProperty(SystemProperties.GLOBAL_CONFIG_EXTENSION, fileType));
 	}
 }
