@@ -63,26 +63,7 @@ public final class Trie {
 		};
 	}
 
-	public ValueTreeNode get(String key0, String... keys) {
-		return this.root.getOrCreateNChild(key0, keys).value;
-	}
-
-	public ValueTreeNode put(ValueTreeNode value, String key0, String... keys) {
-		int modifiedCount = this.modCount;
-
-		Node node = this.root.getOrCreateNChild(key0, keys);
-		ValueTreeNode oldValue = node.getValue();
-		node.setValue(value);
-
-		// Only increment the number of modifications if a new node wasn't created by the call to getOrCreateNChild
-		if (modifiedCount == this.modCount) {
-			++this.modCount;
-		}
-
-		return oldValue;
-	}
-
-	public ValueTreeNode put(ValueKey key, ValueTreeNode value) {
+	public ValueTreeNode put(Iterable<String> key, ValueTreeNode value) {
 		int modifiedCount = this.modCount;
 
 		Node node = this.root;
@@ -105,7 +86,7 @@ public final class Trie {
 		return null;
 	}
 
-	public void put(ValueKey key, SectionBuilderImpl sectionBuilder) {
+	public void put(Iterable<String> key, SectionBuilderImpl sectionBuilder) {
 		Node node = this.root;
 
 		for (String keyComponent : key) {
