@@ -23,6 +23,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.TrackedValue;
@@ -134,6 +135,8 @@ public final class Trie {
 
 		@Override
 		public boolean hasNext() {
+			this.checkForComodification();
+
 			while (!this.iterators.isEmpty() && !this.iterators.peek().hasNext()) {
 				this.iterators.pop();
 			}
@@ -143,6 +146,10 @@ public final class Trie {
 
 		@Override
 		public ValueTreeNode next() {
+			if (!this.hasNext()) {
+				throw new NoSuchElementException();
+			}
+
 			this.checkForComodification();
 
 			Iterator<Node> itr = this.iterators.getFirst();
