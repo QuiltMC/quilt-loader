@@ -31,5 +31,5 @@ public interface Serializer {
 
 	void serialize(Config config, OutputStream to) throws IOException;
 
-	void deserialize(Config config, InputStream from);
+	void deserialize(Config config, InputStream from) throws IOException;
 }

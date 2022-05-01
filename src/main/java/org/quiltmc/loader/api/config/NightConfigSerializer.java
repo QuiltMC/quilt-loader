@@ -83,7 +83,7 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 			@SuppressWarnings("rawtypes")
 			ValueMap.Builder builder = ValueMap.builder(((ValueMap) to).getDefaultValue());
 
-			for (Map.Entry<String, ?> entry : ((Map<String, ?>) object).entrySet()) {
+			for (CommentedConfig.Entry entry : ((CommentedConfig) object).entrySet()) {
 				builder.put(entry.getKey(), coerce(entry.getValue(), ((ValueMap<?>) to).getDefaultValue()));
 			}
 
