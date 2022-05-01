@@ -87,6 +87,7 @@ public final class Trie {
 	}
 
 	public void put(Iterable<String> key, SectionBuilderImpl sectionBuilder) {
+		int modifiedCount = this.modCount;
 		Node node = this.root;
 
 		for (String keyComponent : key) {
@@ -94,6 +95,12 @@ public final class Trie {
 		}
 
 		node.setValue(new SectionTreeNode(node, sectionBuilder.getMetadata(), sectionBuilder.getFlags()));
+
+
+		// Only increment the number of modifications if a new node wasn't created by the call to getOrCreateNChild
+		if (modifiedCount == this.modCount) {
+			++this.modCount;
+		}
 	}
 
 	public TrackedValue<?> get(Iterable<String> key) {
