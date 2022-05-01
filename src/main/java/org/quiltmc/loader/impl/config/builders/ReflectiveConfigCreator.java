@@ -27,10 +27,11 @@ import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.impl.config.util.ConfigUtils;
 import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
 
-public class ReflectiveConfigCreatorImpl<C> {
+public class ReflectiveConfigCreator<C> implements Config.Creator {
 	private final Class<C> creatorClass;
+	private C instance;
 
-	public ReflectiveConfigCreatorImpl(Class<C> creatorClass) {
+	public ReflectiveConfigCreator(Class<C> creatorClass) {
 		this.creatorClass = creatorClass;
 	}
 
@@ -85,23 +86,33 @@ public class ReflectiveConfigCreatorImpl<C> {
 
 	}
 
-	public C create(Config.Builder builder) {
+	public void create(Config.Builder builder) {
+		if (this.instance != null) {
+			throw new RuntimeException();
+		}
+
 		try {
-			C c = creatorClass.newInstance();
+			this.instance = creatorClass.newInstance();
 
 			Deque<String> key = new ArrayDeque<>();
 
 			for (Field field : this.creatorClass.getDeclaredFields()) {
-				this.createField(builder, key, c, field);
+				this.createField(builder, key, this.instance, field);
 			}
-
-			return c;
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	public static <C> ReflectiveConfigCreatorImpl<C> of(Class<C> creatorClass) {
-		return new ReflectiveConfigCreatorImpl<>(creatorClass);
+	public static <C> ReflectiveConfigCreator<C> of(Class<C> creatorClass) {
+		return new ReflectiveConfigCreator<>(creatorClass);
+	}
+
+	public C getInstance() {
+		if (this.instance == null) {
+			throw new RuntimeException();
+		}
+
+		return this.instance;
 	}
 }

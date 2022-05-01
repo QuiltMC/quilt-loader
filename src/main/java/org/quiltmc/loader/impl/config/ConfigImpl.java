@@ -37,7 +37,7 @@ import org.quiltmc.loader.impl.config.builders.ConfigBuilderImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 import org.quiltmc.loader.impl.config.tree.Trie;
 import org.quiltmc.loader.impl.config.util.ConfigSerializers;
-import org.quiltmc.loader.impl.config.builders.ReflectiveConfigCreatorImpl;
+import org.quiltmc.loader.impl.config.builders.ReflectiveConfigCreator;
 import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
@@ -178,31 +178,19 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 	}
 
 	public static <C> ConfigWrapper<C> create(String modId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
-		ConfigBuilderImpl builder = new ConfigBuilderImpl(modId, id, path);
-
-		before.create(builder);
-		C c = ReflectiveConfigCreatorImpl.of(configCreatorClass).create(builder);
-		after.create(builder);
-
-		ConfigImpl config = builder.build();
-
-		ConfigsImpl.put(modId, config);
-
-		for (TrackedValue<?> value : config.values()) {
-			((TrackedValueImpl<?>) value).setConfig(config);
-		}
-
-		doInitialSerialization(config);
+		ReflectiveConfigCreator<C> creator = ReflectiveConfigCreator.of(configCreatorClass);
+		Config config = create(modId, id, path, before, creator, after);
+		C c = creator.getInstance();
 
 		return new ConfigWrapper<C>() {
 			@Override
-			public Config getConfig() {
-				return config;
+			public C getWrapped() {
+				return c;
 			}
 
 			@Override
-			public C getWrapped() {
-				return c;
+			public Config getConfig() {
+				return config;
 			}
 		};
 	}
