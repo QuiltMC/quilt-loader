@@ -167,6 +167,8 @@ public final class Trie {
 				this.iterators.addFirst(itr);
 			}
 
+			this.checkForComodification();
+
 			return n.getValue();
 		}
 
