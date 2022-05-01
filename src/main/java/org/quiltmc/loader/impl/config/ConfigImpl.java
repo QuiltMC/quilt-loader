@@ -106,6 +106,12 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		}
 	}
 
+	public void invokeCallbacks() {
+		for (Config.UpdateCallback callback : this.callbacks) {
+			callback.onUpdate(this);
+		}
+	}
+
 	public Iterable<TrackedValue<?>> values() {
 		return new Iterable<TrackedValue<?>>() {
 			@NotNull

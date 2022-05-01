@@ -66,6 +66,9 @@ public class ConfigTester {
 				section.field(TrackedValue.create("wooooh", "emote"));
 				section.field(TrackedValue.create("etrator", "perp"));
 			});
+			builder.callback(c -> {
+				System.out.println("We was updated!");
+			});
 		});
 
 		TEST_STRING.register((key, oldValue, newValue) ->

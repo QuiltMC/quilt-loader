@@ -112,9 +112,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 			this.config.serialize();
 		}
 
-		for (UpdateCallback<T> callback : this.callbacks) {
-			callback.onUpdate(this.key, oldValue, newValue);
-		}
+		this.update(oldValue, newValue);
 
 		return oldValue;
 	}
@@ -124,9 +122,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		this.isBeingOverridden = true;
 		this.valueOverride = newValue;
 
-		for (UpdateCallback<T> callback : this.callbacks) {
-			callback.onUpdate(this.key, this.value, newValue);
-		}
+		this.update(this.value, newValue);
 	}
 
 	@Override
@@ -135,9 +131,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		T oldValueOverride = this.valueOverride;
 		this.valueOverride = null;
 
-		for (UpdateCallback<T> callback : this.callbacks) {
-			callback.onUpdate(this.key, oldValueOverride, this.value);
-		}
+		this.update(oldValueOverride, this.value);
 	}
 
 	@Override
@@ -178,8 +172,18 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		}
 	}
 
+	private void update(T oldValue, T newValue) {
+		this.config.invokeCallbacks();
+
+		for (UpdateCallback<T> callback : this.callbacks) {
+			callback.onUpdate(this.key, oldValue, newValue);
+		}
+	}
+
 	public void update() {
 		this.config.serialize();
+
+		this.config.invokeCallbacks();
 
 		for (UpdateCallback<T> callback : this.callbacks) {
 			callback.onUpdate(this.key, this.value, this.value);
