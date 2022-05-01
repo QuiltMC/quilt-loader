@@ -30,15 +30,12 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.MetadataType;
-import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.values.ValueTreeNode;
 import org.quiltmc.loader.impl.config.builders.ConfigBuilderImpl;
-import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
+import org.quiltmc.loader.impl.config.builders.ReflectiveConfigCreator;
 import org.quiltmc.loader.impl.config.tree.Trie;
 import org.quiltmc.loader.impl.config.util.ConfigSerializers;
-import org.quiltmc.loader.impl.config.builders.ReflectiveConfigCreator;
-import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 public final class ConfigImpl extends AbstractMetadataContainer implements Config {
@@ -164,17 +161,7 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 			creator.create(builder);
 		}
 
-		ConfigImpl config = builder.build();
-
-		ConfigsImpl.put(modId, config);
-
-		for (TrackedValue<?> value : config.values()) {
-			((TrackedValueImpl<?>) value).setConfig(config);
-		}
-
-		doInitialSerialization(config);
-
-		return config;
+		return builder.build();
 	}
 
 	public static <C> ConfigWrapper<C> create(String modId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
@@ -193,32 +180,5 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 				return config;
 			}
 		};
-	}
-
-	private static void doInitialSerialization(ConfigImpl config) {
-		Serializer defaultSerializer = ConfigSerializers.getActualSerializer(config.getDefaultFileType());
-		Serializer serializer = ConfigSerializers.getSerializer(config.getDefaultFileType());
-
-		Path directory = QuiltLoader.getConfigDir().resolve(config.getModId()).resolve(config.getSavePath());
-		Path defaultPath = directory.resolve(config.getId() + "." + defaultSerializer.getFileExtension());
-		Path path = directory.resolve(config.getId() + "." + serializer.getFileExtension());
-
-		try {
-			if ((defaultSerializer == serializer || !Files.exists(defaultPath)) && Files.exists(path)) {
-				serializer.deserialize(config, Files.newInputStream(path));
-			} else if (Files.exists(defaultPath)) {
-				defaultSerializer.deserialize(config, Files.newInputStream(defaultPath));
-
-				try {
-					Files.delete(defaultPath);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-
-			serializer.serialize(config, Files.newOutputStream(path));
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 	}
 }
