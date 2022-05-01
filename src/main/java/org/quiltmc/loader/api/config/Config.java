@@ -118,7 +118,7 @@ public interface Config {
 	 * @param creators any number of {@link Creator}s that can be used to configure the resulting config
 	 */
 	static Config create(String modId, String id, Creator... creators) {
-		return ConfigImpl.create(modId, id, creators);
+		return create(modId, id, Paths.get(""), creators);
 	}
 
 	/**
@@ -173,7 +173,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Creator before, Class<C> configCreatorClass) {
-		return ConfigImpl.create(modId, id, path, before, configCreatorClass, builder -> {});
+		return create(modId, id, path, before, configCreatorClass, builder -> {});
 	}
 
 	/**
@@ -200,7 +200,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Class<C> configCreatorClass, Creator after) {
-		return ConfigImpl.create(modId, id, path, builder -> {}, configCreatorClass, after);
+		return create(modId, id, path, builder -> {}, configCreatorClass, after);
 	}
 
 	/**
@@ -226,7 +226,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Class<C> configCreatorClass) {
-		return ConfigImpl.create(modId, id, path, builder -> {}, configCreatorClass, builder -> {});
+		return create(modId, id, path, builder -> {}, configCreatorClass, builder -> {});
 	}
 
 	/**
@@ -251,7 +251,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Creator before, Class<C> configCreatorClass, Creator after) {
-		return ConfigImpl.create(modId, id, Paths.get(""), before, configCreatorClass, after);
+		return create(modId, id, Paths.get(""), before, configCreatorClass, after);
 	}
 
 	/**
@@ -275,7 +275,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Creator before, Class<C> configCreatorClass) {
-		return ConfigImpl.create(modId, id, Paths.get(""), before, configCreatorClass, builder -> {});
+		return create(modId, id, Paths.get(""), before, configCreatorClass, builder -> {});
 	}
 
 	/**
@@ -299,7 +299,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Class<C> configCreatorClass, Creator after) {
-		return ConfigImpl.create(modId, id, Paths.get(""), builder -> {}, configCreatorClass, after);
+		return create(modId, id, Paths.get(""), builder -> {}, configCreatorClass, after);
 	}
 
 	/**
@@ -322,7 +322,7 @@ public interface Config {
 	 * @return a {@link ConfigWrapper<C>}
 	 */
 	static <C> ConfigWrapper<C> create(String modId, String id, Class<C> configCreatorClass) {
-		return ConfigImpl.create(modId, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
+		return create(modId, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
 	}
 
 	interface UpdateCallback {
