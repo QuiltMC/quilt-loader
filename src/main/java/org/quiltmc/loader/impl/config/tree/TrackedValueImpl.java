@@ -113,7 +113,9 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 			this.config.serialize();
 		}
 
-		this.update(oldValue, newValue);
+		if (!this.isBeingOverridden()) {
+			this.update(oldValue, newValue);
+		}
 
 		return oldValue;
 	}
