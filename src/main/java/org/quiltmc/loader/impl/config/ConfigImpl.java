@@ -71,7 +71,7 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 	}
 
 	@Override
-	public void register(UpdateCallback callback) {
+	public void registerCallback(UpdateCallback callback) {
 		this.callbacks.add(callback);
 	}
 

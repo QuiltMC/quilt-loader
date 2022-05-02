@@ -71,7 +71,7 @@ public class ConfigTester {
 			});
 		});
 
-		TEST_STRING.register((key, oldValue, newValue) ->
+		TEST_STRING.registerCallback((key, oldValue, newValue) ->
 				System.out.printf("Value '%s' updated:\n\tOld value: '%s'.\n\tNew value: '%s'%n", key, oldValue, newValue)
 		);
 

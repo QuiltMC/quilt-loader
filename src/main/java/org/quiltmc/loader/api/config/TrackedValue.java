@@ -79,7 +79,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 *
 	 * @param callback an update listener
 	 */
-	void register(UpdateCallback<T> callback);
+	void registerCallback(UpdateCallback<T> callback);
 
 	/**
 	 * @return all flags associated with this {@link TrackedValue}

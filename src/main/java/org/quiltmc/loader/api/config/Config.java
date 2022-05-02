@@ -44,7 +44,7 @@ public interface Config {
 	 *
 	 * @param callback an update listener
 	 */
-	void register(UpdateCallback callback);
+	void registerCallback(UpdateCallback callback);
 
 	Iterable<String> flags();
 

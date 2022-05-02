@@ -140,7 +140,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	}
 
 	@Override
-	public void register(UpdateCallback<T> callback) {
+	public void registerCallback(UpdateCallback<T> callback) {
 		this.callbacks.add(callback);
 	}
 
