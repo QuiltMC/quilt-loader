@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
@@ -120,7 +121,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 *
 	 * Config values can be one of the following types:
 	 * <ul>
-	 *     <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *     <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 * </ul>
 	 *
@@ -129,7 +130,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 * @param keys any number of additional keys for the new {@link TrackedValue}
 	 * @return a new {@link TrackedValue}
 	 */
-	static <T> TrackedValue<T> create(T defaultValue, String key0, String... keys) {
+	static <T> TrackedValue<T> create(@NotNull T defaultValue, String key0, String... keys) {
 		ConfigUtils.assertValueType(defaultValue);
 
 		return new TrackedValueImpl<>(new ValueKeyImpl(key0, keys), defaultValue, new LinkedHashSet<>(0), new LinkedHashMap<>(0), new ArrayList<>(0), new ArrayList<>(0));
@@ -140,13 +141,8 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 *
 	 * Config values can be one of the following types:
 	 * <ul>
-	 *     <li>Integer</li>
-	 *     <li>Long</li>
-	 *     <li>Float</li>
-	 *     <li>Double</li>
-	 *     <li>Boolean</li>
-	 *     <li>String</li>
-	 *     <li>A {@link ValueList} or {@link ValueMap} of any of these types</li>
+	 *     <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
+	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 * </ul>
 	 *
 	 * @param defaultValue the default value of the new {@link TrackedValue} to create
@@ -154,7 +150,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 * @param creator a function that allows adding additional metadata to fields
 	 * @return a new {@link TrackedValue}
 	 */
-	static <T> TrackedValue<T> create(T defaultValue, String key0, Consumer<Builder<T>> creator) {
+	static <T> TrackedValue<T> create(@NotNull T defaultValue, String key0, Consumer<Builder<T>> creator) {
 		TrackedValueBuilderImpl<T> builder = new TrackedValueBuilderImpl<>(defaultValue, key0);
 
 		creator.accept(builder);
