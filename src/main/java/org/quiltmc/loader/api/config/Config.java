@@ -100,18 +100,7 @@ public interface Config {
 	}
 
 	/**
-	 * Creates and registers a config with fields derived from the fields of the passed class
-	 *
-	 * <p>The passed class should have the following characteristics:
-	 * <ul>
-	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final and be one of the following types:</li>
-	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
-	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
-	 * </ul>
+	 * Creates and registers a config
 	 *
 	 * @param modId the mod owning the resulting config file
 	 * @param id the configs id
@@ -338,6 +327,11 @@ public interface Config {
 		/**
 		 * Adds a value to this config file
 		 *
+		 * A field should be either:
+		 * <ul>
+		 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+		 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+		 * </ul>
 		 * @return this
 		 */
 		Builder field(TrackedValue<?> value);
@@ -389,7 +383,14 @@ public interface Config {
 	@ApiStatus.NonExtendable
 	interface SectionBuilder {
 		/**
-		 * Adds a field to this config section
+		 * Adds a value to this config file
+		 *
+		 * A field should be either:
+		 * <ul>
+		 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+		 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+		 * </ul>
+		 * @return this
 		 */
 		<T> SectionBuilder field(TrackedValue<T> value);
 
