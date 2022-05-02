@@ -55,6 +55,11 @@ public interface Config {
 	<M> boolean hasMetadata(MetadataType<M> type);
 
 	/**
+	 * Save this config and all its values to disk
+	 */
+	void serialize();
+
+	/**
 	 * Returns all values held by this config file
 	 *
 	 * <p>For all nodes, including section nodes, see {@link #nodes}

@@ -93,8 +93,10 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		return QuiltLoader.getConfigDir().resolve(this.modId).resolve(this.path).resolve(this.id + "." + ConfigSerializers.getSerializer(this.defaultFileType).getFileExtension());
 	}
 
+	@Override
 	public void serialize() {
 		Path path = this.getPath();
+
 		try {
 			Files.createDirectories(path.getParent());
 			ConfigSerializers.getSerializer(this.defaultFileType).serialize(this, Files.newOutputStream(path));
