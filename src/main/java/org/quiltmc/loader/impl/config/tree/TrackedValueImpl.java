@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
@@ -102,7 +103,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	}
 
 	@Override
-	public T setValue(T newValue, boolean serialize) {
+	public T setValue(@NotNull T newValue, boolean serialize) {
 		this.assertValue(newValue);
 
 		T oldValue = this.value;
@@ -119,6 +120,8 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 
 	@Override
 	public void setOverride(T newValue) {
+		this.assertValue(newValue);
+
 		this.isBeingOverridden = true;
 		this.valueOverride = newValue;
 
@@ -152,6 +155,12 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	@Override
 	public Optional<Iterable<String>> checkForFailingConstraints(T value) {
 		List<String> failing = null;
+
+		if (value == null) {
+			failing = new ArrayList<>();
+
+			failing.add("Value cannot be null");
+		}
 
 		for (Constraint<T> constraint : this.constraints) {
 			Optional<String> errorMessage = constraint.test(value);

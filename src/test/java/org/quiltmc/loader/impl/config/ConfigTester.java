@@ -202,11 +202,15 @@ public class ConfigTester {
 				System.out.printf("\t// %s%n", comment);
 			}
 		}
+
+		Assertions.assertThrows(RuntimeException.class, () -> {
+			Config.create("testmod", "testConfig11", TestReflectiveConfig2.class);
+		}).printStackTrace();
 	}
 
 	@Test
 	public void testTomlConfigs() {
-		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig11", TestReflectiveConfig.class, builder -> {
+		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig12", TestReflectiveConfig.class, builder -> {
 			builder.fileType("toml");
 		});
 

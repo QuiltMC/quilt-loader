@@ -42,6 +42,10 @@ public final class ConfigUtils {
 	}
 
 	public static boolean isValidValue(Object object) {
+		if (object == null) {
+			return false;
+		}
+
 		Class<?> valueClass = object.getClass();
 
 		while (object instanceof CompoundConfigValue<?>) {

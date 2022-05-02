@@ -62,7 +62,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 * @param serialize whether or not to serialize this values config file. Should be false only when deserializing
 	 * @return the old value that's been replaced
 	 */
-	T setValue(T newValue, boolean serialize);
+	T setValue(@NotNull T newValue, boolean serialize);
 
 	/**
 	 * Sets an override for this value to be returned by {@link #getValue}

@@ -71,7 +71,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 						ConfigFieldAnnotationProcessors.applyAnnotationProcessors(annotation, valueBuilder);
 					}
 				}));
-			} else {
+			} else if (defaultValue != null) {
 				// TODO: Add support for section comments on subclasses
 
 				for (Field f : defaultValue.getClass().getDeclaredFields()) {
@@ -79,6 +79,8 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 						this.createField(builder, key, defaultValue, f);
 					}
 				}
+			} else {
+				throw new RuntimeException("Config value cannot be null");
 			}
 
 			key.removeLast();
