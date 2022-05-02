@@ -30,6 +30,9 @@ import org.jetbrains.annotations.ApiStatus;
 public interface CompoundConfigValue<T> {
 	Class<T> getType();
 
+	/**
+	 * @return the default value for new elements of this collection
+	 */
 	T getDefaultValue();
 
 	/**
