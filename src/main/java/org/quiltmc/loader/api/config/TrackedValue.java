@@ -65,7 +65,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	T setValue(@NotNull T newValue, boolean serialize);
 
 	/**
-	 * Sets an override for this value to be returned by {@link #getValue}
+	 * Sets an override for this value to be returned by {@link #getValue} that is not serialized to disk
 	 *
 	 * @param newValue some value
 	 */
