@@ -87,7 +87,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -123,7 +123,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -151,7 +151,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -178,7 +178,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -205,7 +205,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -231,7 +231,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -256,7 +256,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -280,7 +280,7 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
@@ -304,8 +304,8 @@ public interface Config {
 	 *     <li>Has a public no-argument constructor</li>
 	 *     <li>Each non-static field should be final and be one of the following types:</li>
 	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *     	   <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
+	 *     	   <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -334,8 +334,8 @@ public interface Config {
 		 *
 		 * A field should be either:
 		 * <ul>
-		 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
-		 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+		 *     <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
+		 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 		 * </ul>
 		 * @return this
 		 */
@@ -392,8 +392,8 @@ public interface Config {
 		 *
 		 * A field should be either:
 		 * <ul>
-		 *         <li>A basic type (int, long, float, double, boolean, or String)</li>
-		 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+		 *     <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
+		 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 		 * </ul>
 		 * @return this
 		 */
