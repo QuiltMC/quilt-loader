@@ -24,8 +24,8 @@ import java.util.Deque;
 
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.impl.config.util.ConfigUtils;
 import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
+import org.quiltmc.loader.impl.config.util.ConfigUtils;
 
 public class ReflectiveConfigCreator<C> implements Config.Creator {
 	private final Class<C> creatorClass;
@@ -46,7 +46,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 			Object defaultValue = field.get(object);
 
 			if (ConfigUtils.isValidValue(defaultValue)) {
-				builder.field(TrackedValue.create(defaultValue, key.getFirst(), valueBuilder -> {
+				TrackedValue<?> value = TrackedValue.create(defaultValue, key.getFirst(), valueBuilder -> {
 					boolean add = false;
 
 					for (String k : key) {
@@ -70,7 +70,10 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 					for (Annotation annotation : field.getAnnotations()) {
 						ConfigFieldAnnotationProcessors.applyAnnotationProcessors(annotation, valueBuilder);
 					}
-				}));
+				});
+
+				field.set(object, value.getRealValue());
+				builder.field(value);
 			} else if (defaultValue != null) {
 				// TODO: Add support for section comments on subclasses
 

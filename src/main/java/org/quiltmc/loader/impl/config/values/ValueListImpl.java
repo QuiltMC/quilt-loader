@@ -30,7 +30,7 @@ import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValueImpl<T> {
+public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValueImpl<T, ValueList<T>> {
 	private final T defaultValue;
 	private final List<T> values;
 
@@ -65,9 +65,9 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	public void setValue(TrackedValueImpl<?> configValue) {
 		this.configValue = configValue;
 
-		if (this.defaultValue instanceof CompoundConfigValueImpl<?>) {
+		if (this.defaultValue instanceof CompoundConfigValueImpl<?, ?>) {
 			for (T value : this.values) {
-				((CompoundConfigValueImpl<?>) value).setValue(configValue);
+				((CompoundConfigValueImpl<?, ?>) value).setValue(configValue);
 			}
 		}
 	}
@@ -232,8 +232,8 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	public T set(int index, T value) {
 		T v = values.set(index, value);
 
-		if (value instanceof CompoundConfigValueImpl<?>) {
-			((CompoundConfigValueImpl<?>) value).setValue(this.configValue);
+		if (value instanceof CompoundConfigValueImpl<?, ?>) {
+			((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
 		}
 
 		if ((v != null && value != null && !v.equals(value)) || (v != null && value == null) || (v == null && value != null)) {

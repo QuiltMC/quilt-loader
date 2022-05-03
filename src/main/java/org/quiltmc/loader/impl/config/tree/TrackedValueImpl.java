@@ -26,8 +26,10 @@ import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.AbstractMetadataContainer;
+import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
 import org.quiltmc.loader.impl.config.ConfigImpl;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
@@ -43,6 +45,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	private boolean isBeingOverridden = false;
 	private T valueOverride;
 
+	@SuppressWarnings("unchecked")
 	public TrackedValueImpl(ValueKey key, T defaultValue, Set<String> flags, Map<MetadataType<?>, List<?>> metadata, List<UpdateCallback<T>> callbacks, List<Constraint<T>> constraints) {
 		super(flags, metadata);
 		this.key = key;
@@ -52,6 +55,13 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		this.constraints = constraints;
 
 		this.assertValue(defaultValue);
+
+		if (defaultValue instanceof CompoundConfigValueImpl) {
+			((CompoundConfigValueImpl<?, ?>) defaultValue).setValue(this);
+			this.value = (T) ((CompoundConfigValueImpl<?, ?>) this.defaultValue).copy();
+		} else {
+			this.value = defaultValue;
+		}
 	}
 
 	public void setConfig(ConfigImpl config) {
@@ -105,6 +115,10 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	@Override
 	public T setValue(@NotNull T newValue, boolean serialize) {
 		this.assertValue(newValue);
+
+		if (newValue instanceof CompoundConfigValueImpl) {
+			((CompoundConfigValueImpl<?, ?>) newValue).setValue(this);
+		}
 
 		T oldValue = this.value;
 		this.value = newValue;

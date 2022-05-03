@@ -28,7 +28,7 @@ import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueImpl<T> {
+public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueImpl<T, ValueMap<T>> {
 	private final T defaultValue;
 	private final Map<String, T> values;
 
@@ -42,9 +42,9 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 	public void setValue(TrackedValueImpl<?> configValue) {
 		this.configValue = configValue;
 
-		if (this.defaultValue instanceof CompoundConfigValueImpl<?>) {
+		if (this.defaultValue instanceof CompoundConfigValueImpl<?, ?>) {
 			for (T value : this.values.values()) {
-				((CompoundConfigValueImpl<?>) value).setValue(configValue);
+				((CompoundConfigValueImpl<? ,?>) value).setValue(configValue);
 			}
 		}
 	}
@@ -69,7 +69,7 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 
 		result.setValue(this.configValue);
 
-		return this;
+		return result;
 	}
 
 	@Override
@@ -102,8 +102,8 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 	public T put(String key, T value) {
 		T v = this.values.put(key, value);
 
-		if (value instanceof CompoundConfigValueImpl<?>) {
-			((CompoundConfigValueImpl<?>) value).setValue(this.configValue);
+		if (value instanceof CompoundConfigValueImpl<?, ?>) {
+			((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
 		}
 
 		this.configValue.update();
@@ -125,8 +125,8 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 		this.values.putAll(m);
 
 		for (T value : m.values()) {
-			if (value instanceof CompoundConfigValueImpl<?>) {
-				((CompoundConfigValueImpl<?>) value).setValue(this.configValue);
+			if (value instanceof CompoundConfigValueImpl<?, ?>) {
+				((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
 			}
 		}
 

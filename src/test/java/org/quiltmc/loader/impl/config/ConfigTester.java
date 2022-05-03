@@ -222,4 +222,18 @@ public class ConfigTester {
 			}
 		}
 	}
+
+	@Test
+	public void testValueMapBehavior() {
+		TestValueMapConfig c = Config.create("testmod", "testConfig13", TestValueMapConfig.class).getWrapped();
+
+		c.weights.put("" + c.weights.size(), c.weights.size());
+	}
+
+	@Test
+	public void testValueListBehavior() {
+		TestValueListConfig c = Config.create("testmod", "testConfig14", TestValueListConfig.class).getWrapped();
+
+		c.strings.add(c.strings.size() + "");
+	}
 }
