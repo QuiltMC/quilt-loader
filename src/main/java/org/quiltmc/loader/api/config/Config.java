@@ -328,7 +328,7 @@ public interface Config {
 	}
 
 	@ApiStatus.NonExtendable
-	interface Builder {
+	interface Builder extends SectionBuilder {
 		/**
 		 * Adds a value to this config file
 		 *
@@ -397,7 +397,7 @@ public interface Config {
 		 * </ul>
 		 * @return this
 		 */
-		<T> SectionBuilder field(TrackedValue<T> value);
+		SectionBuilder field(TrackedValue<?> value);
 
 		/**
 		 * Creates a new section nested within this one

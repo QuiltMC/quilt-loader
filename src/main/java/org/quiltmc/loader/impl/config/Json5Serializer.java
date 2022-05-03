@@ -29,6 +29,7 @@ import java.util.Map;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.api.config.ConfigParseException;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.Config;
@@ -87,7 +88,7 @@ public final class Json5Serializer implements Serializer {
 		} else if (value.getClass().isEnum()) {
 			writer.value(((Enum<?>) value).name());
 		} else {
-			throw new RuntimeException();
+			throw new ConfigParseException();
 		}
 	}
 
@@ -196,9 +197,9 @@ public final class Json5Serializer implements Serializer {
 				}
 			}
 
-			throw new RuntimeException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
+			throw new ConfigParseException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
 		} else {
-			throw new RuntimeException("Unexpected value type: " + to.getClass());
+			throw new ConfigParseException("Unexpected value type: " + to.getClass());
 		}
 	}
 
@@ -259,15 +260,15 @@ public final class Json5Serializer implements Serializer {
 	private static Object parseElement(JsonReader reader) throws IOException {
 		switch (reader.peek()) {
 			case END_ARRAY:
-				throw new UnsupportedOperationException("Unexpected end of array");
+				throw new ConfigParseException("Unexpected end of array");
 			case BEGIN_OBJECT:
 				return parseObject(reader);
 			case BEGIN_ARRAY:
 				return parseArray(reader);
 			case END_OBJECT:
-				throw new RuntimeException("Unexpected end of object");
+				throw new ConfigParseException("Unexpected end of object");
 			case NAME:
-				throw new RuntimeException("Unexpected name");
+				throw new ConfigParseException("Unexpected name");
 			case STRING:
 				return reader.nextString();
 			case NUMBER:
@@ -278,9 +279,9 @@ public final class Json5Serializer implements Serializer {
 				reader.nextNull();
 				return null;
 			case END_DOCUMENT:
-				throw new RuntimeException("Unexpected end of file");
+				throw new ConfigParseException("Unexpected end of file");
 		}
 
-		throw new RuntimeException("Encountered unknown JSON token");
+		throw new ConfigParseException("Encountered unknown JSON token");
 	}
 }

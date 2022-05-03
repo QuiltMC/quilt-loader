@@ -42,9 +42,9 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 	}
 
 	@Override
-	public <T> Config.SectionBuilder field(TrackedValue<T> value) {
+	public Config.SectionBuilder field(TrackedValue<?> value) {
 		ValueKey key = this.key.child(value.getKey());
-		this.builder.values.put(key, ((TrackedValueImpl<T>) value).setKey(key));
+		this.builder.values.put(key, ((TrackedValueImpl<?>) value).setKey(key));
 
 		return this;
 	}

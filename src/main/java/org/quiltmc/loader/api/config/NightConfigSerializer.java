@@ -103,9 +103,9 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 				}
 			}
 
-			throw new RuntimeException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
+			throw new ConfigParseException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
 		} else {
-			throw new RuntimeException("Unexpected value type: " + to.getClass());
+			throw new ConfigParseException("Unexpected value type: " + to.getClass());
 		}
 	}
 
