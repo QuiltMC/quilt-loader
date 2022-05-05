@@ -59,9 +59,9 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 
 					field.setAccessible(true);
 
-					valueBuilder.callback((k, oldValue, newValue) -> {
+					valueBuilder.callback(tracked -> {
 						try {
-							field.set(object, newValue);
+							field.set(object, tracked.getValue());
 						} catch (IllegalAccessException e) {
 							throw new RuntimeException(e);
 						}

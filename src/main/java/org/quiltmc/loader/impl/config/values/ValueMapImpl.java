@@ -106,7 +106,7 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 			((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
 		}
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 
 		return v;
 	}
@@ -115,7 +115,7 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 	public T remove(Object key) {
 		T result = this.values.remove(key);
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 
 		return result;
 	}
@@ -130,13 +130,13 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 			}
 		}
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 	}
 
 	@Override
 	public void clear() {
 		this.values.clear();
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 	}
 
 	@NotNull

@@ -159,7 +159,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	}
 
 	interface UpdateCallback<T> {
-		void onUpdate(ValueKey key, T oldValue, T newValue);
+		void onUpdate(TrackedValue<T> trackedValue);
 	}
 
 	@ApiStatus.NonExtendable

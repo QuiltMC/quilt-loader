@@ -118,7 +118,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	public boolean add(T t) {
 		values.add(t);
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 
 		return true;
 	}
@@ -128,7 +128,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		boolean r = values.remove(o);
 
 		if (r) {
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 
 		return r;
@@ -144,7 +144,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		boolean v = values.addAll(c);
 
 		if (v) {
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 
 		return v;
@@ -155,7 +155,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		boolean v = values.addAll(index, c);
 
 		if (v) {
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 
 		return v;
@@ -166,7 +166,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		boolean v = values.removeAll(c);
 
 		if (v) {
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 
 		return v;
@@ -177,7 +177,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		boolean v = values.retainAll(c);
 
 		if (v) {
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 
 		return v;
@@ -187,14 +187,14 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	public void replaceAll(UnaryOperator<T> operator) {
 		values.replaceAll(operator);
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 	}
 
 	@Override
 	public void sort(Comparator<? super T> c) {
 		values.sort(c);
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 	}
 
 	@Override
@@ -203,7 +203,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 			values.clear();
 		} else {
 			values.clear();
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 	}
 
@@ -237,7 +237,7 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		}
 
 		if ((v != null && value != null && !v.equals(value)) || (v != null && value == null) || (v == null && value != null)) {
-			this.configValue.update();
+			this.configValue.updateAndSerialize();
 		}
 
 		return v;
@@ -247,14 +247,14 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	public void add(int index, T value) {
 		values.add(index, value);
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 	}
 
 	@Override
 	public T remove(int index) {
 		T v = values.remove(index);
 
-		this.configValue.update();
+		this.configValue.updateAndSerialize();
 
 		return v;
 	}
