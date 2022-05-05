@@ -68,7 +68,7 @@ public interface Constraint<T> {
 		};
 	}
 
-	class Range<T extends Number> implements Constraint<T> {
+	class Range<T> implements Constraint<T> {
 		private final T min, max;
 		private final Comparator<T> comparator;
 
