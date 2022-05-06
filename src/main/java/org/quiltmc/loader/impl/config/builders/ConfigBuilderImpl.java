@@ -136,6 +136,8 @@ public final class ConfigBuilderImpl implements Config.Builder {
 		Path path = directory.resolve(config.getId() + "." + serializer.getFileExtension());
 
 		try {
+			Files.createDirectories(path.getParent());
+
 			if ((defaultSerializer == serializer || !Files.exists(defaultPath)) && Files.exists(path)) {
 				serializer.deserialize(config, Files.newInputStream(path));
 			} else if (Files.exists(defaultPath)) {
