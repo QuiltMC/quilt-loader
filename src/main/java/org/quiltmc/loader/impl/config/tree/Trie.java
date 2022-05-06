@@ -17,7 +17,6 @@
 package org.quiltmc.loader.impl.config.tree;
 
 import java.util.ArrayDeque;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Deque;
 import java.util.Iterator;
@@ -32,6 +31,10 @@ import org.quiltmc.loader.api.config.values.ValueTreeNode;
 import org.quiltmc.loader.impl.config.builders.SectionBuilderImpl;
 import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
 
+/**
+ * This is an implementation of the <a href="https://en.wikipedia.org/wiki/Trie">trie</a> data structure for efficient
+ * key prefix lookups
+ */
 public final class Trie {
 	private final Node root = new Node(null, null, null);
 
@@ -193,33 +196,6 @@ public final class Trie {
 
 		public Node getParent() {
 			return this.parent;
-		}
-
-		private Node getOrCreateNChild(String key0, String... keys) {
-			if (keys.length == 0) {
-				return this.getOrCreateChild(key0);
-			} else {
-				int modCount = Trie.this.modCount;
-
-				Node n = this.getOrCreateChild(key0);
-
-				for (int i = 0, keysLength = keys.length; i < keysLength; i++) {
-					String key = keys[i];
-
-					if (i < keys.length - 1) {
-						n.setValue(new SectionTreeNode(n, new LinkedHashMap<>(0)));
-					}
-
-					n = n.getOrCreateChild(key);
-				}
-
-				// Collapse all new node creations into a single modification
-				if (Trie.this.modCount > modCount) {
-					Trie.this.modCount = modCount + 1;
-				}
-
-				return n;
-			}
 		}
 
 		private Node getOrCreateChild(String key) {
