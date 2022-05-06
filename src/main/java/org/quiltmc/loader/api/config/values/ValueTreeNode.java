@@ -29,25 +29,14 @@ public interface ValueTreeNode {
 	ValueKey getKey();
 
 	/**
-	 * @return all flags associated with this {@link TrackedValue}
+	 * @return the metadata attached to this value for the specified type
 	 */
-	Iterable<String> flags();
-
-	/**
-	 * @param flag a flag identifier
-	 * @return whether or not this value has the specified flag
-	 */
-	boolean hasFlag(String flag);
-
-	/**
-	 * @return all instances of metadata attached to this value for the specified type
-	 */
-	<M> Iterable<M> metadata(MetadataType<M> type);
+	<M> M metadata(MetadataType<M, ?> type);
 
 	/**
 	 * @return whether or not this value has any metadata of the specified type
 	 */
-	<M> boolean hasMetadata(MetadataType<M> type);
+	<M> boolean hasMetadata(MetadataType<M, ?> type);
 
 	/**
 	 * A node that contains any number of child nodes.

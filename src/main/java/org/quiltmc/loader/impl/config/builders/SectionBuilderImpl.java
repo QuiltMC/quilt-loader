@@ -34,7 +34,7 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 	private final ValueKey key;
 	private final ConfigBuilderImpl builder;
 	final Set<String> flags = new LinkedHashSet<>();
-	final Map<MetadataType<?>, List<?>> metadata = new LinkedHashMap<>();
+	final Map<MetadataType<?, ?>, MetadataType.Builder<?>> metadata = new LinkedHashMap<>();
 
 	public SectionBuilderImpl(ValueKey key, ConfigBuilderImpl builder) {
 		this.key = key;
@@ -67,28 +67,20 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 		return this;
 	}
 
-	@Override
 	@SuppressWarnings("unchecked")
-	public <M> Config.SectionBuilder metadata(MetadataType<M> type, M value) {
-		List<M> metadata;
-
-		if (this.metadata.containsKey(type)) {
-			metadata = (List<M>) this.metadata.get(type);
-		} else {
-			metadata = new ArrayList<>();
-			this.metadata.put(type, metadata);
-		}
-
-		metadata.add(value);
+	public <M, B extends MetadataType.Builder<M>> Config.SectionBuilder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer) {
+		builderConsumer.accept((B) this.metadata.computeIfAbsent(type, t -> type.newBuilder()));
 
 		return this;
 	}
 
-	public Set<String> getFlags() {
-		return this.flags;
-	}
+	public Map<MetadataType<?, ?>, Object> buildMetadata() {
+		Map<MetadataType<?, ?>, Object> metadata = new LinkedHashMap<>();
 
-	public Map<MetadataType<?>, List<?>> getMetadata() {
-		return this.metadata;
+		for (Map.Entry<MetadataType<?, ?>, MetadataType.Builder<?>> entry : this.metadata.entrySet()) {
+			metadata.put(entry.getKey(), entry.getValue().build());
+		}
+
+		return metadata;
 	}
 }

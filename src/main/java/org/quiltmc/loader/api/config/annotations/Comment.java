@@ -16,18 +16,25 @@
 
 package org.quiltmc.loader.api.config.annotations;
 
+import org.quiltmc.loader.api.config.Comments;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.impl.config.CommentsImpl;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Comment {
-	MetadataType<String> TYPE = MetadataType.create("comment");
+	MetadataType<Comments, Builder> TYPE = MetadataType.create(Comments.class, () -> Optional.of(new CommentsImpl(Collections.emptyList())), Builder::new);
 
 	String[] value();
 
@@ -35,8 +42,21 @@ public @interface Comment {
 		@Override
 		public void process(Comment comment, TrackedValue.Builder<?> builder) {
 			for (String c : comment.value()) {
-				builder.metadata(TYPE, c);
+				builder.metadata(TYPE, comments -> comments.add(c));
 			}
+		}
+	}
+
+	final class Builder implements MetadataType.Builder<Comments> {
+		private final List<String> comments = new ArrayList<>(0);
+
+		public void add(String... comments) {
+			this.comments.addAll(Arrays.asList(comments));
+		}
+
+		@Override
+		public Comments build() {
+			return new CommentsImpl(this.comments);
 		}
 	}
 }

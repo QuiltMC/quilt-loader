@@ -30,21 +30,21 @@ public class SerializationTester {
 	public void testSerializer() {
 		Config config = Config.create("testmod", "testConfig6", builder -> {
 			builder.field(TrackedValue.create(0, "testInteger", creator -> {
-				creator.metadata(Comment.TYPE, "Comment one");
-				creator.metadata(Comment.TYPE, "Comment two");
-				creator.metadata(Comment.TYPE, "Comment three");
+				creator.metadata(Comment.TYPE, comments -> comments.add("Comment one"));
+				creator.metadata(Comment.TYPE, comments -> comments.add("Comment two"));
+				creator.metadata(Comment.TYPE, comments -> comments.add("Comment three"));
 			}));
 			builder.section("super_awesome_section", section1 -> {
-				section1.metadata(Comment.TYPE, "This is a section comment!");
+				section1.metadata(Comment.TYPE, comments -> comments.add("This is a section comment!"));
 				section1.field(TrackedValue.create(1, "before"));
 				section1.section("less_awesome_section", section2 -> {
-					section2.metadata(Comment.TYPE, "This is another section comment!");
+					section2.metadata(Comment.TYPE, comments -> comments.add("This is another section comment!"));
 					section2.section("regular_section", section3 -> {
 						section3.field(TrackedValue.create(0, "water"));
 						section3.field(TrackedValue.create(0, "earth"));
 						section3.field(TrackedValue.create(0, "fire", creator -> {
-							creator.metadata(Comment.TYPE, "This is a field comment!");
-							creator.metadata(Comment.TYPE, "This is another field comment!");
+							creator.metadata(Comment.TYPE, comments -> comments.add("This is a field comment!"));
+							creator.metadata(Comment.TYPE, comments -> comments.add("This is another field comment!"));
 
 						}));
 						section3.field(TrackedValue.create(0, "air"));

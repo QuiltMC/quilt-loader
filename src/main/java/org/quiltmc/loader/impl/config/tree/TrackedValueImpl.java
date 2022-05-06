@@ -20,13 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.AbstractMetadataContainer;
 import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
@@ -46,8 +44,8 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	private T valueOverride;
 
 	@SuppressWarnings("unchecked")
-	public TrackedValueImpl(ValueKey key, T defaultValue, Set<String> flags, Map<MetadataType<?>, List<?>> metadata, List<UpdateCallback<T>> callbacks, List<Constraint<T>> constraints) {
-		super(flags, metadata);
+	public TrackedValueImpl(ValueKey key, T defaultValue, Map<MetadataType<?, ?>, Object> metadata, List<UpdateCallback<T>> callbacks, List<Constraint<T>> constraints) {
+		super(metadata);
 		this.key = key;
 		this.defaultValue = defaultValue;
 		this.value = defaultValue;

@@ -70,7 +70,7 @@ public final class Trie {
 
 		for (String keyComponent : key) {
 			if (node.value == null) {
-				node.setValue(new SectionTreeNode(node, Collections.emptyMap(), Collections.emptySet()));
+				node.setValue(new SectionTreeNode(node, new LinkedHashMap<>(0)));
 			}
 
 			node = node.getOrCreateChild(keyComponent);
@@ -94,7 +94,7 @@ public final class Trie {
 			node = node.getOrCreateChild(keyComponent);
 		}
 
-		node.setValue(new SectionTreeNode(node, sectionBuilder.getMetadata(), sectionBuilder.getFlags()));
+		node.setValue(new SectionTreeNode(node, sectionBuilder.buildMetadata()));
 
 
 		// Only increment the number of modifications if a new node wasn't created by the call to getOrCreateNChild
@@ -207,7 +207,7 @@ public final class Trie {
 					String key = keys[i];
 
 					if (i < keys.length - 1) {
-						n.setValue(new SectionTreeNode(n, Collections.emptyMap(), Collections.emptySet()));
+						n.setValue(new SectionTreeNode(n, new LinkedHashMap<>(0)));
 					}
 
 					n = n.getOrCreateChild(key);

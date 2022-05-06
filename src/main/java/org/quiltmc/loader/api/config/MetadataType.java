@@ -18,14 +18,47 @@ package org.quiltmc.loader.api.config;
 
 import org.jetbrains.annotations.ApiStatus;
 
+import java.util.Optional;
+import java.util.function.Supplier;
+
 /**
  * A typed key to be used for setting and getting object metadata.
  */
 @ApiStatus.NonExtendable
-public interface MetadataType<T> {
-	String getId();
+public interface MetadataType<T, B extends MetadataType.Builder<T>> {
+	Class<T> getMetadataClass();
 
-	static <T> MetadataType<T> create(String id) {
-		return () -> id;
+	/**
+	 * @return an optional containing the default value if this type has one, or an empty value if not
+	 */
+	Optional<T> getDefaultValue();
+
+	B newBuilder();
+
+	static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<Optional<T>> defaultValueSuplier, Supplier<B> builderSupplier) {
+		return new MetadataType<T, B>() {
+			@Override
+			public Class<T> getMetadataClass() {
+				return typeClass;
+			}
+
+			@Override
+			public Optional<T> getDefaultValue() {
+				return defaultValueSuplier.get();
+			}
+
+			@Override
+			public B newBuilder() {
+				return builderSupplier.get();
+			}
+		};
+	}
+
+	static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<B> builderSupplier) {
+		return create(typeClass, Optional::empty, builderSupplier);
+	}
+
+	interface Builder<T> {
+		T build();
 	}
 }

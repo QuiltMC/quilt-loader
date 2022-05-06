@@ -23,7 +23,6 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.QuiltLoader;
@@ -45,8 +44,8 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 	private final Trie values;
 	private final String defaultFileType;
 
-	public ConfigImpl(String modId, String id, Path path, Set<String> flags, Map<MetadataType<?>, List<?>> metadata, List<UpdateCallback> callbacks, Trie values, String defaultFileType) {
-		super(flags, metadata);
+	public ConfigImpl(String modId, String id, Path path, Map<MetadataType<?, ?>, Object> metadata, List<UpdateCallback> callbacks, Trie values, String defaultFileType) {
+		super(metadata);
 		this.modId = modId;
 		this.id = id;
 		this.path = path;
@@ -75,15 +74,6 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		this.callbacks.add(callback);
 	}
 
-	@Override
-	public boolean hasFlag(String flag) {
-		return this.flags.contains(flag);
-	}
-
-	@Override
-	public <M> boolean hasMetadata(MetadataType<M> type) {
-		return this.metadata.containsKey(type) && !this.metadata.get(type).isEmpty();
-	}
 
 	public String getDefaultFileType() {
 		return this.defaultFileType;

@@ -83,25 +83,14 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	void registerCallback(UpdateCallback<T> callback);
 
 	/**
-	 * @return all flags associated with this {@link TrackedValue}
+	 * @return the metadata attached to this value for the specified type
 	 */
-	Iterable<String> flags();
-
-	/**
-	 * @param flag a flag identifier
-	 * @return whether or not this value has the specified flag
-	 */
-	boolean hasFlag(String flag);
-
-	/**
-	 * @return all instances of metadata attached to this value for the specified type
-	 */
-	<M> Iterable<M> metadata(MetadataType<M> type);
+	<M> M metadata(MetadataType<M, ?> type);
 
 	/**
 	 * @return whether or not this value has any metadata of the specified type
 	 */
-	<M> boolean hasMetadata(MetadataType<M> type);
+	<M> boolean hasMetadata(MetadataType<M, ?> type);
 
 	/**
 	 * @return all constraints on this value
@@ -133,7 +122,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	static <T> TrackedValue<T> create(@NotNull T defaultValue, String key0, String... keys) {
 		ConfigUtils.assertValueType(defaultValue);
 
-		return new TrackedValueImpl<>(new ValueKeyImpl(key0, keys), defaultValue, new LinkedHashSet<>(0), new LinkedHashMap<>(0), new ArrayList<>(0), new ArrayList<>(0));
+		return new TrackedValueImpl<>(new ValueKeyImpl(key0, keys), defaultValue, new LinkedHashMap<>(0), new ArrayList<>(0), new ArrayList<>(0));
 	}
 
 	/**
@@ -176,14 +165,6 @@ public interface TrackedValue<T> extends ValueTreeNode {
 		Builder<T> key(String key);
 
 		/**
-		 * Adds a unique flag to this {@link TrackedValue}'s metadata
-		 *
-		 * @param flag a string value flag to track
-		 * @return this
-		 */
-		Builder<T> flag(String flag);
-
-		/**
 		 * Adds a piece of metadata to this {@link TrackedValue}'s metadata
 		 *
 		 * A {@link TrackedValue} can have any number of values associated with each {@link MetadataType}.
@@ -192,7 +173,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 		 * @param value a value to append to the resulting {@link TrackedValue}'s metadata
 		 * @return this
 		 */
-		<M> Builder<T> metadata(MetadataType<M> type, M value);
+		<M, B extends MetadataType.Builder<M>> Builder<T> metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);
 
 		/**
 		 * @param constraint a constraint that this value must satisfy

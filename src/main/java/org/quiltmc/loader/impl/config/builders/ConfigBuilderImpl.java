@@ -47,7 +47,7 @@ public final class ConfigBuilderImpl implements Config.Builder {
 	private final Path path;
 
 	private final Set<String> flags = new LinkedHashSet<>();
-	private final Map<MetadataType<?>, List<?>> metadata = new LinkedHashMap<>();
+	private final Map<MetadataType<?, ?>, MetadataType.Builder<?>> metadata = new LinkedHashMap<>();
 	private final List<Config.UpdateCallback> callbacks = new ArrayList<>();
 
 	final Trie values = new Trie();
@@ -87,17 +87,8 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <M> Config.Builder metadata(MetadataType<M> type, M value) {
-		List<M> metadata;
-
-		if (this.metadata.containsKey(type)) {
-			metadata = (List<M>) this.metadata.get(type);
-		} else {
-			metadata = new ArrayList<>();
-			this.metadata.put(type, metadata);
-		}
-
-		metadata.add(value);
+	public <M, B extends MetadataType.Builder<M>> Config.Builder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer) {
+		builderConsumer.accept((B) this.metadata.computeIfAbsent(type, t -> type.newBuilder()));
 
 		return this;
 	}
@@ -117,7 +108,13 @@ public final class ConfigBuilderImpl implements Config.Builder {
 	}
 
 	public ConfigImpl build() {
-		ConfigImpl config = new ConfigImpl(this.modId, this.id, this.path, this.flags, this.metadata, this.callbacks, this.values, this.fileType);
+		Map<MetadataType<?, ?>, Object> metadata = new LinkedHashMap<>();
+
+		for (Map.Entry<MetadataType<?, ?>, MetadataType.Builder<?>> entry : this.metadata.entrySet()) {
+			metadata.put(entry.getKey(), entry.getValue().build());
+		}
+
+		ConfigImpl config = new ConfigImpl(this.modId, this.id, this.path, metadata, this.callbacks, this.values, this.fileType);
 
 		ConfigsImpl.put(modId, config);
 

@@ -46,13 +46,15 @@ public interface Config {
 	 */
 	void registerCallback(UpdateCallback callback);
 
-	Iterable<String> flags();
+	/**
+	 * @return the metadata attached to this value for the specified type
+	 */
+	<M> M metadata(MetadataType<M, ?> type);
 
-	boolean hasFlag(String flag);
-
-	<M> Iterable<M> metadata(MetadataType<M> type);
-
-	<M> boolean hasMetadata(MetadataType<M> type);
+	/**
+	 * @return whether or not this value has any metadata of the specified type
+	 */
+	<M> boolean hasMetadata(MetadataType<M, ?> type);
 
 	/**
 	 * Save this config and all its values to disk
@@ -365,7 +367,7 @@ public interface Config {
 		 * @param value a value to append to the resulting {@link SectionBuilder}'s metadata
 		 * @return this
 		 */
-		<M> Builder metadata(MetadataType<M> type, M value);
+		<M, B extends MetadataType.Builder<M>> Builder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);
 
 		/**
 		 * Adds a default listener to the resulting {@link Config} that's called whenever any of its values updated
@@ -421,6 +423,6 @@ public interface Config {
 		 * @param value a value to append to the resulting {@link SectionBuilder}'s metadata
 		 * @return this
 		 */
-		<M> SectionBuilder metadata(MetadataType<M> type, M value);
+		<M, B extends MetadataType.Builder<M>> SectionBuilder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);
 	}
 }

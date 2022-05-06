@@ -22,28 +22,29 @@ import org.quiltmc.loader.impl.util.ImmutableIterable;
 import java.util.*;
 
 public abstract class AbstractMetadataContainer {
-	protected final Set<String> flags;
-	protected final Map<MetadataType<?>, List<?>> metadata;
+	protected final Map<MetadataType<?, ?>, Object> metadata;
 
-	protected AbstractMetadataContainer(Set<String> flags, Map<MetadataType<?>, List<?>> metadata) {
-		this.flags = flags;
+	protected AbstractMetadataContainer(Map<MetadataType<?, ?>, Object> metadata) {
 		this.metadata = metadata;
 	}
 
-	public Iterable<String> flags() {
-		return new ImmutableIterable<>(this.flags);
-	}
-
 	@SuppressWarnings("unchecked")
-	public <M> Iterable<M> metadata(MetadataType<M> type) {
-		return new ImmutableIterable<>((Iterable<M>) this.metadata.getOrDefault(type, Collections.EMPTY_LIST));
+	public <M> M metadata(MetadataType<M, ?> type) {
+		if (this.metadata.containsKey(type)) {
+			return (M) this.metadata.get(type);
+		} else {
+			Optional<M> defaultValue = type.getDefaultValue();
+
+			if (defaultValue.isPresent()) {
+				this.metadata.put(type, defaultValue.get());
+				return (M) this.metadata.get(type);
+			} else {
+				return null;
+			}
+		}
 	}
 
-	public boolean hasFlag(String flag) {
-		return this.flags.contains(flag);
-	}
-
-	public <M> boolean hasMetadata(MetadataType<M> type) {
-		return this.metadata.containsKey(type) && !this.metadata.get(type).isEmpty();
+	public <M> boolean hasMetadata(MetadataType<M, ?> type) {
+		return this.metadata.containsKey(type) || type.getDefaultValue().isPresent();
 	}
 }

@@ -60,9 +60,9 @@ public class ConfigTester {
 			));
 			builder.field(TrackedValue.create(LoaderValue.LType.ARRAY, "testEnum"));
 			builder.section("testSection", section -> {
-				section.metadata(Comment.TYPE, "Section comment 1");
-				section.metadata(Comment.TYPE, "Section comment 2");
-				section.metadata(Comment.TYPE, "Section comment 3");
+				section.metadata(Comment.TYPE, comments -> comments.add("Section comment 1"));
+				section.metadata(Comment.TYPE, comments -> comments.add("Section comment 2"));
+				section.metadata(Comment.TYPE, comments -> comments.add("Section comment 3"));
 				section.field(TrackedValue.create("wooooh", "emote"));
 				section.field(TrackedValue.create("etrator", "perp"));
 			});
@@ -92,9 +92,11 @@ public class ConfigTester {
 	public void testMetadata() {
 		Config config = Config.create("testmod", "testConfig4", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-				creator.metadata(Comment.TYPE, "Comment one");
-				creator.metadata(Comment.TYPE, "Comment two");
-				creator.metadata(Comment.TYPE, "Comment three");
+				creator.metadata(Comment.TYPE, comments -> comments.add(
+						"Comment one",
+						"Comment two",
+						"Comment three"
+				));
 			}));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
@@ -112,11 +114,7 @@ public class ConfigTester {
 	@Test
 	public void testFlags() {
 		Config config = Config.create("testmod", "testConfig5", builder -> {
-			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-				creator.flag("potato");
-				creator.flag("macaroni");
-				creator.flag("blueberry");
-			}));
+			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger"));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
 		});
@@ -134,10 +132,6 @@ public class ConfigTester {
 	public void testConstraints() {
 		Assertions.assertThrows(RuntimeException.class, () -> Config.create("testmod", "testConfig6", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-				creator.flag("potato");
-				creator.flag("macaroni");
-				creator.flag("blueberry");
-
 				// Should throw an exception since the default value is outside of the constraint range
 				creator.constraint(Constraint.range(5, 10));
 			}));
@@ -148,9 +142,6 @@ public class ConfigTester {
 		Assertions.assertThrows(RuntimeException.class, () -> {
 			Config.create("testmod", "testConfig7", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-					creator.flag("potato");
-					creator.flag("macaroni");
-					creator.flag("blueberry");
 					creator.constraint(Constraint.range(-10, 10));
 				}));
 				builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
@@ -163,9 +154,6 @@ public class ConfigTester {
 		Assertions.assertThrows(RuntimeException.class, () -> {
 			Config.create("testmod", "testConfig8", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-					creator.flag("potato");
-					creator.flag("macaroni");
-					creator.flag("blueberry");
 					creator.constraint(Constraint.range(-10, 10));
 				}));
 				builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
@@ -179,9 +167,6 @@ public class ConfigTester {
 
 		Config.create("testmod", "testConfig9", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
-				creator.flag("potato");
-				creator.flag("macaroni");
-				creator.flag("blueberry");
 				creator.constraint(Constraint.range(-10, 10));
 			}));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));

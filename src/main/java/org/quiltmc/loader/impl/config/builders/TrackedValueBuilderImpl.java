@@ -22,7 +22,9 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
+import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
@@ -32,8 +34,7 @@ import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 public class TrackedValueBuilderImpl<T> implements TrackedValue.Builder<T> {
 	private final T defaultValue;
 	private final Set<String> key = new LinkedHashSet<>();
-	private final Set<String> flags = new LinkedHashSet<>();
-	private final Map<MetadataType<?>, List<?>> metadata = new LinkedHashMap<>();
+	final Map<MetadataType<?, ?>, MetadataType.Builder<?>> metadata = new LinkedHashMap<>();
 	private final List<TrackedValue.UpdateCallback<T>> callbacks = new ArrayList<>();
 	private final List<Constraint<T>> constraints = new ArrayList<>();
 
@@ -49,26 +50,9 @@ public class TrackedValueBuilderImpl<T> implements TrackedValue.Builder<T> {
 		return this;
 	}
 
-	@Override
-	public TrackedValue.Builder<T> flag(String flag) {
-		this.flags.add(flag);
-
-		return this;
-	}
-
-	@Override
 	@SuppressWarnings("unchecked")
-	public <M> TrackedValue.Builder<T> metadata(MetadataType<M> type, M value) {
-		List<M> metadata;
-
-		if (this.metadata.containsKey(type)) {
-			metadata = (List<M>) this.metadata.get(type);
-		} else {
-			metadata = new ArrayList<>();
-			this.metadata.put(type, metadata);
-		}
-
-		metadata.add(value);
+	public <M, B extends MetadataType.Builder<M>> TrackedValue.Builder<T> metadata(MetadataType<M, B> type, Consumer<B> builderConsumer) {
+		builderConsumer.accept((B) this.metadata.computeIfAbsent(type, t -> type.newBuilder()));
 
 		return this;
 	}
@@ -88,11 +72,16 @@ public class TrackedValueBuilderImpl<T> implements TrackedValue.Builder<T> {
 	}
 
 	public TrackedValue<T> build() {
+		Map<MetadataType<?, ?>, Object> metadata = new LinkedHashMap<>();
+
+		for (Map.Entry<MetadataType<?, ?>, MetadataType.Builder<?>> entry : this.metadata.entrySet()) {
+			metadata.put(entry.getKey(), entry.getValue().build());
+		}
+
 		return new TrackedValueImpl<>(
 				new ValueKeyImpl(this.key.toArray(new String[0])),
 				this.defaultValue,
-				this.flags,
-				this.metadata,
+				metadata,
 				this.callbacks,
 				this.constraints);
 	}
