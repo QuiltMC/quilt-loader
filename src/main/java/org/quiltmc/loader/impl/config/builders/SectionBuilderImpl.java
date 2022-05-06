@@ -33,8 +33,8 @@ import java.util.function.Consumer;
 public class SectionBuilderImpl implements Config.SectionBuilder {
 	private final ValueKey key;
 	private final ConfigBuilderImpl builder;
-	final Set<String> flags = new LinkedHashSet<>();
 	final Map<MetadataType<?, ?>, MetadataType.Builder<?>> metadata = new LinkedHashMap<>();
+	private final Map<ValueKey, TrackedValueImpl<?>> values = new LinkedHashMap<>();
 
 	public SectionBuilderImpl(ValueKey key, ConfigBuilderImpl builder) {
 		this.key = key;
@@ -44,7 +44,7 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 	@Override
 	public Config.SectionBuilder field(TrackedValue<?> value) {
 		ValueKey key = this.key.child(value.getKey());
-		this.builder.values.put(key, ((TrackedValueImpl<?>) value).setKey(key));
+		this.values.put(key, ((TrackedValueImpl<?>) value).setKey(key));
 
 		return this;
 	}
@@ -56,13 +56,6 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 
 		this.builder.values.put(valueKey, sectionBuilder);
 		creator.accept(sectionBuilder);
-
-		return this;
-	}
-
-	@Override
-	public Config.SectionBuilder flag(String flag) {
-		this.flags.add(flag);
 
 		return this;
 	}
@@ -82,5 +75,11 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 		}
 
 		return metadata;
+	}
+
+	public void build() {
+		for (Map.Entry<ValueKey, TrackedValueImpl<?>> entry : this.values.entrySet()) {
+			this.builder.values.put(entry.getKey(), entry.getValue());
+		}
 	}
 }

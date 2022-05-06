@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.quiltmc.loader.api.config.MetadataContainerBuilder;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor;
@@ -39,12 +40,12 @@ public final class ConfigFieldAnnotationProcessors {
 				.add(processor);
 	}
 
-	private static <T extends Annotation> void process(ConfigFieldAnnotationProcessor<T> processor, T annotation, TrackedValue.Builder<?> builder) {
+	private static <T extends Annotation> void process(ConfigFieldAnnotationProcessor<T> processor, T annotation, MetadataContainerBuilder<?> builder) {
 		processor.process(annotation, builder);
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
-	public static void applyAnnotationProcessors(Annotation annotation, TrackedValue.Builder<?> builder) {
+	public static void applyAnnotationProcessors(Annotation annotation, MetadataContainerBuilder<?> builder) {
 		for (ConfigFieldAnnotationProcessor<?> processor : PROCESSORS.getOrDefault(annotation.annotationType(), Collections.emptyList())) {
 			process((ConfigFieldAnnotationProcessor) processor, annotation, builder);
 		}

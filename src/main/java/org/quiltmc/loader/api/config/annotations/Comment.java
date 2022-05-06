@@ -16,11 +16,6 @@
 
 package org.quiltmc.loader.api.config.annotations;
 
-import org.quiltmc.loader.api.config.Comments;
-import org.quiltmc.loader.api.config.MetadataType;
-import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.impl.config.CommentsImpl;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -31,6 +26,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.quiltmc.loader.api.config.Comments;
+import org.quiltmc.loader.api.config.MetadataContainerBuilder;
+import org.quiltmc.loader.api.config.MetadataType;
+import org.quiltmc.loader.impl.config.CommentsImpl;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Comment {
@@ -40,7 +40,7 @@ public @interface Comment {
 
 	final class Processor implements ConfigFieldAnnotationProcessor<Comment> {
 		@Override
-		public void process(Comment comment, TrackedValue.Builder<?> builder) {
+		public void process(Comment comment, MetadataContainerBuilder<?> builder) {
 			for (String c : comment.value()) {
 				builder.metadata(TYPE, comments -> comments.add(c));
 			}

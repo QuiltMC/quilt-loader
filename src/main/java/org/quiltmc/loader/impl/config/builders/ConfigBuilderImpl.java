@@ -72,8 +72,8 @@ public final class ConfigBuilderImpl implements Config.Builder {
 		ValueKey valueKey = new ValueKeyImpl(key);
 		SectionBuilderImpl sectionBuilder = new SectionBuilderImpl(valueKey, this);
 
-		this.values.put(valueKey, sectionBuilder);
 		creator.accept(sectionBuilder);
+		this.values.put(valueKey, sectionBuilder);
 
 		return this;
 	}

@@ -152,7 +152,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	}
 
 	@ApiStatus.NonExtendable
-	interface Builder<T> {
+	interface Builder<T> extends MetadataContainerBuilder<Builder<T>> {
 		/**
 		 * Adds an additional key to this values key
 		 *
@@ -165,12 +165,10 @@ public interface TrackedValue<T> extends ValueTreeNode {
 		Builder<T> key(String key);
 
 		/**
-		 * Adds a piece of metadata to this {@link TrackedValue}'s metadata
+		 * Create or configure a piece of metadata
 		 *
-		 * A {@link TrackedValue} can have any number of values associated with each {@link MetadataType}.
-		 *
-		 * @param type the type of this metadata
-		 * @param value a value to append to the resulting {@link TrackedValue}'s metadata
+		 * @param type the type of metadata to configure
+		 * @param builderConsumer the modifications to be made to the piece of metadata
 		 * @return this
 		 */
 		<M, B extends MetadataType.Builder<M>> Builder<T> metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);

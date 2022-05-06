@@ -19,10 +19,12 @@ package org.quiltmc.loader.api.config;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.electronwill.nightconfig.core.CommentedConfig;
+import com.electronwill.nightconfig.core.InMemoryCommentedFormat;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
 import com.electronwill.nightconfig.core.io.ConfigParser;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
@@ -50,7 +52,7 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 
 	@Override
 	public void serialize(Config config, OutputStream to) {
-		this.writer.write(write(CommentedConfig.inMemory(), config.nodes()), to);
+		this.writer.write(write(createCommentedConfig(), config.nodes()), to);
 	}
 
 	@SuppressWarnings({"unchecked", "rawtypes"})
@@ -126,7 +128,7 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 	}
 
 	private static UnmodifiableCommentedConfig convertMap(ValueMap<?> map) {
-		CommentedConfig result = CommentedConfig.inMemory();
+		CommentedConfig result = createCommentedConfig();
 
 		for (Map.Entry<String, ?> entry : map.entrySet()) {
 			Object value = entry.getValue();
@@ -199,5 +201,9 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 		}
 
 		return config;
+	}
+
+	private static CommentedConfig createCommentedConfig() {
+		return InMemoryCommentedFormat.defaultInstance().createConfig(LinkedHashMap::new);
 	}
 }

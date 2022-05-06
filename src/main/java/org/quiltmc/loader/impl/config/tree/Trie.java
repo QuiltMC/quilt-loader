@@ -95,7 +95,7 @@ public final class Trie {
 		}
 
 		node.setValue(new SectionTreeNode(node, sectionBuilder.buildMetadata()));
-
+		sectionBuilder.build();
 
 		// Only increment the number of modifications if a new node wasn't created by the call to getOrCreateNChild
 		if (modifiedCount == this.modCount) {

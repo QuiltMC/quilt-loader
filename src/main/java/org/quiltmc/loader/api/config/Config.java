@@ -359,12 +359,10 @@ public interface Config {
 		Builder flag(String flag);
 
 		/**
-		 * Adds a piece of metadata to this section
+		 * Create or configure a piece of metadata
 		 *
-		 * A {@link SectionBuilder} can have any number of values associated with each {@link MetadataType}.
-		 *
-		 * @param type the type of this metadata
-		 * @param value a value to append to the resulting {@link SectionBuilder}'s metadata
+		 * @param type the type of metadata to configure
+		 * @param builderConsumer the modifications to be made to the piece of metadata
 		 * @return this
 		 */
 		<M, B extends MetadataType.Builder<M>> Builder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);
@@ -388,7 +386,7 @@ public interface Config {
 	}
 
 	@ApiStatus.NonExtendable
-	interface SectionBuilder {
+	interface SectionBuilder extends MetadataContainerBuilder<SectionBuilder> {
 		/**
 		 * Adds a value to this config file
 		 *
@@ -407,22 +405,12 @@ public interface Config {
 		SectionBuilder section(String key, Consumer<SectionBuilder> creator);
 
 		/**
-		 * Adds a unique flag to this sections metadata
+		 * Create or configure a piece of metadata
 		 *
-		 * @param flag a string value flag to track
+		 * @param type the type of metadata to configure
+		 * @param builderConsumer the modifications to be made to the piece of metadata
 		 * @return this
 		 */
-		SectionBuilder flag(String flag);
-
-		/**
-		 * Adds a piece of metadata to this section
-		 *
-		 * A {@link SectionBuilder} can have any number of values associated with each {@link MetadataType}.
-		 *
-		 * @param type the type of this metadata
-		 * @param value a value to append to the resulting {@link SectionBuilder}'s metadata
-		 * @return this
-		 */
-		<M, B extends MetadataType.Builder<M>> SectionBuilder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);
+		<M, B extends MetadataType.Builder<M>> Config.SectionBuilder metadata(MetadataType<M, B> type, Consumer<B> builderConsumer);
 	}
 }

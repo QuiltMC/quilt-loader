@@ -29,6 +29,8 @@ public final class TestReflectiveConfig {
 	public final String whatever = "Riesling";
 	public final Nested nested1 = new Nested(10, 11, 12, 13);
 	public final Nested nested3 = new Nested(20, 21, 22, 23);
+
+	@Comment("Test section comment")
 	public final Nested nested4 = new Nested(30, 31, 32, 33);
 
 	public final ValueList<ValueMap<Integer>> listOfNestedObjects = ValueList.create(ValueMap.builder(0).build(),

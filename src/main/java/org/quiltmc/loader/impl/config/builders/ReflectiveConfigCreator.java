@@ -19,8 +19,6 @@ package org.quiltmc.loader.impl.config.builders;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.TrackedValue;
@@ -35,28 +33,16 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 		this.creatorClass = creatorClass;
 	}
 
-	private void createField(Config.Builder builder, Deque<String> key, Object object, Field field) throws IllegalAccessException {
+	private void createField(Config.SectionBuilder builder, Object object, Field field) throws IllegalAccessException {
 		if (!Modifier.isFinal(field.getModifiers())) {
 			throw new RuntimeException("Field '" + field.getType().getName() + ':' + field.getName() + "' is not final");
 		}
 
 		if (!Modifier.isStatic(field.getModifiers())) {
-			key.add(field.getName());
-
 			Object defaultValue = field.get(object);
 
 			if (ConfigUtils.isValidValue(defaultValue)) {
-				TrackedValue<?> value = TrackedValue.create(defaultValue, key.getFirst(), valueBuilder -> {
-					boolean add = false;
-
-					for (String k : key) {
-						if (add) {
-							valueBuilder.key(k);
-						}
-
-						add = true;
-					}
-
+				TrackedValue<?> value = TrackedValue.create(defaultValue, field.getName(), valueBuilder -> {
 					field.setAccessible(true);
 
 					valueBuilder.callback(tracked -> {
@@ -75,20 +61,25 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 				field.set(object, value.getRealValue());
 				builder.field(value);
 			} else if (defaultValue != null) {
-				// TODO: Add support for section comments on subclasses
-
-				for (Field f : defaultValue.getClass().getDeclaredFields()) {
-					if (!f.isSynthetic()) {
-						this.createField(builder, key, defaultValue, f);
+				builder.section(field.getName(), b -> {
+					for (Annotation annotation : field.getAnnotations()) {
+						ConfigFieldAnnotationProcessors.applyAnnotationProcessors(annotation, b);
 					}
-				}
+
+					for (Field f : defaultValue.getClass().getDeclaredFields()) {
+						if (!f.isSynthetic()) {
+							try {
+								this.createField(b, defaultValue, f);
+							} catch (IllegalAccessException e) {
+								throw new RuntimeException(e);
+							}
+						}
+					}
+				});
 			} else {
 				throw new RuntimeException("Config value cannot be null");
 			}
-
-			key.removeLast();
 		}
-
 	}
 
 	public void create(Config.Builder builder) {
@@ -99,10 +90,8 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 		try {
 			this.instance = creatorClass.newInstance();
 
-			Deque<String> key = new ArrayDeque<>();
-
 			for (Field field : this.creatorClass.getDeclaredFields()) {
-				this.createField(builder, key, this.instance, field);
+				this.createField(builder, this.instance, field);
 			}
 		} catch (InstantiationException | IllegalAccessException e) {
 			throw new RuntimeException(e);
