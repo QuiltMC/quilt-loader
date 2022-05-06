@@ -29,13 +29,14 @@ import java.util.Map;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
-import org.quiltmc.loader.api.config.ConfigParseException;
-import org.quiltmc.loader.api.config.annotations.Comment;
-import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.ConfigParseException;
 import org.quiltmc.loader.api.config.Constraint;
+import org.quiltmc.loader.api.config.MarshallingUtils;
 import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.annotations.Comment;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.values.ValueTreeNode;
@@ -159,50 +160,6 @@ public final class Json5Serializer implements Serializer {
 		writer.close();
 	}
 
-	@SuppressWarnings("unchecked")
-	private Object coerce(Object object, Object to) {
-		if (to instanceof Integer) {
-			return ((Number) object).intValue();
-		} else if (to instanceof Long) {
-			return ((Number) object).longValue();
-		} else if (to instanceof Float) {
-			return ((Number) object).floatValue();
-		} else if (to instanceof Double) {
-			return ((Number) object).doubleValue();
-		} else if (to instanceof String) {
-			return object;
-		} else if (to instanceof Boolean) {
-			return object;
-		} else if (to instanceof ValueMap) {
-			@SuppressWarnings("rawtypes")
-			ValueMap.Builder builder = ValueMap.builder(((ValueMap) to).getDefaultValue());
-
-			for (Map.Entry<String, ?> entry : ((Map<String, ?>) object).entrySet()) {
-				builder.put(entry.getKey(), this.coerce(entry.getValue(), ((ValueMap<?>) to).getDefaultValue()));
-			}
-
-			return builder.build();
-		} else if (to instanceof ValueList) {
-			Object[] values = ((List<?>) object).toArray();
-
-			for (int i = 0; i < values.length; ++i) {
-				values[i] = this.coerce(values[i], ((ValueList<?>) to).getDefaultValue());
-			}
-
-			return ValueList.create(((ValueList<?>) to).getDefaultValue(), values);
-		} else if (to.getClass().isEnum()) {
-			for (Object o : to.getClass().getEnumConstants()) {
-				if (((Enum<?>) o).name().equalsIgnoreCase((String) object)) {
-					return o;
-				}
-			}
-
-			throw new ConfigParseException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
-		} else {
-			throw new ConfigParseException("Unexpected value type: " + to.getClass());
-		}
-	}
-
 	@Override
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void deserialize(Config config, InputStream from) {
@@ -220,7 +177,8 @@ public final class Json5Serializer implements Serializer {
 					if (m.containsKey(k) && i != value.getKey().length() - 1) {
 						m = (Map<String, Object>) m.get(k);
 					} else if (m.containsKey(k)) {
-						((TrackedValueImpl) value).setValue(this.coerce(m.get(k), value.getDefaultValue()), false);
+						((TrackedValueImpl) value).setValue(MarshallingUtils.coerce(m.get(k), value.getDefaultValue(), (Map<String, ?> map, MarshallingUtils.MapEntryConsumer entryConsumer) ->
+								map.forEach(entryConsumer::put)), false);
 					}
 				}
 			}

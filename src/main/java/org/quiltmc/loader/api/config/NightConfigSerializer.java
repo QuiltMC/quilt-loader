@@ -62,52 +62,9 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 
 		for (TrackedValue<?> trackedValue : config.values()) {
 			if (read.contains(trackedValue.getKey().toString())) {
-				((TrackedValue) trackedValue).setValue(coerce(read.get(trackedValue.getKey().toString()), trackedValue.getDefaultValue()), false);
+				((TrackedValue) trackedValue).setValue(MarshallingUtils.coerce(read.get(trackedValue.getKey().toString()), trackedValue.getDefaultValue(), (CommentedConfig c, MarshallingUtils.MapEntryConsumer entryConsumer) ->
+						c.entrySet().forEach(e -> entryConsumer.put(e.getKey(), e.getValue()))), false);
 			}
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	private static Object coerce(Object object, Object to) {
-		if (to instanceof Integer) {
-			return ((Number) object).intValue();
-		} else if (to instanceof Long) {
-			return ((Number) object).longValue();
-		} else if (to instanceof Float) {
-			return ((Number) object).floatValue();
-		} else if (to instanceof Double) {
-			return ((Number) object).doubleValue();
-		} else if (to instanceof String) {
-			return object;
-		} else if (to instanceof Boolean) {
-			return object;
-		} else if (to instanceof ValueMap) {
-			@SuppressWarnings("rawtypes")
-			ValueMap.Builder builder = ValueMap.builder(((ValueMap) to).getDefaultValue());
-
-			for (CommentedConfig.Entry entry : ((CommentedConfig) object).entrySet()) {
-				builder.put(entry.getKey(), coerce(entry.getValue(), ((ValueMap<?>) to).getDefaultValue()));
-			}
-
-			return builder.build();
-		} else if (to instanceof ValueList) {
-			Object[] values = ((List<?>) object).toArray();
-
-			for (int i = 0; i < values.length; ++i) {
-				values[i] = coerce(values[i], ((ValueList<?>) to).getDefaultValue());
-			}
-
-			return ValueList.create(((ValueList<?>) to).getDefaultValue(), values);
-		} else if (to.getClass().isEnum()) {
-			for (Object o : to.getClass().getEnumConstants()) {
-				if (((Enum<?>) o).name().equalsIgnoreCase((String) object)) {
-					return o;
-				}
-			}
-
-			throw new ConfigParseException("Unexpected value '" + object + "' for enum class '" + to.getClass() + "'");
-		} else {
-			throw new ConfigParseException("Unexpected value type: " + to.getClass());
 		}
 	}
 
