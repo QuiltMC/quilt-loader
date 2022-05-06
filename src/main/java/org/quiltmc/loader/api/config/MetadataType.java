@@ -16,49 +16,47 @@
 
 package org.quiltmc.loader.api.config;
 
-import org.jetbrains.annotations.ApiStatus;
-
 import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
  * A typed key to be used for setting and getting object metadata.
  */
-@ApiStatus.NonExtendable
-public interface MetadataType<T, B extends MetadataType.Builder<T>> {
-	Class<T> getMetadataClass();
+public final class MetadataType<T, B extends MetadataType.Builder<T>> {
+	private final Class<T> metadataClass;
+	private final Supplier<Optional<T>> defaultValueSupplier;
+	private final Supplier<B> builderSupplier;
+
+	private MetadataType(Class<T> metadataClass, Supplier<Optional<T>> defaultValueSupplier, Supplier<B> builderSupplier) {
+		this.metadataClass = metadataClass;
+		this.defaultValueSupplier = defaultValueSupplier;
+		this.builderSupplier = builderSupplier;
+	}
+
+	public Class<T> getMetadataClass() {
+		return this.metadataClass;
+	}
 
 	/**
 	 * @return an optional containing the default value if this type has one, or an empty value if not
 	 */
-	Optional<T> getDefaultValue();
-
-	B newBuilder();
-
-	static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<Optional<T>> defaultValueSuplier, Supplier<B> builderSupplier) {
-		return new MetadataType<T, B>() {
-			@Override
-			public Class<T> getMetadataClass() {
-				return typeClass;
-			}
-
-			@Override
-			public Optional<T> getDefaultValue() {
-				return defaultValueSuplier.get();
-			}
-
-			@Override
-			public B newBuilder() {
-				return builderSupplier.get();
-			}
-		};
+	public Optional<T> getDefaultValue() {
+		return this.defaultValueSupplier.get();
 	}
 
-	static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<B> builderSupplier) {
+	public B newBuilder() {
+		return this.builderSupplier.get();
+	}
+
+	public static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<Optional<T>> defaultValueSuplier, Supplier<B> builderSupplier) {
+		return new MetadataType<T, B>(typeClass, defaultValueSuplier, builderSupplier);
+	}
+
+	public static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<B> builderSupplier) {
 		return create(typeClass, Optional::empty, builderSupplier);
 	}
 
-	interface Builder<T> {
+	public interface Builder<T> {
 		T build();
 	}
 }
