@@ -37,6 +37,7 @@ import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
+import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.values.ValueTreeNode;
@@ -84,6 +85,8 @@ public final class Json5Serializer implements Serializer {
 			}
 
 			writer.endObject();
+		} else if (value instanceof ConfigSerializableObject) {
+			serialize(writer, ((ConfigSerializableObject<?>) value).getRepresentation());
 		} else if (value == null) {
 			writer.nullValue();
 		} else if (value.getClass().isEnum()) {

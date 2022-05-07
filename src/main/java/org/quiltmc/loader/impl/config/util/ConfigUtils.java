@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.config.util;
 
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
+import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 
 public final class ConfigUtils {
 	private static final Class<?>[] VALID_VALUE_CLASSES = new Class[] {
@@ -44,20 +45,17 @@ public final class ConfigUtils {
 	public static boolean isValidValue(Object object) {
 		if (object == null) {
 			return false;
-		}
-
-		Class<?> valueClass = object.getClass();
-
-		while (object instanceof CompoundConfigValue<?>) {
-			if (CompoundConfigValue.class.isAssignableFrom(((CompoundConfigValue<?>) object).getType())) {
+		} else if (object instanceof ConfigSerializableObject) {
+			return true;
+		} else if (object instanceof CompoundConfigValue<?>) {
+			while (object instanceof CompoundConfigValue<?>) {
 				object = ((CompoundConfigValue<?>) object).getDefaultValue();
-			} else {
-				valueClass = ((CompoundConfigValue<?>) object).getType();
-				break;
 			}
-		}
 
-		return isValidValueClass(valueClass);
+			return isValidValue(object);
+		} else {
+			return isValidValueClass(object.getClass());
+		}
 	}
 
 	public static boolean isValidValueClass(Class<?> valueClass) {

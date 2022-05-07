@@ -30,6 +30,7 @@ import com.electronwill.nightconfig.core.io.ConfigParser;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
+import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.values.ValueTreeNode;
@@ -72,13 +73,7 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 		List<Object> result = new ArrayList<>(list.size());
 
 		for (Object value : list) {
-			if (value instanceof ValueMap) {
-				result.add(convertMap((ValueMap<?>) value));
-			} else if (value instanceof ValueList) {
-				result.add(convertList((ValueList<?>) value));
-			} else {
-				result.add(value);
-			}
+			result.add(convertAny(value));
 		}
 
 		return result;
@@ -88,15 +83,7 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 		CommentedConfig result = createCommentedConfig();
 
 		for (Map.Entry<String, ?> entry : map.entrySet()) {
-			Object value = entry.getValue();
-
-			if (value instanceof ValueMap) {
-				value = convertMap((ValueMap<?>) value);
-			} else if (value instanceof ValueList) {
-				value = convertList((ValueList<?>) value);
-			}
-
-			result.add(entry.getKey(), value);
+			result.add(entry.getKey(), convertAny(entry.getValue()));
 		}
 
 		return result;
@@ -107,6 +94,8 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 			return convertMap((ValueMap<?>) value);
 		} else if (value instanceof ValueList) {
 			return convertList((ValueList<?>) value);
+		} else if (value instanceof ConfigSerializableObject) {
+			return convertAny(((ConfigSerializableObject<?>) value).getRepresentation());
 		} else {
 			return value;
 		}

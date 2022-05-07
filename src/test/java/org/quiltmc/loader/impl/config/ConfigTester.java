@@ -176,9 +176,10 @@ public class ConfigTester {
 		});
 	}
 
-	@Test
-	public void testReflectiveConfigs() {
-		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig10", TestReflectiveConfig.class);
+	public void testReflectiveConfigs(String id, String format) {
+		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", id, TestReflectiveConfig.class, builder -> {
+			builder.fileType(format);
+		});
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
 			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
@@ -191,6 +192,12 @@ public class ConfigTester {
 		Assertions.assertThrows(RuntimeException.class, () -> {
 			Config.create("testmod", "testConfig11", TestReflectiveConfig2.class);
 		}).printStackTrace();
+	}
+
+	@Test
+	public void testReflectiveConfigs() {
+		testReflectiveConfigs("testConfig10", "toml");
+		testReflectiveConfigs("testConfig11", "json5");
 	}
 
 	@Test

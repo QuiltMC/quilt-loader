@@ -24,11 +24,13 @@ import java.util.Set;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.values.ComplexConfigValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueMap;
-import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueImpl<T, ValueMap<T>> {
+public final class ValueMapImpl<T> implements ValueMap<T>, org.quiltmc.loader.api.config.values.CompoundConfigValue<T> {
 	private final T defaultValue;
 	private final Map<String, T> values;
 
@@ -39,16 +41,18 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 		this.values = values;
 	}
 
-	public void setValue(TrackedValueImpl<?> configValue) {
-		this.configValue = configValue;
+	@Override
+	public void setValue(TrackedValue<?> configValue) {
+		this.configValue = (TrackedValueImpl<?>) configValue;
 
-		if (this.defaultValue instanceof CompoundConfigValueImpl<?, ?>) {
+		if (this.defaultValue instanceof ComplexConfigValue) {
 			for (T value : this.values.values()) {
-				((CompoundConfigValueImpl<? ,?>) value).setValue(configValue);
+				((ComplexConfigValue) value).setValue(configValue);
 			}
 		}
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public ValueMap<T> copy() {
 		Map<String, T> values = new LinkedHashMap<>();
@@ -56,10 +60,8 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 		for (Map.Entry<String, T> entry : this) {
 			T value = entry.getValue();
 
-			if (value instanceof ValueListImpl<?>) {
-				values.put(entry.getKey(), (T) ((ValueListImpl<?>) value).copy());
-			} else if (value instanceof ValueMapImpl<?>) {
-				values.put(entry.getKey(), (T) ((ValueMapImpl<?>) value).copy());
+			if (value instanceof CompoundConfigValue) {
+				values.put(entry.getKey(), (T) ((CompoundConfigValue<?>) value).copy());
 			} else {
 				values.put(entry.getKey(), value);
 			}
@@ -102,8 +104,8 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 	public T put(String key, T value) {
 		T v = this.values.put(key, value);
 
-		if (value instanceof CompoundConfigValueImpl<?, ?>) {
-			((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
+		if (value instanceof ComplexConfigValue) {
+			((ComplexConfigValue) value).setValue(this.configValue);
 		}
 
 		this.configValue.updateAndSerialize();
@@ -125,8 +127,8 @@ public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValueIm
 		this.values.putAll(m);
 
 		for (T value : m.values()) {
-			if (value instanceof CompoundConfigValueImpl<?, ?>) {
-				((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
+			if (value instanceof ComplexConfigValue) {
+				((ComplexConfigValue) value).setValue(this.configValue);
 			}
 		}
 

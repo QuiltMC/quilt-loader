@@ -26,11 +26,13 @@ import java.util.Spliterator;
 import java.util.function.UnaryOperator;
 
 import org.jetbrains.annotations.NotNull;
+import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.values.ComplexConfigValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueList;
-import org.quiltmc.loader.impl.config.CompoundConfigValueImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValueImpl<T, ValueList<T>> {
+public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.api.config.values.CompoundConfigValue<T> {
 	private final T defaultValue;
 	private final List<T> values;
 
@@ -41,15 +43,14 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		this.values = values;
 	}
 
+	@Override
 	@SuppressWarnings("unchecked")
 	public ValueList<T> copy() {
 		List<T> values = new ArrayList<>(this.values.size());
 
 		for (T value : this.values) {
-			if (value instanceof ValueListImpl<?>) {
-				values.add((T) ((ValueListImpl<?>) value).copy());
-			} else if (value instanceof ValueMapImpl<?>) {
-				values.add((T) ((ValueMapImpl<?>) value).copy());
+			if (value instanceof CompoundConfigValue) {
+				values.add((T) ((CompoundConfigValue<?>) value).copy());
 			} else {
 				values.add(value);
 			}
@@ -62,12 +63,13 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 		return result;
 	}
 
-	public void setValue(TrackedValueImpl<?> configValue) {
-		this.configValue = configValue;
+	@Override
+	public void setValue(TrackedValue<?> configValue) {
+		this.configValue = (TrackedValueImpl<?>) configValue;
 
-		if (this.defaultValue instanceof CompoundConfigValueImpl<?, ?>) {
+		if (this.defaultValue instanceof ComplexConfigValue) {
 			for (T value : this.values) {
-				((CompoundConfigValueImpl<?, ?>) value).setValue(configValue);
+				((ComplexConfigValue) value).setValue(configValue);
 			}
 		}
 	}
@@ -232,8 +234,8 @@ public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue
 	public T set(int index, T value) {
 		T v = values.set(index, value);
 
-		if (value instanceof CompoundConfigValueImpl<?, ?>) {
-			((CompoundConfigValueImpl<?, ?>) value).setValue(this.configValue);
+		if (value instanceof ComplexConfigValue) {
+			((ComplexConfigValue) value).setValue(this.configValue);
 		}
 
 		if ((v != null && value != null && !v.equals(value)) || (v != null && value == null) || (v == null && value != null)) {

@@ -26,9 +26,15 @@ public final class TestReflectiveConfig {
 	public final int b = 1;
 	public final int c = 2;
 	public final int d = 3;
+	public final Vec3i vec = new Vec3i(100, 200, 300);
 	public final String whatever = "Riesling";
 	public final Nested nested1 = new Nested(10, 11, 12, 13);
 	public final Nested nested3 = new Nested(20, 21, 22, 23);
+	public final ValueList<Vec3i> vecs = ValueList.create(new Vec3i(0, 0, 0),
+			new Vec3i(1, 2, 3),
+			new Vec3i(4, 5, 6),
+			new Vec3i(7, 8, 9)
+	);
 
 	@Comment("Test section comment")
 	public final Nested nested4 = new Nested(30, 31, 32, 33);

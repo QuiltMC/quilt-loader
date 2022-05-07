@@ -27,7 +27,7 @@ import org.jetbrains.annotations.ApiStatus;
  * Complex types: a {@link ValueList} or {@link ValueMap} of basic or complex types
  */
 @ApiStatus.NonExtendable
-public interface CompoundConfigValue<T> {
+public interface CompoundConfigValue<T> extends ComplexConfigValue {
 	Class<T> getType();
 
 	/**

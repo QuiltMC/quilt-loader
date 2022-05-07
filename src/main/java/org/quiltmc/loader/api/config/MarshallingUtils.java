@@ -3,6 +3,7 @@ package org.quiltmc.loader.api.config;
 import java.util.List;
 import java.util.function.BiFunction;
 
+import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 
@@ -18,7 +19,7 @@ public final class MarshallingUtils {
 	 * @param valueListCreator a function that converts an arbitrary object into a ValueList with the given default
 	 * @return some value
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	private static <M, L> Object coerce(Object object, Object to, BiFunction<M, ValueMap<?>, ValueMap<?>> valueMapCreator, BiFunction<L, ValueList<?>, ValueList<?>> valueListCreator) {
 		if (to instanceof Integer) {
 			return ((Number) object).intValue();
@@ -32,6 +33,8 @@ public final class MarshallingUtils {
 			return object;
 		} else if (to instanceof Boolean) {
 			return object;
+		} else if (to instanceof ConfigSerializableObject) {
+			return ((ConfigSerializableObject) to).convertFrom(coerce(object, ((ConfigSerializableObject<?>) to).getRepresentation(), valueMapCreator, valueListCreator));
 		} else if (to instanceof ValueMap) {
 			return valueMapCreator.apply((M) object, (ValueMap<?>) to);
 		} else if (to instanceof ValueList) {
