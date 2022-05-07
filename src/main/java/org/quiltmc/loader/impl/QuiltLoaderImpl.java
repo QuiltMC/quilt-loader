@@ -171,10 +171,6 @@ public final class QuiltLoaderImpl {
 		if (configDir == null) {
 			// May be null during tests
 			// If this is in production then things are about to go very wrong.
-			if (this.isDevelopmentEnvironment()) {
-				return Paths.get(DEFAULT_CONFIG_DIR);
-			}
-
 			return null;
 		}
 
