@@ -329,6 +329,13 @@ public interface Config {
 		void create(Builder builder);
 	}
 
+	/**
+	 * Marker interface to designate a class as a section for reflective configs
+	 */
+	interface Section {
+
+	}
+
 	@ApiStatus.NonExtendable
 	interface Builder extends SectionBuilder {
 		/**

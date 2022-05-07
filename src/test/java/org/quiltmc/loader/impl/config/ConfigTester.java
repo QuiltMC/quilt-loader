@@ -190,7 +190,11 @@ public class ConfigTester {
 		}
 
 		Assertions.assertThrows(RuntimeException.class, () -> {
-			Config.create("testmod", "testConfig11", TestReflectiveConfig2.class);
+			Config.create("testmod", "testConfig", TestReflectiveConfig2.class);
+		}).printStackTrace();
+
+		Assertions.assertThrows(RuntimeException.class, () -> {
+			Config.create("testmod", "testConfig", TestReflectiveConfig3.class);
 		}).printStackTrace();
 	}
 

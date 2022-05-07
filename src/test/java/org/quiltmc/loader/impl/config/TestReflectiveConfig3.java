@@ -17,11 +17,11 @@
 package org.quiltmc.loader.impl.config;
 
 import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
-import org.quiltmc.loader.api.config.annotations.Comment;
 
-public final class TestReflectiveConfig {
+public final class TestReflectiveConfig3 {
 	@Comment({"Comment one", "Comment two"})
 	public final int a = 0;
 	public final int b = 1;
@@ -46,7 +46,7 @@ public final class TestReflectiveConfig {
 			ValueMap.builder(0).put("a", 1).put("b", 2).put("c", 3).put("d", 4).build()
 	);
 
-	public static final class Nested implements Config.Section {
+	public static final class Nested {
 		public final int a;
 		public final int b;
 		public final int c;

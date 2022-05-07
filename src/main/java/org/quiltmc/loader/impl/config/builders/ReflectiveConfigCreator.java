@@ -60,7 +60,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 
 				field.set(object, value.getRealValue());
 				builder.field(value);
-			} else if (defaultValue != null) {
+			} else if (defaultValue instanceof Config.Section) {
 				builder.section(field.getName(), b -> {
 					for (Annotation annotation : field.getAnnotations()) {
 						ConfigFieldAnnotationProcessors.applyAnnotationProcessors(annotation, b);
@@ -76,8 +76,10 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 						}
 					}
 				});
+			} else if (defaultValue == null) {
+				throw new RuntimeException("Default value for field '" + field.getName() + "' cannot be null");
 			} else {
-				throw new RuntimeException("Config value cannot be null");
+				throw new RuntimeException("Class '" + defaultValue.getClass().getName() + "' of field '" + field.getName() + "' is not a valid config value; must be a basic type, complex type, or implement org.quiltmc.loader.api.config.Config.Section");
 			}
 		}
 	}

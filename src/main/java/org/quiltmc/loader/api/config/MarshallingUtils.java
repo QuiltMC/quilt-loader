@@ -79,7 +79,8 @@ public final class MarshallingUtils {
 		public ValueMap<?> apply(M object, ValueMap<?> defaultValue) {
 			ValueMap.Builder builder = ValueMap.builder(defaultValue.getDefaultValue());
 
-			this.creator.create(object, builder::put);
+			this.creator.create(object, (key, value) ->
+					builder.put(key, coerce(value, defaultValue.getDefaultValue(), this.creator)));
 
 			return builder.build();
 		}
