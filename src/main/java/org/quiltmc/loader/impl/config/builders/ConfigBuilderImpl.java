@@ -52,7 +52,7 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	final Trie values = new Trie();
 
-	private String fileType = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION, "toml");
+	private String format = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION, "toml");
 
 	public ConfigBuilderImpl(String modId, String id, Path path) {
 		this.modId = modId;
@@ -101,8 +101,8 @@ public final class ConfigBuilderImpl implements Config.Builder {
 	}
 
 	@Override
-	public Config.Builder fileType(String fileType) {
-		this.fileType = fileType;
+	public Config.Builder format(String format) {
+		this.format = format;
 
 		return this;
 	}
@@ -114,7 +114,7 @@ public final class ConfigBuilderImpl implements Config.Builder {
 			metadata.put(entry.getKey(), entry.getValue().build());
 		}
 
-		ConfigImpl config = new ConfigImpl(this.modId, this.id, this.path, metadata, this.callbacks, this.values, this.fileType);
+		ConfigImpl config = new ConfigImpl(this.modId, this.id, this.path, metadata, this.callbacks, this.values, this.format);
 
 		ConfigsImpl.put(modId, config);
 

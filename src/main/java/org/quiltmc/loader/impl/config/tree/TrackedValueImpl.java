@@ -26,7 +26,6 @@ import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.values.ComplexConfigValue;
-import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.AbstractMetadataContainer;
 import org.quiltmc.loader.impl.config.ConfigImpl;
@@ -127,7 +126,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		}
 
 		if (!this.isBeingOverridden()) {
-			this.update();
+			this.invokeCallbacks();
 		}
 
 		return oldValue;
@@ -140,7 +139,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		this.isBeingOverridden = true;
 		this.valueOverride = newValue;
 
-		this.update();
+		this.invokeCallbacks();
 	}
 
 	@Override
@@ -149,7 +148,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		T oldValueOverride = this.valueOverride;
 		this.valueOverride = null;
 
-		this.update();
+		this.invokeCallbacks();
 	}
 
 	@Override
@@ -196,7 +195,8 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		}
 	}
 
-	private void update() {
+	@Override
+	public void invokeCallbacks() {
 		this.config.invokeCallbacks();
 
 		for (UpdateCallback<T> callback : this.callbacks) {
@@ -204,7 +204,8 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		}
 	}
 
-	public void updateAndSerialize() {
+	@Override
+	public void serializeAndInvokeCallbacks() {
 		this.config.serialize();
 
 		this.config.invokeCallbacks();

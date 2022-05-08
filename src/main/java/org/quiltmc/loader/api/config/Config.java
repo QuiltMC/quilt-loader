@@ -389,7 +389,7 @@ public interface Config {
 		 *
 		 * @return this
 		 */
-		Builder fileType(String fileType);
+		Builder format(String format);
 	}
 
 	@ApiStatus.NonExtendable

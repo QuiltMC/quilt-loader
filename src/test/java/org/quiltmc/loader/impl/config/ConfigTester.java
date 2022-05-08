@@ -188,7 +188,7 @@ public class ConfigTester {
 
 	public void testReflectiveConfigs(String id, String format) {
 		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", id, TestReflectiveConfig.class, builder -> {
-			builder.fileType(format);
+			builder.format(format);
 		});
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
@@ -217,7 +217,7 @@ public class ConfigTester {
 	@Test
 	public void testTomlConfigs() {
 		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig12", TestReflectiveConfig.class, builder -> {
-			builder.fileType("toml");
+			builder.format("toml");
 		});
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {

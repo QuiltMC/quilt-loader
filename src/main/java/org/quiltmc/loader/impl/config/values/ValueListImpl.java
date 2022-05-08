@@ -120,7 +120,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 	public boolean add(T t) {
 		values.add(t);
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 
 		return true;
 	}
@@ -130,7 +130,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 		boolean r = values.remove(o);
 
 		if (r) {
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 
 		return r;
@@ -146,7 +146,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 		boolean v = values.addAll(c);
 
 		if (v) {
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 
 		return v;
@@ -157,7 +157,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 		boolean v = values.addAll(index, c);
 
 		if (v) {
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 
 		return v;
@@ -168,7 +168,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 		boolean v = values.removeAll(c);
 
 		if (v) {
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 
 		return v;
@@ -179,7 +179,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 		boolean v = values.retainAll(c);
 
 		if (v) {
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 
 		return v;
@@ -189,14 +189,14 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 	public void replaceAll(UnaryOperator<T> operator) {
 		values.replaceAll(operator);
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 	}
 
 	@Override
 	public void sort(Comparator<? super T> c) {
 		values.sort(c);
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 	}
 
 	@Override
@@ -205,7 +205,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 			values.clear();
 		} else {
 			values.clear();
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 	}
 
@@ -239,7 +239,7 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 		}
 
 		if ((v != null && value != null && !v.equals(value)) || (v != null && value == null) || (v == null && value != null)) {
-			this.configValue.updateAndSerialize();
+			this.configValue.serializeAndInvokeCallbacks();
 		}
 
 		return v;
@@ -249,14 +249,14 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 	public void add(int index, T value) {
 		values.add(index, value);
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 	}
 
 	@Override
 	public T remove(int index) {
 		T v = values.remove(index);
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 
 		return v;
 	}

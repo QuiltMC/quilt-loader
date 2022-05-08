@@ -108,7 +108,7 @@ public final class ValueMapImpl<T> implements ValueMap<T>, org.quiltmc.loader.ap
 			((ComplexConfigValue) value).setValue(this.configValue);
 		}
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 
 		return v;
 	}
@@ -117,7 +117,7 @@ public final class ValueMapImpl<T> implements ValueMap<T>, org.quiltmc.loader.ap
 	public T remove(Object key) {
 		T result = this.values.remove(key);
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 
 		return result;
 	}
@@ -132,13 +132,13 @@ public final class ValueMapImpl<T> implements ValueMap<T>, org.quiltmc.loader.ap
 			}
 		}
 
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 	}
 
 	@Override
 	public void clear() {
 		this.values.clear();
-		this.configValue.updateAndSerialize();
+		this.configValue.serializeAndInvokeCallbacks();
 	}
 
 	@NotNull

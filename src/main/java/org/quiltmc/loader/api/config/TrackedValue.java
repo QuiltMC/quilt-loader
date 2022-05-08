@@ -147,6 +147,10 @@ public interface TrackedValue<T> extends ValueTreeNode {
 		return builder.build();
 	}
 
+	void invokeCallbacks();
+
+	void serializeAndInvokeCallbacks();
+
 	interface UpdateCallback<T> {
 		void onUpdate(TrackedValue<T> trackedValue);
 	}
