@@ -60,6 +60,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.launch.common.FabricLauncher;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
 import net.fabricmc.loader.launch.knot.Knot;
 
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
@@ -70,6 +71,8 @@ import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+
+import org.spongepowered.asm.mixin.FabricUtil;
 
 public final class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
@@ -258,6 +261,19 @@ public final class QuiltLoaderImpl {
 				RuntimeModRemapper.remap(modCandidates, ModResolver.getInMemoryFs());
 			}
 		}
+
+		// Keep Mixin 0.9.2 compatible mods first in the load order, temporary fix for https://github.com/FabricMC/Mixin/issues/89
+		List<ModCandidate> newMixinCompatMods = new ArrayList<>();
+		for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext();) {
+			ModCandidate mod = it.next();
+			ModContainerImpl tempModContainer = new ModContainerImpl(mod);
+			if (FabricMixinBootstrap.MixinConfigDecorator.getMixinCompat(tempModContainer) != FabricUtil.COMPATIBILITY_0_9_2) {
+				it.remove();
+				newMixinCompatMods.add(mod);
+			}
+		}
+
+		modCandidates.addAll(newMixinCompatMods);
 
 		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
 

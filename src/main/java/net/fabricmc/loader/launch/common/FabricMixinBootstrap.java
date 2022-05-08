@@ -130,7 +130,7 @@ public final class FabricMixinBootstrap {
 		initialized = true;
 	}
 
-	private static final class MixinConfigDecorator {
+	public static final class MixinConfigDecorator {
 		private static final List<LoaderMixinVersionEntry> versions = new ArrayList<>();
 
 		static {
@@ -152,7 +152,7 @@ public final class FabricMixinBootstrap {
 			}
 		}
 
-		private static int getMixinCompat(ModContainerImpl mod) {
+		public static int getMixinCompat(ModContainerImpl mod) {
 			// infer from loader dependency by determining the least relevant loader version the mod accepts
 			// AND any loader deps
 
