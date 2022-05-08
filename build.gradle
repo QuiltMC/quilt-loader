@@ -20,7 +20,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
 // Don't forget to change this in the QuiltLoaderImpl class as well
-version = "0.16.0-beta.16"
+version = "0.16.0"
 def ENV = System.getenv()
 
 allprojects {
