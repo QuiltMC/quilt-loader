@@ -7,6 +7,10 @@ import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 
+/**
+ * Utility class that serializers can use to convert intermediary representations of config values to values that
+ * conform to the types of the {@link TrackedValue}s they represent.
+ */
 public final class MarshallingUtils {
 	private MarshallingUtils() { }
 
