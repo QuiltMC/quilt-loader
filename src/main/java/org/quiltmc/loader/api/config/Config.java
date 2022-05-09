@@ -29,7 +29,7 @@ import org.quiltmc.loader.impl.config.ConfigImpl;
 @ApiStatus.NonExtendable
 public interface Config {
 	/**
-	 * The ID of the config family this config file belongs to
+	 * The ID of the config family this config file belongs to, also the folder the resulting file will be saved in.
 	 */
 	String family();
 
