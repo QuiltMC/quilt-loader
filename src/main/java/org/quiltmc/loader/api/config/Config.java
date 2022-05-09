@@ -33,7 +33,7 @@ public interface Config {
 	String getId();
 
 	/**
-	 * The path this config will be saved in, relative to Quilt Loader's config directory.
+	 * The path this config will be saved in, relative to the root config directory.
 	 *
 	 * @return a save path
 	 */
