@@ -31,9 +31,15 @@ import org.quiltmc.loader.api.config.MetadataContainerBuilder;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.impl.config.CommentsImpl;
 
+/**
+ * Used to annotate fields of classes that represent config files with comments that can be saved to disk or displayed
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Comment {
+	/**
+	 * A {@link MetadataType} to supply to {@link org.quiltmc.loader.api.config.Config.Builder#metadata}
+	 */
 	MetadataType<Comments, Builder> TYPE = MetadataType.create(Comments.class, () -> Optional.of(new CommentsImpl(Collections.emptyList())), Builder::new);
 
 	String[] value();

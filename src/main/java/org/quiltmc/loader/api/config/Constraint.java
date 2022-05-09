@@ -20,6 +20,11 @@ import java.util.Comparator;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+/**
+ * Some predicate that is used to validate {@link TrackedValue} values.
+ *
+ * <p>See {@link TrackedValue.Builder#constraint(Constraint)}
+ */
 public interface Constraint<T> {
 	/**
 	 * @param value the value to test against this {@link Constraint}
