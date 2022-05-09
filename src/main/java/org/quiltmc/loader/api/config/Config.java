@@ -28,8 +28,14 @@ import org.quiltmc.loader.impl.config.ConfigImpl;
 
 @ApiStatus.NonExtendable
 public interface Config {
+	/**
+	 * The ID of the mod this config file belongs to
+	 */
 	String getModId();
 
+	/**
+	 * The unique ID of this config file, also the name of the resulting file.
+	 */
 	String getId();
 
 	/**
@@ -84,17 +90,6 @@ public interface Config {
 	/**
 	 * Creates and registers a config file
 	 *
-	 * <p>The passed class should have the following characteristics:
-	 * <ul>
-	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
-	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
-	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
-	 * </ul>
-	 *
 	 * @param modId the mod owning the resulting config file
 	 * @param id the configs id
 	 * @param path additional path elements to include as part of this configs file, e.g.
@@ -108,17 +103,6 @@ public interface Config {
 
 	/**
 	 * Creates and registers a config file
-	 *
-	 * <p>The passed class should have the following characteristics:
-	 * <ul>
-	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
-	 *     <ul>
-	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
-	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
-	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
 	 * @param id the configs id
@@ -137,7 +121,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -165,7 +149,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -192,7 +176,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -219,7 +203,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -245,7 +229,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -270,7 +254,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
@@ -294,7 +278,7 @@ public interface Config {
 	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>

@@ -111,7 +111,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 * Config values can be one of the following types:
 	 * <ul>
 	 *     <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 * </ul>
 	 *
 	 * @param defaultValue the default value of the new {@link TrackedValue} to create
@@ -131,7 +131,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	 * Config values can be one of the following types:
 	 * <ul>
 	 *     <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *     <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.loader.api.config.values.ConfigSerializableObject})</li>
 	 * </ul>
 	 *
 	 * @param defaultValue the default value of the new {@link TrackedValue} to create
