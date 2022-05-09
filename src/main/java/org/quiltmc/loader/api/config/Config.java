@@ -82,7 +82,7 @@ public interface Config {
 	Iterable<ValueTreeNode> nodes();
 
 	/**
-	 * Creates and registers a config with fields derived from the fields of the passed class
+	 * Creates and registers a config file
 	 *
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
@@ -98,8 +98,8 @@ public interface Config {
 	 * @param modId the mod owning the resulting config file
 	 * @param id the configs id
 	 * @param path additional path elements to include as part of this configs file, e.g.
-	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
-	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
+	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
+	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param creators any number of {@link Creator}s that can be used to configure the resulting config
 	 */
 	static Config create(String modId, String id, Path path, Creator... creators) {
@@ -107,7 +107,18 @@ public interface Config {
 	}
 
 	/**
-	 * Creates and registers a config
+	 * Creates and registers a config file
+	 *
+	 * <p>The passed class should have the following characteristics:
+	 * <ul>
+	 *     <li>Has a public no-argument constructor</li>
+	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <ul>
+	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
+	 *         <li>An object whose class follows these rules</li>
+	 *     </ul>
+	 * </ul>
 	 *
 	 * @param modId the mod owning the resulting config file
 	 * @param id the configs id
@@ -134,8 +145,8 @@ public interface Config {
 	 * @param modId the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
-	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
-	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
+	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
+	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
@@ -162,8 +173,8 @@ public interface Config {
 	 * @param modId the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
-	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
-	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
+	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
+	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
@@ -189,8 +200,8 @@ public interface Config {
 	 * @param modId the mod owning the resulting config file
 	 * @param id the configs id
 	 * @param path additional path elements to include as part of this configs file, e.g.
-	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
-	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
+	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
+	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
 	 * @return a {@link ConfigWrapper<C>}
@@ -216,8 +227,8 @@ public interface Config {
 	 * @param modId the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
-	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.json5"
-	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.json5"
+	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
+	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
 	 */
