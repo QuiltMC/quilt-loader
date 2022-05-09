@@ -87,7 +87,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -112,7 +112,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -134,7 +134,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -162,7 +162,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -189,7 +189,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -216,7 +216,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -242,7 +242,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -267,7 +267,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
@@ -291,7 +291,7 @@ public interface Config {
 	 * <p>The passed class should have the following characteristics:
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>

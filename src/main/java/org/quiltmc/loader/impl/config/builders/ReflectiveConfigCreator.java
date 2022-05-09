@@ -38,7 +38,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 			throw new RuntimeException("Field '" + field.getType().getName() + ':' + field.getName() + "' is not final");
 		}
 
-		if (!Modifier.isStatic(field.getModifiers())) {
+		if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())) {
 			Object defaultValue = field.get(object);
 
 			if (ConfigUtils.isValidValue(defaultValue)) {
