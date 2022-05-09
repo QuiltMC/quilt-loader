@@ -40,7 +40,7 @@ public interface Config {
 	Path getSavePath();
 
 	/**
-	 * Adds a listener to this {@link Config} that's called whenever any of its values is updated
+	 * Adds a listener to this {@link Config} that's called whenever any of its values are updated
 	 *
 	 * @param callback an update listener
 	 */
