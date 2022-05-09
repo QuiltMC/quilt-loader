@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.config;
 
-import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;

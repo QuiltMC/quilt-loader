@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api.config.annotations;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -36,6 +37,7 @@ import org.quiltmc.loader.impl.config.CommentsImpl;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
+@Repeatable(org.quiltmc.loader.impl.config.Comments.class)
 public @interface Comment {
 	/**
 	 * A {@link MetadataType} to supply to {@link org.quiltmc.loader.api.config.Config.Builder#metadata}

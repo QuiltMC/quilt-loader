@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.quiltmc.loader.api.config.MetadataContainerBuilder;
-import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.annotations.Comment;
+import org.quiltmc.loader.impl.config.Comments;
 import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor;
 
 public final class ConfigFieldAnnotationProcessors {
@@ -33,6 +33,7 @@ public final class ConfigFieldAnnotationProcessors {
 
 	static {
 		register(Comment.class, new Comment.Processor());
+		register(Comments.class, new Comments.Processor());
 	}
 
 	public static <T extends Annotation> void register(Class<T> annotationClass, ConfigFieldAnnotationProcessor<T> processor) {

@@ -24,6 +24,9 @@ import org.quiltmc.loader.api.config.annotations.Comment;
 public final class TestReflectiveConfig {
 	@Comment({"Comment one", "Comment two"})
 	public final int a = 0;
+
+	@Comment("Comment one")
+	@Comment("Comment two")
 	public final int b = 1;
 	public final int c = 2;
 	public final int d = 3;
@@ -37,7 +40,10 @@ public final class TestReflectiveConfig {
 			new Vec3i(7, 8, 9)
 	);
 
-	@Comment("Test section comment")
+	@Comment("Test section comment 1")
+	@Comment("Test section comment 2")
+	@Comment("Test section comment 3")
+	@Comment("Test section comment 4")
 	public final Nested nested4 = new Nested(30, 31, 32, 33);
 
 	public final ValueList<ValueMap<Integer>> listOfNestedObjects = ValueList.create(ValueMap.builder(0).build(),
