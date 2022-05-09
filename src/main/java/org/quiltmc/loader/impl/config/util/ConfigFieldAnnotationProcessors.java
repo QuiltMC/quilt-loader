@@ -25,6 +25,9 @@ import java.util.Map;
 
 import org.quiltmc.loader.api.config.MetadataContainerBuilder;
 import org.quiltmc.loader.api.config.annotations.Comment;
+import org.quiltmc.loader.api.config.annotations.DiscreteRange;
+import org.quiltmc.loader.api.config.annotations.Matches;
+import org.quiltmc.loader.api.config.annotations.RealRange;
 import org.quiltmc.loader.impl.config.Comments;
 import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor;
 
@@ -34,6 +37,9 @@ public final class ConfigFieldAnnotationProcessors {
 	static {
 		register(Comment.class, new Comment.Processor());
 		register(Comments.class, new Comments.Processor());
+		register(DiscreteRange.class, new DiscreteRange.Processor());
+		register(RealRange.class, new RealRange.Processor());
+		register(Matches.class, new Matches.Processor());
 	}
 
 	public static <T extends Annotation> void register(Class<T> annotationClass, ConfigFieldAnnotationProcessor<T> processor) {

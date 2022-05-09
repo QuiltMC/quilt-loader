@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.config;
 
 import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.annotations.RealRange;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.annotations.Comment;
@@ -29,6 +30,8 @@ public final class TestReflectiveConfig {
 	@Comment("Comment two")
 	public final int b = 1;
 	public final int c = 2;
+
+	@RealRange(min=0, max=10)
 	public final int d = 3;
 	public final Vec3i vec = new Vec3i(100, 200, 300);
 	public final String whatever = "Riesling";
