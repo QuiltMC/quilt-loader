@@ -127,11 +127,7 @@ public interface Config {
 	 *         <li>An object whose class follows these rules</li>
 	 *     </ul>
 	 * </ul>
-	 * 
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.loader.api.config.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
-	 * 
+	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.loader.api.config.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor}s
 	 * can be registered with {@link org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
