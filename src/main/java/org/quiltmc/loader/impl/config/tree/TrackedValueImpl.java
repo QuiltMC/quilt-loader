@@ -77,12 +77,12 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 	}
 
 	@Override
-	public ValueKey getKey() {
+	public ValueKey key() {
 		return this.key;
 	}
 
 	@Override
-	public T getValue() {
+	public T value() {
 		return this.isBeingOverridden ? this.valueOverride : this.value;
 	}
 

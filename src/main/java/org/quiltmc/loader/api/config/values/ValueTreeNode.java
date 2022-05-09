@@ -26,7 +26,7 @@ import org.quiltmc.loader.api.config.TrackedValue;
  * <p>Will be either a {@link TrackedValue} or {@link Section}
  */
 public interface ValueTreeNode {
-	ValueKey getKey();
+	ValueKey key();
 
 	/**
 	 * @return the metadata attached to this value for the specified type

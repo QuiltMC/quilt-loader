@@ -227,7 +227,7 @@ public final class Trie {
 
 		public void setValue(ValueTreeNode value) {
 			if (this.value != null) {
-				throw new UnsupportedOperationException("Cannot put node '" + value.getKey() + "': Node already exists");
+				throw new UnsupportedOperationException("Cannot put node '" + value.key() + "': Node already exists");
 			}
 
 			this.value = value;

@@ -62,8 +62,8 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 		CommentedConfig read = this.parser.parse(from);
 
 		for (TrackedValue<?> trackedValue : config.values()) {
-			if (read.contains(trackedValue.getKey().toString())) {
-				((TrackedValue) trackedValue).setValue(MarshallingUtils.coerce(read.get(trackedValue.getKey().toString()), trackedValue.getDefaultValue(), (CommentedConfig c, MarshallingUtils.MapEntryConsumer entryConsumer) ->
+			if (read.contains(trackedValue.key().toString())) {
+				((TrackedValue) trackedValue).setValue(MarshallingUtils.coerce(read.get(trackedValue.key().toString()), trackedValue.getDefaultValue(), (CommentedConfig c, MarshallingUtils.MapEntryConsumer entryConsumer) ->
 						c.entrySet().forEach(e -> entryConsumer.put(e.getKey(), e.getValue()))), false);
 			}
 		}
@@ -136,13 +136,13 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 					comments.add("default: " + defaultValue);
 				}
 
-				config.add(trackedValue.getKey().toString(), convertAny(trackedValue.getRealValue()));
+				config.add(trackedValue.key().toString(), convertAny(trackedValue.getRealValue()));
 			} else {
 				write(config, ((ValueTreeNode.Section) node));
 			}
 
 			if (!comments.isEmpty()) {
-				config.setComment(node.getKey().toString(), " " + String.join("\n ", comments));
+				config.setComment(node.key().toString(), " " + String.join("\n ", comments));
 			}
 		}
 

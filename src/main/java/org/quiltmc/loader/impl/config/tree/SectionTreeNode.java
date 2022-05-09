@@ -36,7 +36,7 @@ public final class SectionTreeNode extends AbstractMetadataContainer implements 
 	}
 
 	@Override
-	public ValueKey getKey() {
+	public ValueKey key() {
 		return this.node.getKey();
 	}
 

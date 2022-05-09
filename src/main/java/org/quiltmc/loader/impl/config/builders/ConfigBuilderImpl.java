@@ -62,7 +62,7 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	@Override
 	public Config.Builder field(TrackedValue<?> value) {
-		this.values.put(value.getKey(), value);
+		this.values.put(value.key(), value);
 
 		return this;
 	}

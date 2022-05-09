@@ -102,7 +102,7 @@ public final class Json5Serializer implements Serializer {
 		}
 
 		if (node instanceof ValueTreeNode.Section) {
-			writer.name(node.getKey().getLastComponent());
+			writer.name(node.key().getLastComponent());
 			writer.beginObject();
 
 			for (ValueTreeNode child : ((ValueTreeNode.Section) node)) {
@@ -139,7 +139,7 @@ public final class Json5Serializer implements Serializer {
 				writer.comment("default: " + defaultValue);
 			}
 
-			writer.name(node.getKey().getLastComponent());
+			writer.name(node.key().getLastComponent());
 
 			serialize(writer, trackedValue.getRealValue());
 		}
@@ -174,10 +174,10 @@ public final class Json5Serializer implements Serializer {
 			for (TrackedValue<?> value : config.values()) {
 				Map<String, Object> m = values;
 
-				for (int i = 0; i < value.getKey().length(); ++i) {
-					String k = value.getKey().getKeyComponent(i);
+				for (int i = 0; i < value.key().length(); ++i) {
+					String k = value.key().getKeyComponent(i);
 
-					if (m.containsKey(k) && i != value.getKey().length() - 1) {
+					if (m.containsKey(k) && i != value.key().length() - 1) {
 						m = (Map<String, Object>) m.get(k);
 					} else if (m.containsKey(k)) {
 						((TrackedValueImpl) value).setValue(MarshallingUtils.coerce(m.get(k), value.getDefaultValue(), (Map<String, ?> map, MarshallingUtils.MapEntryConsumer entryConsumer) ->

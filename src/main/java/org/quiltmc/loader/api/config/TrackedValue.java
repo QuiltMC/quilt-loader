@@ -18,7 +18,6 @@ package org.quiltmc.loader.api.config;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -38,14 +37,14 @@ import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
  */
 @ApiStatus.NonExtendable
 public interface TrackedValue<T> extends ValueTreeNode {
-	ValueKey getKey();
+	ValueKey key();
 
 	/**
 	 * Returns the current value being tracked, or the override value if this value is being overridden
 	 *
 	 * @return some value
 	 */
-	T getValue();
+	T value();
 
 	/**
 	 * @return whether or not this value is being overridden
@@ -65,7 +64,7 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	T setValue(@NotNull T newValue, boolean serialize);
 
 	/**
-	 * Sets an override for this value to be returned by {@link #getValue} that is not serialized to disk
+	 * Sets an override for this value to be returned by {@link #value} that is not serialized to disk
 	 *
 	 * @param newValue some value
 	 */

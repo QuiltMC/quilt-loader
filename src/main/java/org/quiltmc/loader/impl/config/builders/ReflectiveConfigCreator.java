@@ -47,7 +47,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 
 					valueBuilder.callback(tracked -> {
 						try {
-							field.set(object, tracked.getValue());
+							field.set(object, tracked.value());
 						} catch (IllegalAccessException e) {
 							throw new RuntimeException(e);
 						}

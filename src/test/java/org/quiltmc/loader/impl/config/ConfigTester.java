@@ -82,11 +82,11 @@ public class ConfigTester {
 		});
 
 		TEST_STRING.registerCallback((value) ->
-				System.out.printf("Value '%s' updated: New value: '%s'%n", value.getKey(), value.getValue())
+				System.out.printf("Value '%s' updated: New value: '%s'%n", value.key(), value.value())
 		);
 
 		for (TrackedValue<?> value : config.values()) {
-			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 		}
 
 		TEST_STRING.setValue("walalala", true);
@@ -94,7 +94,7 @@ public class ConfigTester {
 		System.out.println();
 
 		for (TrackedValue<?> value : config.values()) {
-			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 		}
 	}
 
@@ -113,7 +113,7 @@ public class ConfigTester {
 		});
 
 		for (TrackedValue<?> value : config.values()) {
-			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 
 			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);
@@ -130,7 +130,7 @@ public class ConfigTester {
 		});
 
 		for (TrackedValue<?> value : config.values()) {
-			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 
 			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);
@@ -192,7 +192,7 @@ public class ConfigTester {
 		});
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
-			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 
 			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);
@@ -221,7 +221,7 @@ public class ConfigTester {
 		});
 
 		for (TrackedValue<?> value : wrapper.getConfig().values()) {
-			System.out.printf("\"%s\": %s%n", value.getKey(), value.getValue());
+			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 
 			for (String comment : value.metadata(Comment.TYPE)) {
 				System.out.printf("\t// %s%n", comment);

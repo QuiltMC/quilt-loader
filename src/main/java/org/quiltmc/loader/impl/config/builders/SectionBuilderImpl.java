@@ -22,12 +22,8 @@ import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 public class SectionBuilderImpl implements Config.SectionBuilder {
@@ -43,7 +39,7 @@ public class SectionBuilderImpl implements Config.SectionBuilder {
 
 	@Override
 	public Config.SectionBuilder field(TrackedValue<?> value) {
-		ValueKey key = this.key.child(value.getKey());
+		ValueKey key = this.key.child(value.key());
 		this.values.put(key, ((TrackedValueImpl<?>) value).setKey(key));
 
 		return this;
