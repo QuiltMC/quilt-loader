@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessor;
+import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.values.ValueTreeNode;
@@ -78,8 +79,8 @@ public interface Config {
 	Iterable<TrackedValue<?>> values();
 
 	/**
-	 * @param key an iterable of key components to access
-	 * @return the value contained by this config class with key components
+	 * @param key an iterable of key components that make up a {@link TrackedValue}'s {@link ValueKey}
+	 * @return the value contained by this config class
 	 */
 	TrackedValue<?> getValue(Iterable<String> key);
 
