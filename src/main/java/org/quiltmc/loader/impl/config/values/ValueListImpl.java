@@ -86,6 +86,11 @@ public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.
 	}
 
 	@Override
+	public Iterable<T> values() {
+		return this;
+	}
+
+	@Override
 	public int size() {
 		return values.size();
 	}

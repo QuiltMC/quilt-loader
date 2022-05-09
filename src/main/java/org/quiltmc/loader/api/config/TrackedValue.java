@@ -157,6 +157,11 @@ public interface TrackedValue<T> extends ValueTreeNode {
 	@ApiStatus.NonExtendable
 	interface Builder<T> extends MetadataContainerBuilder<Builder<T>> {
 		/**
+		 * @return the default value for this builder
+		 */
+		T getDefaultValue();
+
+		/**
 		 * Adds an additional key to this values key
 		 *
 		 * e.g. if this {@link TrackedValue}'s current key is "appearance.gui", calling this method with

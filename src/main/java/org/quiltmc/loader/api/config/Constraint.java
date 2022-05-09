@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.api.config;
 
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
+
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.Function;
@@ -46,6 +48,13 @@ public interface Constraint<T> {
 		return new Range<>(from, to, Double::compareTo, Number::doubleValue);
 	}
 
+	/**
+	 * @return a constraint that applies the given constraint to each element of the compound value
+	 */
+	static <T> Constraint<CompoundConfigValue<T>> all(Constraint<T> constraint) {
+		return new All<>(constraint);
+	}
+
 	static Constraint<String> matching(String regex) {
 		return new Constraint<String>() {
 			private final Pattern pattern = Pattern.compile(regex);
@@ -66,7 +75,7 @@ public interface Constraint<T> {
 		};
 	}
 
-	class Range<T, BOUNDS> implements Constraint<T> {
+	final class Range<T, BOUNDS> implements Constraint<T> {
 		private final BOUNDS min, max;
 		private final Comparator<BOUNDS> comparator;
 		private final Function<T, BOUNDS> function;
@@ -93,6 +102,38 @@ public interface Constraint<T> {
 		@Override
 		public String getRepresentation() {
 			return "range[" + this.min + ", " + this.max + "]";
+		}
+	}
+
+	final class All<T> implements Constraint<CompoundConfigValue<T>> {
+		private final Constraint<T> constraint;
+
+		public All(Constraint<T> constraint) {
+			this.constraint = constraint;
+		}
+
+		@Override
+		public Optional<String> test(CompoundConfigValue<T> value) {
+			StringBuilder builder = new StringBuilder();
+
+			for (T t : value.values()) {
+				Optional<String> error = this.constraint.test(t);
+
+				if (error.isPresent()) {
+					if (builder.length() != 0) {
+						builder.append(", ").append(error.get());
+					}
+
+					builder.append(error.get());
+				}
+			}
+
+			return builder.length() == 0 ? Optional.empty() : Optional.of(builder.toString());
+		}
+
+		@Override
+		public String getRepresentation() {
+			return "all(" + this.constraint.getRepresentation() + ")";
 		}
 	}
 }

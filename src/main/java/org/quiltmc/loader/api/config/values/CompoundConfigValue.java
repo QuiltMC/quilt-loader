@@ -35,6 +35,8 @@ public interface CompoundConfigValue<T> extends ComplexConfigValue {
 	 */
 	T getDefaultValue();
 
+	Iterable<T> values();
+
 	/**
 	 * Appends the default value to this collection
 	 */

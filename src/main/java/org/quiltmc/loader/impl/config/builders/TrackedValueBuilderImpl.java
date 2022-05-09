@@ -44,6 +44,11 @@ public class TrackedValueBuilderImpl<T> implements TrackedValue.Builder<T> {
 	}
 
 	@Override
+	public T getDefaultValue() {
+		return this.defaultValue;
+	}
+
+	@Override
 	public TrackedValue.Builder<T> key(String key) {
 		this.key.add(key);
 

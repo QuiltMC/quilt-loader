@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.config;
 
 import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.annotations.DiscreteRange;
 import org.quiltmc.loader.api.config.annotations.RealRange;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
@@ -48,6 +49,9 @@ public final class TestReflectiveConfig {
 	@Comment("Test section comment 3")
 	@Comment("Test section comment 4")
 	public final Nested nested4 = new Nested(30, 31, 32, 33);
+
+	@DiscreteRange(min=0, max=10)
+	public final ValueList<Integer> ints = ValueList.create(0, 1, 2, 3, 4);
 
 	public final ValueList<ValueMap<Integer>> listOfNestedObjects = ValueList.create(ValueMap.builder(0).build(),
 			ValueMap.builder(0).put("a", 1).put("b", 2).put("c", 3).put("d", 4).build(),

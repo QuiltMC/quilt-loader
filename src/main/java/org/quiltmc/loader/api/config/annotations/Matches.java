@@ -3,6 +3,7 @@ package org.quiltmc.loader.api.config.annotations;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataContainerBuilder;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -19,7 +20,13 @@ public @interface Matches {
 		@SuppressWarnings("unchecked")
 		public void process(Matches matches, MetadataContainerBuilder<?> builder) {
 			if (builder instanceof TrackedValue.Builder) {
-				((TrackedValue.Builder<String>) builder).constraint(Constraint.matching(matches.value()));
+				Object defaultValue = ((TrackedValue.Builder<?>) builder).getDefaultValue();
+
+				if (defaultValue instanceof String) {
+					((TrackedValue.Builder<String>) builder).constraint(Constraint.matching(matches.value()));
+				} else if (defaultValue instanceof CompoundConfigValue && ((CompoundConfigValue<?>) defaultValue).getType().equals(String.class)) {
+					((TrackedValue.Builder<CompoundConfigValue<String>>) builder).constraint(Constraint.all(Constraint.matching(matches.value())));
+				}
 			}
 		}
 	}
