@@ -32,14 +32,14 @@ public final class Configs {
 	/**
 	 * @return all registered config files for the given mod
 	 */
-	public static Iterable<Config> getConfigs(String modId) {
-		return ConfigsImpl.getConfigs(modId);
+	public static Iterable<Config> getConfigs(String familyId) {
+		return ConfigsImpl.getConfigs(familyId);
 	}
 
 	/**
 	 * @return the specified config, if it is registered
 	 */
-	public static @Nullable Config getConfig(String modId, String configId) {
-		return ConfigsImpl.getConfig(modId, configId);
+	public static @Nullable Config getConfig(String familyId, String configId) {
+		return ConfigsImpl.getConfig(familyId, configId);
 	}
 }

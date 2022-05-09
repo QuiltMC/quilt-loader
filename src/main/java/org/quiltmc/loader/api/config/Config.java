@@ -29,21 +29,21 @@ import org.quiltmc.loader.impl.config.ConfigImpl;
 @ApiStatus.NonExtendable
 public interface Config {
 	/**
-	 * The ID of the mod this config file belongs to
+	 * The ID of the config family this config file belongs to
 	 */
-	String getModId();
+	String family();
 
 	/**
 	 * The unique ID of this config file, also the name of the resulting file.
 	 */
-	String getId();
+	String id();
 
 	/**
 	 * The path this config will be saved in, relative to the root config directory.
 	 *
 	 * @return a save path
 	 */
-	Path getSavePath();
+	Path savePath();
 
 	/**
 	 * Adds a listener to this {@link Config} that's called whenever any of its values are updated
@@ -63,9 +63,9 @@ public interface Config {
 	<M> boolean hasMetadata(MetadataType<M, ?> type);
 
 	/**
-	 * Save this config and all its values to disk
+	 * Serialize this config and all its values to disk
 	 */
-	void serialize();
+	void save();
 
 	/**
 	 * Returns all values held by this config file
@@ -90,26 +90,26 @@ public interface Config {
 	/**
 	 * Creates and registers a config file
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the configs id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param creators any number of {@link Creator}s that can be used to configure the resulting config
 	 */
-	static Config create(String modId, String id, Path path, Creator... creators) {
-		return ConfigImpl.create(modId, id, path, creators);
+	static Config create(String family, String id, Path path, Creator... creators) {
+		return ConfigImpl.create(family, id, path, creators);
 	}
 
 	/**
 	 * Creates and registers a config file
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the configs id
 	 * @param creators any number of {@link Creator}s that can be used to configure the resulting config
 	 */
-	static Config create(String modId, String id, Creator... creators) {
-		return create(modId, id, Paths.get(""), creators);
+	static Config create(String family, String id, Creator... creators) {
+		return create(family, id, Paths.get(""), creators);
 	}
 
 	/**
@@ -126,7 +126,7 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
@@ -136,8 +136,8 @@ public interface Config {
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
-		return ConfigImpl.create(modId, id, path, before, configCreatorClass, after);
+	static <C> ConfigWrapper<C> create(String family, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
+		return ConfigImpl.create(family, id, path, before, configCreatorClass, after);
 	}
 
 	/**
@@ -154,7 +154,7 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
@@ -163,8 +163,8 @@ public interface Config {
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Creator before, Class<C> configCreatorClass) {
-		return create(modId, id, path, before, configCreatorClass, builder -> {});
+	static <C> ConfigWrapper<C> create(String family, String id, Path path, Creator before, Class<C> configCreatorClass) {
+		return create(family, id, path, before, configCreatorClass, builder -> {});
 	}
 
 	/**
@@ -181,7 +181,7 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the configs id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
@@ -190,8 +190,8 @@ public interface Config {
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Class<C> configCreatorClass, Creator after) {
-		return create(modId, id, path, builder -> {}, configCreatorClass, after);
+	static <C> ConfigWrapper<C> create(String family, String id, Path path, Class<C> configCreatorClass, Creator after) {
+		return create(family, id, path, builder -> {}, configCreatorClass, after);
 	}
 
 	/**
@@ -208,7 +208,7 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param path additional path elements to include as part of this configs file, e.g.
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
@@ -216,8 +216,8 @@ public interface Config {
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Path path, Class<C> configCreatorClass) {
-		return create(modId, id, path, builder -> {}, configCreatorClass, builder -> {});
+	static <C> ConfigWrapper<C> create(String family, String id, Path path, Class<C> configCreatorClass) {
+		return create(family, id, path, builder -> {}, configCreatorClass, builder -> {});
 	}
 
 	/**
@@ -234,15 +234,15 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Creator before, Class<C> configCreatorClass, Creator after) {
-		return create(modId, id, Paths.get(""), before, configCreatorClass, after);
+	static <C> ConfigWrapper<C> create(String family, String id, Creator before, Class<C> configCreatorClass, Creator after) {
+		return create(family, id, Paths.get(""), before, configCreatorClass, after);
 	}
 
 	/**
@@ -259,14 +259,14 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Creator before, Class<C> configCreatorClass) {
-		return create(modId, id, Paths.get(""), before, configCreatorClass, builder -> {});
+	static <C> ConfigWrapper<C> create(String family, String id, Creator before, Class<C> configCreatorClass) {
+		return create(family, id, Paths.get(""), before, configCreatorClass, builder -> {});
 	}
 
 	/**
@@ -283,14 +283,14 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Class<C> configCreatorClass, Creator after) {
-		return create(modId, id, Paths.get(""), builder -> {}, configCreatorClass, after);
+	static <C> ConfigWrapper<C> create(String family, String id, Class<C> configCreatorClass, Creator after) {
+		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, after);
 	}
 
 	/**
@@ -307,13 +307,13 @@ public interface Config {
 	 *     </ul>
 	 * </ul>
 	 *
-	 * @param modId the mod owning the resulting config file
+	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @return a {@link ConfigWrapper<C>}
 	 */
-	static <C> ConfigWrapper<C> create(String modId, String id, Class<C> configCreatorClass) {
-		return create(modId, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
+	static <C> ConfigWrapper<C> create(String family, String id, Class<C> configCreatorClass) {
+		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
 	}
 
 	interface UpdateCallback {

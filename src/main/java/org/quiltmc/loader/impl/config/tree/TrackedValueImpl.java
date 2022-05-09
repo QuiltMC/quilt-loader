@@ -122,7 +122,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 		this.value = newValue;
 
 		if (serialize) {
-			this.config.serialize();
+			this.config.save();
 		}
 
 		if (!this.isBeingOverridden()) {
@@ -206,7 +206,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 
 	@Override
 	public void serializeAndInvokeCallbacks() {
-		this.config.serialize();
+		this.config.save();
 
 		this.config.invokeCallbacks();
 

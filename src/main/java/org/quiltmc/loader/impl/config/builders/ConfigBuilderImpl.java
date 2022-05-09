@@ -43,7 +43,7 @@ import org.quiltmc.loader.impl.config.tree.Trie;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 public final class ConfigBuilderImpl implements Config.Builder {
-	private final String modId, id;
+	private final String familyId, id;
 	private final Path path;
 
 	private final Set<String> flags = new LinkedHashSet<>();
@@ -54,8 +54,8 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 	private String format = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION, "toml");
 
-	public ConfigBuilderImpl(String modId, String id, Path path) {
-		this.modId = modId;
+	public ConfigBuilderImpl(String familyId, String id, Path path) {
+		this.familyId = familyId;
 		this.id = id;
 		this.path = path;
 	}
@@ -114,9 +114,9 @@ public final class ConfigBuilderImpl implements Config.Builder {
 			metadata.put(entry.getKey(), entry.getValue().build());
 		}
 
-		ConfigImpl config = new ConfigImpl(this.modId, this.id, this.path, metadata, this.callbacks, this.values, this.format);
+		ConfigImpl config = new ConfigImpl(this.familyId, this.id, this.path, metadata, this.callbacks, this.values, this.format);
 
-		ConfigsImpl.put(modId, config);
+		ConfigsImpl.put(familyId, config);
 
 		for (TrackedValue<?> value : config.values()) {
 			((TrackedValueImpl<?>) value).setConfig(config);
@@ -131,9 +131,9 @@ public final class ConfigBuilderImpl implements Config.Builder {
 		Serializer defaultSerializer = ConfigSerializers.getActualSerializer(config.getDefaultFileType());
 		Serializer serializer = ConfigSerializers.getSerializer(config.getDefaultFileType());
 
-		Path directory = QuiltLoader.getConfigDir().resolve(config.getModId()).resolve(config.getSavePath());
-		Path defaultPath = directory.resolve(config.getId() + "." + defaultSerializer.getFileExtension());
-		Path path = directory.resolve(config.getId() + "." + serializer.getFileExtension());
+		Path directory = QuiltLoader.getConfigDir().resolve(config.family()).resolve(config.savePath());
+		Path defaultPath = directory.resolve(config.id() + "." + defaultSerializer.getFileExtension());
+		Path path = directory.resolve(config.id() + "." + serializer.getFileExtension());
 
 		try {
 			Files.createDirectories(path.getParent());

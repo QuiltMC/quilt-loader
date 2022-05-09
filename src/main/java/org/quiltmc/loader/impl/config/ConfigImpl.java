@@ -38,15 +38,15 @@ import org.quiltmc.loader.impl.config.util.ConfigSerializers;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 public final class ConfigImpl extends AbstractMetadataContainer implements Config {
-	private final String modId, id;
+	private final String family, id;
 	private final Path path;
 	private final List<Config.UpdateCallback> callbacks;
 	private final Trie values;
 	private final String defaultFileType;
 
-	public ConfigImpl(String modId, String id, Path path, Map<MetadataType<?, ?>, Object> metadata, List<UpdateCallback> callbacks, Trie values, String defaultFileType) {
+	public ConfigImpl(String family, String id, Path path, Map<MetadataType<?, ?>, Object> metadata, List<UpdateCallback> callbacks, Trie values, String defaultFileType) {
 		super(metadata);
-		this.modId = modId;
+		this.family = family;
 		this.id = id;
 		this.path = path;
 		this.callbacks = callbacks;
@@ -55,17 +55,17 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 	}
 
 	@Override
-	public String getModId() {
-		return this.modId;
+	public String family() {
+		return this.family;
 	}
 
 	@Override
-	public String getId() {
+	public String id() {
 		return this.id;
 	}
 
 	@Override
-	public Path getSavePath() {
+	public Path savePath() {
 		return this.path;
 	}
 
@@ -74,17 +74,16 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		this.callbacks.add(callback);
 	}
 
-
 	public String getDefaultFileType() {
 		return this.defaultFileType;
 	}
 
-	public Path getPath() {
-		return QuiltLoader.getConfigDir().resolve(this.modId).resolve(this.path).resolve(this.id + "." + ConfigSerializers.getSerializer(this.defaultFileType).getFileExtension());
+	private Path getPath() {
+		return QuiltLoader.getConfigDir().resolve(this.family).resolve(this.path).resolve(this.id + "." + ConfigSerializers.getSerializer(this.defaultFileType).getFileExtension());
 	}
 
 	@Override
-	public void serialize() {
+	public void save() {
 		Path path = this.getPath();
 
 		try {
@@ -142,12 +141,12 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		return new ImmutableIterable<>(this.values.nodes());
 	}
 
-	public static Config create(String modId, String id, Creator... creators) {
-		return create(modId, id, Paths.get(""), creators);
+	public static Config create(String familyId, String id, Creator... creators) {
+		return create(familyId, id, Paths.get(""), creators);
 	}
 
-	public static Config create(String modId, String id, Path path, Creator... creators) {
-		ConfigBuilderImpl builder = new ConfigBuilderImpl(modId, id, path);
+	public static Config create(String familyId, String id, Path path, Creator... creators) {
+		ConfigBuilderImpl builder = new ConfigBuilderImpl(familyId, id, path);
 
 		for (Creator creator : creators) {
 			creator.create(builder);
@@ -156,9 +155,9 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		return builder.build();
 	}
 
-	public static <C> ConfigWrapper<C> create(String modId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
+	public static <C> ConfigWrapper<C> create(String familyId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
 		ReflectiveConfigCreator<C> creator = ReflectiveConfigCreator.of(configCreatorClass);
-		Config config = create(modId, id, path, before, creator, after);
+		Config config = create(familyId, id, path, before, creator, after);
 		C c = creator.getInstance();
 
 		return new ConfigWrapper<C>() {

@@ -31,24 +31,24 @@ public final class ConfigsImpl {
 
 	private ConfigsImpl() {}
 
-	public static void put(String modId, Config config) {
-		if (CONFIGS.containsKey(modId) && CONFIGS.get(modId).containsKey(config.getId())) {
-			throw new RuntimeException("Config '" + modId + ':' + config.getId() + "' already exists");
+	public static void put(String familyId, Config config) {
+		if (CONFIGS.containsKey(familyId) && CONFIGS.get(familyId).containsKey(config.id())) {
+			throw new RuntimeException("Config '" + familyId + ':' + config.id() + "' already exists");
 		}
 
-		CONFIGS.computeIfAbsent(modId, id -> new TreeMap<>()).put(config.getId(), config);
+		CONFIGS.computeIfAbsent(familyId, id -> new TreeMap<>()).put(config.id(), config);
 	}
 
 	public static Iterable<Config> getAll() {
 		return ConfigsImpl::itr;
 	}
 
-	public static Iterable<Config> getConfigs(String modId) {
-		return new ImmutableIterable<>(CONFIGS.getOrDefault(modId, Collections.emptyMap()).values());
+	public static Iterable<Config> getConfigs(String familyId) {
+		return new ImmutableIterable<>(CONFIGS.getOrDefault(familyId, Collections.emptyMap()).values());
 	}
 
-	public static @Nullable Config getConfig(String modId, String configId) {
-		return CONFIGS.getOrDefault(modId, Collections.emptyMap()).get(configId);
+	public static @Nullable Config getConfig(String familyId, String configId) {
+		return CONFIGS.getOrDefault(familyId, Collections.emptyMap()).get(configId);
 	}
 
 	private static @NotNull Iterator<Config> itr() {
