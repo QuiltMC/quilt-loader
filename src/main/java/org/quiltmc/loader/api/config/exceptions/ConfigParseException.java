@@ -1,4 +1,4 @@
-package org.quiltmc.loader.api.config;
+package org.quiltmc.loader.api.config.exceptions;
 
 public final class ConfigParseException extends RuntimeException {
 	public ConfigParseException() {

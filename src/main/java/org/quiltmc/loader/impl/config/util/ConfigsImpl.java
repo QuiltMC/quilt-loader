@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.config.util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.exceptions.ConfigCreationException;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 import java.util.Collections;
@@ -33,7 +34,7 @@ public final class ConfigsImpl {
 
 	public static void put(String familyId, Config config) {
 		if (CONFIGS.containsKey(familyId) && CONFIGS.get(familyId).containsKey(config.id())) {
-			throw new RuntimeException("Config '" + familyId + ':' + config.id() + "' already exists");
+			throw new ConfigCreationException("Config '" + familyId + ':' + config.id() + "' already exists");
 		}
 
 		CONFIGS.computeIfAbsent(familyId, id -> new TreeMap<>()).put(config.id(), config);

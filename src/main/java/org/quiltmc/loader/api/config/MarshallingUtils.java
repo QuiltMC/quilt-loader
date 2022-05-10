@@ -3,6 +3,7 @@ package org.quiltmc.loader.api.config;
 import java.util.List;
 import java.util.function.BiFunction;
 
+import org.quiltmc.loader.api.config.exceptions.ConfigParseException;
 import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;

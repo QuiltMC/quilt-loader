@@ -22,6 +22,8 @@ import java.lang.reflect.Modifier;
 
 import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.exceptions.ConfigCreationException;
+import org.quiltmc.loader.api.config.exceptions.ConfigFieldException;
 import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
 import org.quiltmc.loader.impl.config.util.ConfigUtils;
 
@@ -35,7 +37,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 
 	private void createField(Config.SectionBuilder builder, Object object, Field field) throws IllegalAccessException {
 		if (!Modifier.isFinal(field.getModifiers())) {
-			throw new RuntimeException("Field '" + field.getType().getName() + ':' + field.getName() + "' is not final");
+			throw new ConfigFieldException("Field '" + field.getType().getName() + ':' + field.getName() + "' is not final");
 		}
 
 		if (!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())) {
@@ -77,16 +79,16 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 					}
 				});
 			} else if (defaultValue == null) {
-				throw new RuntimeException("Default value for field '" + field.getName() + "' cannot be null");
+				throw new ConfigFieldException("Default value for field '" + field.getName() + "' cannot be null");
 			} else {
-				throw new RuntimeException("Class '" + defaultValue.getClass().getName() + "' of field '" + field.getName() + "' is not a valid config value; must be a basic type, complex type, or implement org.quiltmc.loader.api.config.Config.Section");
+				throw new ConfigFieldException("Class '" + defaultValue.getClass().getName() + "' of field '" + field.getName() + "' is not a valid config value; must be a basic type, complex type, or implement org.quiltmc.loader.api.config.Config.Section");
 			}
 		}
 	}
 
 	public void create(Config.Builder builder) {
 		if (this.instance != null) {
-			throw new RuntimeException();
+			throw new ConfigCreationException("Reflective config creator used more than once");
 		}
 
 		try {
@@ -96,7 +98,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 				this.createField(builder, this.instance, field);
 			}
 		} catch (InstantiationException | IllegalAccessException e) {
-			throw new RuntimeException(e);
+			throw new ConfigCreationException(e);
 		}
 	}
 
@@ -106,7 +108,7 @@ public class ReflectiveConfigCreator<C> implements Config.Creator {
 
 	public C getInstance() {
 		if (this.instance == null) {
-			throw new RuntimeException();
+			throw new RuntimeException("Config not built yet");
 		}
 
 		return this.instance;

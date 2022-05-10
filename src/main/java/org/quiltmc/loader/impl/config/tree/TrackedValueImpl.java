@@ -25,6 +25,8 @@ import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.exceptions.ConfigFieldException;
+import org.quiltmc.loader.api.config.exceptions.TrackedValueException;
 import org.quiltmc.loader.api.config.values.ComplexConfigValue;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.AbstractMetadataContainer;
@@ -64,7 +66,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 
 	public void setConfig(ConfigImpl config) {
 		if (this.config != null) {
-			throw new RuntimeException("TrackedValue '" + this.key + "' cannot be assigned to multiple configs");
+			throw new TrackedValueException("TrackedValue '" + this.key + "' cannot be assigned to multiple configs");
 		}
 
 		this.config = config;
@@ -106,7 +108,7 @@ public final class TrackedValueImpl<T> extends AbstractMetadataContainer impleme
 				errorMessage.append(message).append('\n');
 			}
 
-			throw new RuntimeException(errorMessage.toString());
+			throw new TrackedValueException(errorMessage.toString());
 		}
 	}
 

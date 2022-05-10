@@ -31,6 +31,7 @@ import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.exceptions.ConfigParseException;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.ConfigImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
@@ -136,13 +137,13 @@ public final class ConfigBuilderImpl implements Config.Builder {
 				try {
 					Files.delete(defaultPath);
 				} catch (IOException e) {
-					throw new RuntimeException(e);
+					throw new ConfigParseException(e);
 				}
 			}
 
 			serializer.serialize(config, Files.newOutputStream(path));
 		} catch (IOException e) {
-			throw new UncheckedIOException(e);
+			throw new ConfigParseException(e);
 		}
 	}
 }

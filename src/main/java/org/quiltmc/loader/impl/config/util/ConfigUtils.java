@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.config.util;
 
+import org.quiltmc.loader.api.config.exceptions.TrackedValueException;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
 
@@ -36,9 +37,9 @@ public final class ConfigUtils {
 
 	public static void assertValueType(Object object) {
 		if (object == null) {
-			throw new RuntimeException("Cannot create value with null default value");
+			throw new TrackedValueException("Cannot create value with null default value");
 		} else if (!isValidValue(object)) {
-			throw new RuntimeException("Cannot create value of type '" + object.getClass() + "'");
+			throw new TrackedValueException("Cannot create value of type '" + object.getClass() + "'");
 		}
 	}
 

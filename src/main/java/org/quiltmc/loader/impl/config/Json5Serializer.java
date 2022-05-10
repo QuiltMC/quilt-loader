@@ -30,7 +30,7 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.ConfigParseException;
+import org.quiltmc.loader.api.config.exceptions.ConfigParseException;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MarshallingUtils;
 import org.quiltmc.loader.api.config.Serializer;
