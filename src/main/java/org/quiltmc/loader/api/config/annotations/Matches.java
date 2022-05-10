@@ -10,9 +10,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Declares that the annotated string value or each member of a collection of strings matches the specified regex.
+ */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Matches {
+	/**
+	 * @return some regular expression to match against
+	 */
 	String value();
 
 	final class Processor implements ConfigFieldAnnotationProcessor<Matches> {

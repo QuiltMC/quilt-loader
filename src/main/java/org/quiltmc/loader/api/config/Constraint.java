@@ -70,7 +70,7 @@ public interface Constraint<T> {
 
 			@Override
 			public String getRepresentation() {
-				return "matches " + regex;
+				return "matches r'" + regex + "'";
 			}
 		};
 	}
