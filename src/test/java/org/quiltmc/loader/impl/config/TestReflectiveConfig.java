@@ -17,8 +17,8 @@
 package org.quiltmc.loader.impl.config;
 
 import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.annotations.DiscreteRange;
-import org.quiltmc.loader.api.config.annotations.RealRange;
+import org.quiltmc.loader.api.config.annotations.IntegerRange;
+import org.quiltmc.loader.api.config.annotations.FloatRange;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.api.config.annotations.Comment;
@@ -32,7 +32,7 @@ public final class TestReflectiveConfig {
 	public final int b = 1;
 	public final int c = 2;
 
-	@RealRange(min=0, max=10)
+	@FloatRange(min=0, max=10)
 	public final int d = 3;
 	public final Vec3i vec = new Vec3i(100, 200, 300);
 	public final String whatever = "Riesling";
@@ -50,7 +50,7 @@ public final class TestReflectiveConfig {
 	@Comment("Test section comment 4")
 	public final Nested nested4 = new Nested(30, 31, 32, 33);
 
-	@DiscreteRange(min=0, max=10)
+	@IntegerRange(min=0, max=10)
 	public final ValueList<Integer> ints = ValueList.create(0, 1, 2, 3, 4);
 
 	public final ValueList<ValueMap<Integer>> listOfNestedObjects = ValueList.create(ValueMap.builder(0).build(),

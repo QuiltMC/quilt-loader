@@ -1,25 +1,25 @@
 package org.quiltmc.loader.api.config.annotations;
 
-import org.quiltmc.loader.api.config.Constraint;
-import org.quiltmc.loader.api.config.MetadataContainerBuilder;
-import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.values.CompoundConfigValue;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.quiltmc.loader.api.config.Constraint;
+import org.quiltmc.loader.api.config.MetadataContainerBuilder;
+import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.values.CompoundConfigValue;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface DiscreteRange {
-	long min();
-	long max();
+public @interface FloatRange {
+	double min();
+	double max();
 
-	final class Processor implements ConfigFieldAnnotationProcessor<DiscreteRange> {
+	final class Processor implements ConfigFieldAnnotationProcessor<FloatRange> {
 		@Override
 		@SuppressWarnings("unchecked")
-		public void process(DiscreteRange range, MetadataContainerBuilder<?> builder) {
+		public void process(FloatRange range, MetadataContainerBuilder<?> builder) {
 			if (builder instanceof TrackedValue.Builder) {
 				Object defaultValue = ((TrackedValue.Builder<?>) builder).getDefaultValue();
 
@@ -31,7 +31,7 @@ public @interface DiscreteRange {
 			}
 		}
 
-		private <T extends Number> void process(DiscreteRange range, TrackedValue.Builder<T> builder) {
+		private <T extends Number> void process(FloatRange range, TrackedValue.Builder<T> builder) {
 			builder.constraint(Constraint.range(range.min(), range.max()));
 		}
 	}
