@@ -22,9 +22,6 @@ import java.io.OutputStream;
 
 /**
  * Handles serialization and deserialization of configs for a specific file type.
- *
- * <p>The entrypoint is exposed with {@code config_serializer} key in the mod json and runs for any environment. It
- * is accessed the first time a config is serialized.
  */
 public interface Serializer {
 	String getFileExtension();

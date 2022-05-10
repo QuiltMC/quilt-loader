@@ -34,7 +34,7 @@ import org.quiltmc.loader.api.config.values.ValueTreeNode;
 import org.quiltmc.loader.impl.config.builders.ConfigBuilderImpl;
 import org.quiltmc.loader.impl.config.builders.ReflectiveConfigCreator;
 import org.quiltmc.loader.impl.config.tree.Trie;
-import org.quiltmc.loader.impl.config.util.ConfigSerializers;
+import org.quiltmc.loader.api.config.ConfigSerializers;
 import org.quiltmc.loader.impl.util.ImmutableIterable;
 
 public final class ConfigImpl extends AbstractMetadataContainer implements Config {

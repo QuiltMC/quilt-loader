@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config.util;
-
-import com.electronwill.nightconfig.toml.TomlParser;
-import com.electronwill.nightconfig.toml.TomlWriter;
-import org.quiltmc.loader.api.config.Serializer;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.config.Json5Serializer;
-import org.quiltmc.loader.impl.config.NightConfigSerializer;
-import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
+package org.quiltmc.loader.api.config;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import com.electronwill.nightconfig.toml.TomlParser;
+import com.electronwill.nightconfig.toml.TomlWriter;
+import org.quiltmc.loader.impl.config.Json5Serializer;
+import org.quiltmc.loader.impl.config.NightConfigSerializer;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 public final class ConfigSerializers {
 	private static final Map<String, Serializer> SERIALIZERS = new HashMap<>();
@@ -35,14 +31,10 @@ public final class ConfigSerializers {
 	static {
 		SERIALIZERS.put("json5", Json5Serializer.INSTANCE);
 		SERIALIZERS.put("toml", new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
+	}
 
-		for (Serializer serializer : QuiltLoaderImpl.INSTANCE.getEntrypoints("config_serializer", Serializer.class)) {
-			Serializer oldValue = SERIALIZERS.put(serializer.getFileExtension(), serializer);
-
-			if (oldValue != null) {
-				Log.warn(LogCategory.CONFIG, "Replacing {} serializer {} with {}", serializer.getFileExtension(), oldValue.getClass(), serializer.getClass());
-			}
-		}
+	public static Serializer register(String fileType, Serializer serializer) {
+		return SERIALIZERS.put(fileType, serializer);
 	}
 
 	public static Serializer getActualSerializer(String fileType) {

@@ -17,7 +17,6 @@
 package org.quiltmc.loader.impl.config.builders;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,7 +35,7 @@ import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.ConfigImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 import org.quiltmc.loader.impl.config.tree.Trie;
-import org.quiltmc.loader.impl.config.util.ConfigSerializers;
+import org.quiltmc.loader.api.config.ConfigSerializers;
 import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
 import org.quiltmc.loader.impl.util.SystemProperties;
