@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.quiltmc.loader.api.LoaderValue;
@@ -33,15 +34,16 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 public class ConfigTester {
 	@TempDir
-	static Path TEMP;
+	Path temp;
 
 	static TrackedValue<Integer> TEST_INTEGER;
 	static TrackedValue<Boolean> TEST_BOOLEAN;
 	static TrackedValue<String> TEST_STRING;
 	static TrackedValue<ValueList<Integer>> TEST_LIST;
 
-	public ConfigTester() {
-		QuiltLoaderImpl.INSTANCE.setGameProvider(new DummyGameProvider(TEMP));
+	@BeforeEach
+	public void initializeConfigDir() {
+		QuiltLoaderImpl.INSTANCE.setGameProvider(new DummyGameProvider(temp));
 	}
 
 	@Test
