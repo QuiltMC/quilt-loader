@@ -29,6 +29,8 @@ import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.annotations.Comment;
+import org.quiltmc.loader.api.config.exceptions.ConfigFieldException;
+import org.quiltmc.loader.api.config.exceptions.TrackedValueException;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
@@ -48,13 +50,13 @@ public class ConfigTester {
 
 	@Test
 	public void testValidation() {
-		Assertions.assertThrows(RuntimeException.class, () -> {
+		Assertions.assertThrows(TrackedValueException.class, () -> {
 			Config.create("testmod", "testConfig1", builder -> {
 				builder.field(TrackedValue.create(new ArrayList<Integer>(), "boop"));
 			});
 		});
 
-		Assertions.assertThrows(RuntimeException.class, () -> {
+		Assertions.assertThrows(TrackedValueException.class, () -> {
 			Config.create("testmod", "testConfig2", builder -> {
 				builder.field(TrackedValue.create(ValueList.create(new ArrayList<Integer>()), "boop"));
 			});
@@ -142,7 +144,7 @@ public class ConfigTester {
 
 	@Test
 	public void testConstraints() {
-		Assertions.assertThrows(RuntimeException.class, () -> Config.create("testmod", "testConfig6", builder -> {
+		Assertions.assertThrows(TrackedValueException.class, () -> Config.create("testmod", "testConfig6", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 				// Should throw an exception since the default value is outside of the constraint range
 				creator.constraint(Constraint.range(5, 10));
@@ -151,7 +153,7 @@ public class ConfigTester {
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
 		}));
 
-		Assertions.assertThrows(RuntimeException.class, () -> {
+		Assertions.assertThrows(TrackedValueException.class, () -> {
 			Config.create("testmod", "testConfig7", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 					creator.constraint(Constraint.range(-10, 10));
@@ -163,7 +165,7 @@ public class ConfigTester {
 			TEST_INTEGER.setValue(1000, true);
 		});
 
-		Assertions.assertThrows(RuntimeException.class, () -> {
+		Assertions.assertThrows(TrackedValueException.class, () -> {
 			Config.create("testmod", "testConfig8", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 					creator.constraint(Constraint.range(-10, 10));
@@ -201,11 +203,11 @@ public class ConfigTester {
 			}
 		}
 
-		Assertions.assertThrows(RuntimeException.class, () -> {
+		Assertions.assertThrows(ConfigFieldException.class, () -> {
 			Config.create("testmod", "testConfig", TestReflectiveConfig2.class);
 		}).printStackTrace();
 
-		Assertions.assertThrows(RuntimeException.class, () -> {
+		Assertions.assertThrows(ConfigFieldException.class, () -> {
 			Config.create("testmod", "testConfig", TestReflectiveConfig3.class);
 		}).printStackTrace();
 	}
