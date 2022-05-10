@@ -383,14 +383,6 @@ public interface Config {
 		Builder section(String key, Consumer<SectionBuilder> creator);
 
 		/**
-		 * Adds a unique flag to this sections metadata
-		 *
-		 * @param flag a string value flag to track
-		 * @return this
-		 */
-		Builder flag(String flag);
-
-		/**
 		 * Create or configure a piece of metadata
 		 *
 		 * @param type the type of metadata to configure

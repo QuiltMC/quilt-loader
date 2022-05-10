@@ -22,10 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.QuiltLoader;
@@ -36,17 +34,16 @@ import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.values.ValueKey;
 import org.quiltmc.loader.impl.config.ConfigImpl;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
+import org.quiltmc.loader.impl.config.tree.Trie;
 import org.quiltmc.loader.impl.config.util.ConfigSerializers;
 import org.quiltmc.loader.impl.config.util.ConfigsImpl;
 import org.quiltmc.loader.impl.config.values.ValueKeyImpl;
-import org.quiltmc.loader.impl.config.tree.Trie;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 public final class ConfigBuilderImpl implements Config.Builder {
 	private final String familyId, id;
 	private final Path path;
 
-	private final Set<String> flags = new LinkedHashSet<>();
 	private final Map<MetadataType<?, ?>, MetadataType.Builder<?>> metadata = new LinkedHashMap<>();
 	private final List<Config.UpdateCallback> callbacks = new ArrayList<>();
 
@@ -74,13 +71,6 @@ public final class ConfigBuilderImpl implements Config.Builder {
 
 		creator.accept(sectionBuilder);
 		this.values.put(valueKey, sectionBuilder);
-
-		return this;
-	}
-
-	@Override
-	public Config.Builder flag(String flag) {
-		this.flags.add(flag);
 
 		return this;
 	}
