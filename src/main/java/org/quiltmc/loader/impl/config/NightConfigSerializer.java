@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.config;
+package org.quiltmc.loader.impl.config;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -28,6 +28,10 @@ import com.electronwill.nightconfig.core.InMemoryCommentedFormat;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
 import com.electronwill.nightconfig.core.io.ConfigParser;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
+import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.MarshallingUtils;
+import org.quiltmc.loader.api.config.Serializer;
+import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
