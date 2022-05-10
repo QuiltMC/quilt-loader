@@ -30,7 +30,7 @@ public final class Configs {
 	}
 
 	/**
-	 * @return all registered config files for the given mod
+	 * @return all registered config files for the given family
 	 */
 	public static Iterable<Config> getConfigs(String familyId) {
 		return ConfigsImpl.getConfigs(familyId);
