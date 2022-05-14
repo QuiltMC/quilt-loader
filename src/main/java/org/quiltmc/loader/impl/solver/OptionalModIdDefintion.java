@@ -114,7 +114,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	public void fallbackErrorDescription(StringBuilder errors) {
 		errors.append(toString());
 		for (ModLoadOption option : sources) {
-			errors.append("\n\t - v");
+			errors.append("\n\t - ");
 			errors.append(option.getSpecificInfo());
 		}
 	}
