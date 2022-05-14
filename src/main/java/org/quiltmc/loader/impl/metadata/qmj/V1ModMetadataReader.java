@@ -599,10 +599,8 @@ final class V1ModMetadataReader {
 				}
 
 				break;
-			case STRING:
-				entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) value, inside));
-				break;
 			default:
+				entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) value, inside));
 			}
 		}
 	}
