@@ -276,7 +276,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 	}
 
 	static final class ReadWrite extends QuiltMemoryFile {
-		private static final int MAX_FILE_SIZE = 1 << 24;
+		private static final int MAX_FILE_SIZE = 512 * 1024 * 1024;
 
 		private byte[] bytes = null;
 		private int length = 0;
