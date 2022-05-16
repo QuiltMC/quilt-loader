@@ -32,7 +32,7 @@ import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-public final class ValueListImpl<T> implements ValueList<T>, org.quiltmc.loader.api.config.values.CompoundConfigValue<T> {
+public final class ValueListImpl<T> implements ValueList<T>, CompoundConfigValue<T> {
 	private final T defaultValue;
 	private final List<T> values;
 

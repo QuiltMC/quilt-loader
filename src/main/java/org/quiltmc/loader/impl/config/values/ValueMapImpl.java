@@ -30,7 +30,7 @@ import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 import org.quiltmc.loader.api.config.values.ValueMap;
 import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
-public final class ValueMapImpl<T> implements ValueMap<T>, org.quiltmc.loader.api.config.values.CompoundConfigValue<T> {
+public final class ValueMapImpl<T> implements ValueMap<T>, CompoundConfigValue<T> {
 	private final T defaultValue;
 	private final Map<String, T> values;
 
