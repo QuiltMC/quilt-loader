@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.plugin.quilt;
 
-abstract class QuiltRuleDep extends Rule {
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+
+public abstract class QuiltRuleDep extends Rule {
 	final LoadOption source;
 
 	public QuiltRuleDep(LoadOption source) {

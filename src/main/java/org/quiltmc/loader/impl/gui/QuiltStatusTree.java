@@ -33,12 +33,16 @@ import java.util.Map;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
 
 public final class QuiltStatusTree {
 	public enum FabricTreeWarningLevel {
+		FATAL,
 		ERROR,
 		WARN,
+		CONCERN,
 		INFO,
 		NONE;
 
@@ -67,11 +71,16 @@ public final class QuiltStatusTree {
 		/** @return The level to use, or null if the given char doesn't map to any level. */
 		public static FabricTreeWarningLevel fromChar(char c) {
 			switch (c) {
-				case '-': return NONE;
-				case '+': return INFO;
-				case '!': return WARN;
-				case 'x': return ERROR;
-				default: return null;
+				case '-':
+					return NONE;
+				case '+':
+					return INFO;
+				case '!':
+					return WARN;
+				case 'x':
+					return ERROR;
+				default:
+					return null;
 			}
 		}
 
@@ -85,6 +94,29 @@ public final class QuiltStatusTree {
 				return level;
 			} else {
 				throw new IOException("Expected a valid FabricTreeWarningLevel, but got '" + string + "'");
+			}
+		}
+
+		public static FabricTreeWarningLevel fromApiLevel(PluginGuiTreeNode.WarningLevel level) {
+			switch (level) {
+				case FATAL: {
+					return FATAL;
+				}
+				case ERROR: {
+					return ERROR;
+				}
+				case WARN: {
+					return WARN;
+				}
+				case CONCERN: {
+					return CONCERN;
+				}
+				case INFO: {
+					return INFO;
+				}
+				case NONE:
+				default:
+					return NONE;
 			}
 		}
 	}
@@ -190,7 +222,7 @@ public final class QuiltStatusTree {
 			buttons.add(new QuiltStatusButton(reader));
 		}
 		reader.endArray();
-	
+
 		reader.endObject();
 	}
 
@@ -260,7 +292,8 @@ public final class QuiltStatusTree {
 			expectName(reader, "shouldContinue");
 			shouldContinue = reader.nextBoolean();
 			expectName(reader, "clipboard");
-			clipboard = reader.nextString();;
+			clipboard = reader.nextString();
+			;
 			reader.endObject();
 		}
 
@@ -475,7 +508,9 @@ public final class QuiltStatusTree {
 		}
 
 		public QuiltStatusNode addException(Throwable exception) {
-			return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity());
+			return addException(
+				this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity()
+			);
 		}
 
 		public QuiltStatusNode addCleanedException(Throwable exception) {
@@ -506,7 +541,8 @@ public final class QuiltStatusTree {
 			});
 		}
 
-		private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception, UnaryOperator<Throwable> filter) {
+		private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception,
+			UnaryOperator<Throwable> filter) {
 			if (!seen.add(exception)) {
 				return node;
 			}

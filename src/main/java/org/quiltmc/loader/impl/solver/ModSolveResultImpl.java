@@ -20,24 +20,34 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 
-public final class ModSolveResult {
+public final class ModSolveResultImpl implements ModSolveResult {
 
-	/** This doesn't include the provided mods. */
-	public final Map<String, ModCandidate> modMap;
-	public final Map<String, ModCandidate> providedMap;
+	public final Map<String, ModLoadOption> directModMap;
+	public final Map<String, ModLoadOption> providedModMap;
+	public final Map<Class<?>, LoadOptionResult<?>> extraResults;
 
-	private final Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults;
-
-	ModSolveResult(Map<String, ModCandidate> modMap, Map<String, ModCandidate> providedMap, Map<Class<? extends LoadOption>, LoadOptionResult<?>> extraResults) {
-		this.modMap = modMap;
-		this.providedMap = providedMap;
+	public ModSolveResultImpl(Map<String, ModLoadOption> directMap, Map<String, ModLoadOption> provideds, //
+		Map<Class<?>, LoadOptionResult<?>> extraResults) {
+		this.directModMap = directMap;
+		this.providedModMap = provideds;
 		this.extraResults = extraResults;
 	}
 
-	@SuppressWarnings("unchecked")
-	public <O extends LoadOption> LoadOptionResult<O> getResult(Class<O> optionClass) {
+	@Override
+	public Map<String, ModLoadOption> directMods() {
+		return directModMap;
+	}
+
+	@Override
+	public Map<String, ModLoadOption> providedMods() {
+		return providedModMap;
+	}
+
+	@Override
+	public <O> LoadOptionResult<O> getResult(Class<O> optionClass) {
 		LoadOptionResult<?> result = extraResults.get(optionClass);
 		if (result == null) {
 			return new LoadOptionResult<>(Collections.emptyMap());
@@ -45,17 +55,19 @@ public final class ModSolveResult {
 		return (LoadOptionResult<O>) result;
 	}
 
-	public static final class LoadOptionResult<O extends LoadOption> {
+	public static final class LoadOptionResult<O> implements SpecificLoadOptionResult<O> {
 		private final Map<O, Boolean> result;
 
-		LoadOptionResult(Map<O, Boolean> result) {
+		public LoadOptionResult(Map<O, Boolean> result) {
 			this.result = result;
 		}
 
+		@Override
 		public Collection<O> getOptions() {
 			return result.keySet();
 		}
 
+		@Override
 		public boolean isPresent(O option) {
 			return result.getOrDefault(option, false);
 		}

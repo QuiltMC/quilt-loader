@@ -29,7 +29,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
-
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModCandidateSet;
@@ -38,8 +42,17 @@ import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult.LoadOptionResult;
+import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
+import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
+import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
+import org.quiltmc.loader.impl.plugin.quilt.ProvidedModOption;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakAll;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepAny;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -48,8 +61,12 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import net.fabricmc.loader.api.metadata.ModDependency;
 
+/**
+ * Not used by plugins.
+ */
+@Deprecated
 public final class ModSolver {
-	static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
+	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_RESOLVING);
 
 
 	public ModSolver() {
@@ -60,7 +77,7 @@ public final class ModSolver {
 	 *
 	 * @return A valid list of mods.
 	 * @throws ModResolutionException if that is impossible. */
-	public ModSolveResult findCompatibleSet(Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
+	public ModSolveResultImpl findCompatibleSet(Map<String, ModCandidateSet> modCandidateSetMap) throws ModResolutionException {
 
 		/*
 		 * Implementation notes:
@@ -168,7 +185,7 @@ public final class ModSolver {
 					sat.setWeight(cOption, weight);
 				}
 
-				for (ModProvided provided : m.getMetadata().provides()) {
+				for (ProvidedMod provided : m.getMetadata().provides()) {
 					// Add provided mods as an available option for other dependencies to select from.
 					sat.addOption(new ProvidedModOption(cOption, provided));
 
@@ -301,7 +318,7 @@ public final class ModSolver {
 				if (!negated) {
 					ModLoadOption modOption = (ModLoadOption) option;
 
-					ModCandidate previous = resultingModMap.put(modOption.modId(), modOption.candidate);
+					ModCandidate previous = resultingModMap.put(modOption.id(), modOption.candidate);
 					if (previous != null && previous != modOption.candidate) {
 						throw new ModSolvingError("Duplicate result ModCandidate for " + modOption.modId() + " - something has gone wrong internally!");
 					}
@@ -311,7 +328,7 @@ public final class ModSolver {
 								+ " - something has gone wrong internally!");
 					}
 
-					for (ModProvided provided : modOption.candidate.getMetadata().provides()) {
+					for (ProvidedMod provided : modOption.candidate.getMetadata().provides()) {
 
 						previous = resultingModMap.get(provided.id);
 						if (previous != null && previous != modOption.candidate) {
@@ -669,7 +686,7 @@ public final class ModSolver {
 		return getCandidateName(loadOption) + " v" + getCandidateFriendlyVersion(loadOption);
 	}
 
-	static String getCandidateName(ModLoadOption candidate) {
+	public static String getCandidateName(ModLoadOption candidate) {
 		return getCandidateName(candidate.candidate);
 	}
 

@@ -14,20 +14,41 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-import org.quiltmc.loader.impl.discovery.ModCandidate;
-import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
+import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
+import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 
-/** A concrete definition that allows the modid to be loaded from any of a set of {@link ModCandidate}s. */
-final class OptionalModIdDefintion extends ModIdDefinition {
+/** A concrete definition that allows the modid to be loaded from any of a set of {@link ModLoadOption}s. */
+public final class OptionalModIdDefintion extends ModIdDefinition {
+
+	static final Comparator<ModLoadOption> MOD_COMPARATOR = (a, b) -> {
+
+		Version va = a.version();
+		Version vb = b.version();
+
+		if (va.isSemantic() && vb.isSemantic()) {
+			return va.semantic().compareTo(vb.semantic());
+		}
+
+		return va.raw().compareTo(vb.raw());
+	};
+
+	final RuleContext ctx;
 	final String modid;
 	final List<ModLoadOption> sources = new ArrayList<>();
 
-	public OptionalModIdDefintion(String modid) {
+	public OptionalModIdDefintion(RuleContext ctx, String modid) {
+		this.ctx = ctx;
 		this.modid = modid;
 	}
 
@@ -46,7 +67,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 		String name = null;
 
 		for (ModLoadOption option : sources) {
-			String opName = option.candidate.getMetadata().name();
+			String opName = option.metadata().name();
 
 			if (name == null) {
 				name = opName;
@@ -59,10 +80,10 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	}
 
 	@Override
-	boolean onLoadOptionAdded(LoadOption option) {
+	public boolean onLoadOptionAdded(LoadOption option) {
 		if (option instanceof ModLoadOption) {
 			ModLoadOption mod = (ModLoadOption) option;
-			if (mod.modId().equals(modid)) {
+			if (mod.id().equals(modid)) {
 				sources.add(mod);
 				return true;
 			}
@@ -72,20 +93,48 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	}
 
 	@Override
-	boolean onLoadOptionRemoved(LoadOption option) {
+	public boolean onLoadOptionRemoved(LoadOption option) {
 		return sources.remove(option);
 	}
 
+	private void recalculateWeights() {
+		sources.sort(MOD_COMPARATOR);
+
+		// IF_REQUIRED uses a positive weight to discourage it from being chosen
+		// IF_POSSIBLE uses a negative weight to encourage it to be chosen
+		// ALWAYS is handled directly in define()
+		int index = 0;
+
+		for (ModLoadOption mod : sources) {
+			if (mod instanceof AliasedLoadOption) {
+				continue;
+			}
+
+			int weight = 1000;
+
+			if (mod.metadata().loadType() == ModLoadType.IF_POSSIBLE) {
+				weight = -weight;
+			}
+
+			// Always prefer newer (larger) versions
+			// by subtracting the larger index
+			weight -= index++;
+			ctx.setWeight(mod, weight);
+		}
+	}
+
 	@Override
-	void define(RuleDefiner definer) {
+	public void define(RuleDefiner definer) {
 		boolean anyAreAlways = false;
 
 		for (ModLoadOption mod : sources) {
-			if (mod.candidate.getMetadata().loadType() == ModLoadType.ALWAYS) {
+			if (mod.metadata().loadType() == ModLoadType.ALWAYS) {
 				anyAreAlways = true;
 				break;
 			}
 		}
+
+		recalculateWeights();
 
 		LoadOption[] array = sources.toArray(new LoadOption[0]);
 

@@ -17,7 +17,8 @@
 package org.quiltmc.loader.impl.discovery;
 
 import org.quiltmc.json5.exception.ParseException;
-
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
@@ -29,8 +30,7 @@ import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 
@@ -49,10 +49,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.ZipError;
 
-
 /** The main "resolver" for mods. This class has 1 job: to find valid mod jar files from the filesystem and classpath,
  * and loading them into memory. This also includes loading mod jar files from within jar files. The main entry point
- * for the first job is {@link #resolve(QuiltLoaderImpl)} which performs all of the work for loading mods. */
+ * for the first job is {@link #resolve(QuiltLoaderImpl)} which performs all of the work for loading mods.
+ * 
+ * @deprecated Not used by plugins. */
+@Deprecated
 public class ModResolver {
 	// nested JAR store
 	private static final FileSystem inMemoryFs = new QuiltMemoryFileSystem.ReadWrite("nestedJarStore");
@@ -259,8 +261,8 @@ public class ModResolver {
 					throw new RuntimeException(fullError.toString());
 				}
 
-				for(ModProvided provides : candidate.getMetadata().provides()) {
-					String id = provides.id;
+				for(ProvidedMod provides : candidate.getMetadata().provides()) {
+					String id = provides.id();
 					if (!MOD_ID_PATTERN.matcher(id).matches()) {
 						List<String> errorList = new ArrayList<>();
 						isModIdValid(id, errorList);
@@ -355,7 +357,7 @@ public class ModResolver {
 	 *			tests).
 	 * @return The final map of modids to the {@link ModCandidate} that should be used for that ID.
 	 * @throws ModResolutionException if something entr wrong trying to find a valid set. */
-	public ModSolveResult resolve(QuiltLoaderImpl loader) throws ModResolutionException {
+	public ModSolveResultImpl resolve(QuiltLoaderImpl loader) throws ModResolutionException {
 		ConcurrentMap<String, ModCandidateSet> candidatesById = new ConcurrentHashMap<>();
 
 		long time1 = System.currentTimeMillis();
@@ -426,13 +428,13 @@ public class ModResolver {
 
 		long time2 = System.currentTimeMillis();
 		ModSolver solver = new ModSolver();
-		ModSolveResult result = solver.findCompatibleSet(candidatesById);
+		ModSolveResultImpl result = solver.findCompatibleSet(candidatesById);
 
 		long time3 = System.currentTimeMillis();
 		Log.debug(LogCategory.RESOLUTION, "Mod resolution detection time: " + (time2 - time1) + "ms");
 		Log.debug(LogCategory.RESOLUTION, "Mod resolution time: " + (time3 - time2) + "ms");
 
-		for (ModCandidate candidate : result.modMap.values()) {
+		for (ModCandidate candidate : result.directModMap.values()) {
 			candidate.getInfo().emitFormatWarnings();
 		}
 

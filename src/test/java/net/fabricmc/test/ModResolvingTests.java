@@ -18,17 +18,23 @@ package net.fabricmc.test;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
+import org.quiltmc.loader.impl.QuiltLoaderConfig;
+import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
 import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingException;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
+import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
+import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 final class ModResolvingTests {
 
@@ -211,11 +217,11 @@ final class ModResolvingTests {
 	public void qslProvidedOverFapi() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "qsl_provides");
 
-		for (Entry<String, ModCandidate> entry : modSet.modMap.entrySet()) {
+		for (Entry<String, ModLoadOption> entry : modSet.directMods().entrySet()) {
 			System.out.println(entry);
 		}
 
-		for (Entry<String, ModCandidate> entry : modSet.providedMap.entrySet()) {
+		for (Entry<String, ModLoadOption> entry : modSet.providedMods().entrySet()) {
 			System.out.println(entry);
 		}
 
@@ -224,7 +230,7 @@ final class ModResolvingTests {
 
 		// The mod set (as provided) doesn't narrow this down enough
 		// so either mods being present would be okay as far as the solver is concerned
-		if (modSet.modMap.containsKey("quilt-crash-handler")) {
+		if (modSet.directMods().containsKey("quilt-crash-handler")) {
 			assertModPresent(modSet, "quilt-crash-handler", "1.0.0");
 			assertProvidedPresent(modSet, "fabric-crash-handler", "1.0.0");
 		} else {
@@ -250,12 +256,12 @@ final class ModResolvingTests {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Incorrectly resolved an invalid mod set!\n");
 
-			for (Entry<String, ModCandidate> entry : result.modMap.entrySet()) {
-				sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getOriginPath() + "\n");
+			for (Entry<String, ModLoadOption> entry : result.directMods().entrySet()) {
+				sb.append("  - '" + entry.getKey() + "' loaded from " + entry.getValue().getLoadSource() + "\n");
 			}
 
-			for (Entry<String, ModCandidate> entry : result.providedMap.entrySet()) {
-				sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getOriginPath() + "\n");
+			for (Entry<String, ModLoadOption> entry : result.providedMods().entrySet()) {
+				sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getLoadSource() + "\n");
 			}
 
 			Assertions.fail(sb.toString());
@@ -269,27 +275,46 @@ final class ModResolvingTests {
 	private static ModSolveResult resolveModSet(String type, String subpath) throws ModResolutionException {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
+		final boolean USE_PLUGINS = true;
+		final ModSolveResultImpl result;
 
-		ModResolver resolver = new ModResolver(true, modRoot);
-		resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
-		return resolver.resolve(null);
+		if (USE_PLUGINS) {
+			QuiltLoaderConfig config = new QuiltLoaderConfig();
+
+			QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(modRoot);
+			try {
+				result = pluginManager.run(false);
+			} catch (TimeoutException e) {
+				throw new ModResolutionException(e);
+			}
+		} else {
+			ModResolver resolver = new ModResolver(true, modRoot);
+			resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
+			result = resolver.resolve(null);
+		}
+
+		return new ModSolveResultImpl(
+			new HashMap<>(result.directModMap), //
+			new HashMap<>(result.providedModMap), //
+			new HashMap<>(result.extraResults)//
+		);
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
 	 * removes the mod entry from the map. */
 	private static void assertModPresent(ModSolveResult result, String modid, String version) {
-		ModCandidate mod = result.modMap.remove(modid);
+		ModLoadOption mod = result.directMods().remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + result.modMap);
+			Assertions.fail(modid + " is missing from " + result.directMods());
 		} else {
-			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
+			Assertions.assertEquals(version, mod.version().raw());
 		}
 	}
 
 	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
 	private static void assertModMissing(ModSolveResult result, String modid) {
-		ModCandidate mod = result.modMap.remove(modid);
+		ModLoadOption mod = result.directMods().remove(modid);
 
 		if (mod != null) {
 			Assertions.fail(modid + " is not missing, and instead is loaded: " + mod);
@@ -299,18 +324,18 @@ final class ModResolvingTests {
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also
 	 * removes the mod entry from the map. */
 	private static void assertProvidedPresent(ModSolveResult result, String modid, String version) {
-		ModCandidate mod = result.providedMap.remove(modid);
+		ModLoadOption mod = result.providedMods().remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + result.providedMap);
+			Assertions.fail(modid + " is missing from " + result.providedMods());
 		} else {
-			Assertions.assertEquals(version, mod.getInfo().getVersion().getFriendlyString());
+			Assertions.assertEquals(version, mod.version().raw());
 		}
 	}
 
 	/** Asserts that the mod with the given ID is not loaded. This also removes the mod entry from the map. */
 	private static void assertProvidedMissing(ModSolveResult result, String modid) {
-		ModCandidate mod = result.providedMap.remove(modid);
+		ModLoadOption mod = result.providedMods().remove(modid);
 
 		if (mod != null) {
 			Assertions.fail(modid + " is not missing, and instead is provided by: " + mod);
@@ -318,11 +343,11 @@ final class ModResolvingTests {
 	}
 
 	private static void assertNoMoreMods(ModSolveResult result) {
-		if (!result.modMap.isEmpty()) {
-			Assertions.fail("Expected to find no more mods loaded, but found: " + result.modMap);
+		if (!result.directMods().isEmpty()) {
+			Assertions.fail("Expected to find no more mods loaded, but found: " + result.directMods());
 		}
-		if (!result.providedMap.isEmpty()) {
-			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.providedMap);
+		if (!result.providedMods().isEmpty()) {
+			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.providedMods());
 		}
 	}
 }

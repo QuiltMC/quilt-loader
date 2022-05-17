@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.api.plugin.solver;
 
-/** Plugin interface to allow {@link Rule}s to define themselves. If multiple definition methods are called then all
- * of those definitions must be matched. */
-interface RuleDefiner {
+/** Plugin interface to allow {@link Rule}s to define themselves. If multiple definition methods are called then all of
+ * those definitions must be matched. */
+public interface RuleDefiner {
 
 	/** @return A {@link LoadOption} which is negated - that is instead of being equal to TRUE, it will be equal to
 	 *         FALSE. (If you double-negate a {@link LoadOption} then it will return itself, rather than being
@@ -27,10 +27,9 @@ interface RuleDefiner {
 
 	/** @param options the options to process. Any {@link AliasedLoadOption}s are resolved before duplicate removal.
 	 * @return an array with any duplicates of the given array removed. */
-	LoadOption[] deduplicate(LoadOption... options);
+	LoadOption[] deduplicate(LoadOption[] options);
 
-	/** Defines the current {@link Rule} as one where at least one of the given options must be TRUE in order to
-	 * match.
+	/** Defines the current {@link Rule} as one where at least one of the given options must be TRUE in order to match.
 	 * <p>
 	 * This isn't quite the same as calling {@link #atLeast(int, LoadOption...)} with a count of 1, since sat4j has a
 	 * (potentially faster) implementation for standard clauses.

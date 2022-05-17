@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.plugin.quilt;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
 
 /** Used to indicate part of a {@link ModDependency} from quilt.mod.json. */
 public class QuiltModDepOption extends LoadOption {

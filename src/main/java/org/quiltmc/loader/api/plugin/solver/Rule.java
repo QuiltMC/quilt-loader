@@ -14,26 +14,35 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.api.plugin.solver;
 
 import java.util.Collection;
 
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
+import org.quiltmc.loader.api.ModDependency;
 
 /** Base definition of a link between one or more {@link LoadOption}s, that */
-abstract class Rule {
+public abstract class Rule {
 
 	public Rule() {}
 
 	/** @return true if {@link #define(RuleDefiner)} needs to be called again, or false if the added option had no
 	 *         affect on this rule. */
-	abstract boolean onLoadOptionAdded(LoadOption option);
+	public abstract boolean onLoadOptionAdded(LoadOption option);
 
 	/** @return true if {@link #define(RuleDefiner)} needs to be called again, or false if the removed option had no
 	 *         affect on this rule. */
-	abstract boolean onLoadOptionRemoved(LoadOption option);
+	public abstract boolean onLoadOptionRemoved(LoadOption option);
 
-	abstract void define(RuleDefiner definer);
+	/** Called whenever a {@link LoadOption} is changed. Not all {@link Rule}s are expected to be able to update to all
+	 * changes - instead this affects only minor things, like whether {@link ModDependency#shouldIgnore()} is different.
+	 * 
+	 * @return True if {@link #define(RuleDefiner)} needs to be called again, or false if option changing doesn't affect
+	 *         this rule. */
+	public boolean onLoadOptionChanged(LoadOption option) {
+		return false;
+	}
+
+	public abstract void define(RuleDefiner definer);
 
 	/** @return A description of the link. */
 	@Override

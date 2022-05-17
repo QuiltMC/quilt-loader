@@ -43,6 +43,10 @@ import java.util.Set;
 public class ClasspathModCandidateFinder implements ModCandidateFinder {
 	@Override
 	public void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out) {
+		findCandidatesStatic(out);
+	}
+
+	public static void findCandidatesStatic(ModCandidateConsumer out) {
 		if (FabricLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
 

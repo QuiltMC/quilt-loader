@@ -14,56 +14,91 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.plugin.quilt;
+
+import java.nio.file.Path;
 
 import org.quiltmc.loader.api.Version;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 
-/**
- * A mod that is provided from the jar of a different mod.
- */
-class ProvidedModOption extends ModLoadOption implements AliasedLoadOption {
-	final MainModLoadOption provider;
-	final ModProvided provided;
+/** A mod that is provided from the jar of a different mod. */
+public class ProvidedModOption extends ModLoadOption implements AliasedLoadOption {
+	final ModLoadOption provider;
+	final ProvidedMod provided;
 
-	public ProvidedModOption(MainModLoadOption provider, ModProvided provided) {
-		super(provider.candidate);
+	public ProvidedModOption(ModLoadOption provider, ProvidedMod provided) {
 		this.provider = provider;
 		this.provided = provided;
 	}
 
 	@Override
-	String group() {
-		return provided.group.isEmpty() ? super.group() : provided.group;
+	public String group() {
+		return provided.group().isEmpty() ? super.group() : provided.group();
 	}
 
 	@Override
-	String modId() {
-		return provided.id;
+	public String id() {
+		return provided.id();
 	}
 
 	@Override
-	Version version() {
-		return provided.version;
+	public Version version() {
+		return provided.version();
 	}
 
 	@Override
-	String shortString() {
-		return "provided mod '" + modId() + "' from " + provider.shortString();
+	public boolean isMandatory() {
+		return provider.isMandatory();
 	}
 
 	@Override
-	String getSpecificInfo() {
+	public String toString() {
+		return "{ProvidedModOption '" + id() + " " + version() + "' by " + provider + " }";
+	}
+
+	@Override
+	public String shortString() {
+		return "provided mod '" + id() + "' from " + provider.shortString();
+	}
+
+	@Override
+	public String getSpecificInfo() {
 		return provider.getSpecificInfo();
 	}
 
 	@Override
-	MainModLoadOption getRoot() {
+	public LoadOption getTarget() {
 		return provider;
 	}
 
 	@Override
-	public LoadOption getTarget() {
-		return getRoot();
+	public QuiltPluginContext loader() {
+		return provider.loader();
+	}
+
+	@Override
+	public ModMetadataExt metadata() {
+		return provider.metadata();
+	}
+
+	@Override
+	public Path from() {
+		return provider.from();
+	}
+
+	@Override
+	public Path resourceRoot() {
+		return provider.resourceRoot();
+	}
+
+	@Override
+	public PluginGuiIcon modTypeIcon() {
+		return provider.modTypeIcon();
 	}
 }

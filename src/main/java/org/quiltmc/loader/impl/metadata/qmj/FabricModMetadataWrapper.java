@@ -52,7 +52,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final List<String> jars;
 	private final Map<String, LoaderValue> customValues;
 	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
-	private final List<ModProvided> provides;
+	private final List<ProvidedMod> provides;
 
 	public FabricModMetadataWrapper(FabricLoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
@@ -86,9 +86,9 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		}
 		this.entrypoints = Collections.unmodifiableMap(e);
 
-		List<ModProvided> p = new ArrayList<>();
+		List<ProvidedMod> p = new ArrayList<>();
 		for (String provided : fabricMeta.getProvides()) {
-			p.add(new ModProvided("", provided, this.version));
+			p.add(new ProvidedModImpl("", provided, this.version));
 		}
 		this.provides = Collections.unmodifiableList(p);
 	}
@@ -314,19 +314,13 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<ModProvided> provides() {
+	public Collection<ProvidedMod> provides() {
 		return provides;
 	}
 
 	@Override
 	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
 		return entrypoints;
-	}
-
-	@Override
-	public Collection<AdapterLoadableClassEntry> getPlugins() {
-		// fabric mods can't use the quilt plugin system
-		return Collections.emptyList();
 	}
 
 	@Override

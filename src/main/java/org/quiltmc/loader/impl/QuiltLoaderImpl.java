@@ -35,18 +35,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-
 import org.objectweb.asm.Opcodes;
-
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.ObjectShare;
-import net.fabricmc.loader.api.SemanticVersion;
-
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionResult;
 import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
@@ -58,21 +54,28 @@ import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
+import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
+import org.spongepowered.asm.mixin.FabricUtil;
+
+import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.launch.common.FabricLauncher;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
 import net.fabricmc.loader.launch.knot.Knot;
 
-import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
-import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
-import org.quiltmc.loader.impl.solver.ModSolveResult;
-import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
-import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
-
-import org.spongepowered.asm.mixin.FabricUtil;
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.api.EnvType;
 
 public final class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
@@ -216,12 +219,49 @@ public final class QuiltLoaderImpl {
 	}
 
 	private void setup() throws ModResolutionException {
+
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
+
+		ModSolveResult result;
+		try {
+			result = plugins.run(true);
+		} catch (TimeoutException e) {
+			throw new ModSolvingError("Timout", e);
+		}
+
+		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", "test");
+		QuiltStatusTab tab = tree.addTab("Plugins Test");
+		plugins.guiFileRoot.toNode(tab.node, false);
+		try {
+			QuiltGuiEntry.open(tree, null, true);
+		} catch (Exception e) {
+			throw new Error(e);
+		}
+
+		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
+
+		for (LoadOption op : spec.getOptions()) {
+			if (spec.isPresent(op)) {
+				Log.info(LogCategory.GENERAL, " + " + op);
+			}
+		}
+
+		for (LoadOption op : spec.getOptions()) {
+			if (!spec.isPresent(op)) {
+				Log.info(LogCategory.GENERAL, " - " + op);
+			}
+		}
+
+		throw new AbstractMethodError("// TODO: Implement setup!");
+	}
+
+	private void oldSetup() throws ModResolutionException { 
 		ModResolver resolver = new ModResolver(this);
 		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
 		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
 		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
 		ModSolveResult result = resolver.resolve(this);
-		Map<String, ModCandidate> candidateMap = result.modMap;
+		Map<String, ModCandidate> candidateMap = (Map<String, ModCandidate>) (Object) "nope";//result.modMap;
 		modCandidates = new ArrayList<>(candidateMap.values());
 		// dump mod list
 
@@ -453,12 +493,12 @@ public final class QuiltLoaderImpl {
 		mods.add(container);
 		modMap.put(meta.id(), container);
 
-		for (ModProvided provided : meta.provides()) {
-			if (modMap.containsKey(provided.id)) {
+		for (ProvidedMod provided : meta.provides()) {
+			if (modMap.containsKey(provided.id())) {
 				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
 			}
 
-			modMap.put(provided.id, container);
+			modMap.put(provided.id(), container);
 		}
 	}
 

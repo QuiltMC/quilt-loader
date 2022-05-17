@@ -14,23 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata.qmj;
+package org.quiltmc.loader.api.plugin.solver;
 
-import org.quiltmc.loader.api.Version;
+import org.jetbrains.annotations.Nullable;
 
-public class ModProvided {
-	public final String group;
-	public final String id;
-	public final Version version;
+/** Indicates that this {@link LoadOption} should use {@link #getTarget()} for mod solving instead of this. */
+public interface AliasedLoadOption {
 
-	public ModProvided(String group, String id, Version version) {
-		this.group = group;
-		this.id = id;
-		this.version = version;
-	}
-
-	@Override
-	public String toString() {
-		return "ModProvided { " + group + ":" + id + " v " + version + " }";
-	}
+    /** @return The {@link LoadOption} to use instead of this, or null if this can be used (and so this is not actually
+     *         an alias). */
+    @Nullable
+    LoadOption getTarget();
 }

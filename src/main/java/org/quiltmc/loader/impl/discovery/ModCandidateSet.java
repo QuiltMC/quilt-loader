@@ -26,11 +26,14 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 
 import net.fabricmc.loader.api.Version;
 
+/**
+ * @deprecated Plugins don't use this.
+ */
+@Deprecated
 public class ModCandidateSet {
 	private final String modId;
 	private final List<String> modProvides = new ArrayList<>();
@@ -78,8 +81,8 @@ public class ModCandidateSet {
 		}
 
 		candidates.put(version, candidate);
-		for (ModProvided provided : candidate.getMetadata().provides()) {
-			modProvides.add(provided.id);
+		for (ProvidedMod provided : candidate.getMetadata().provides()) {
+			modProvides.add(provided.id());
 		}
 		if (candidate.getDepth() == 0) {
 			depthZeroCandidates.add(candidate);

@@ -46,7 +46,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Icons icons;
 	/* Internal fields */
 	private final ModLoadType loadType;
-	private final Collection<ModProvided> provides;
+	private final Collection<ProvidedMod> provides;
 	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
 	private final Collection<AdapterLoadableClassEntry> plugins;
 	private final Collection<String> jars;
@@ -73,7 +73,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 			@Nullable Icons icons,
 			/* Internal fields */
 			ModLoadType loadType,
-			Collection<ModProvided> provides,
+			Collection<ProvidedMod> provides,
 			Map<String, List<AdapterLoadableClassEntry>> entrypoints,
 			Collection<AdapterLoadableClassEntry> plugins,
 			Collection<String> jars,
@@ -223,7 +223,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<ModProvided> provides() {
+	public Collection<ProvidedMod> provides() {
 		return this.provides;
 	}
 
@@ -231,11 +231,6 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
 		return this.entrypoints;
-	}
-
-	@Override
-	public Collection<AdapterLoadableClassEntry> getPlugins() {
-		return this.plugins;
 	}
 
 	@Override

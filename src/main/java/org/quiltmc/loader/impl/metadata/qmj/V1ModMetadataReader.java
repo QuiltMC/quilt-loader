@@ -16,20 +16,37 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.*;
+import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
-import net.fabricmc.loader.api.metadata.ModEnvironment;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
-import org.quiltmc.loader.api.*;
-import org.quiltmc.loader.api.LoaderValue.LObject;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LType;
+import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionConstraint;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
-import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ArrayImpl;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
-import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 final class V1ModMetadataReader {
@@ -65,7 +82,7 @@ final class V1ModMetadataReader {
 		Icons icons = null;
 		/* Internal fields */
 		ModLoadType loadType = ModLoadType.IF_REQUIRED;
-		Collection<ModProvided> provides = new ArrayList<>();
+		Collection<ProvidedMod> provides = new ArrayList<>();
 		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
 		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
 		List<String> jars = new ArrayList<>();
@@ -213,7 +230,7 @@ final class V1ModMetadataReader {
 							providedGroup = providedId.substring(0, colon);
 							providedId = providedId.substring(colon + 1);
 						}
-						provides.add(new ModProvided(providedGroup, providedId, version));
+						provides.add(new ProvidedModImpl(providedGroup, providedId, version));
 					} else if (provided.type() == LType.OBJECT) {
 						JsonLoaderValue.ObjectImpl providedObj = (JsonLoaderValue.ObjectImpl) provided.asObject();
 
@@ -231,7 +248,7 @@ final class V1ModMetadataReader {
 							providedVersion = Version.of(requiredString(providedObj, "version"));
 						}
 
-						provides.add(new ModProvided(providedGroup, providedId, providedVersion));
+						provides.add(new ProvidedModImpl(providedGroup, providedId, providedVersion));
 					} else {
 						throw parseException((JsonLoaderValue) provided, "provides must be an array containing only objects and/or strings");
 					}

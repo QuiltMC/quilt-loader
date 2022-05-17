@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
+/** @deprecated Not used by plugins */
+@Deprecated
 @FunctionalInterface
 public interface ModCandidateFinder {
 	void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out);

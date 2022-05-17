@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,10 +22,15 @@ import java.util.Collections;
 import java.util.List;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
-class QuiltRuleBreakOnly extends QuiltRuleBreak {
+public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final ModDependency.Only publicDep;
 	final List<ModLoadOption> conflictingOptions;
 	final List<ModLoadOption> okayOptions;
@@ -56,11 +61,11 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	}
 
 	@Override
-	boolean onLoadOptionAdded(LoadOption option) {
+	public boolean onLoadOptionAdded(LoadOption option) {
 		if (option instanceof ModLoadOption) {
 			ModLoadOption mod = (ModLoadOption) option;
 
-			if (!mod.modId().equals(publicDep.id().id())) {
+			if (!mod.id().equals(publicDep.id().id())) {
 				return false;
 			}
 
@@ -90,7 +95,7 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	}
 
 	@Override
-	boolean onLoadOptionRemoved(LoadOption option) {
+	public boolean onLoadOptionRemoved(LoadOption option) {
 		boolean changed = conflictingOptions.remove(option);
 		changed |= okayOptions.remove(option);
 		allOptions.remove(option);
@@ -98,7 +103,7 @@ class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	}
 
 	@Override
-	void define(RuleDefiner definer) {
+	public void define(RuleDefiner definer) {
 
 		// "optional" is meaningless for breaks
 		List<ModLoadOption> conficts = conflictingOptions;

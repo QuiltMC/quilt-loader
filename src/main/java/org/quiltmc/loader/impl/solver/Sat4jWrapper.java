@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.solver;
 
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,11 +24,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -57,7 +62,7 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
  * <li>Perform optimisation of the rules.</li>
  * </ol>
  * This is (mostly) separated from any more specific rules */
-class Sat4jWrapper implements RuleContext {
+public class Sat4jWrapper implements RuleContext {
 
 	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
 
@@ -103,11 +108,23 @@ class Sat4jWrapper implements RuleContext {
 	/** Only available during {@link Sat4jSolveStep#SOLVE}. */
 	private Map<IConstr, Rule> constraintToRule = null;
 
-	public Sat4jWrapper() {
-	}
+	public Sat4jWrapper() {}
 
 	public Sat4jSolveStep getStep() {
 		return step;
+	}
+
+	/** Clears out this {@link Sat4jWrapper} of all data EXCEPT the added {@link Rule}s and {@link LoadOption}s. */
+	public void resetStep() {
+		optionToIndex.clear();
+		indexToOption.clear();
+		explainer = null;
+		optimiser = null;
+		solver = null;
+		cancelled = false;
+		constraintToRule = null;
+		rulesChanged = true;
+		step = Sat4jSolveStep.DEFINE;
 	}
 
 	// ############
@@ -150,7 +167,11 @@ class Sat4jWrapper implements RuleContext {
 	@Override
 	public void setWeight(LoadOption option, int weight) {
 		validateCanAdd();
-		optionToWeight.put(option, weight);
+		if (optionToWeight.containsKey(option)) {
+			optionToWeight.put(option, weight);
+		} else {
+			throw new IllegalArgumentException("Unknown LoadOption " + option);
+		}
 	}
 
 	@Override
@@ -220,6 +241,20 @@ class Sat4jWrapper implements RuleContext {
 		rule.define(new RuleDefinerInternal(rule));
 	}
 
+	@Override
+	public boolean isNegated(LoadOption option) {
+		return option instanceof NegatedLoadOption;
+	}
+
+	@Override
+	public LoadOption negate(LoadOption option) {
+		if (option instanceof NegatedLoadOption) {
+			return ((NegatedLoadOption) option).not;
+		} else {
+			return new NegatedLoadOption(option);
+		}
+	}
+
 	private void validateCanAdd() {
 		if (!getStep().canAdd) {
 			throw new IllegalStateException("Cannot add new options/rules during " + getStep());
@@ -268,7 +303,7 @@ class Sat4jWrapper implements RuleContext {
 
 			explainer = null;
 			solver = new OptToPBSATAdapter(optimiser = new PseudoOptDecorator(SolverFactory.newDefault()));
-//			optimiser.setTimeoutForFindingBetterSolution(2);
+			// optimiser.setTimeoutForFindingBetterSolution(2);
 			step = Sat4jSolveStep.RE_SOLVING;
 			optionToIndex.clear();
 			indexToOption.clear();
@@ -337,7 +372,10 @@ class Sat4jWrapper implements RuleContext {
 			success = true;
 
 			if (LOG) {
-				Log.info(CATEGORY, "Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue() + " = " + Arrays.toString(optimiser.model()));
+				Log.info(
+					CATEGORY, "Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue()
+						+ " = " + Arrays.toString(optimiser.model())
+				);
 			}
 
 			try {

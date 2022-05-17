@@ -14,55 +14,57 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.plugin.quilt;
 
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
+import org.quiltmc.loader.impl.solver.ModSolver;
 
 /** A concrete definition that mandates that the modid must be loaded by the given singular {@link ModCandidate}, and no
  * others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid by the time
  * this is used). */
-final class MandatoryModIdDefinition extends ModIdDefinition {
-	final MainModLoadOption candidate;
+public final class MandatoryModIdDefinition extends ModIdDefinition {
+	final ModLoadOption option;
 
-	public MandatoryModIdDefinition(MainModLoadOption candidate) {
-		this.candidate = candidate;
+	public MandatoryModIdDefinition(ModLoadOption candidate) {
+		this.option = candidate;
 	}
 
 	@Override
 	String getModId() {
-		return candidate.modId();
+		return option.id();
 	}
 
 	@Override
-	MainModLoadOption[] sources() {
-		return new MainModLoadOption[] { candidate };
+	ModLoadOption[] sources() {
+		return new ModLoadOption[] { option };
 	}
 
 	@Override
-	void define(RuleDefiner definer) {
-		definer.atLeastOneOf(candidate);
+	public void define(RuleDefiner definer) {
+		definer.atLeastOneOf(option);
 	}
 
 	@Override
-	boolean onLoadOptionAdded(LoadOption option) {
+	public boolean onLoadOptionAdded(LoadOption option) {
 		return false;
 	}
 
 	@Override
-	boolean onLoadOptionRemoved(LoadOption option) {
+	public boolean onLoadOptionRemoved(LoadOption option) {
 		return false;
 	}
 
 	@Override
 	String getFriendlyName() {
-		return ModSolver.getCandidateName(candidate);
+		return ModSolver.getCandidateName(option);
 	}
 
 	@Override
 	public String toString() {
-		return "mandatory " + candidate.fullString();
+		return "mandatory " + option.fullString();
 	}
 
 	@Override
@@ -70,6 +72,6 @@ final class MandatoryModIdDefinition extends ModIdDefinition {
 		errors.append("Mandatory mod ");
 		errors.append(getFriendlyName());
 		errors.append(" v");
-		errors.append(candidate.candidate.getMetadata().version());
+		errors.append(option.metadata().version());
 	}
 }
