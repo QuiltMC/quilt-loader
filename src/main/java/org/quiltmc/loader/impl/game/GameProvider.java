@@ -25,6 +25,8 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+
 import net.fabricmc.loader.launch.common.FabricLauncher;
 
 import org.quiltmc.loader.impl.util.Arguments;
@@ -64,7 +66,7 @@ public interface GameProvider {
 	}
 
 	class BuiltinMod {
-		public BuiltinMod(List<Path> paths, ModMetadata metadata) {
+		public BuiltinMod(List<Path> paths, InternalModMetadata metadata) {
 			Objects.requireNonNull(paths, "null paths");
 			Objects.requireNonNull(metadata, "null metadata");
 
@@ -73,6 +75,6 @@ public interface GameProvider {
 		}
 
 		public final List<Path> paths;
-		public final ModMetadata metadata;
+		public final InternalModMetadata metadata;
 	}
 }

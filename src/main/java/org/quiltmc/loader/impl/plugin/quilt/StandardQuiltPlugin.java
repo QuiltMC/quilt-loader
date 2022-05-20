@@ -1,15 +1,18 @@
 package org.quiltmc.loader.impl.plugin.quilt;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -18,8 +21,12 @@ import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
+import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 
 /** Quilt-loader's plugin. For simplicities sake this is a builtin plugin - and cannot be disabled, or reloaded (since
@@ -27,6 +34,35 @@ import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
+
+	public void addBuiltinMods(GameProvider game) {
+		int gameIndex = 1;
+		for (BuiltinMod mod : game.getBuiltinMods()) {
+			addBuiltinMod(mod, "game-" + gameIndex);
+			gameIndex++;
+		}
+
+		String javaVersion = System.getProperty("java.specification.version").replaceFirst("^1\\.", "");
+		V1ModMetadataBuilder javaMeta = new V1ModMetadataBuilder();
+		javaMeta.id = "java";
+		javaMeta.group = "builtin";
+		javaMeta.version = Version.of(javaVersion);
+		javaMeta.name = System.getProperty("java.vm.name");
+		Path javaPath = new File(System.getProperty("java.home")).toPath();
+		addBuiltinMod(new BuiltinMod(Collections.singletonList(javaPath), javaMeta.build()), "java");
+	}
+
+	private void addBuiltinMod(BuiltinMod mod, String name) {
+		Path path;
+		if (mod.paths.size() == 1) {
+			path = mod.paths.get(0);
+		} else {
+			path = new QuiltJoinedFileSystem(name, mod.paths).getRoot();
+		}
+
+		// We don't go via context().addModOption since we don't really have a good gui node to base it off
+		context().ruleContext().addOption(new BuiltinModOption(context(), mod.metadata, path, path));
+	}
 
 	@Override
 	public ModLoadOption[] scanZip(Path root, PluginGuiTreeNode guiNode) throws IOException {
@@ -81,8 +117,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, root, mandatory) };
 		} catch (ParseException parse) {
 			guiNode.addChild("TODO:TRANSLATE('invalid-quilt.mod.json %s', " + parse.getMessage() + ")")//
-				.mainIcon(guiNode.manager().iconJsonFile())
-				.setError(parse);
+				.mainIcon(guiNode.manager().iconJsonFile()).setError(parse);
 			// TODO: Work out how to handle errors!
 			return null;
 		}

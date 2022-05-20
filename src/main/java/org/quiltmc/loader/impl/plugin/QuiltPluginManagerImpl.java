@@ -396,6 +396,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	public ModSolveResultImpl run(boolean scanClasspath) throws ModSolvingError, TimeoutException {
 
+		if (game != null) {
+			theQuiltPlugin.addBuiltinMods(game);
+		}
+
 		if (scanClasspath) {
 			scanClasspath();
 		}

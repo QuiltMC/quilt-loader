@@ -240,6 +240,7 @@ public final class QuiltLoaderImpl {
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
+		// Debugging
 		for (LoadOption op : spec.getOptions()) {
 			if (spec.isPresent(op)) {
 				Log.info(LogCategory.GENERAL, " + " + op);
@@ -251,6 +252,15 @@ public final class QuiltLoaderImpl {
 				Log.info(LogCategory.GENERAL, " - " + op);
 			}
 		}
+
+		// TODO (in no particular order):
+		// - re-order mod list based on:
+		// - - mixin compat
+		// - - the "load late" system property
+		// - perform remapping
+		// - resolve final mod list
+		// - print mod list
+		// - turn ModLoadOptions into real mods, and pass them into addMod()
 
 		throw new AbstractMethodError("// TODO: Implement setup!");
 	}

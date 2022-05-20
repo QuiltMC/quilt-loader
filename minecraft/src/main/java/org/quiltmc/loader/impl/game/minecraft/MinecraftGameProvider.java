@@ -36,9 +36,15 @@ import java.util.Set;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.api.metadata.ModDependency;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependency.Only;
+import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionConstraint;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProviderHelper;
@@ -48,6 +54,7 @@ import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
 import net.fabricmc.loader.launch.common.FabricLauncher;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.ModDependencyImpl;
+import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
@@ -108,17 +115,57 @@ public class MinecraftGameProvider implements GameProvider {
 
 	@Override
 	public Collection<BuiltinMod> getBuiltinMods() {
-		BuiltinModMetadata.Builder metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
-				.setName(getGameName());
+		V1ModMetadataBuilder metadata = new V1ModMetadataBuilder();
+		metadata.id = getGameId();
+		metadata.group = "builtin";
+		metadata.version = Version.of(getNormalizedGameVersion());
+		metadata.name = getGameName();
 
 		if (versionData.getClassVersion().isPresent()) {
 			int version = versionData.getClassVersion().getAsInt() - 44;
 
-			try {
-				metadata.addDependency(new ModDependencyImpl(ModDependency.Kind.DEPENDS, "java", Collections.singletonList(String.format(">=%d", version))));
-			} catch (VersionParsingException e) {
-				throw new RuntimeException(e);
-			}
+			VersionConstraintImpl constraint = VersionConstraintImpl.parse(String.format(">=%d", version)); 
+			metadata.depends.add(new ModDependency.Only() {
+				@Override
+				public boolean shouldIgnore() {
+					return false;
+				}
+
+				@Override
+				public Collection<VersionConstraint> versions() {
+					return Collections.singleton(constraint);
+				}
+
+				@Override
+				public ModDependency unless() {
+					return null;
+				}
+
+				@Override
+				public String reason() {
+					return "";
+				}
+
+				@Override
+				public boolean optional() {
+					return false;
+				}
+
+				@Override
+				public ModDependencyIdentifier id() {
+					return new ModDependencyIdentifier() {
+						@Override
+						public String mavenGroup() {
+							return "";
+						}
+
+						@Override
+						public String id() {
+							return "java";
+						}
+					};
+				}
+			});
 		}
 
 		return Collections.singletonList(new BuiltinMod(Collections.singletonList(gameJar), metadata.build()));

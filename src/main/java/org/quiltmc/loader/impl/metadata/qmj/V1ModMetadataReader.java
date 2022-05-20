@@ -66,32 +66,7 @@ final class V1ModMetadataReader {
 	}
 
 	private static V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
-		/* Required fields */
-		String id;
-		String group;
-		Version version = null;
-		/* Optional fields */
-		String name = null;
-		String description = null;
-		List<ModLicense> licenses = new ArrayList<>();
-		List<ModContributor> contributors = new ArrayList<>();
-		Map<String, String> contactInformation = new LinkedHashMap<>();
-		List<ModDependency> depends = new ArrayList<>();
-		List<ModDependency> breaks = new ArrayList<>();
-		String intermediateMappings = null;
-		Icons icons = null;
-		/* Internal fields */
-		ModLoadType loadType = ModLoadType.IF_REQUIRED;
-		Collection<ProvidedMod> provides = new ArrayList<>();
-		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
-		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
-		List<String> jars = new ArrayList<>();
-		Map<String, String> languageAdapters = new LinkedHashMap<>();
-		List<String> repositories = new ArrayList<>();
-		/* TODO: Move to plugins */
-		List<String> mixins = new ArrayList<>();
-		List<String> accessWideners = new ArrayList<>();
-		ModEnvironment environment = ModEnvironment.UNIVERSAL;
+		V1ModMetadataBuilder builder = new V1ModMetadataBuilder();
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
 
@@ -102,18 +77,18 @@ final class V1ModMetadataReader {
 		// Loader metadata
 		{
 			// Check if our required fields are here
-			id = requiredString(quiltLoader, "id");
+			builder.id = requiredString(quiltLoader, "id");
 
-			if (!Patterns.VALID_MOD_ID.matcher(id).matches()) {
+			if (!Patterns.VALID_MOD_ID.matcher(builder.id).matches()) {
 				// id must be non-null
 				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod id, likely one of the following errors:\n" +
 						"- Mod id contains invalid characters, the allowed characters are a-z 0-9 _-\n" +
 						"- The mod id is too short or long, the mod id must be between 2 and 63 characters");
 			}
 
-			group = requiredString(quiltLoader, "group");
+			builder.group = requiredString(quiltLoader, "group");
 
-			if (!Patterns.VALID_MAVEN_GROUP.matcher(group).matches()) {
+			if (!Patterns.VALID_MAVEN_GROUP.matcher(builder.group).matches()) {
 				// group must be non-null
 				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod maven group; the allowed characters are a-z A-Z 0-9 - _ and .");
 			}
@@ -127,7 +102,7 @@ final class V1ModMetadataReader {
 
 			// TODO: Here we would check if the version is a placeholder in dev.
 
-			version = Version.of(versionValue.asString());
+			builder.version = Version.of(versionValue.asString());
 			// Now we reach optional fields
 			// TODO: provides
 
@@ -139,7 +114,7 @@ final class V1ModMetadataReader {
 					throw parseException(entrypointsValue, "entrypoints must be an object");
 				}
 
-				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", entrypoints);
+				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", builder.entrypoints);
 			}
 
 			@Nullable
@@ -151,7 +126,7 @@ final class V1ModMetadataReader {
 				}
 
 				for (LoaderValue entry : pluginsValue.asArray()) {
-					plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
+					builder.plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
 				}
 			}
 
@@ -163,7 +138,7 @@ final class V1ModMetadataReader {
 					throw parseException(jarsValue, "jars must be an array");
 				}
 
-				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", jars);
+				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", builder.jars);
 			}
 
 			@Nullable
@@ -174,20 +149,20 @@ final class V1ModMetadataReader {
 					throw parseException(languageAdaptersValue, "language_adapters must be an object");
 				}
 
-				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", languageAdapters);
+				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", builder.languageAdapters);
 			}
 
 			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
 			if (dependsValue != null) {
 				for (LoaderValue v : dependsValue.asArray()) {
-					depends.add(readDependencyObject(true, (JsonLoaderValue) v));
+					builder.depends.add(readDependencyObject(true, (JsonLoaderValue) v));
 				}
 			}
 
 			@Nullable JsonLoaderValue breaksValue = assertType(quiltLoader, "breaks", LoaderValue.LType.ARRAY);
 			if (breaksValue != null) {
 				for (LoaderValue v : breaksValue.asArray()) {
-					breaks.add(readDependencyObject(false, (JsonLoaderValue) v));
+					builder.breaks.add(readDependencyObject(false, (JsonLoaderValue) v));
 				}
 			}
 
@@ -199,7 +174,7 @@ final class V1ModMetadataReader {
 					throw parseException(repositoriesValue, "repositories must be an array");
 				}
 
-				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, "repositories", repositories);
+				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, "repositories", builder.repositories);
 			}
 
 			@Nullable
@@ -210,7 +185,7 @@ final class V1ModMetadataReader {
 					throw parseException(loadTypeValue, "load_type must be a string");
 				}
 
-				loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
+				builder.loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
 			}
 
 			@Nullable
@@ -224,31 +199,31 @@ final class V1ModMetadataReader {
 				for (LoaderValue provided : providesValue.asArray()) {
 					if (provided.type() == LoaderValue.LType.STRING) {
 						String providedId = provided.asString();
-						String providedGroup = group;
+						String providedGroup = builder.group;
 						int colon = providedId.indexOf(':');
 						if (colon > 0) {
 							providedGroup = providedId.substring(0, colon);
 							providedId = providedId.substring(colon + 1);
 						}
-						provides.add(new ProvidedModImpl(providedGroup, providedId, version));
+						builder.provides.add(new ProvidedModImpl(providedGroup, providedId, builder.version));
 					} else if (provided.type() == LType.OBJECT) {
 						JsonLoaderValue.ObjectImpl providedObj = (JsonLoaderValue.ObjectImpl) provided.asObject();
 
 						String providedId = requiredString(providedObj, "id");
-						String providedGroup = group;
+						String providedGroup = builder.group;
 						int colon = providedId.indexOf(':');
 						if (colon > 0) {
 							providedGroup = providedId.substring(0, colon);
 							providedId = providedId.substring(colon + 1);
 						}
 
-						Version providedVersion = version;
+						Version providedVersion = builder.version;
 
 						if (providedObj.containsKey("version")) {
 							providedVersion = Version.of(requiredString(providedObj, "version"));
 						}
 
-						provides.add(new ProvidedModImpl(providedGroup, providedId, providedVersion));
+						builder.provides.add(new ProvidedModImpl(providedGroup, providedId, providedVersion));
 					} else {
 						throw parseException((JsonLoaderValue) provided, "provides must be an array containing only objects and/or strings");
 					}
@@ -282,7 +257,7 @@ final class V1ModMetadataReader {
 				throw new ParseException("Oh no! This version of Quilt Loader doesn't support hashed mappings, please update Quilt Loader to use this mod.");
 			}
 
-			intermediateMappings = mappings;
+			builder.intermediateMappings = mappings;
 
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
@@ -294,8 +269,8 @@ final class V1ModMetadataReader {
 
 				JsonLoaderValue.ObjectImpl metadata = (JsonLoaderValue.ObjectImpl) metadataValue;
 
-				name = string(metadata, "name");
-				description = string(metadata, "description");
+				builder.name = string(metadata, "name");
+				builder.description = string(metadata, "description");
 
 				@Nullable
 				JsonLoaderValue contributorsValue = metadata.get("contributors");
@@ -305,7 +280,7 @@ final class V1ModMetadataReader {
 					}
 					Map<String, String> intermediate = new HashMap<>();
 					readStringMap(contributorsValue.asObject(), "contributors", intermediate);
-					intermediate.forEach((k, v) -> contributors.add(new ModContributorImpl(k, v)));
+					intermediate.forEach((k, v) -> builder.contributors.add(new ModContributorImpl(k, v)));
 				}
 
 				@Nullable
@@ -316,20 +291,20 @@ final class V1ModMetadataReader {
 						throw parseException(contact, "contact must be an object");
 					}
 
-					readStringMap(contact.asObject(), "contact", contactInformation);
+					readStringMap(contact.asObject(), "contact", builder.contactInformation);
 				}
 
-				readLicenses(metadata, licenses);
+				readLicenses(metadata, builder.licenses);
 
 				@Nullable
 				JsonLoaderValue iconValue = metadata.get("icon");
 				if (iconValue != null) {
 					if (iconValue.type() == LType.STRING) {
-						icons = new Icons.Single(iconValue.asString());
+						builder.icons = new Icons.Single(iconValue.asString());
 					} else if (iconValue.type() == LType.OBJECT) {
 						SortedMap<Integer, String> map = new TreeMap<>();
 						readIntToStringMap(iconValue.asObject(), "icon", map);
-						icons = new Icons.Multiple(map);
+						builder.icons = new Icons.Multiple(map);
 					}
 				}
 			}
@@ -344,10 +319,10 @@ final class V1ModMetadataReader {
 			if (mixinValue != null) {
 				switch (mixinValue.type()) {
 				case ARRAY:
-					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", mixins);
+					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", builder.mixins);
 					break;
 				case STRING:
-					mixins.add(mixinValue.asString());
+					builder.mixins.add(mixinValue.asString());
 					break;
 				default:
 					throw parseException(mixinValue, "mixin value must be an array of strings or a string");
@@ -360,14 +335,14 @@ final class V1ModMetadataReader {
 				String env = string(object, "environment");
 				switch (env) {
 					case "client":
-						environment = ModEnvironment.CLIENT;
+						builder.env = ModEnvironment.CLIENT;
 						break;
 					case "dedicated_server":
-						environment = ModEnvironment.SERVER;
+						builder.env = ModEnvironment.SERVER;
 						break;
 					case "":
 					case "*":
-						environment = ModEnvironment.UNIVERSAL;
+						builder.env = ModEnvironment.UNIVERSAL;
 						break;
 					default:
 						throw parseException(object.get("environment"), env +
@@ -380,10 +355,10 @@ final class V1ModMetadataReader {
 			if (awValue != null) {
 				switch (awValue.type()) {
 					case ARRAY:
-						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", accessWideners);
+						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", builder.accessWideners);
 						break;
 					case STRING:
-						accessWideners.add(awValue.asString());
+						builder.accessWideners.add(awValue.asString());
 						break;
 					default:
 						throw parseException(awValue, "mixin value must be an array of strings or a string");
@@ -392,31 +367,7 @@ final class V1ModMetadataReader {
 
 		}
 
-		return new V1ModMetadataImpl(
-				root,
-				id,
-				group,
-				version,
-				name,
-				description,
-				licenses,
-				contributors,
-				contactInformation,
-				depends,
-				breaks,
-				intermediateMappings,
-				icons,
-				loadType,
-				provides,
-				entrypoints,
-				plugins,
-				jars,
-				languageAdapters,
-				repositories,
-				mixins,
-				accessWideners,
-				environment
-		);
+		return new V1ModMetadataImpl(builder);
 	}
 
 	private static String requiredString(JsonLoaderValue.ObjectImpl object, String field) {
