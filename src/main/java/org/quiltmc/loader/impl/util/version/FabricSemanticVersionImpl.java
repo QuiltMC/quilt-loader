@@ -26,8 +26,6 @@ import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-import org.jetbrains.annotations.NotNull;
-
 @SuppressWarnings("deprecation")
 public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.loader.api.Version {
 	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");

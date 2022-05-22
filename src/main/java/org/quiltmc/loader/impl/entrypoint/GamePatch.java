@@ -17,7 +17,7 @@
 package org.quiltmc.loader.impl.entrypoint;
 
 import org.objectweb.asm.ClassReader;
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -124,5 +124,5 @@ public abstract class GamePatch {
 		return ((access & 0x0F) == (Opcodes.ACC_PUBLIC | 0 /* non-static */));
 	}
 
-	public abstract void process(FabricLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter);
+	public abstract void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter);
 }

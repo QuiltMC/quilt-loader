@@ -18,7 +18,7 @@ package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
 import net.minecraft.launchwrapper.IClassTransformer;
 
-import net.fabricmc.api.EnvType;
+import net.fabricmc.EnvType;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;

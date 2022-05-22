@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
-import net.fabricmc.api.EnvType;
+import net.fabricmc.EnvType;
 
 public final class QuiltServerTweaker extends QuiltTweaker {
 	@Override

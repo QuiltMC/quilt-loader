@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 
 import net.fabricmc.loader.api.Version;

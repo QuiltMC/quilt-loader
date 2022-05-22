@@ -1,1 +1,1 @@
-net.fabricmc.loader.launch.knot.MixinServiceKnotBootstrap
+org.quiltmc.loader.impl.launch.knot.MixinServiceKnotBootstrap

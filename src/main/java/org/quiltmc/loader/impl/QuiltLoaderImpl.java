@@ -42,7 +42,6 @@ import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
-import net.fabricmc.loader.api.SemanticVersion;
 
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
@@ -58,10 +57,10 @@ import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
-import net.fabricmc.loader.launch.common.FabricLauncher;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
-import net.fabricmc.loader.launch.knot.Knot;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
+import org.quiltmc.loader.impl.launch.knot.Knot;
 
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
@@ -157,7 +156,7 @@ public final class QuiltLoaderImpl {
 	}
 
 	public EnvType getEnvironmentType() {
-		return FabricLauncherBase.getLauncher().getEnvironmentType();
+		return QuiltLauncherBase.getLauncher().getEnvironmentType();
 	}
 
 	/**
@@ -267,7 +266,7 @@ public final class QuiltLoaderImpl {
 		for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext();) {
 			ModCandidate mod = it.next();
 			ModContainerImpl tempModContainer = new ModContainerImpl(mod);
-			if (FabricMixinBootstrap.MixinConfigDecorator.getMixinCompat(tempModContainer) != FabricUtil.COMPATIBILITY_0_9_2) {
+			if (QuiltMixinBootstrap.MixinConfigDecorator.getMixinCompat(tempModContainer) != FabricUtil.COMPATIBILITY_0_9_2) {
 				it.remove();
 				newMixinCompatMods.add(mod);
 			}
@@ -313,7 +312,7 @@ public final class QuiltLoaderImpl {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerImpl mod : mods) {
 			if (!mod.metadata().id().equals(MOD_ID) && !mod.getInfo().getType().equals("builtin")) {
-				FabricLauncherBase.getLauncher().addToClassPath(mod.rootPath());
+				QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath());
 			}
 		}
 
@@ -346,7 +345,7 @@ public final class QuiltLoaderImpl {
 				Path path = Paths.get(pathName).toAbsolutePath().normalize();
 
 				if (Files.isDirectory(path) && knownModPaths.add(path)) {
-					FabricLauncherBase.getLauncher().addToClassPath(path);
+					QuiltLauncherBase.getLauncher().addToClassPath(path);
 				}
 			}
 		}
@@ -371,8 +370,8 @@ public final class QuiltLoaderImpl {
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
 			mappingResolver = new QuiltMappingResolver(
-				FabricLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
-				FabricLauncherBase.getLauncher().getTargetNamespace()
+				QuiltLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
+				QuiltLauncherBase.getLauncher().getTargetNamespace()
 			);
 		}
 
@@ -408,7 +407,7 @@ public final class QuiltLoaderImpl {
 	}
 
 	public boolean isDevelopmentEnvironment() {
-		FabricLauncher launcher = FabricLauncherBase.getLauncher();
+		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 		if (launcher == null) {
 			// Most likely a test
 			return true;
@@ -477,7 +476,7 @@ public final class QuiltLoaderImpl {
 				}
 
 				try {
-					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
+					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to instantiate language adapter: " + laEntry.getKey(), e);
 				}
@@ -530,9 +529,9 @@ public final class QuiltLoaderImpl {
 			throw new RuntimeException("Cannot instantiate mods when not frozen!");
 		}
 
-		if (gameInstance != null && FabricLauncherBase.getLauncher() instanceof Knot) {
+		if (gameInstance != null && QuiltLauncherBase.getLauncher() instanceof Knot) {
 			ClassLoader gameClassLoader = gameInstance.getClass().getClassLoader();
-			ClassLoader targetClassLoader = FabricLauncherBase.getLauncher().getTargetClassLoader();
+			ClassLoader targetClassLoader = QuiltLauncherBase.getLauncher().getTargetClassLoader();
 			boolean matchesKnot = (gameClassLoader == targetClassLoader);
 			boolean containsKnot = false;
 
@@ -558,7 +557,7 @@ public final class QuiltLoaderImpl {
 							+ " - Expected game class loader: %s\n"
 							+ " - Actual game class loader: %s\n"
 							+ "Could not find the expected class loader in game class loader parents!\n",
-							FabricLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
+							QuiltLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
 				}
 			}
 		}
