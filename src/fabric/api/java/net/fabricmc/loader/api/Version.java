@@ -18,7 +18,8 @@
 package net.fabricmc.loader.api;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import org.quiltmc.loader.impl.util.version.VersionParser;
+
+import org.quiltmc.loader.impl.fabric.util.version.VersionParser;
 
 /**
  * Represents a version of a mod.

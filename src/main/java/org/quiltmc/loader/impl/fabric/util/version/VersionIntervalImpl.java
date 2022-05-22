@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
+package org.quiltmc.loader.impl.fabric.util.version;
 
 import java.util.ArrayList;
 import java.util.Collection;

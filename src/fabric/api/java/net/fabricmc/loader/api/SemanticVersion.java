@@ -18,10 +18,10 @@ package net.fabricmc.loader.api;
 
 import java.util.Optional;
 
-import org.quiltmc.loader.impl.util.version.VersionParser;
+import org.quiltmc.loader.impl.fabric.util.version.VersionParser;
 
 /**
- * Represents a <a href="https://semver.org/">Sematic Version</a>.
+ * Represents a <a href="https://semver.org/">Semantic Version</a>.
  *
  * <p>Compared to a regular {@link Version}, this type of version receives better support
  * for version comparisons in dependency notations, and is preferred.</p>

@@ -21,6 +21,8 @@ import java.util.Collection;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.version.Version;
+import org.quiltmc.loader.api.version.VersionRange;
 
 /**
  * Representation of a mod's dependency.
@@ -43,9 +45,9 @@ public interface ModDependency {
 		ModDependencyIdentifier id();
 
 		/**
-		 * @return version constraints that this dependency has. This collection is never empty.
+		 * @return the VersionRange that this dependency requires.
 		 */
-		Collection<VersionConstraint> versions();
+		VersionRange versions();
 
 		/**
 		 * @return a reason to describe why this dependency exists. Empty if there is no reason.
@@ -72,13 +74,7 @@ public interface ModDependency {
 		 * @return true if the version matches or else false
 		 */
 		default boolean matches(Version version) {
-			for (VersionConstraint constraint : versions()) {
-				if (constraint.matches(version)) {
-					return true;
-				}
-			}
-
-			return false;
+			return versions().satisfiedBy(version);
 		}
 	}
 

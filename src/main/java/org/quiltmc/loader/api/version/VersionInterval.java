@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,32 +15,39 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api.metadata.version;
+package org.quiltmc.loader.api.version;
 
-import java.util.Collection;
-import java.util.List;
 
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.Version;
-
-import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.impl.fabric.util.version.VersionIntervalImpl;
+import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
 
 /**
- * Representation of a version interval, closed or open.
+ * Representation of a constraint on a version, closed or open.
  *
- * <p>The represented version interval is contiguous between its lower and upper limit, disjoint intervals are built
+ * <p>The represented version constraint is contiguous between its lower and upper limit; disjoint intervals are built
  * using collections of {@link VersionInterval}. Empty intervals may be represented by {@code null} or any interval
  * @code (x,x)} with x being a non-{@code null} version and both endpoints being exclusive.
  */
-@Deprecated
 public interface VersionInterval {
-	VersionInterval INFINITE = new VersionIntervalImpl(null, false, null, false);
+	VersionInterval ALL = new VersionIntervalImpl(null, false, null, false);
 
 	/**
-	 * Get whether the interval uses {@link SemanticVersion} compatible bounds.
+	 * @param min the minimum version, or null for negative infinity
+	 * @param minInclusive
+	 * @param max the maximum version, or null for infinity
+	 * @param maxInclusive
+	 * @return
+	 */
+	static VersionInterval of(Version min, boolean minInclusive, Version max, boolean maxInclusive) {
+		return new VersionIntervalImpl(min, minInclusive, max, maxInclusive);
+	}
+
+	static VersionInterval ofExact(Version version) {
+		return new VersionIntervalImpl(version, true, version, true);
+	}
+	/**
+	 * Get whether the interval uses {@link Version.Semantic} compatible bounds.
 	 *
-	 * @return True if both bounds are open (null), {@link SemanticVersion} instances or a combination of both, false otherwise.
+	 * @return True if both bounds are open (null), {@link Version.Semantic} instances or a combination of both, false otherwise.
 	 */
 	boolean isSemantic();
 
@@ -71,15 +79,19 @@ public interface VersionInterval {
 	 */
 	boolean isMaxInclusive();
 
+	boolean satisfiedBy(Version version);
+	default VersionRange toVersionRange() {
+		return VersionRange.of(this);
+	}
 	default VersionInterval and(VersionInterval o) {
 		return and(this, o);
 	}
 
-	default List<VersionInterval> or(Collection<VersionInterval> o) {
+	default VersionRange or(VersionRange o) {
 		return or(o, this);
 	}
 
-	default List<VersionInterval> not() {
+	default VersionRange not() {
 		return not(this);
 	}
 
@@ -93,22 +105,22 @@ public interface VersionInterval {
 	/**
 	 * Compute the intersection between two potentially disjoint of version intervals.
 	 */
-	static List<VersionInterval> and(Collection<VersionInterval> a, Collection<VersionInterval> b) {
-		return VersionIntervalImpl.and(a, b);
+	static VersionRange and(VersionRange a, VersionRange b) {
+		return VersionRange.of(VersionIntervalImpl.and(a, b));
 	}
 
 	/**
 	 * Compute the union between multiple version intervals.
 	 */
-	static List<VersionInterval> or(Collection<VersionInterval> a, VersionInterval b) {
-		return VersionIntervalImpl.or(a, b);
+	static VersionRange or(VersionRange a, VersionInterval b) {
+		return VersionRange.of(VersionIntervalImpl.or(a, b));
 	}
 
-	static List<VersionInterval> not(VersionInterval interval) {
-		return VersionIntervalImpl.not(interval);
+	static VersionRange not(VersionInterval interval) {
+		return VersionRange.of(VersionIntervalImpl.not(interval));
 	}
 
-	static List<VersionInterval> not(Collection<VersionInterval> intervals) {
-		return VersionIntervalImpl.not(intervals);
+	static VersionRange not(VersionRange intervals) {
+		return VersionRange.of(VersionIntervalImpl.not(intervals));
 	}
 }

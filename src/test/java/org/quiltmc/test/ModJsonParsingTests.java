@@ -17,7 +17,6 @@
 package org.quiltmc.test;
 
 import org.junit.jupiter.api.*;
-import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
 
 import java.io.File;

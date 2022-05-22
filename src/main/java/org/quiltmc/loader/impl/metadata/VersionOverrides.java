@@ -26,7 +26,7 @@ import net.fabricmc.loader.api.VersionParsingException;
 
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.version.VersionParser;
+import org.quiltmc.loader.impl.fabric.util.version.VersionParser;
 
 public final class VersionOverrides {
 	private final Map<String, Version> replacements = new HashMap<>();

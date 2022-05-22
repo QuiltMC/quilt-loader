@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +25,11 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.*;
 import org.quiltmc.loader.api.LoaderValue.LType;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
+import org.quiltmc.loader.api.version.Version;
+import org.quiltmc.loader.api.version.VersionFormatException;
+import org.quiltmc.loader.api.version.VersionInterval;
+import org.quiltmc.loader.api.version.VersionRange;
+import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
@@ -640,7 +645,12 @@ final class V1ModMetadataReader {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
-			Collection<VersionConstraint> versions = readConstraints(obj.get("versions"));
+			VersionRange versions = null;
+			try {
+				versions = readVersionSpecifier(obj.get("versions"));
+			} catch (VersionFormatException e) {
+				throw parseException(obj.get("versions"), "Unable to parse version range", e);
+			}
 			String reason = string(obj, "reason");
 			boolean optional = bool(obj, "optional", false);
 			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
@@ -672,24 +682,81 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static Collection<VersionConstraint> readConstraints(@Nullable JsonLoaderValue value) {
+
+	private static VersionRange readVersionSpecifier(JsonLoaderValue value) throws VersionFormatException {
 		if (value == null) {
-			return Collections.singleton(VersionConstraintImpl.ANY);
+			return VersionRange.ANY;
 		}
 
-		if (value.type() == LoaderValue.LType.STRING) {
-			return Collections.singleton(VersionConstraintImpl.parse(value.asString()));
-		} else if (value.type() == LoaderValue.LType.ARRAY) {
-			Collection<VersionConstraint> ret = new ArrayList<>(value.asArray().size());
+		String string = value.asString();
 
-			for (LoaderValue s : value.asArray()) {
-				ret.add(VersionConstraintImpl.parse(s.asString()));
+		if (string.equals("*")) {
+			return VersionRange.ANY;
+		}
+
+		String withoutPrefix = string.substring(1);
+
+		switch (string.charAt(0)) {
+			case '=':
+				return VersionRange.ofExact(Version.of(withoutPrefix));
+			case '>':
+				if (string.charAt(1) == '=') {
+					return VersionRange.of(VersionInterval.of(Version.of(string.substring(2)), true, null, false));
+				} else {
+					return VersionRange.of(VersionInterval.of(Version.of(withoutPrefix), false, null, false));
+				}
+			case '<':
+				if (string.charAt(1) == '=') {
+					return VersionRange.of(VersionInterval.of(null, false, Version.of(string.substring(2)), true));
+				} else {
+					return VersionRange.of(VersionInterval.of(null, false, Version.of(withoutPrefix), true));
+				}
+		    // Semantic versions only
+			case '~': {
+				Version.Semantic min = Version.of(withoutPrefix).semantic();
+				int[] components = min.semantic().versionComponents();
+				if (components.length < 2) {
+					components = new int[] { components[0], 1 };
+				} else {
+					components[1]++;
+				}
+
+				Version max = Version.Semantic.of(components, null, null);
+				return VersionRange.of(VersionInterval.of(min, true, max, false));
 			}
+			case '^': {
+				Version.Semantic min = Version.of(withoutPrefix).semantic();
+				int newMajor = min.versionComponent(0) + 1;
 
-			return ret;
+				Version max = Version.Semantic.of(new int[] {newMajor}, null, null);
+				return VersionRange.of(VersionInterval.of(min, true, max, false));
+			}
+			default: {
+				if (string.endsWith(".x")) {
+					if (string.indexOf(".x") != string.length() - 2) {
+						throw new VersionFormatException(String.format("Invalid version specifier \"%s\"", string));
+					}
+					Version.Semantic min = Version.of(string.substring(0, string.length() -2)).semantic();
+					Version.Semantic max = Version.Semantic.of(new int[] {min.versionComponent(0) + 1}, null, null);
+					return VersionRange.of(VersionInterval.of(min, true, max, false));
+				} else {
+					Version v = Version.of(string);
+
+					// same as ^
+					// TODO code duplication
+					if (v.isSemantic()) {
+						Version.Semantic min = v.semantic();
+						int newMajor = min.versionComponent(0) + 1;
+
+						Version max = Version.Semantic.of(new int[]{newMajor}, null, null);
+						return VersionRange.of(VersionInterval.of(min, true, max, false));
+					} else {
+						// same as =
+						return VersionRange.ofExact(v);
+					}
+				}
+			}
 		}
-
-		throw parseException(value, "Version constraint must be a string or array of strings");
 	}
 
 	private V1ModMetadataReader() {

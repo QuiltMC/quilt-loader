@@ -20,9 +20,8 @@ import net.fabricmc.loader.api.VersionParsingException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.quiltmc.json5.JsonReader;
-import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.api.version.VersionFormatException;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 import java.io.IOException;
 
@@ -50,7 +49,7 @@ public class VersionParsingTests extends JsonTestBase {
 	static void fabric(String raw) {
 		System.out.println("Checking pass: " + raw);
 		try {
-			new FabricSemanticVersionImpl(raw, false);
+			new net.fabricmc.loader.impl.util.version.SemanticVersionImpl(raw, false);
 		} catch (VersionParsingException e) {
 			Assertions.fail(e);
 		}
@@ -59,7 +58,7 @@ public class VersionParsingTests extends JsonTestBase {
 	static void fabricFails(String raw) {
 		System.out.println("Checking fails: " + raw);
 		try {
-			new FabricSemanticVersionImpl(raw, false);
+			new net.fabricmc.loader.impl.util.version.SemanticVersionImpl(raw, false);
 			Assertions.fail("Invalid version " + raw + " was parsed successfully?");
 		} catch (VersionParsingException e) {
 			//

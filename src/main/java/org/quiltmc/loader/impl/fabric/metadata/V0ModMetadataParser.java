@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +35,8 @@ import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
-import org.quiltmc.loader.impl.util.version.VersionParser;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.fabric.util.version.VersionParser;
 
 final class V0ModMetadataParser {
 	private static final Pattern WEBSITE_PATTERN = Pattern.compile("\\((.+)\\)");

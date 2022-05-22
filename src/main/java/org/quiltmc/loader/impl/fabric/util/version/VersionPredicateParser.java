@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
+package org.quiltmc.loader.impl.fabric.util.version;
 
 
 import java.util.ArrayList;
@@ -32,6 +32,7 @@ import net.fabricmc.loader.api.metadata.version.VersionComparisonOperator;
 import net.fabricmc.loader.api.metadata.version.VersionInterval;
 import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 import net.fabricmc.loader.api.metadata.version.VersionPredicate.PredicateTerm;
+import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
 
 public final class VersionPredicateParser {
 	private static final VersionComparisonOperator[] OPERATORS = VersionComparisonOperator.values();
@@ -79,7 +80,7 @@ public final class VersionPredicateParser {
 						newComponents[i] = semVer.getVersionComponent(i);
 					}
 
-					version = new FabricSemanticVersionImpl(newComponents, "", semVer.getBuildKey().orElse(null));
+					version = new SemanticVersionImpl(newComponents, "", semVer.getBuildKey().orElse(null));
 				}
 			} else if (!operator.isMinInclusive() && !operator.isMaxInclusive()) { // non-semver without inclusive bound
 				throw new VersionParsingException("Invalid predicate: "+predicate+", version ranges need to be semantic version compatible to use operators that exclude the bound!");

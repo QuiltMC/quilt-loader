@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,7 +34,8 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.Person;
-import org.quiltmc.loader.impl.util.version.VersionParser;
+
+import org.quiltmc.loader.impl.fabric.util.version.VersionParser;
 
 public final class BuiltinModMetadata extends AbstractModMetadata {
 	private final String id;

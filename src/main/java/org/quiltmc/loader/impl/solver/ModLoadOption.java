@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.solver;
 
-import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.version.Version;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolver;

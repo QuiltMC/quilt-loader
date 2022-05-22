@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.version.Version;
 
 public class GenericVersionImpl implements Version {
 	private final String raw;

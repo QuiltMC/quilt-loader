@@ -15,28 +15,22 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.api.version;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
+public final class VersionFormatException extends Exception {
 
-import net.fabricmc.loader.api.metadata.ContactInformation;
-
-public class MapBackedContactInformation implements ContactInformation {
-	private final Map<String, String> map;
-
-	public MapBackedContactInformation(Map<String, String> map) {
-		this.map = Collections.unmodifiableMap(map);
+	public VersionFormatException() {
 	}
 
-	@Override
-	public Optional<String> get(String key) {
-		return Optional.ofNullable(map.get(key));
+	public VersionFormatException(String message) {
+		super(message);
 	}
 
-	@Override
-	public Map<String, String> asMap() {
-		return map;
+	public VersionFormatException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public VersionFormatException(Throwable cause) {
+		super(cause);
 	}
 }

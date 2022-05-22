@@ -15,23 +15,28 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api;
+package org.quiltmc.loader.impl.fabric.metadata;
 
-// TODO: make this extend the Fabric exception?
-public final class VersionFormatException extends Exception {
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 
-	public VersionFormatException() {
+import net.fabricmc.loader.api.metadata.ContactInformation;
+
+public class MapBackedContactInformation implements ContactInformation {
+	private final Map<String, String> map;
+
+	public MapBackedContactInformation(Map<String, String> map) {
+		this.map = Collections.unmodifiableMap(map);
 	}
 
-	public VersionFormatException(String message) {
-		super(message);
+	@Override
+	public Optional<String> get(String key) {
+		return Optional.ofNullable(map.get(key));
 	}
 
-	public VersionFormatException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public VersionFormatException(Throwable cause) {
-		super(cause);
+	@Override
+	public Map<String, String> asMap() {
+		return map;
 	}
 }

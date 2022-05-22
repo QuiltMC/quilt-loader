@@ -27,8 +27,8 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
-import org.quiltmc.loader.api.Version;
-import org.quiltmc.loader.api.VersionConstraint;
+import org.quiltmc.loader.api.version.VersionInterval;
+import org.quiltmc.loader.api.version.VersionRange;
 
 final class ModDependencyImpl {
 	ModDependencyImpl() {
@@ -85,10 +85,11 @@ final class ModDependencyImpl {
 	}
 
 	static final class OnlyImpl implements ModDependency.Only {
-		private static final Collection<VersionConstraint> ANY = Collections.singleton(VersionConstraint.any());
+		// TODO make pretty
+		private static final VersionRange ANY = VersionRange.of(Collections.singleton(VersionInterval.ALL));
 		private final String location;
 		private final ModDependencyIdentifier id;
-		private final Collection<VersionConstraint> constraints;
+		private final VersionRange range;
 		private final String reason;
 		private final boolean optional;
 		private final ModDependency unless;
@@ -99,14 +100,14 @@ final class ModDependencyImpl {
 		OnlyImpl(String location, ModDependencyIdentifier id) {
 			this(location, id, ANY, "", false, null);
 		}
-		OnlyImpl(String location, ModDependencyIdentifier id, Collection<VersionConstraint> constraints, @Nullable String reason, boolean optional, @Nullable ModDependency unless) {
+		OnlyImpl(String location, ModDependencyIdentifier id, VersionRange range, @Nullable String reason, boolean optional, @Nullable ModDependency unless) {
 			// We need to have at least one constraint
-			if (constraints.isEmpty()) {
+			if (range.isEmpty()) {
 				throw new IllegalArgumentException("A ModDependency must have at least one constraint");
 			}
 			this.location = location;
 			this.id = id;
-			this.constraints = Collections.unmodifiableCollection(constraints);
+			this.range = range;
 			this.reason = reason != null ? reason : "";
 			this.optional = optional;
 			this.unless = unless;
@@ -118,8 +119,8 @@ final class ModDependencyImpl {
 		}
 
 		@Override
-		public Collection<VersionConstraint> versions() {
-			return this.constraints;
+		public VersionRange versions() {
+			return this.range;
 		}
 
 		@Override

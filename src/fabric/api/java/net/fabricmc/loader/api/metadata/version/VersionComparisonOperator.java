@@ -18,8 +18,8 @@ package net.fabricmc.loader.api.metadata.version;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
 
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 public enum VersionComparisonOperator {
 	// order is important to match the longest substring (e.g. try >= before >)
@@ -98,7 +98,7 @@ public enum VersionComparisonOperator {
 
 		@Override
 		public SemanticVersion maxVersion(SemanticVersion version) {
-			return new FabricSemanticVersionImpl(new int[] { version.getVersionComponent(0), version.getVersionComponent(1) + 1 }, "", null);
+			return new SemanticVersionImpl(new int[] { version.getVersionComponent(0), version.getVersionComponent(1) + 1 }, "", null);
 		}
 	},
 	SAME_TO_NEXT_MAJOR("^", true, false) {
@@ -115,7 +115,7 @@ public enum VersionComparisonOperator {
 
 		@Override
 		public SemanticVersion maxVersion(SemanticVersion version) {
-			return new FabricSemanticVersionImpl(new int[] { version.getVersionComponent(0) + 1 }, "", null);
+			return new SemanticVersionImpl(new int[] { version.getVersionComponent(0) + 1 }, "", null);
 		}
 	};
 

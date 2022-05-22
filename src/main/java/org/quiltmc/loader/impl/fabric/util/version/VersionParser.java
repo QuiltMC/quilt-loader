@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
+package org.quiltmc.loader.impl.fabric.util.version;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
 
 
 public final class VersionParser {
@@ -31,7 +32,7 @@ public final class VersionParser {
 		Version version;
 
 		try {
-			version = new FabricSemanticVersionImpl(s, storeX);
+			version = new SemanticVersionImpl(s, storeX);
 		} catch (VersionParsingException e) {
 			version = new StringVersion(s);
 		}
@@ -44,6 +45,6 @@ public final class VersionParser {
 			throw new VersionParsingException("Version must be a non-empty string!");
 		}
 
-		return new FabricSemanticVersionImpl(s, false);
+		return new SemanticVersionImpl(s, false);
 	}
 }

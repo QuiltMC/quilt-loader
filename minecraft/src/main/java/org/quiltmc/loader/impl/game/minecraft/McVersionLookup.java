@@ -27,6 +27,8 @@ import java.nio.file.Path;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -43,8 +45,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
+import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 
 public final class McVersionLookup {
 	private static final Pattern VERSION_PATTERN = Pattern.compile(
@@ -371,7 +372,7 @@ public final class McVersionLookup {
 					boolean legacyVersion;
 
 					try {
-						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new FabricSemanticVersionImpl(release, false));
+						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new SemanticVersionImpl(release, false));
 					} catch (VersionParsingException e) {
 						throw new RuntimeException("Failed to parse version: " + release);
 					}

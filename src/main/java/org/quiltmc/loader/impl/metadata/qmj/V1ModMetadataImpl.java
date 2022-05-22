@@ -27,6 +27,7 @@ import net.fabricmc.api.EnvType;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.*;
+import org.quiltmc.loader.api.version.Version;
 
 final class V1ModMetadataImpl implements InternalModMetadata {
 	private final JsonLoaderValue.ObjectImpl root;

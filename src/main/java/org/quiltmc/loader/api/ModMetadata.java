@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.version.Version;
 
 /**
  * Representation of a mod's metadata.

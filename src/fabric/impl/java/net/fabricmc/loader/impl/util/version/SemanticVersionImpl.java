@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
-
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.VersionParsingException;
-
+package net.fabricmc.loader.impl.util.version;
+/// FABRIC
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-@SuppressWarnings("deprecation")
-public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.loader.api.Version {
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.VersionParsingException;
+
+/**
+ * Parser for a superset of the semantic version format described at <a href="https://semver.org">semver.org</a>.
+ *
+ * <p>This superset allows additionally
+ * <ul><li>Arbitrary number of {@code <version core>} components, but at least 1
+ * <li>{@code x}, {@code X} or {@code *} for the last {@code <version core>} component with {@code storeX} if not the first
+ * <li>Arbitrary {@code <build>} contents
+ * </ul>
+ */
+@Deprecated
+public class SemanticVersionImpl extends net.fabricmc.loader.util.version.SemanticVersionImpl implements SemanticVersion {
 	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");
 	private static final Pattern UNSIGNED_INTEGER = Pattern.compile("0|[1-9][0-9]*");
 	private final int[] components;
@@ -36,8 +45,8 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 	private final String build;
 	private String friendlyName;
 
-	public FabricSemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
-	    int buildDelimPos = version.indexOf('+');
+	public SemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
+		int buildDelimPos = version.indexOf('+');
 
 		if (buildDelimPos >= 0) {
 			build = version.substring(buildDelimPos + 1);
@@ -57,10 +66,6 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 
 		if (prerelease != null && !DOT_SEPARATED_ID.matcher(prerelease).matches()) {
 			throw new VersionParsingException("Invalid prerelease string '" + prerelease + "'!");
-		}
-
-		if (build != null && !DOT_SEPARATED_ID.matcher(build).matches()) {
-			throw new VersionParsingException("Invalid build string '" + build + "'!");
 		}
 
 		if (version.endsWith(".")) {
@@ -124,22 +129,12 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		buildFriendlyName();
 	}
 
-	public FabricSemanticVersionImpl(int[] components, String prerelease, String build) {
+	public SemanticVersionImpl(int[] components, String prerelease, String build) {
 		if (components.length == 0 || components[0] == COMPONENT_WILDCARD) throw new IllegalArgumentException("Invalid components: "+Arrays.toString(components));
 
 		this.components = components;
 		this.prerelease = prerelease;
 		this.build = build;
-
-		buildFriendlyName();
-	}
-
-	public FabricSemanticVersionImpl(org.quiltmc.loader.api.Version.Semantic quiltVersion) {
-		this.components = new int[] { quiltVersion.major(), quiltVersion.minor(), quiltVersion.patch() };
-		String pre = quiltVersion.preRelease();
-		String buildMeta = quiltVersion.buildMetadata();
-		this.prerelease = pre.isEmpty() ? null : pre;
-		this.build = buildMeta.isEmpty() ? null : buildMeta;
 
 		buildFriendlyName();
 	}
@@ -211,10 +206,10 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof FabricSemanticVersionImpl)) {
+		if (!(o instanceof SemanticVersionImpl)) {
 			return false;
 		} else {
-			FabricSemanticVersionImpl other = (FabricSemanticVersionImpl) o;
+			SemanticVersionImpl other = (SemanticVersionImpl) o;
 
 			if (!equalsComponentsExactly(other)) {
 				return false;
@@ -245,7 +240,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		return false;
 	}
 
-	public boolean equalsComponentsExactly(FabricSemanticVersionImpl other) {
+	public boolean equalsComponentsExactly(SemanticVersionImpl other) {
 		for (int i = 0; i < Math.max(getVersionComponentCount(), other.getVersionComponentCount()); i++) {
 			if (getVersionComponent(i) != other.getVersionComponent(i)) {
 				return false;
@@ -258,7 +253,7 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 	@Override
 	public int compareTo(Version other) {
 		if (!(other instanceof SemanticVersion)) {
-			return 1;
+			return getFriendlyString().compareTo(other.getFriendlyString());
 		}
 
 		SemanticVersion o = (SemanticVersion) other;
@@ -317,10 +312,5 @@ public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.l
 		} else {
 			return 0;
 		}
-	}
-
-	@Override
-	public String raw() {
-		return getFriendlyString();
 	}
 }

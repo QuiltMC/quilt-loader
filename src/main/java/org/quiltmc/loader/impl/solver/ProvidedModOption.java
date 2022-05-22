@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.solver;
 
-import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.version.Version;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 
 /**

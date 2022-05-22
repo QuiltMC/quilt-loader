@@ -17,7 +17,7 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.version.Version;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 
