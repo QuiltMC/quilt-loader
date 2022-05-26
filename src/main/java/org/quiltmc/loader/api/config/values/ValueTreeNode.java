@@ -21,7 +21,7 @@ import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
 
 /**
- * An element in a config tree.
+ * An element in a configs value tree.
  *
  * <p>Will be either a {@link TrackedValue} or {@link Section}
  */

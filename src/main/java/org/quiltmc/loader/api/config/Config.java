@@ -85,7 +85,30 @@ public interface Config {
 	TrackedValue<?> getValue(Iterable<String> key);
 
 	/**
-	 * @return all nodes of the value tree represented by this config file, including section nodes
+	 * Returns all nodes of the value tree represented by this config file, including section nodes
+	 *
+	 * <p>Section nodes are returned prior to each value within their respective section. Consider a config represented
+	 * by the following JSON5 file:
+	 * <pre>
+	 * {
+	 *     wumbo: "mayonnaise",
+	 *     gui: {
+	 *         scale: 1.0,
+	 *         fg_color: "0xFFFFFFFF",
+	 *         bg_color: "0x80000000
+	 *     },
+	 *     count: 100
+	 * }</pre>
+	 *
+	 * iterating over the nodes in the tree would produce the following nodes:
+	 * <ul>
+	 *     <li>TrackedValue("wumbo", "mayonnaise")</li>
+	 *     <li>ValueTreeNode.Section("gui")</li>
+	 *     <li>TrackedValue("gui.scale", 1.0)</li>
+	 *     <li>TrackedValue("gui.fg_color", "0xFFFFFFFF")</li>
+	 *     <li>TrackedValue("gui.bg_color", "0x80000000")</li>
+	 *     <li>TrackedValue("count", 100)</li>
+	 * </ul>
 	 */
 	Iterable<ValueTreeNode> nodes();
 
