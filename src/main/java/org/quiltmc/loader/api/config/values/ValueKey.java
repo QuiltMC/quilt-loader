@@ -17,7 +17,12 @@
 package org.quiltmc.loader.api.config.values;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.TrackedValue;
 
+/**
+ * A key that fully describes the location of a {@link TrackedValue} within a {@link Config}.
+ */
 @ApiStatus.NonExtendable
 public interface ValueKey extends Iterable<String> {
 	int length();
