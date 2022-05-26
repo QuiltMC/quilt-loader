@@ -40,12 +40,20 @@ public interface Constraint<T> {
 	 */
 	String getRepresentation();
 
-	static <T extends Number> Constraint<T> range(long from, long to) {
-		return new Range<>(from, to, Long::compareTo, Number::longValue);
+	static Constraint<Integer> range(int from, int to) {
+		return new Range<>(from, to, Integer::compareTo);
 	}
 
-	static <T extends Number> Constraint<T> range(double from, double to) {
-		return new Range<>(from, to, Double::compareTo, Number::doubleValue);
+	static Constraint<Long> range(long from, long to) {
+		return new Range<>(from, to, Long::compareTo);
+	}
+
+	static Constraint<Float> range(float from, float to) {
+		return new Range<>(from, to, Float::compareTo);
+	}
+
+	static Constraint<Double> range(double from, double to) {
+		return new Range<>(from, to, Double::compareTo);
 	}
 
 	/**
@@ -75,22 +83,20 @@ public interface Constraint<T> {
 		};
 	}
 
-	final class Range<T, BOUNDS> implements Constraint<T> {
-		private final BOUNDS min, max;
-		private final Comparator<BOUNDS> comparator;
-		private final Function<T, BOUNDS> function;
+	final class Range<T> implements Constraint<T> {
+		private final T min, max;
+		private final Comparator<T> comparator;
 
-		public Range(BOUNDS min, BOUNDS max, Comparator<BOUNDS> comparator, Function<T, BOUNDS> function) {
+		public Range(T min, T max, Comparator<T> comparator) {
 			this.min = min;
 			this.max = max;
 			this.comparator = comparator;
-			this.function = function;
 		}
 
 		@Override
 		public Optional<String> test(T value) {
-			int minTest = this.comparator.compare(this.min, this.function.apply(value));
-			int maxTest = this.comparator.compare(this.max, this.function.apply(value));
+			int minTest = this.comparator.compare(this.min, value);
+			int maxTest = this.comparator.compare(this.max, value);
 
 			if (minTest <= 0 && maxTest >= 0) {
 				return Optional.empty();

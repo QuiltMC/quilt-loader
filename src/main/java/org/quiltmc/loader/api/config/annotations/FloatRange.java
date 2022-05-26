@@ -24,18 +24,18 @@ public @interface FloatRange {
 			if (builder instanceof TrackedValue.Builder) {
 				Object defaultValue = ((TrackedValue.Builder<?>) builder).getDefaultValue();
 
-				if (defaultValue instanceof Float || defaultValue instanceof Double) {
-					process(range, (TrackedValue.Builder<? extends Number>) builder);
-				} else if (defaultValue instanceof CompoundConfigValue && (Float.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType()) || Double.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType()))) {
-					((TrackedValue.Builder<CompoundConfigValue<Number>>) builder).constraint(Constraint.all(Constraint.range(range.min(), range.max())));
+				if (defaultValue instanceof Float) {
+					((TrackedValue.Builder<Float>) builder).constraint(Constraint.range((float) range.min(), (float) range.max()));
+				} else if (defaultValue instanceof Double) {
+					((TrackedValue.Builder<Double>) builder).constraint(Constraint.range(range.min(), range.max()));
+				} else if (defaultValue instanceof CompoundConfigValue && Float.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType())) {
+					((TrackedValue.Builder<CompoundConfigValue<Float>>) builder).constraint(Constraint.all(Constraint.range((float) range.min(), (float) range.max())));
+				} else if (defaultValue instanceof CompoundConfigValue && Double.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType())) {
+					((TrackedValue.Builder<CompoundConfigValue<Double>>) builder).constraint(Constraint.all(Constraint.range(range.min(), range.max())));
 				} else {
 					throw new ConfigFieldException("Constraint FloatRange not applicable for type '" + defaultValue.getClass() + "'");
 				}
 			}
-		}
-
-		private <T extends Number> void process(FloatRange range, TrackedValue.Builder<T> builder) {
-			builder.constraint(Constraint.range(range.min(), range.max()));
 		}
 	}
 }

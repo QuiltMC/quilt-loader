@@ -24,18 +24,18 @@ public @interface IntegerRange {
 			if (builder instanceof TrackedValue.Builder) {
 				Object defaultValue = ((TrackedValue.Builder<?>) builder).getDefaultValue();
 
-				if (defaultValue instanceof Integer || defaultValue instanceof Long) {
-					process(range, (TrackedValue.Builder<? extends Number>) builder);
-				} else if (defaultValue instanceof CompoundConfigValue && (Integer.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType()) || Long.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType()))) {
-					((TrackedValue.Builder<CompoundConfigValue<Number>>) builder).constraint(Constraint.all(Constraint.range(range.min(), range.max())));
+				if (defaultValue instanceof Integer) {
+					((TrackedValue.Builder<Integer>) builder).constraint(Constraint.range((int) range.min(), (int) range.max()));
+				} else if (defaultValue instanceof Long) {
+					((TrackedValue.Builder<Long>) builder).constraint(Constraint.range(range.min(), range.max()));
+				} else if (defaultValue instanceof CompoundConfigValue && Integer.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType())) {
+					((TrackedValue.Builder<CompoundConfigValue<Integer>>) builder).constraint(Constraint.all(Constraint.range((int) range.min(), (int) range.max())));
+				} else if (defaultValue instanceof CompoundConfigValue && Long.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType())) {
+					((TrackedValue.Builder<CompoundConfigValue<Long>>) builder).constraint(Constraint.all(Constraint.range(range.min(), range.max())));
 				} else {
-					throw new ConfigFieldException("Constraint IntegerRange not applicable for type '" + defaultValue.getClass() + "'");
+					throw new ConfigFieldException("Constraint LongRange not applicable for type '" + defaultValue.getClass() + "'");
 				}
 			}
-		}
-
-		private <T extends Number> void process(IntegerRange range, TrackedValue.Builder<T> builder) {
-			builder.constraint(Constraint.range(range.min(), range.max()));
 		}
 	}
 }
