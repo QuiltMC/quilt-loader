@@ -17,13 +17,14 @@
 package org.quiltmc.loader.impl.config;
 
 import org.quiltmc.loader.api.config.Config;
+import org.quiltmc.loader.api.config.ConfigWrapper;
+import org.quiltmc.loader.api.config.WrappedConfig;
+import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.annotations.IntegerRange;
-import org.quiltmc.loader.api.config.annotations.FloatRange;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
-import org.quiltmc.loader.api.config.annotations.Comment;
 
-public final class TestReflectiveConfig {
+public final class TestReflectiveConfig extends WrappedConfig {
 	@Comment({"Comment one", "Comment two"})
 	public final int a = 0;
 

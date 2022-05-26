@@ -163,9 +163,9 @@ public interface Config {
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
+	static <C extends WrappedConfig> C create(String family, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
 		return ConfigImpl.create(family, id, path, before, configCreatorClass, after);
 	}
 
@@ -194,9 +194,9 @@ public interface Config {
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Path path, Creator before, Class<C> configCreatorClass) {
+	static <C extends WrappedConfig> C create(String family, String id, Path path, Creator before, Class<C> configCreatorClass) {
 		return create(family, id, path, before, configCreatorClass, builder -> {});
 	}
 
@@ -225,9 +225,9 @@ public interface Config {
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Path path, Class<C> configCreatorClass, Creator after) {
+	static <C extends WrappedConfig> C create(String family, String id, Path path, Class<C> configCreatorClass, Creator after) {
 		return create(family, id, path, builder -> {}, configCreatorClass, after);
 	}
 
@@ -255,9 +255,9 @@ public interface Config {
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Path path, Class<C> configCreatorClass) {
+	static <C extends WrappedConfig> C create(String family, String id, Path path, Class<C> configCreatorClass) {
 		return create(family, id, path, builder -> {}, configCreatorClass, builder -> {});
 	}
 
@@ -284,9 +284,9 @@ public interface Config {
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Creator before, Class<C> configCreatorClass, Creator after) {
+	static <C extends WrappedConfig> C create(String family, String id, Creator before, Class<C> configCreatorClass, Creator after) {
 		return create(family, id, Paths.get(""), before, configCreatorClass, after);
 	}
 
@@ -312,9 +312,9 @@ public interface Config {
 	 * @param id the config's id
 	 * @param before a {@link Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Creator before, Class<C> configCreatorClass) {
+	static <C extends WrappedConfig> C create(String family, String id, Creator before, Class<C> configCreatorClass) {
 		return create(family, id, Paths.get(""), before, configCreatorClass, builder -> {});
 	}
 
@@ -340,9 +340,9 @@ public interface Config {
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Creator} that can be used to configure the resulting config further
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Class<C> configCreatorClass, Creator after) {
+	static <C extends WrappedConfig> C create(String family, String id, Class<C> configCreatorClass, Creator after) {
 		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, after);
 	}
 
@@ -363,9 +363,9 @@ public interface Config {
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ConfigWrapper<C>}
+	 * @return a {@link WrappedConfig <C>}
 	 */
-	static <C> ConfigWrapper<C> create(String family, String id, Class<C> configCreatorClass) {
+	static <C extends WrappedConfig> C create(String family, String id, Class<C> configCreatorClass) {
 		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
 	}
 

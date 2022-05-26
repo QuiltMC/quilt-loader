@@ -16,11 +16,12 @@
 
 package org.quiltmc.loader.impl.config;
 
+import org.quiltmc.loader.api.config.WrappedConfig;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.values.ValueList;
 import org.quiltmc.loader.api.config.values.ValueMap;
 
-public final class TestReflectiveConfig2 {
+public final class TestReflectiveConfig2 extends WrappedConfig {
 	@Comment({"Comment one", "Comment two"})
 	public final int a = 0;
 	public final int b = 1;

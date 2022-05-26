@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.ConfigWrapper;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.annotations.Comment;
@@ -191,11 +190,11 @@ public class ConfigTester {
 	}
 
 	public void testReflectiveConfigs(String id, String format) {
-		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", id, TestReflectiveConfig.class, builder -> {
+		TestReflectiveConfig config = Config.create("testmod", id, TestReflectiveConfig.class, builder -> {
 			builder.format(format);
 		});
 
-		for (TrackedValue<?> value : wrapper.getConfig().values()) {
+		for (TrackedValue<?> value : config.values()) {
 			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 
 			for (String comment : value.metadata(Comment.TYPE)) {
@@ -220,11 +219,11 @@ public class ConfigTester {
 
 	@Test
 	public void testTomlConfigs() {
-		ConfigWrapper<TestReflectiveConfig> wrapper = Config.create("testmod", "testConfig12", TestReflectiveConfig.class, builder -> {
+		TestReflectiveConfig config = Config.create("testmod", "testConfig12", TestReflectiveConfig.class, builder -> {
 			builder.format("toml");
 		});
 
-		for (TrackedValue<?> value : wrapper.getConfig().values()) {
+		for (TrackedValue<?> value : config.values()) {
 			System.out.printf("\"%s\": %s%n", value.key(), value.value());
 
 			for (String comment : value.metadata(Comment.TYPE)) {
@@ -235,14 +234,14 @@ public class ConfigTester {
 
 	@Test
 	public void testValueMapBehavior() {
-		TestValueMapConfig c = Config.create("testmod", "testConfig13", TestValueMapConfig.class).getWrapped();
+		TestValueMapConfig c = Config.create("testmod", "testConfig13", TestValueMapConfig.class);
 
 		c.weights.put("" + c.weights.size(), c.weights.size());
 	}
 
 	@Test
 	public void testValueListBehavior() {
-		TestValueListConfig c = Config.create("testmod", "testConfig14", TestValueListConfig.class).getWrapped();
+		TestValueListConfig c = Config.create("testmod", "testConfig14", TestValueListConfig.class);
 
 		c.strings.add(c.strings.size() + "");
 	}

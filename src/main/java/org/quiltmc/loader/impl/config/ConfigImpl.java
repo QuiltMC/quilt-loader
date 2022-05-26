@@ -27,7 +27,7 @@ import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.ConfigWrapper;
+import org.quiltmc.loader.api.config.WrappedConfig;
 import org.quiltmc.loader.api.config.MetadataType;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.values.ValueTreeNode;
@@ -155,21 +155,13 @@ public final class ConfigImpl extends AbstractMetadataContainer implements Confi
 		return builder.build();
 	}
 
-	public static <C> ConfigWrapper<C> create(String familyId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
+	public static <C extends WrappedConfig> C create(String familyId, String id, Path path, Creator before, Class<C> configCreatorClass, Creator after) {
 		ReflectiveConfigCreator<C> creator = ReflectiveConfigCreator.of(configCreatorClass);
 		Config config = create(familyId, id, path, before, creator, after);
 		C c = creator.getInstance();
 
-		return new ConfigWrapper<C>() {
-			@Override
-			public C getWrapped() {
-				return c;
-			}
+		c.setWrappedConfig(config);
 
-			@Override
-			public Config getConfig() {
-				return config;
-			}
-		};
+		return c;
 	}
 }
