@@ -19,8 +19,12 @@ package org.quiltmc.loader.api.config;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.quiltmc.loader.api.config.values.ValueTreeNode;
+
 /**
- * A typed key to be used for setting and getting object metadata.
+ * A typed key to be used for setting and getting metadata of a {@link ValueTreeNode} or {@link Config}.
+ *
+ * <p>See also {@link TrackedValue.Builder#metadata}, {@link Config.Builder#metadata}, and {@link Config.SectionBuilder#metadata}
  */
 public final class MetadataType<T, B extends MetadataType.Builder<T>> {
 	private final Class<T> metadataClass;
