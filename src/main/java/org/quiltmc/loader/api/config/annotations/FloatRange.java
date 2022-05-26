@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 import org.quiltmc.loader.api.config.Constraint;
 import org.quiltmc.loader.api.config.MetadataContainerBuilder;
 import org.quiltmc.loader.api.config.TrackedValue;
+import org.quiltmc.loader.api.config.exceptions.ConfigFieldException;
 import org.quiltmc.loader.api.config.values.CompoundConfigValue;
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -23,10 +24,12 @@ public @interface FloatRange {
 			if (builder instanceof TrackedValue.Builder) {
 				Object defaultValue = ((TrackedValue.Builder<?>) builder).getDefaultValue();
 
-				if (defaultValue instanceof Number) {
+				if (defaultValue instanceof Float || defaultValue instanceof Double) {
 					process(range, (TrackedValue.Builder<? extends Number>) builder);
-				} else if (defaultValue instanceof CompoundConfigValue && Number.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType())) {
+				} else if (defaultValue instanceof CompoundConfigValue && (Float.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType()) || Double.class.isAssignableFrom(((CompoundConfigValue<?>) defaultValue).getType()))) {
 					((TrackedValue.Builder<CompoundConfigValue<Number>>) builder).constraint(Constraint.all(Constraint.range(range.min(), range.max())));
+				} else {
+					throw new ConfigFieldException("Constraint FloatRange not applicable for type '" + defaultValue.getClass() + "'");
 				}
 			}
 		}
