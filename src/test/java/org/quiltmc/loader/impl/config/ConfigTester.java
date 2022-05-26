@@ -209,6 +209,10 @@ public class ConfigTester {
 		Assertions.assertThrows(ConfigFieldException.class, () -> {
 			Config.create("testmod", "testConfig", TestReflectiveConfig3.class);
 		}).printStackTrace();
+
+		Assertions.assertThrows(TrackedValueException.class, () -> {
+			Config.create("testmod", "testConfig", TestReflectiveConfig4.class);
+		}).printStackTrace();
 	}
 
 	@Test
