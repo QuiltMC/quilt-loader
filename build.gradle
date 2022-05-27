@@ -54,7 +54,7 @@ allprojects {
 
 sourceSets {
 	main {
-		java.srcDirs = ['src/main/java', 'src/fabric/api', 'src/fabric/impl', 'src/fabric/legacy']
+		java.srcDirs = ['src/main/java', 'src/fabric/api/java', 'src/fabric/impl/java', 'src/fabric/legacy/java']
 	}
 }
 
