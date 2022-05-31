@@ -49,7 +49,7 @@ class ProvidedModOption extends ModLoadOption implements AliasedLoadOption {
 
 	@Override
 	String shortString() {
-		return "provided mod '" + modId() + "' from " + provider.shortString();
+		return "provided mod '" + modId() + "' version '" + version().raw() + "' from " + provider.shortString();
 	}
 
 	@Override
