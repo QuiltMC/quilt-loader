@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.game.minecraft.launchwrapper;
 
-import net.fabricmc.EnvType;
+import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
@@ -109,11 +109,11 @@ public abstract class QuiltTweaker extends QuiltLauncherBase implements ITweaker
 		launchClassLoader.addClassLoaderExclusion("org.spongepowered.asm.");
 		launchClassLoader.addClassLoaderExclusion("net.fabricmc.loader.");
 		launchClassLoader.addClassLoaderExclusion("org.quiltmc.loader.");
-		launchClassLoader.addClassLoaderExclusion("net.fabricmc.Environment");
-		launchClassLoader.addClassLoaderExclusion("net.fabricmc.EnvType");
-		launchClassLoader.addClassLoaderExclusion("net.fabricmc.ModInitializer");
-		launchClassLoader.addClassLoaderExclusion("net.fabricmc.ClientModInitializer");
-		launchClassLoader.addClassLoaderExclusion("net.fabricmc.DedicatedServerModInitializer");
+		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.Environment");
+		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.EnvType");
+		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.ModInitializer");
+		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.ClientModInitializer");
+		launchClassLoader.addClassLoaderExclusion("net.fabricmc.api.DedicatedServerModInitializer");
 
 		try {
 			init();

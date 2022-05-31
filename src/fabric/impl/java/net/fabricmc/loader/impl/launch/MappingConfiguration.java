@@ -16,98 +16,36 @@
 
 package net.fabricmc.loader.impl.launch;
 
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.JarURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
-import java.util.jar.Attributes.Name;
-import java.util.jar.Manifest;
-import java.util.zip.ZipError;
-
-import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
-import org.quiltmc.loader.impl.util.ManifestUtil;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
-
 public final class MappingConfiguration {
-	private boolean initialized;
+	private final org.quiltmc.loader.impl.launch.common.MappingConfiguration delegate;
 
-	private String gameId;
-	private String gameVersion;
-	private TinyTree mappings;
+	public MappingConfiguration(org.quiltmc.loader.impl.launch.common.MappingConfiguration delegate) {
+		this.delegate = delegate;
+	}
 
 	public String getGameId() {
-		initialize();
-
-		return gameId;
+		return delegate.getGameId();
 	}
 
 	public String getGameVersion() {
-		initialize();
-
-		return gameVersion;
+		return delegate.getGameVersion();
 	}
 
 	public boolean matches(String gameId, String gameVersion) {
-		initialize();
-
-		return (this.gameId == null || gameId == null || gameId.equals(this.gameId))
-				&& (this.gameVersion == null || gameVersion == null || gameVersion.equals(this.gameVersion));
+		return delegate.matches(gameId, gameVersion);
 	}
 
 	public TinyTree getMappings() {
-		initialize();
-
-		return mappings;
+		return delegate.getMappings();
 	}
 
 	public String getTargetNamespace() {
-		return FabricLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
+		return delegate.getTargetNamespace();
 	}
 
 	public boolean requiresPackageAccessHack() {
-		// TODO
-		return getTargetNamespace().equals("named");
-	}
-
-	private void initialize() {
-		if (initialized) return;
-
-		URL url = MappingConfiguration.class.getClassLoader().getResource("mappings/mappings.tiny");
-
-		if (url != null) {
-			try {
-				URLConnection connection = url.openConnection();
-
-				if (connection instanceof JarURLConnection) {
-					Manifest manifest = ((JarURLConnection) connection).getManifest();
-
-					if (manifest != null) {
-						gameId = ManifestUtil.getManifestValue(manifest, new Name("Game-Id"));
-						gameVersion = ManifestUtil.getManifestValue(manifest, new Name("Game-Version"));
-					}
-				}
-
-				try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-					long time = System.currentTimeMillis();
-					mappings = TinyMappingFactory.loadWithDetection(reader);
-					Log.debug(LogCategory.MAPPINGS, "Loading mappings took %d ms", System.currentTimeMillis() - time);
-				}
-			} catch (IOException | ZipError e) {
-				throw new RuntimeException("Error reading "+url, e);
-			}
-		}
-
-		if (mappings == null) {
-			Log.info(LogCategory.MAPPINGS, "Mappings not present!");
-			mappings = TinyMappingFactory.EMPTY_TREE;
-		}
-
-		initialized = true;
+		return delegate.requiresPackageAccessHack();
 	}
 }

@@ -31,9 +31,9 @@ import java.util.Map;
 import java.util.jar.Manifest;
 
 public class FabricLauncherBase implements FabricLauncher {
-	private static MappingConfiguration mappingConfiguration = new MappingConfiguration();
-
 	private final QuiltLauncher delegate = QuiltLauncherBase.getLauncher();
+
+	private final MappingConfiguration mappingConfiguration = new MappingConfiguration(delegate.getMappingConfiguration());
 
 	private FabricLauncherBase() {}
 
