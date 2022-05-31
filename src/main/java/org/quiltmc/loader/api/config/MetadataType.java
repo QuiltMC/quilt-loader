@@ -27,18 +27,12 @@ import org.quiltmc.loader.api.config.values.ValueTreeNode;
  * <p>See also {@link TrackedValue.Builder#metadata}, {@link Config.Builder#metadata}, and {@link Config.SectionBuilder#metadata}
  */
 public final class MetadataType<T, B extends MetadataType.Builder<T>> {
-	private final Class<T> metadataClass;
 	private final Supplier<Optional<T>> defaultValueSupplier;
 	private final Supplier<B> builderSupplier;
 
-	private MetadataType(Class<T> metadataClass, Supplier<Optional<T>> defaultValueSupplier, Supplier<B> builderSupplier) {
-		this.metadataClass = metadataClass;
+	private MetadataType(Supplier<Optional<T>> defaultValueSupplier, Supplier<B> builderSupplier) {
 		this.defaultValueSupplier = defaultValueSupplier;
 		this.builderSupplier = builderSupplier;
-	}
-
-	public Class<T> getMetadataClass() {
-		return this.metadataClass;
 	}
 
 	/**
@@ -52,12 +46,12 @@ public final class MetadataType<T, B extends MetadataType.Builder<T>> {
 		return this.builderSupplier.get();
 	}
 
-	public static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<Optional<T>> defaultValueSuplier, Supplier<B> builderSupplier) {
-		return new MetadataType<T, B>(typeClass, defaultValueSuplier, builderSupplier);
+	public static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Supplier<Optional<T>> defaultValueSuplier, Supplier<B> builderSupplier) {
+		return new MetadataType<>(defaultValueSuplier, builderSupplier);
 	}
 
-	public static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Class<T> typeClass, Supplier<B> builderSupplier) {
-		return create(typeClass, Optional::empty, builderSupplier);
+	public static <T, B extends MetadataType.Builder<T>> MetadataType<T, B> create(Supplier<B> builderSupplier) {
+		return create(Optional::empty, builderSupplier);
 	}
 
 	public interface Builder<T> {

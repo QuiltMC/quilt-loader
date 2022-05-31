@@ -42,7 +42,7 @@ public @interface Comment {
 	/**
 	 * A {@link MetadataType} to supply to {@link org.quiltmc.loader.api.config.Config.Builder#metadata}
 	 */
-	MetadataType<Comments, Builder> TYPE = MetadataType.create(Comments.class, () -> Optional.of(new CommentsImpl(Collections.emptyList())), Builder::new);
+	MetadataType<Comments, Builder> TYPE = MetadataType.create(() -> Optional.of(new CommentsImpl(Collections.emptyList())), Builder::new);
 
 	String[] value();
 
