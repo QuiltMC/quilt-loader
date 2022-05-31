@@ -21,7 +21,6 @@ import net.fabricmc.loader.api.VersionParsingException;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.FormattedException;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
 
 import org.quiltmc.loader.impl.discovery.ModCandidate;

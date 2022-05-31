@@ -49,8 +49,8 @@
     ]
   },
   "mainClass": {
-    "client": "net.fabricmc.loader.launch.knot.KnotClient",
-    "server": "net.fabricmc.loader.launch.knot.KnotServer",
-    "serverLauncher": "net.fabricmc.loader.launch.server.FabricServerLauncher"
+    "client": "org.quiltmc.loader.impl.launch.knot.KnotClient",
+    "server": "org.quiltmc.loader.impl.launch.knot.KnotServer",
+    "serverLauncher": "org.quiltmc.loader.impl.launch.server.QuiltServerLauncher"
   }
 }
