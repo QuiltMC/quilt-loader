@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.config.util;
+package org.quiltmc.loader.api.config.annotations;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.api.config.MetadataContainerBuilder;
 import org.quiltmc.loader.api.config.annotations.Comment;
 import org.quiltmc.loader.api.config.annotations.IntegerRange;
@@ -51,6 +52,7 @@ public final class ConfigFieldAnnotationProcessors {
 		processor.process(annotation, builder);
 	}
 
+	@ApiStatus.Internal
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public static void applyAnnotationProcessors(Annotation annotation, MetadataContainerBuilder<?> builder) {
 		for (ConfigFieldAnnotationProcessor<?> processor : PROCESSORS.getOrDefault(annotation.annotationType(), Collections.emptyList())) {

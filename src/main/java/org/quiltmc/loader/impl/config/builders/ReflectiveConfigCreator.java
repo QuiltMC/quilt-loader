@@ -24,7 +24,7 @@ import org.quiltmc.loader.api.config.Config;
 import org.quiltmc.loader.api.config.TrackedValue;
 import org.quiltmc.loader.api.config.exceptions.ConfigCreationException;
 import org.quiltmc.loader.api.config.exceptions.ConfigFieldException;
-import org.quiltmc.loader.impl.config.util.ConfigFieldAnnotationProcessors;
+import org.quiltmc.loader.api.config.annotations.ConfigFieldAnnotationProcessors;
 import org.quiltmc.loader.impl.config.util.ConfigUtils;
 
 public class ReflectiveConfigCreator<C> implements Config.Creator {
