@@ -127,7 +127,7 @@ public interface Constraint<T> {
 
 				if (error.isPresent()) {
 					if (builder.length() != 0) {
-						builder.append(", ").append(error.get());
+						builder.append(", ");
 					}
 
 					builder.append(error.get());
