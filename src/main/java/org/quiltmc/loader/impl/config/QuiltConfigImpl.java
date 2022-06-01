@@ -57,7 +57,7 @@ public final class QuiltConfigImpl {
 		}
 
 		if (defaultConfigExtension != null && !serializerMap.containsKey(defaultConfigExtension)) {
-			throw new RuntimeException("Cannot use file extension " + globalConfigExtension + " globally: no matching serializer found");
+			throw new RuntimeException("Cannot use file extension " + defaultConfigExtension + " by default: no matching serializer found");
 		}
 
 		if (defaultConfigExtension == null) {
