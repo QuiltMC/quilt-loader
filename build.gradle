@@ -84,11 +84,18 @@ dependencies {
 	api 'com.electronwill.night-config:toml:3.6.5'
 	api 'org.quiltmc:quilt-config:1.0.0-beta.2'
 
+	shadow 'com.electronwill.night-config:core:3.6.5'
+	shadow 'com.electronwill.night-config:toml:3.6.5'
+
 	testCompileOnly 'org.jetbrains:annotations:23.0.0'
 
 	// Unit testing
 	testImplementation(platform("org.junit:junit-bom:5.7.2"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
+}
+
+shadowJar {
+	relocate 'com.electronwill', 'org.quiltmc.loader.com.electronwill'
 }
 
 test {
