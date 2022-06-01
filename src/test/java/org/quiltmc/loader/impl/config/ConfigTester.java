@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,30 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.quiltmc.loader.impl.config;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 
+import com.electronwill.nightconfig.toml.TomlParser;
+import com.electronwill.nightconfig.toml.TomlWriter;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.Constraint;
-import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.annotations.Comment;
-import org.quiltmc.loader.api.config.exceptions.ConfigFieldException;
-import org.quiltmc.loader.api.config.exceptions.TrackedValueException;
-import org.quiltmc.loader.api.config.values.ValueList;
+import org.quiltmc.config.api.Config;
+import org.quiltmc.config.api.ConfigEnvironment;
+import org.quiltmc.config.api.Constraint;
+import org.quiltmc.config.api.TrackedValue;
+import org.quiltmc.config.api.annotations.Comment;
+import org.quiltmc.config.api.exceptions.ConfigFieldException;
+import org.quiltmc.config.api.exceptions.TrackedValueException;
+import org.quiltmc.config.api.values.ValueList;
+import org.quiltmc.config.api.values.ValueMap;
+import org.quiltmc.loader.api.config.QuiltConfig;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 public class ConfigTester {
 	@TempDir
 	Path temp;
 
+	static TrackedValue<String> TEST;
 	static TrackedValue<Integer> TEST_INTEGER;
 	static TrackedValue<Boolean> TEST_BOOLEAN;
 	static TrackedValue<String> TEST_STRING;
@@ -45,18 +50,65 @@ public class ConfigTester {
 	@BeforeEach
 	public void initializeConfigDir() {
 		QuiltLoaderImpl.INSTANCE.setGameProvider(new DummyGameProvider(temp));
+		QuiltConfigImpl.init();
+	}
+
+	@Test
+	public void testSerializer() {
+		Config config = QuiltConfig.create("testmod", "testConfig6", builder -> {
+			builder.field(TrackedValue.create(0, "testInteger", creator -> {
+				creator.metadata(Comment.TYPE, comments -> comments.add("Comment one"));
+				creator.metadata(Comment.TYPE, comments -> comments.add("Comment two"));
+				creator.metadata(Comment.TYPE, comments -> comments.add("Comment three"));
+			}));
+			builder.section("super_awesome_section", section1 -> {
+				section1.metadata(Comment.TYPE, comments -> comments.add("This is a section comment!"));
+				section1.field(TrackedValue.create(1, "before"));
+				section1.section("less_awesome_section", section2 -> {
+					section2.metadata(Comment.TYPE, comments -> comments.add("This is another section comment!"));
+					section2.section("regular_section", section3 -> {
+						section3.field(TrackedValue.create(0, "water"));
+						section3.field(TrackedValue.create(0, "earth"));
+						section3.field(TrackedValue.create(0, "fire", creator -> {
+							creator.metadata(Comment.TYPE, comments -> comments.add("This is a field comment!"));
+							creator.metadata(Comment.TYPE, comments -> comments.add("This is another field comment!"));
+
+						}));
+						section3.field(TrackedValue.create(0, "air"));
+					});
+					section2.field(TrackedValue.create("lemonade", "crunchy_ice"));
+				});
+				section1.field(TEST = TrackedValue.create("woot", "after"));
+			});
+			builder.field(TrackedValue.create(true, "testtt32"));
+			builder.field(TrackedValue.create(false, "testBoolean"));
+			builder.field(TrackedValue.create("blah", "testString"));
+			builder.field(TrackedValue.create(100, "a", "b", "c1", "d"));
+			builder.field(TrackedValue.create(1234, "a", "b", "c2"));
+			builder.field(TrackedValue.create(
+					ValueList.create(0, 1, 2, 3, 4), "testList1"
+			));
+			builder.field(TrackedValue.create(
+					ValueList.create(ValueMap.builder(ValueList.create("")).put("one", ValueList.create("")).build(),
+							ValueMap.builder(ValueList.create("")).put("one", ValueList.create("")).build(),
+							ValueMap.builder(ValueList.create("")).put("one", ValueList.create("")).build(),
+							ValueMap.builder(ValueList.create("")).put("one", ValueList.create("")).build()), "testList2"
+			));
+		});
+
+		TEST.setValue("This value was set programmatically!", true);
 	}
 
 	@Test
 	public void testValidation() {
 		Assertions.assertThrows(TrackedValueException.class, () -> {
-			Config.create("testmod", "testConfig1", builder -> {
+			QuiltConfig.create("testmod", "testConfig1", builder -> {
 				builder.field(TrackedValue.create(new ArrayList<Integer>(), "boop"));
 			});
 		});
 
 		Assertions.assertThrows(TrackedValueException.class, () -> {
-			Config.create("testmod", "testConfig2", builder -> {
+			QuiltConfig.create("testmod", "testConfig2", builder -> {
 				builder.field(TrackedValue.create(ValueList.create(new ArrayList<Integer>()), "boop"));
 			});
 		});
@@ -64,14 +116,13 @@ public class ConfigTester {
 
 	@Test
 	public void testValues() {
-		Config config = Config.create("testmod", "testConfig3", builder -> {
+		Config config = QuiltConfig.create("testmod", "testConfig3", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger"));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
 			builder.field(TEST_LIST = TrackedValue.create(
 					ValueList.create(0, 1, 2, 3, 4), "testList"
 			));
-			builder.field(TrackedValue.create(LoaderValue.LType.ARRAY, "testEnum"));
 			builder.section("testSection", section -> {
 				section.metadata(Comment.TYPE, comments -> comments.add("Section comment 1"));
 				section.metadata(Comment.TYPE, comments -> comments.add("Section comment 2"));
@@ -103,7 +154,7 @@ public class ConfigTester {
 
 	@Test
 	public void testMetadata() {
-		Config config = Config.create("testmod", "testConfig4", builder -> {
+		Config config = QuiltConfig.create("testmod", "testConfig4", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 				creator.metadata(Comment.TYPE, comments -> comments.add(
 						"Comment one",
@@ -126,7 +177,7 @@ public class ConfigTester {
 
 	@Test
 	public void testFlags() {
-		Config config = Config.create("testmod", "testConfig5", builder -> {
+		Config config = QuiltConfig.create("testmod", "testConfig5", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger"));
 			builder.field(TEST_BOOLEAN = TrackedValue.create(false, "testBoolean"));
 			builder.field(TEST_STRING  = TrackedValue.create("blah", "testString"));
@@ -143,7 +194,7 @@ public class ConfigTester {
 
 	@Test
 	public void testConstraints() {
-		Assertions.assertThrows(TrackedValueException.class, () -> Config.create("testmod", "testConfig6", builder -> {
+		Assertions.assertThrows(TrackedValueException.class, () -> QuiltConfig.create("testmod", "testConfig6", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 				// Should throw an exception since the default value is outside of the constraint range
 				creator.constraint(Constraint.range(5, 10));
@@ -153,7 +204,7 @@ public class ConfigTester {
 		}));
 
 		Assertions.assertThrows(TrackedValueException.class, () -> {
-			Config.create("testmod", "testConfig7", builder -> {
+			QuiltConfig.create("testmod", "testConfig7", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 					creator.constraint(Constraint.range(-10, 10));
 				}));
@@ -165,7 +216,7 @@ public class ConfigTester {
 		});
 
 		Assertions.assertThrows(TrackedValueException.class, () -> {
-			Config.create("testmod", "testConfig8", builder -> {
+			QuiltConfig.create("testmod", "testConfig8", builder -> {
 				builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 					creator.constraint(Constraint.range(-10, 10));
 				}));
@@ -178,7 +229,7 @@ public class ConfigTester {
 			TEST_INTEGER.setValue(1000, true);
 		});
 
-		Config.create("testmod", "testConfig9", builder -> {
+		QuiltConfig.create("testmod", "testConfig9", builder -> {
 			builder.field(TEST_INTEGER = TrackedValue.create(0, "testInteger", creator -> {
 				creator.constraint(Constraint.range(-10, 10));
 			}));
@@ -190,7 +241,7 @@ public class ConfigTester {
 	}
 
 	public void testReflectiveConfigs(String id, String format) {
-		TestReflectiveConfig config = Config.create("testmod", id, TestReflectiveConfig.class, builder -> {
+		TestReflectiveConfig config = QuiltConfig.create("testmod", id, TestReflectiveConfig.class, builder -> {
 			builder.format(format);
 		});
 
@@ -203,15 +254,15 @@ public class ConfigTester {
 		}
 
 		Assertions.assertThrows(ConfigFieldException.class, () -> {
-			Config.create("testmod", "testConfig", TestReflectiveConfig2.class);
+			QuiltConfig.create("testmod", "testConfig", TestReflectiveConfig2.class);
 		}).printStackTrace();
 
 		Assertions.assertThrows(ConfigFieldException.class, () -> {
-			Config.create("testmod", "testConfig", TestReflectiveConfig3.class);
+			QuiltConfig.create("testmod", "testConfig", TestReflectiveConfig3.class);
 		}).printStackTrace();
 
 		Assertions.assertThrows(TrackedValueException.class, () -> {
-			Config.create("testmod", "testConfig", TestReflectiveConfig4.class);
+			QuiltConfig.create("testmod", "testConfig", TestReflectiveConfig4.class);
 		}).printStackTrace();
 	}
 
@@ -223,7 +274,7 @@ public class ConfigTester {
 
 	@Test
 	public void testTomlConfigs() {
-		TestReflectiveConfig config = Config.create("testmod", "testConfig12", TestReflectiveConfig.class, builder -> {
+		TestReflectiveConfig config = QuiltConfig.create("testmod", "testConfig12", TestReflectiveConfig.class, builder -> {
 			builder.format("toml");
 		});
 
@@ -238,14 +289,14 @@ public class ConfigTester {
 
 	@Test
 	public void testValueMapBehavior() {
-		TestValueMapConfig c = Config.create("testmod", "testConfig13", TestValueMapConfig.class);
+		TestValueMapConfig c = QuiltConfig.create("testmod", "testConfig13", TestValueMapConfig.class);
 
 		c.weights.put("" + c.weights.size(), c.weights.size());
 	}
 
 	@Test
 	public void testValueListBehavior() {
-		TestValueListConfig c = Config.create("testmod", "testConfig14", TestValueListConfig.class);
+		TestValueListConfig c = QuiltConfig.create("testmod", "testConfig14", TestValueListConfig.class);
 
 		c.strings.add(c.strings.size() + "");
 	}

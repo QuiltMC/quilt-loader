@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.quiltmc.loader.impl.config;
 
-import org.quiltmc.loader.api.config.WrappedConfig;
-import org.quiltmc.loader.api.config.annotations.Comment;
-import org.quiltmc.loader.api.config.values.ValueList;
-import org.quiltmc.loader.api.config.values.ValueMap;
+import org.quiltmc.config.api.WrappedConfig;
+import org.quiltmc.config.api.annotations.Comment;
+import org.quiltmc.config.api.values.ValueList;
+import org.quiltmc.config.api.values.ValueMap;
 
 public final class TestReflectiveConfig2 extends WrappedConfig {
 	@Comment({"Comment one", "Comment two"})

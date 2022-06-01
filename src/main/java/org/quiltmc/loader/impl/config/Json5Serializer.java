@@ -26,22 +26,22 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.quiltmc.config.api.Config;
+import org.quiltmc.config.api.Constraint;
+import org.quiltmc.config.api.MarshallingUtils;
+import org.quiltmc.config.api.Serializer;
+import org.quiltmc.config.api.TrackedValue;
+import org.quiltmc.config.api.annotations.Comment;
+import org.quiltmc.config.api.exceptions.ConfigParseException;
+import org.quiltmc.config.api.values.CompoundConfigValue;
+import org.quiltmc.config.api.values.ConfigSerializableObject;
+import org.quiltmc.config.api.values.ValueList;
+import org.quiltmc.config.api.values.ValueMap;
+import org.quiltmc.config.api.values.ValueTreeNode;
+import org.quiltmc.config.impl.tree.TrackedValueImpl;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
-import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.exceptions.ConfigParseException;
-import org.quiltmc.loader.api.config.Constraint;
-import org.quiltmc.loader.api.config.MarshallingUtils;
-import org.quiltmc.loader.api.config.Serializer;
-import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.annotations.Comment;
-import org.quiltmc.loader.api.config.values.CompoundConfigValue;
-import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
-import org.quiltmc.loader.api.config.values.ValueList;
-import org.quiltmc.loader.api.config.values.ValueMap;
-import org.quiltmc.loader.api.config.values.ValueTreeNode;
-import org.quiltmc.loader.impl.config.tree.TrackedValueImpl;
 
 public final class Json5Serializer implements Serializer {
 	public static final Json5Serializer INSTANCE = new Json5Serializer();

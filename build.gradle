@@ -82,6 +82,7 @@ dependencies {
 
 	api 'com.electronwill.night-config:core:3.6.5'
 	api 'com.electronwill.night-config:toml:3.6.5'
+	api 'org.quiltmc:quilt-config:1.0.0-beta.2'
 
 	testCompileOnly 'org.jetbrains:annotations:23.0.0'
 

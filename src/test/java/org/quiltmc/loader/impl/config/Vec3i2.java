@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.quiltmc.loader.impl.config;
 
-package org.quiltmc.loader.api.config;
+public class Vec3i2 {
+	public final int x, y, z;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-
-/**
- * Handles serialization and deserialization of configs for a specific file type.
- */
-public interface Serializer {
-	String getFileExtension();
-
-	void serialize(Config config, OutputStream to) throws IOException;
-
-	void deserialize(Config config, InputStream from) throws IOException;
+	public Vec3i2(int x, int y, int z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
 }

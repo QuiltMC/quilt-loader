@@ -18,10 +18,9 @@ package net.fabricmc.loader.launch.knot;
 
 import net.fabricmc.api.EnvType;
 
-import org.quiltmc.loader.api.config.ConfigSerializers;
-import org.quiltmc.loader.api.config.Serializer;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
@@ -155,13 +154,7 @@ public final class Knot extends FabricLauncherBase {
 		unlocked = true;
 
 		try {
-			for (Serializer serializer : QuiltLoaderImpl.INSTANCE.getEntrypoints("config_serializer", Serializer.class)) {
-				Serializer oldValue = ConfigSerializers.register(serializer.getFileExtension(), serializer);
-
-				if (oldValue != null) {
-					Log.warn(LogCategory.CONFIG, "Replacing {} serializer {} with {}", serializer.getFileExtension(), oldValue.getClass(), serializer.getClass());
-				}
-			}
+			QuiltConfigImpl.init();
 
 			EntrypointUtils.invoke("pre_launch", org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint.class, org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
 			EntrypointUtils.invoke("preLaunch", net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint.class, net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);

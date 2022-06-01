@@ -28,16 +28,16 @@ import com.electronwill.nightconfig.core.InMemoryCommentedFormat;
 import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
 import com.electronwill.nightconfig.core.io.ConfigParser;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
-import org.quiltmc.loader.api.config.Config;
-import org.quiltmc.loader.api.config.MarshallingUtils;
-import org.quiltmc.loader.api.config.Serializer;
-import org.quiltmc.loader.api.config.TrackedValue;
-import org.quiltmc.loader.api.config.annotations.Comment;
-import org.quiltmc.loader.api.config.values.CompoundConfigValue;
-import org.quiltmc.loader.api.config.values.ConfigSerializableObject;
-import org.quiltmc.loader.api.config.values.ValueList;
-import org.quiltmc.loader.api.config.values.ValueMap;
-import org.quiltmc.loader.api.config.values.ValueTreeNode;
+import org.quiltmc.config.api.Config;
+import org.quiltmc.config.api.MarshallingUtils;
+import org.quiltmc.config.api.Serializer;
+import org.quiltmc.config.api.TrackedValue;
+import org.quiltmc.config.api.annotations.Comment;
+import org.quiltmc.config.api.values.CompoundConfigValue;
+import org.quiltmc.config.api.values.ConfigSerializableObject;
+import org.quiltmc.config.api.values.ValueList;
+import org.quiltmc.config.api.values.ValueMap;
+import org.quiltmc.config.api.values.ValueTreeNode;
 
 public final class NightConfigSerializer<C extends CommentedConfig> implements Serializer {
 	private final String fileExtension;
