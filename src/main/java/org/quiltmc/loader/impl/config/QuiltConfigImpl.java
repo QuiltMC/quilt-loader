@@ -15,11 +15,15 @@
  */
 package org.quiltmc.loader.impl.config;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import com.electronwill.nightconfig.toml.TomlParser;
 import com.electronwill.nightconfig.toml.TomlWriter;
 import org.quiltmc.config.api.ConfigEnvironment;
 import org.quiltmc.config.api.Serializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -30,15 +34,43 @@ public final class QuiltConfigImpl {
 	}
 
 	public static void init() {
-		ENV = new ConfigEnvironment(QuiltLoaderImpl.INSTANCE.getConfigDir(), new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
+		Map<String, Serializer> serializerMap = new LinkedHashMap<>();
 
-		ENV.registerSerializer(Json5Serializer.INSTANCE);
+		serializerMap.put("toml", new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
+		serializerMap.put("json5", Json5Serializer.INSTANCE);
 
 		for (Serializer serializer : QuiltLoaderImpl.INSTANCE.getEntrypoints("config_serializer", Serializer.class)) {
-			Serializer oldValue = ENV.registerSerializer(serializer);
+			Serializer oldValue = serializerMap.put(serializer.getFileExtension(), serializer);
 
 			if (oldValue != null) {
 				Log.warn(LogCategory.CONFIG, "Replacing {} serializer {} with {}", serializer.getFileExtension(), oldValue.getClass(), serializer.getClass());
+			}
+		}
+
+		String globalConfigExtension = System.getProperty(SystemProperties.GLOBAL_CONFIG_EXTENSION);
+		String defaultConfigExtension = System.getProperty(SystemProperties.DEFAULT_CONFIG_EXTENSION);
+
+		Serializer[] serializers = serializerMap.values().toArray(new Serializer[0]);
+
+		if (globalConfigExtension != null && !serializerMap.containsKey(globalConfigExtension)) {
+			throw new RuntimeException("Cannot use file extension " + globalConfigExtension + " globally: no matching serializer found");
+		}
+
+		if (defaultConfigExtension != null && !serializerMap.containsKey(defaultConfigExtension)) {
+			throw new RuntimeException("Cannot use file extension " + globalConfigExtension + " globally: no matching serializer found");
+		}
+
+		if (defaultConfigExtension == null) {
+			ENV = new ConfigEnvironment(QuiltLoaderImpl.INSTANCE.getConfigDir(), globalConfigExtension, serializers[0]);
+
+			for (int i = 1; i < serializers.length; ++i) {
+				ENV.registerSerializer(serializers[i]);
+			}
+		} else {
+			ENV = new ConfigEnvironment(QuiltLoaderImpl.INSTANCE.getConfigDir(), globalConfigExtension, serializerMap.get(defaultConfigExtension));
+
+			for (Serializer serializer : serializers) {
+				ENV.registerSerializer(serializer);
 			}
 		}
 	}
