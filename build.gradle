@@ -10,7 +10,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id 'org.cadixdev.licenser' version '0.6.1'
+	id 'org.quiltmc.gradle.licenser' version '1.1.+'
 	id 'org.quiltmc.loom' version '0.12.+' apply false
 	id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
@@ -286,9 +286,9 @@ javadoc {
 }
 
 allprojects {
-
 	license {
-		header project.rootProject.file("codeformat/FABRIC-HEADER")
+		rule project.rootProject.file("codeformat/FABRIC_MODIFIED_HEADER")
+		rule project.rootProject.file("codeformat/HEADER")
 		include '**/*.java'
 
 		// Exclude gson since it is google's code, we just modify and bundle it

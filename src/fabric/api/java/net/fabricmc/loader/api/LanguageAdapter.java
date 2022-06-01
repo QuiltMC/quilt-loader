@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +96,7 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *   You would declare {@code "net.fabricmc.example.ExampleMod::init"}.</p>
  *   </li>
  * </ul>
- * 
+ *
  * @deprecated Please move to quilt's {@link org.quiltmc.loader.api.LanguageAdapter}.
  */
 @Deprecated
@@ -117,7 +118,7 @@ public interface LanguageAdapter extends org.quiltmc.loader.api.LanguageAdapter 
 
 	@Override
 	default <T> T create(org.quiltmc.loader.api.ModContainer mod, String value, Class<T> type)
-		throws org.quiltmc.loader.api.LanguageAdapterException {
+			throws org.quiltmc.loader.api.LanguageAdapterException {
 
 		try {
 			return create(new ModContainerImpl(mod), value, type);

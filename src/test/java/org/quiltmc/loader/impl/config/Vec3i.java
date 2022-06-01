@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.quiltmc.loader.impl.config;
 
 import org.quiltmc.config.api.values.ComplexConfigValue;
