@@ -153,9 +153,9 @@ public final class Knot extends FabricLauncherBase {
 		provider.unlockClassPath(this);
 		unlocked = true;
 
-		try {
-			QuiltConfigImpl.init();
+		QuiltConfigImpl.init();
 
+		try {
 			EntrypointUtils.invoke("pre_launch", org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint.class, org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
 			EntrypointUtils.invoke("preLaunch", net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint.class, net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
 		} catch (RuntimeException e) {
