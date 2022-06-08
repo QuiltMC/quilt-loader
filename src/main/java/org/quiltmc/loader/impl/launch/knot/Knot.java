@@ -20,6 +20,7 @@ import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -150,6 +151,8 @@ public final class Knot extends QuiltLauncherBase {
 
 		provider.unlockClassPath(this);
 		unlocked = true;
+
+		QuiltConfigImpl.init();
 
 		try {
 			// If the very first class transformed by mixin is also referenced by a mixin config
