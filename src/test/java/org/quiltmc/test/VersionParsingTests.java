@@ -25,9 +25,6 @@ import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class VersionParsingTests extends JsonTestBase {
 	static void quilt(String raw) {

@@ -55,14 +55,19 @@ public final class UrlUtil {
 	public static Path getSourcePath(String filename, URL resourceURL) throws UrlConversionException {
 		try {
 			return asPath(getSource(filename, resourceURL));
-		} catch (URISyntaxException e) {
+		} catch (ExceptionUtil.WrappedException e) {
 			throw new UrlConversionException(e);
 		}
 	}
 
-	public static Path asPath(URL url) throws URISyntaxException {
-		return Paths.get(url.toURI());
+	public static Path asPath(URL url) {
+		try {
+			return Paths.get(url.toURI());
+		} catch (URISyntaxException e) {
+			throw ExceptionUtil.wrap(e);
+		}
 	}
+
 
 	public static URL asUrl(File file) throws MalformedURLException {
 		return file.toURI().toURL();

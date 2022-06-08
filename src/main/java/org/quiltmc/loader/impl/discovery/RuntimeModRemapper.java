@@ -32,8 +32,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
-import net.fabricmc.loader.launch.common.FabricLauncher;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
@@ -61,7 +61,7 @@ public final class RuntimeModRemapper {
 				.filter(mc -> !mc.requiresRemap())
 				.collect(Collectors.toList());
 
-		FabricLauncher launcher = FabricLauncherBase.getLauncher();
+		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 				.withMappings(TinyRemapperMappingsHelper.create(launcher.getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
@@ -143,7 +143,7 @@ public final class RuntimeModRemapper {
 				}
 				// TODO: intentional leak?
 				FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.outputPath, false);
-				remappedMods.add(new ModCandidate(mod.getOriginPath(), jarFs.get().getPath("/"), mod.getInfo(), 0, false));
+				remappedMods.add(new ModCandidate(mod.getOriginPath(), jarFs.get().getPath("/"), mod.getInfo(), mod.getDepth(), false));
 			}
 
 		} catch (IOException e) {

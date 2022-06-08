@@ -28,7 +28,6 @@ import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.*;
-import org.quiltmc.loader.api.VersionConstraint.Type;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;

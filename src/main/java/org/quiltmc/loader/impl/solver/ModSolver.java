@@ -101,11 +101,11 @@ public final class ModSolver {
 					fullCandidateMap.computeIfAbsent(modProvide, i -> new ArrayList<>()).addAll(s);
 				}
 
-				if (mcs.isUserProvided()) {
-					mandatoryMods.put(mcs.getModId(), s.iterator().next());
+				if (mcs.getDepthZeroCandidate() != null) {
+					mandatoryMods.put(mcs.getModId(), mcs.getDepthZeroCandidate());
 				}
 			} catch (ModSolvingException e) {
-				// Only thrown by "ModCandidateSet.toSortedSet" when there are duplicate mandatory mods.
+				// Only thrown by "ModCandidateSet.getDepthZeroCandidate" when there are duplicate mandatory mods.
 				// We collect them in a list so we can display all of the errors.
 				errors.add(e);
 			}

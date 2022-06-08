@@ -20,7 +20,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
 // Don't forget to change this in the QuiltLoaderImpl class as well
-version = "0.16.0-beta.13"
+version = "0.17.0-beta.2"
 def ENV = System.getenv()
 
 allprojects {
@@ -52,6 +52,11 @@ allprojects {
 	}
 }
 
+sourceSets {
+	main {
+		java.srcDirs = ['src/main/java', 'src/fabric/api/java', 'src/fabric/impl/java', 'src/fabric/legacy/java']
+	}
+}
 
 configurations {
 	include
@@ -77,7 +82,7 @@ dependencies {
 	api 'net.fabricmc:tiny-remapper:0.8.1'
 	api 'net.fabricmc:access-widener:2.1.0'
 
-	api 'org.quiltmc:quilt-json5:1.0.0'
+	/*include*/ api 'org.quiltmc:quilt-json5:1.0.1'
 	include 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
 	api 'com.electronwill.night-config:core:3.6.5'
@@ -149,7 +154,7 @@ task getSat4jAbout(type: Copy) {
 		}
 	}
 
-	rename 'about.html', 'net/fabricmc/loader/impl/lib/sat4j/about-sat4j.html'
+	rename 'about.html', 'org/quiltmc/loader/impl/lib/sat4j/about-sat4j.html'
 
 	into layout.buildDirectory.dir("sat4j")
 }
@@ -171,8 +176,8 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	archiveClassifier = "fat"
 	configurations = [project.configurations.include]
 
-	relocate 'org.sat4j', 'net.fabricmc.loader.impl.lib.sat4j'
-
+	relocate 'org.quiltmc.loader.util.sat4j', 'org.quiltmc.loader.impl.lib.sat4j'
+	//relocate 'org.quiltmc.json5', 'org.quiltmc.loader.impl.lib.json5'
 	exclude 'about.html'
 	exclude 'sat4j.version'
 	exclude 'META-INF/maven/org.ow2.sat4j/*/**'

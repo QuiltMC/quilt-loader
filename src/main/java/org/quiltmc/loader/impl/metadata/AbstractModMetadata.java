@@ -18,7 +18,6 @@ package org.quiltmc.loader.impl.metadata;
 
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractModMetadata implements ModMetadata {
 	public static final String TYPE_BUILTIN = "builtin";
