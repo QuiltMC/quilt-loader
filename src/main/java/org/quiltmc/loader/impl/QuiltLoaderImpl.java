@@ -93,6 +93,8 @@ public final class QuiltLoaderImpl {
 	private static final String TMP_DIR_NAME = "tmp"; // relative to cache dir
 
 	protected final Map<String, ModContainerImpl> modMap = new HashMap<>();
+
+	@Deprecated
 	private List<ModCandidate> modCandidates;
 	protected List<ModContainerImpl> mods = new ArrayList<>();
 

@@ -45,7 +45,7 @@ public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 
 		if (fabricMeta instanceof QuiltModMetadataWrapperFabric) {
 			// A quilt mod
-			// builtin mods currently can't be anything other than fabric meta mods
+			// builtin mods currently can't be anything other than quilt meta mods
 			sourceType = BasicSourceType.NORMAL_QUILT;
 		} else if (AbstractModMetadata.TYPE_BUILTIN.equals(fabricMeta.getType())) {
 			sourceType = BasicSourceType.BUILTIN;

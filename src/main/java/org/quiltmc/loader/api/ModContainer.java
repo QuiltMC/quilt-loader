@@ -65,9 +65,10 @@ public interface ModContainer {
 	 *         path. */
 	List<List<Path>> getSourcePaths();
 
-	/** Gets the "basic source type" of this mod, which represents where it comes from. Since plugins will come
-	 * eventually (and complicate the question of "what type is this mod") this is intentionally an enum, where
-	 * additional methods will be added instead of extending this one. */
+	/** Gets the "basic source type" of this mod, which represents where it comes from. Some plugins may provide more
+	 * information on where their mods came from - although you'll need to reference those plugins for obtaining that
+	 * information. (It might be exposed in a getter method in one of the plugins classes, or it could be an extension
+	 * interface of this class). */
 	BasicSourceType getSourceType();
 
 	public enum BasicSourceType {

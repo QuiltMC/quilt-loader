@@ -56,6 +56,8 @@ public abstract class ModLoadOption extends LoadOption {
 
 	public abstract PluginGuiIcon modTypeIcon();
 
+//	public abstract ModContainer convertToMod();
+
 	@Override
 	public String toString() {
 		return shortString();
