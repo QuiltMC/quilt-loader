@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.jar.Manifest;
 
+@Deprecated
 public class FabricLauncherBase implements FabricLauncher {
 	private final QuiltLauncher delegate = QuiltLauncherBase.getLauncher();
 

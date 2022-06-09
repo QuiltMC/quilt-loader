@@ -21,6 +21,7 @@ import java.util.Collection;
 
 import org.quiltmc.loader.api.MappingResolver;
 
+@Deprecated
 public class MappingResolverImpl implements net.fabricmc.loader.api.MappingResolver {
 	private final MappingResolver quilt;
 

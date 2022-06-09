@@ -18,6 +18,7 @@ package net.fabricmc.loader.impl.launch;
 
 import net.fabricmc.mapping.tree.TinyTree;
 
+@Deprecated
 public final class MappingConfiguration {
 	private final org.quiltmc.loader.impl.launch.common.MappingConfiguration delegate;
 

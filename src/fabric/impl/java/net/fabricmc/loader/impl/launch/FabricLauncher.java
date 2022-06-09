@@ -26,6 +26,7 @@ import java.util.jar.Manifest;
 
 import net.fabricmc.api.EnvType;
 
+@Deprecated
 public interface FabricLauncher {
 	MappingConfiguration getMappingConfiguration();
 
