@@ -16,10 +16,9 @@
 
 package org.quiltmc.loader.impl.config;
 
-import net.fabricmc.loader.launch.common.FabricLauncher;
-
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.Arguments;
 
 import java.nio.file.Path;
@@ -83,12 +82,12 @@ public class DummyGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean locateGame(FabricLauncher launcher, String[] args) {
+	public boolean locateGame(QuiltLauncher launcher, String[] args) {
 		return false;
 	}
 
 	@Override
-	public void initialize(FabricLauncher launcher) {
+	public void initialize(QuiltLauncher launcher) {
 
 	}
 
@@ -98,7 +97,7 @@ public class DummyGameProvider implements GameProvider {
 	}
 
 	@Override
-	public void unlockClassPath(FabricLauncher launcher) {
+	public void unlockClassPath(QuiltLauncher launcher) {
 
 	}
 
