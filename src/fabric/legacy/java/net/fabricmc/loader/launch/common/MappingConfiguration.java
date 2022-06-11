@@ -25,6 +25,6 @@ import net.fabricmc.mapping.tree.TinyTree;
 @Deprecated
 public class MappingConfiguration {
 	public TinyTree getMappings() {
-		return FabricLauncherBase.getLauncher().getMappingConfiguration().getMappings();
+		return net.fabricmc.loader.impl.launch.FabricLauncherBase.getLauncher().getMappingConfiguration().getMappings();
 	}
 }
