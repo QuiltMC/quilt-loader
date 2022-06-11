@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -541,6 +542,7 @@ public final class QuiltStatusTree {
 			QuiltStatusNode sub = new QuiltStatusNode(this, lines[0]);
 			children.add(sub);
 			sub.setError();
+			sub.expandByDefault = true;
 
 			for (int i = 1; i < lines.length; i++) {
 				sub.addChild(lines[i]);

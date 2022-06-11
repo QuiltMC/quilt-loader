@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,14 +55,19 @@ public final class UrlUtil {
 	public static Path getSourcePath(String filename, URL resourceURL) throws UrlConversionException {
 		try {
 			return asPath(getSource(filename, resourceURL));
-		} catch (URISyntaxException e) {
+		} catch (ExceptionUtil.WrappedException e) {
 			throw new UrlConversionException(e);
 		}
 	}
 
-	public static Path asPath(URL url) throws URISyntaxException {
-		return Paths.get(url.toURI());
+	public static Path asPath(URL url) {
+		try {
+			return Paths.get(url.toURI());
+		} catch (URISyntaxException e) {
+			throw ExceptionUtil.wrap(e);
+		}
 	}
+
 
 	public static URL asUrl(File file) throws MalformedURLException {
 		return file.toURI().toURL();

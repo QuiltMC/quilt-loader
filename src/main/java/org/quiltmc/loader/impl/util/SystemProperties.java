@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +27,10 @@ public final class SystemProperties {
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
 	public static final String MODS_DIRECTORY = "loader.modsDir";
 	public static final String CONFIG_DIRECTORY = "loader.configDir";
+	// the file extension to be used for configs that do not explicitly declare a specific extension
+	public static final String DEFAULT_CONFIG_EXTENSION = "loader.defaultConfigExtension";
+	// the file extension to use for ALL configs, overriding explicit defaults
+	public static final String GLOBAL_CONFIG_EXTENSION = "loader.globalConfigExtension";
 	public static final String LOG_FILE = "loader.log.file";
 	public static final String LOG_LEVEL = "loader.log.level";
 	public static final String SKIP_MC_PROVIDER = "loader.skipMcProvider";

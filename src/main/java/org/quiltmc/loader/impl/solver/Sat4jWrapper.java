@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -521,6 +523,22 @@ class Sat4jWrapper implements RuleContext {
 			}
 
 			return new NegatedLoadOption(RuleDefinition.process(option));
+		}
+
+		@Override
+		public LoadOption[] deduplicate(LoadOption... options) {
+			Map<LoadOption, String> set = new IdentityHashMap<>();
+			List<LoadOption> dst = new ArrayList<>(options.length);
+			for (LoadOption option : options) {
+				if (option instanceof AliasedLoadOption) {
+					option = ((AliasedLoadOption) option).getTarget();
+				}
+
+				if (set.put(option, "") == null) {
+					dst.add(option);
+				}
+			}
+			return dst.toArray(new LoadOption[0]);
 		}
 
 		private void rule(RuleDefinition def) {

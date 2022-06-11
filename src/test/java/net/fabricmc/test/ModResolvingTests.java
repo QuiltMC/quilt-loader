@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,6 +151,26 @@ final class ModResolvingTests {
 		assertNoMoreMods(modSet);
 	}
 
+	// This currently fails
+//	@Test
+//	public void multiTarget() throws Exception {
+//		ModSolveResult modSet = resolveModSet("valid", "multi_target");
+//
+//		assertModPresent(modSet, "minecraft", "1.18.2");
+//		assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
+//		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+//		assertNoMoreMods(modSet);
+//	}
+
+	@Test
+	public void testJijProvided() throws ModResolutionException {
+		ModSolveResult modSet = resolveModSet("valid", "jij_provided");
+
+		assertModPresent(modSet, "number_overhaul", "1.0.0");
+		assertModPresent(modSet, "uwu-lib", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
 	@Test
 	public void quiltLoadType() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "quilt_load_type");
@@ -162,6 +182,15 @@ final class ModResolvingTests {
 	@Test
 	public void quiltIncludedDep() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "quilt_included_dep");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void quiltGroupDep() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_group_dep");
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");

@@ -10,7 +10,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id 'org.cadixdev.licenser' version '0.6.1'
+	id 'org.quiltmc.gradle.licenser' version '1.1.+'
 	id 'org.quiltmc.loom' version '0.12.+' apply false
 	id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
@@ -20,7 +20,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
 // Don't forget to change this in the QuiltLoaderImpl class as well
-version = "0.16.0-beta.3"
+version = "0.17.0"
 def ENV = System.getenv()
 
 allprojects {
@@ -52,6 +52,11 @@ allprojects {
 	}
 }
 
+sourceSets {
+	main {
+		java.srcDirs = ['src/main/java', 'src/fabric/api/java', 'src/fabric/impl/java', 'src/fabric/legacy/java']
+	}
+}
 
 configurations {
 	include
@@ -77,9 +82,15 @@ dependencies {
 	api 'net.fabricmc:tiny-remapper:0.8.1'
 	api 'net.fabricmc:access-widener:2.1.0'
 
-	api 'org.quiltmc:quilt-json5:1.0.0'
+	/*include*/ api 'org.quiltmc:quilt-json5:1.0.1'
 	include 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
 
+	include 'com.electronwill.night-config:core:3.6.5'
+	include 'com.electronwill.night-config:toml:3.6.5'
+	api 'org.quiltmc:quilt-config:1.0.0-beta.4'
+
+	shadow 'com.electronwill.night-config:core:3.6.5'
+	shadow 'com.electronwill.night-config:toml:3.6.5'
 
 	testCompileOnly 'org.jetbrains:annotations:23.0.0'
 
@@ -106,9 +117,11 @@ java {
 	withJavadocJar()
 	withSourcesJar()
 }
+
 compileJava {
 	options.release.set(8)
 }
+
 jar {
 	enabled = false
 	// Set the classifier to fix gradle task validation confusion.
@@ -139,7 +152,7 @@ task getSat4jAbout(type: Copy) {
 		}
 	}
 
-	rename 'about.html', 'net/fabricmc/loader/impl/lib/sat4j/about-sat4j.html'
+	rename 'about.html', 'org/quiltmc/loader/impl/lib/sat4j/about-sat4j.html'
 
 	into layout.buildDirectory.dir("sat4j")
 }
@@ -161,8 +174,9 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	archiveClassifier = "fat"
 	configurations = [project.configurations.include]
 
-	relocate 'org.sat4j', 'net.fabricmc.loader.impl.lib.sat4j'
-
+	relocate 'org.quiltmc.loader.util.sat4j', 'org.quiltmc.loader.impl.lib.sat4j'
+	relocate 'com.electronwill', 'org.quiltmc.loader.impl.lib.electronwill'
+	//relocate 'org.quiltmc.json5', 'org.quiltmc.loader.impl.lib.json5'
 	exclude 'about.html'
 	exclude 'sat4j.version'
 	exclude 'META-INF/maven/org.ow2.sat4j/*/**'
@@ -170,7 +184,7 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	outputs.upToDateWhen { false }
 }
 
-File proguardFile = file("build/libs/fabric-loader-${version}.jar")
+File proguardFile = file("build/libs/quilt-loader-${version}.jar")
 
 import proguard.gradle.ProGuardTask
 task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
@@ -271,9 +285,9 @@ javadoc {
 }
 
 allprojects {
-
 	license {
-		header project.rootProject.file("codeformat/FABRIC-HEADER")
+		rule project.rootProject.file("codeformat/FABRIC_MODIFIED_HEADER")
+		rule project.rootProject.file("codeformat/HEADER")
 		include '**/*.java'
 
 		// Exclude gson since it is google's code, we just modify and bundle it

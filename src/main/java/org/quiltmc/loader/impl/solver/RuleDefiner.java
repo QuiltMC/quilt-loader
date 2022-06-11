@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,10 @@ interface RuleDefiner {
 	 *         FALSE. (If you double-negate a {@link LoadOption} then it will return itself, rather than being
 	 *         double-wrapped). */
 	LoadOption negate(LoadOption option);
+
+	/** @param options the options to process. Any {@link AliasedLoadOption}s are resolved before duplicate removal.
+	 * @return an array with any duplicates of the given array removed. */
+	LoadOption[] deduplicate(LoadOption... options);
 
 	/** Defines the current {@link Rule} as one where at least one of the given options must be TRUE in order to
 	 * match.
@@ -53,7 +57,7 @@ interface RuleDefiner {
 	 * match.
 	 * <p>
 	 * This is identical to calling {@link #atLeast(int, LoadOption...)} with the count, and
-	 * {@link #atMost(int, LoadOption...)} with the count. (However debugging will show this as a sigle rule, rather
+	 * {@link #atMost(int, LoadOption...)} with the count. (However debugging will show this as a single rule, rather
 	 * than two).
 	 * 
 	 * @param options The array of options. This is copied internally.
@@ -64,7 +68,7 @@ interface RuleDefiner {
 	 * number of options must be TRUE in order to match.
 	 * <p>
 	 * This is identical to calling {@link #atLeast(int, LoadOption...)} with the minimum, and
-	 * {@link #atMost(int, LoadOption...)} with the maximum. (However debugging will show this as a sigle rule, rather
+	 * {@link #atMost(int, LoadOption...)} with the maximum. (However debugging will show this as a single rule, rather
 	 * than two).
 	 * 
 	 * @param options The array of options. This is copied internally.

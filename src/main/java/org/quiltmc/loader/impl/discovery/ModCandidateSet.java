@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 
 import net.fabricmc.loader.api.Version;
@@ -87,18 +88,20 @@ public class ModCandidateSet {
 		return true;
 	}
 
-	public boolean isUserProvided() {
-		return !depthZeroCandidates.isEmpty();
-	}
-
-	public Collection<ModCandidate> toSortedSet() throws ModSolvingException {
+	public @Nullable ModCandidate getDepthZeroCandidate() throws ModSolvingException {
 		if (depthZeroCandidates.size() > 1) {
 			StringBuilder sb = new StringBuilder("Duplicate mandatory mods found for '" + modId + "':");
 			for (ModCandidate mc : depthZeroCandidates) {
 				sb.append("\n").append(mc.getInfo().getVersion()).append(" from ").append(" TODO");
 			}
 			throw new ModSolvingException(sb.toString());
-		} else if (candidates.size() > 1) {
+		} else {
+			return depthZeroCandidates.isEmpty() ? null : depthZeroCandidates.iterator().next();
+		}
+	}
+
+	public Collection<ModCandidate> toSortedSet() throws ModSolvingException {
+		if (candidates.size() > 1) {
 			List<ModCandidate> out = new ArrayList<>(candidates.values());
 			out.sort(ModCandidateSet::compare);
 			return out;

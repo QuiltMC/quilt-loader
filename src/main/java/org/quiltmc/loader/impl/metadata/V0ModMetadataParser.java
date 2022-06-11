@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ContactInformation;
@@ -95,6 +96,11 @@ final class V0ModMetadataParser {
 
 				try {
 					version = VersionParser.parse(rawVersion, false);
+					if (!(version instanceof SemanticVersion)) {
+						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " does not respect SemVer -- comparison support is limited."));
+					} else if (((SemanticVersion) version).getVersionComponentCount() >= 4) {
+						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " has more than 3 version components, which may not be fully supported."));
+					}
 				} catch (VersionParsingException e) {
 					throw new ParseMetadataException(String.format("Failed to parse version: %s", rawVersion), e);
 				}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,9 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 			}
 		}
 
-		ModLoadOption[] array = sources.toArray(new ModLoadOption[0]);
+		LoadOption[] array = sources.toArray(new LoadOption[0]);
+
+		array = definer.deduplicate(array);
 
 		if (anyAreAlways) {
 			definer.exactly(1, array);
@@ -112,7 +114,7 @@ final class OptionalModIdDefintion extends ModIdDefinition {
 	public void fallbackErrorDescription(StringBuilder errors) {
 		errors.append(toString());
 		for (ModLoadOption option : sources) {
-			errors.append("\n\t - v");
+			errors.append("\n\t - ");
 			errors.append(option.getSpecificInfo());
 		}
 	}

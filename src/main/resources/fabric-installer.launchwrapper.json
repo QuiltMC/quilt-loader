@@ -24,24 +24,28 @@
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm:9.2",
+        "name": "org.ow2.asm:asm:9.3",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-analysis:9.2",
+        "name": "org.ow2.asm:asm-analysis:9.3",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-commons:9.2",
+        "name": "org.ow2.asm:asm-commons:9.3",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-tree:9.2",
+        "name": "org.ow2.asm:asm-tree:9.3",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-util:9.2",
+        "name": "org.ow2.asm:asm-util:9.3",
         "url": "https://maven.fabricmc.net/"
+      },
+      {
+        "name": "org.quiltmc:quilt-config:1.0.0-beta.4",
+        "url": "https://maven.quiltmc.org/repository/release/"
       }
     ],
     "server": [

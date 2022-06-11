@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +18,7 @@
 package org.quiltmc.loader.api.entrypoint;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
 
 /**
  * Entrypoint getting invoked just before launching the game.
@@ -26,10 +28,10 @@ import org.quiltmc.loader.api.ModContainer;
  * on its own class to avoid running static initializers too early, e.g. because they were referenced in field or method
  * signatures in the same class.
  *
- * <p>The entrypoint is exposed with {@code preLaunch} key in the mod json and runs for any environment. It usually
+ * <p>The entrypoint is exposed with {@code pre_launch} key in the mod json and runs for any environment. It usually
  * executes several seconds before the {@code main}/{@code client}/{@code server} entrypoints.
  * 
- * @see net.fabricmc.loader.api.FabricLoader#getEntrypointContainers(String, Class) 
+ * @see QuiltLoader#getEntrypointContainers(String, Class) 
  */
 @FunctionalInterface
 public interface PreLaunchEntrypoint extends GameEntrypoint {

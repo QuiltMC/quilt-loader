@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class ProvidedModOption extends ModLoadOption implements AliasedLoadOption {
 
 	@Override
 	String shortString() {
-		return "provided mod '" + modId() + "' from " + provider.shortString();
+		return "provided mod '" + modId() + "' version '" + version().raw() + "' from " + provider.shortString();
 	}
 
 	@Override

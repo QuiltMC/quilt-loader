@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,20 +113,20 @@ public final class VersionConstraintImpl implements VersionConstraint {
 			FabricSemanticVersionImpl fVersion = (FabricSemanticVersionImpl) version;
 			switch (type) {
 				case EQUALS:
-					return semanticVersion.compareTo(fVersion) == 0;
+					return fVersion.compareTo(semanticVersion) == 0;
 				case GREATER_THAN:
-					return semanticVersion.compareTo(fVersion) > 0;
+					return fVersion.compareTo(semanticVersion) > 0;
 				case GREATER_THAN_OR_EQUAL:
-					return semanticVersion.compareTo(fVersion) >= 0;
+					return fVersion.compareTo(semanticVersion) >= 0;
 				case LESSER_THAN:
-					return semanticVersion.compareTo(fVersion) < 0;
+					return fVersion.compareTo(semanticVersion) < 0;
 				case LESSER_THAN_OR_EQUAL:
-					return semanticVersion.compareTo(fVersion) <= 0;
+					return fVersion.compareTo(semanticVersion) <= 0;
 				case SAME_MAJOR:
-					return semanticVersion.getVersionComponent(0) == fVersion.getVersionComponent(0);
+					return fVersion.getVersionComponent(0) == semanticVersion.getVersionComponent(0);
 				case SAME_MAJOR_AND_MINOR:
-					return semanticVersion.getVersionComponent(0) == fVersion.getVersionComponent(0)
-						&& semanticVersion.getVersionComponent(1) == fVersion.getVersionComponent(1);
+					return fVersion.getVersionComponent(0) == semanticVersion.getVersionComponent(0)
+						&& fVersion.getVersionComponent(1) == semanticVersion.getVersionComponent(1);
 				default:
 					throw new IllegalStateException("Unknown VersionConstraint.Type " + type);
 			}

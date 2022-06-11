@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +26,7 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 
 import org.quiltmc.loader.impl.util.Arguments;
 
@@ -42,10 +43,10 @@ public interface GameProvider {
 	boolean requiresUrlClassLoader();
 
 	boolean isEnabled();
-	boolean locateGame(FabricLauncher launcher, String[] args);
-	void initialize(FabricLauncher launcher);
+	boolean locateGame(QuiltLauncher launcher, String[] args);
+	void initialize(QuiltLauncher launcher);
 	GameTransformer getEntrypointTransformer();
-	void unlockClassPath(FabricLauncher launcher);
+	void unlockClassPath(QuiltLauncher launcher);
 	void launch(ClassLoader loader);
 
 	default boolean displayCrash(Throwable exception, String context) {

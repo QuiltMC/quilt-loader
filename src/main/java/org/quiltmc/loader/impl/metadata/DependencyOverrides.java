@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import net.fabricmc.loader.api.VersionParsingException;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.FormattedException;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.loader.api.metadata.ModDependency;
 
 import org.quiltmc.loader.impl.discovery.ModCandidate;
