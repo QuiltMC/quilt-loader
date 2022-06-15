@@ -114,6 +114,41 @@ public class EntrypointPatch extends GamePatch {
 			}
 
 			if (gameEntrypoint == null) {
+
+				// 22w24a moved all main code into a separate method, called by main
+				// so we check to see if there's a single method invocation to a different method in the same class
+				// before continuing
+				MethodInsnNode singleMethodInsn = null;
+				for (AbstractInsnNode insn : mainMethod.instructions) {
+					if (insn instanceof MethodInsnNode) {
+						MethodInsnNode method = (MethodInsnNode) insn;
+						if (singleMethodInsn != null) {
+							singleMethodInsn = null;
+							break;
+						} else {
+							singleMethodInsn = method;
+						}
+					}
+				}
+
+				if (singleMethodInsn != null) {
+					if (mainClass.name.equals(singleMethodInsn.owner)
+						&& singleMethodInsn.desc.startsWith("([Ljava/lang/String;")) {
+
+						for (MethodNode method : mainClass.methods) {
+							if (!method.name.equals(singleMethodInsn.name)) {
+								continue;
+							}
+							if (!method.desc.equals(singleMethodInsn.desc)) {
+								continue;
+							}
+							mainMethod = method;
+							break;
+						}
+					}
+				}
+				// End of 22w24a compat changes
+
 				// modern method search routes
 				MethodInsnNode newGameInsn = (MethodInsnNode) findInsn(mainMethod,
 						type == EnvType.CLIENT
