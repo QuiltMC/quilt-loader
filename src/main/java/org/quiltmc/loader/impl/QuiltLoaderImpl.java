@@ -41,6 +41,7 @@ import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionResult;
 import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
@@ -60,6 +61,7 @@ import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -255,16 +257,64 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
+		List<ModLoadOption> modList = new ArrayList<>();
+		modList.addAll(result.directMods().values());
+
+		performMixinReordering(modList);
+		performLoadLateReordering(modList);
+
 		// TODO (in no particular order):
-		// - re-order mod list based on:
-		// - - mixin compat
-		// - - the "load late" system property
 		// - perform remapping
-		// - resolve final mod list
-		// - print mod list
 		// - turn ModLoadOptions into real mods, and pass them into addMod()
+		// - - which does:
+		// - - Double-checks for duplicates
+		// - - Rejects non-environment-matching mods
+		// - - Creates the container
+		// - puts the mod containing in the mod list & map
+		// - puts the provided mods in the mod map
+		// - print mod list
 
 		throw new AbstractMethodError("// TODO: Implement setup!");
+	}
+
+	private static void performMixinReordering(List<ModLoadOption> modList) {
+
+		// Keep Mixin 0.9.2 compatible mods first in the load order, temporary fix for https://github.com/FabricMC/Mixin/issues/89
+		List<ModLoadOption> newMixinCompatMods = new ArrayList<>();
+
+		for (Iterator<ModLoadOption> it = modList.iterator(); it.hasNext();) {
+			ModLoadOption mod = it.next();
+			boolean isFabric = mod instanceof FabricModOption;
+			if (FabricMixinBootstrap.MixinConfigDecorator.getMixinCompat(isFabric, mod.metadata()) != FabricUtil.COMPATIBILITY_0_9_2) {
+				it.remove();
+				newMixinCompatMods.add(mod);
+			}
+		}
+
+		modList.addAll(newMixinCompatMods);
+	}
+
+	private static void performLoadLateReordering(List<ModLoadOption> modList) {
+		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
+
+		if (modsToLoadLate != null) {
+
+			List<ModLoadOption> lateMods = new ArrayList<>();
+
+			for (String modId : modsToLoadLate.split(",")) {
+				for (Iterator<ModLoadOption> it = modList.iterator(); it.hasNext(); ) {
+					ModLoadOption mod = it.next();
+
+					if (mod.id().equals(modId)) {
+						it.remove();
+						lateMods.add(mod);
+						break;
+					}
+				}
+			}
+
+			modList.addAll(lateMods);
+		}
 	}
 
 	private void oldSetup() throws ModResolutionException { 
