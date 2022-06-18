@@ -42,7 +42,7 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 		allOptions = new ArrayList<>();
 
 		if (ModSolver.DEBUG_PRINT_STATE) {
-			Log.info(LogCategory.SOLVING, "Adding a mod depencency from " + source + " to " + publicDep.id().id());
+			Log.info(LogCategory.SOLVING, "Adding a mod dependency from " + source + " to " + publicDep.id().id());
 		}
 
 		ModDependency except = publicDep.unless();
