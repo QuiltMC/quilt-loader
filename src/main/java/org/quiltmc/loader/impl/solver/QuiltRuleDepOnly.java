@@ -150,9 +150,9 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 	public void fallbackErrorDescription(StringBuilder errors) {
 
 		if (publicDep.optional()) {
-			errors.append("Optional depencency for ");
+			errors.append("Optional dependency for ");
 		} else {
-			errors.append("Depencency for ");
+			errors.append("Dependency for ");
 		}
 
 		errors.append(source);
