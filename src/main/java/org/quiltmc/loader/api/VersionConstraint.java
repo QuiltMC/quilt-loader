@@ -94,13 +94,25 @@ public interface VersionConstraint {
 		/**
 		 * A version constraint where the major component of the version must match the constraint's major component.
 		 */
-		SAME_MAJOR("^"),
+		SAME_MAJOR("^^"),
 
 		/**
 		 * A version constraint where the major and minor components of the version must match the constraint's major
 		 * and minor components.
 		 */
-		SAME_MAJOR_AND_MINOR("~");
+		SAME_MAJOR_AND_MINOR("~~"),
+
+		/**
+		 * A version constraint where the major component of the version must match the constraint's major component,
+		 * but also be greater than or equal to the version specified.
+		 */
+		SAME_TO_NEXT_MAJOR("^"),
+
+		/**
+		 * A version constraint where the major and minor components of the version must match the constraint's major
+		 * and minor components, but also be greater than or equal to the version specified.
+		 */
+		SAME_TO_NEXT_MINOR("~");
 
 		private final String prefix;
 

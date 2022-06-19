@@ -253,9 +253,9 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 			case EQUAL:
 				return VersionConstraint.Type.EQUALS;
 			case SAME_TO_NEXT_MINOR:
-				return VersionConstraint.Type.SAME_MAJOR_AND_MINOR;
+				return VersionConstraint.Type.SAME_TO_NEXT_MINOR;
 			case SAME_TO_NEXT_MAJOR:
-				return VersionConstraint.Type.SAME_MAJOR;
+				return VersionConstraint.Type.SAME_TO_NEXT_MAJOR;
 			default:
 				throw new IllegalArgumentException("Unsupported operator "  + operator);
 		}
