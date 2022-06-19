@@ -111,7 +111,7 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 
 			if (node.hasMetadata(Comment.TYPE)) {
 				for (String string : node.metadata(Comment.TYPE)) {
-					comments.add(string);
+					string.lines().forEach(line -> comments.add(line));
 				}
 			}
 
