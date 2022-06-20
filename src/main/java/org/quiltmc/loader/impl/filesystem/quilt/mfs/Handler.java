@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.filesystem.quilt.mfs;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -50,5 +51,10 @@ public class Handler extends URLStreamHandler {
 				return Files.newInputStream(path);
 			}
 		};
+	}
+
+	@Override
+	protected InetAddress getHostAddress(URL u) {
+		return null;
 	}
 }
