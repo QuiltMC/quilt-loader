@@ -91,7 +91,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			InternalModMetadata meta = ModMetadataReader.read(qmj);
 
 			Path from = root;
-			if (fromClasspath) {
+			if (!fromClasspath) {
 				from = context().manager().getParent(root);
 			}
 

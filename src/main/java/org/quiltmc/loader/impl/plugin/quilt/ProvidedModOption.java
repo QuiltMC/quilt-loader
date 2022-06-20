@@ -18,7 +18,9 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.nio.file.Path;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
@@ -100,5 +102,26 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	@Override
 	public PluginGuiIcon modTypeIcon() {
 		return provider.modTypeIcon();
+	}
+
+	@Override
+	public @Nullable String namespaceMappingFrom() {
+		return null;
+	}
+
+	@Override
+	public boolean needsChasmTransforming() {
+		// The providing mod will get transformed - not this alias.
+		return false;
+	}
+
+	@Override
+	public byte[] computeOriginHash() {
+		return new byte[0];
+	}
+
+	@Override
+	public ModContainerExt convertToMod(Path transformedResourceRoot) {
+		throw new IllegalStateException("'AliasedLoadOption' mods shouldn't be converted to ModContainers!");
 	}
 }

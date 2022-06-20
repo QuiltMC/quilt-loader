@@ -18,10 +18,15 @@ package org.quiltmc.loader.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,14 +36,21 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.ModContainer.BasicSourceType;
+import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -53,16 +65,21 @@ import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
+import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
+import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.ModLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -94,11 +111,11 @@ public final class QuiltLoaderImpl {
 	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to cache dir
 	private static final String TMP_DIR_NAME = "tmp"; // relative to cache dir
 
-	protected final Map<String, ModContainerImpl> modMap = new HashMap<>();
+	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
 	@Deprecated
 	private List<ModCandidate> modCandidates;
-	protected List<ModContainerImpl> mods = new ArrayList<>();
+	protected List<ModContainerExt> mods = new ArrayList<>();
 
 	private final Map<String, LanguageAdapter> adapterMap = new HashMap<>();
 	private final EntrypointStorage entrypointStorage = new EntrypointStorage();
@@ -263,6 +280,35 @@ public final class QuiltLoaderImpl {
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
 
+		Path transformedModBundle = getOrCreateTransformBundle(modList, result);
+
+		for (ModLoadOption modOption : modList) {
+
+			final Path resourceRoot;
+
+			if (!modOption.needsChasmTransforming() && modOption.namespaceMappingFrom() == null) {
+				resourceRoot = modOption.resourceRoot();
+			} else {
+				Path modTransformed = transformedModBundle.resolve(modOption.id());
+				Path excluded = transformedModBundle.resolve(modOption.id() + ".removed");
+
+				Path from = modOption.resourceRoot();
+
+				if (Files.exists(excluded)) {
+					throw new Error("// TODO: Implement pre-transform file removal!");
+				}
+
+				List<Path> paths = new ArrayList<>();
+				paths.add(modTransformed);
+				paths.add(from);
+
+				String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
+				resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
+			}
+
+			addMod(modOption.convertToMod(resourceRoot));
+		}
+
 		// TODO (in no particular order):
 		// - perform remapping
 		// - turn ModLoadOptions into real mods, and pass them into addMod()
@@ -315,6 +361,77 @@ public final class QuiltLoaderImpl {
 
 			modList.addAll(lateMods);
 		}
+	}
+
+	/** @return The inside path of the bundle. */
+	private Path getOrCreateTransformBundle(List<ModLoadOption> modList, ModSolveResult result) throws IOException {
+		Map<String, String> map = new TreeMap<>();
+		// Mod order is important? For now, assume it is
+		int index = 0;
+		for (ModLoadOption mod : modList) {
+			map.put("mod#" + index, mod.id());
+		}
+
+		for (Entry<String, ModLoadOption> provided : result.providedMods().entrySet()) {
+			map.put("provided-mod:" + provided.getKey(), provided.getValue().metadata().id());
+		}
+
+		for (Entry<String, ModLoadOption> mod : result.directMods().entrySet()) {
+			byte[] hash = mod.getValue().computeOriginHash();
+			map.put("mod:" + mod.getKey(), HashUtil.hashToString(hash));
+		}
+
+		StringBuilder optionList = new StringBuilder();
+		for (Entry<String, String> entry : map.entrySet()) {
+			optionList.append(entry.getKey());
+			optionList.append("=");
+			optionList.append(entry.getValue());
+			optionList.append("\n");
+		}
+		String options = optionList.toString();
+		optionList = null;
+
+		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache.zip");
+
+		Path existing = checkTransformCache(transformCacheFile, options);
+		if (existing != null) {
+			return existing;
+		}
+
+		return createTransformCache(transformCacheFile, options, modList, result);
+	}
+
+	private Path checkTransformCache(Path transformCacheFile, String options) throws IOException {
+		if (!Files.exists(transformCacheFile)) {
+			return null;
+		}
+		try {
+			Path inner = FileSystems.newFileSystem(transformCacheFile, (ClassLoader) null).getPath("/");
+			Path optionFile = inner.resolve("options.txt");
+
+			try (BufferedReader br = Files.newBufferedReader(optionFile, StandardCharsets.UTF_8)) {
+				for (int i = 0; i < options.length(); i++) {
+					int expected = options.charAt(i);
+					int found = br.read();
+					if (expected != found) {
+						return null;
+					}
+				}
+				if (br.read() != -1) {
+					return null;
+				}
+			}
+			return inner;
+		} catch (IOException | IOError io) {
+			Files.delete(transformCacheFile);
+			return null;
+		}
+	}
+
+	private Path createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
+		ModSolveResult result) {
+
+		
 	}
 
 	private void oldSetup() throws ModResolutionException { 
@@ -518,20 +635,31 @@ public final class QuiltLoaderImpl {
 		return launcher.isDevelopment();
 	}
 
-	/**
-	 * @return A list of all loaded mods, as ModContainers.
-	 * @deprecated Use {@link net.fabricmc.loader.api.FabricLoader#getAllMods()}
-	 */
-	@Deprecated
-	public Collection<ModContainerImpl> getModContainers() {
-		return Collections.unmodifiableList(mods);
-	}
-
 	@Deprecated
 	public List<ModContainerImpl> getMods() {
 		return Collections.unmodifiableList(mods);
 	}
 
+	protected void addMod(ModContainerExt mod) throws ModResolutionException {
+		ModMetadataExt meta = mod.metadata();
+
+		if (modMap.containsKey(meta.id())) {
+			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "!"/* + " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
+		}
+
+		mods.add(mod);
+		modMap.put(meta.id(), mod);
+
+		for (ProvidedMod provided : meta.provides()) {
+			if (modMap.containsKey(provided.id())) {
+				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
+			}
+
+			modMap.put(provided.id(), mod);
+		}
+	}
+
+	@Deprecated
 	protected void addMod(ModCandidate candidate) throws ModResolutionException {
 		InternalModMetadata meta = candidate.getMetadata();
 		if (modMap.containsKey(meta.id())) {
@@ -571,15 +699,15 @@ public final class QuiltLoaderImpl {
 	private void setupLanguageAdapters() {
 		adapterMap.put("default", DefaultLanguageAdapter.INSTANCE);
 
-		for (ModContainerImpl mod : mods) {
+		for (ModContainerExt mod : mods) {
 			// add language adapters
-			for (Map.Entry<String, String> laEntry : mod.getInternalMeta().languageAdapters().entrySet()) {
+			for (Map.Entry<String, String> laEntry : mod.metadata().languageAdapters().entrySet()) {
 				if (adapterMap.containsKey(laEntry.getKey())) {
 					throw new RuntimeException("Duplicate language adapter key: " + laEntry.getKey() + "! (" + laEntry.getValue() + ", " + adapterMap.get(laEntry.getKey()).getClass().getName() + ")");
 				}
 
 				try {
-					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
+					adapterMap.put(laEntry.getKey(), new ModLanguageAdapter(mod, laEntry.getKey(), laEntry.getValue()));
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to instantiate language adapter: " + laEntry.getKey(), e);
 				}
@@ -588,20 +716,23 @@ public final class QuiltLoaderImpl {
 	}
 
 	private void setupMods() {
-		for (ModContainerImpl mod : mods) {
+		for (ModContainerExt mod : mods) {
 			try {
-				for (String in : mod.getInfo().getOldInitializers()) {
-					String adapter = mod.getInfo().getOldStyleLanguageAdapter();
-					entrypointStorage.addDeprecated(mod, adapter, in);
+				if (mod.getSourceType() == BasicSourceType.NORMAL_FABRIC) {
+					FabricLoaderModMetadata fabricMeta = ((InternalModMetadata) mod.metadata()).asFabricModMetadata();
+					for (String in : fabricMeta.getOldInitializers()) {
+						String adapter = fabricMeta.getOldStyleLanguageAdapter();
+						entrypointStorage.addDeprecated(mod, adapter, in);
+					}
 				}
 
-				for (Map.Entry<String, Collection<AdapterLoadableClassEntry>> entry : mod.getInternalMeta().getEntrypoints().entrySet()) {
+				for (Map.Entry<String, Collection<AdapterLoadableClassEntry>> entry : mod.metadata().getEntrypoints().entrySet()) {
 					for (AdapterLoadableClassEntry e : entry.getValue()) {
 						entrypointStorage.add(mod, entry.getKey(), e, adapterMap);
 					}
 				}
 			} catch (Exception e) {
-				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.getInfo().getName(), mod.rootPath()), e);
+				throw new RuntimeException(String.format("Failed to setup mod %s (%s)", mod.metadata().name(), mod.rootPath()), e);
 			}
 		}
 	}
@@ -679,6 +810,21 @@ public final class QuiltLoaderImpl {
 			}
 		} else {
 			setGameDir(newRunDir);
+		}
+	}
+
+	public void invokePreLaunch() {
+		try {
+			EntrypointUtils.invoke("pre_launch", org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint.class, org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
+			EntrypointUtils.invoke("preLaunch", net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint.class, net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
+		} catch (RuntimeException e) {
+			throw new FormattedException("A mod crashed on startup!", e);
+		}
+
+		for (LanguageAdapter adapter : adapterMap.values()) {
+			if (adapter instanceof ModLanguageAdapter) {
+				((ModLanguageAdapter) adapter).init();
+			}
 		}
 	}
 

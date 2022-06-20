@@ -162,12 +162,7 @@ public final class Knot extends FabricLauncherBase {
 			Log.warn(LogCategory.KNOT, "If you get a 'LinkageError' of 'attempted duplicated * definition' after this then this error is the cause!", cnfe);
 		}
 
-		try {
-			EntrypointUtils.invoke("pre_launch", org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint.class, org.quiltmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
-			EntrypointUtils.invoke("preLaunch", net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint.class, net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
-		} catch (RuntimeException e) {
-			throw new FormattedException("A mod crashed on startup!", e);
-		}
+		loader.invokePreLaunch();
 
 		return cl;
 	}

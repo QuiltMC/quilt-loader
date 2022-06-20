@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
-/** A {@link FileSystem} that exposes multiple {@link Path}s in a single */
+/** A {@link FileSystem} that exposes multiple {@link Path}s in a single {@link FileSystem}. */
 public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> {
 
 	private static final Map<String, Integer> uniqueNames = new HashMap<>();

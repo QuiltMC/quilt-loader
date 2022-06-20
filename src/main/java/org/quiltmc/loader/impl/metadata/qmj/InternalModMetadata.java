@@ -38,11 +38,7 @@ public interface InternalModMetadata
 		return true;
 	}
 
-	Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints();
-
 	Collection<String> jars();
-
-	Map<String, String> languageAdapters();
 
 	Collection<String> repositories();
 
