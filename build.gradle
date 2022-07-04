@@ -20,7 +20,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
 // Don't forget to change this in the QuiltLoaderImpl class as well
-version = "0.17.0"
+version = "0.17.1-beta.5"
 def ENV = System.getenv()
 
 allprojects {
@@ -87,7 +87,7 @@ dependencies {
 
 	include 'com.electronwill.night-config:core:3.6.5'
 	include 'com.electronwill.night-config:toml:3.6.5'
-	api 'org.quiltmc:quilt-config:1.0.0-beta.4'
+	api 'org.quiltmc:quilt-config:1.0.0-beta.5'
 
 	shadow 'com.electronwill.night-config:core:3.6.5'
 	shadow 'com.electronwill.night-config:toml:3.6.5'

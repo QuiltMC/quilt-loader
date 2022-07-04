@@ -42,7 +42,7 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 		allOptions = new ArrayList<>();
 
 		if (ModSolver.DEBUG_PRINT_STATE) {
-			Log.info(LogCategory.SOLVING, "Adding a mod depencency from " + source + " to " + publicDep.id().id());
+			Log.info(LogCategory.SOLVING, "Adding a mod dependency from " + source + " to " + publicDep.id().id());
 		}
 
 		ModDependency except = publicDep.unless();
@@ -150,9 +150,9 @@ class QuiltRuleDepOnly extends QuiltRuleDep {
 	public void fallbackErrorDescription(StringBuilder errors) {
 
 		if (publicDep.optional()) {
-			errors.append("Optional depencency for ");
+			errors.append("Optional dependency for ");
 		} else {
-			errors.append("Depencency for ");
+			errors.append("Dependency for ");
 		}
 
 		errors.append(source);

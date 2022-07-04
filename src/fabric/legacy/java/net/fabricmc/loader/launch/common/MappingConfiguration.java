@@ -16,7 +16,7 @@
 
 package net.fabricmc.loader.launch.common;
 
-
+import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 import net.fabricmc.mapping.tree.TinyTree;
 
 /**
