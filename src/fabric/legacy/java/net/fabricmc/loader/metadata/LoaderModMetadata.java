@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +15,20 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package net.fabricmc.loader.metadata;
 
-public interface EntrypointMetadata extends net.fabricmc.loader.metadata.EntrypointMetadata {
+import java.util.Collection;
+import java.util.List;
 
-	@Override
-	String getAdapter();
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.metadata.ModMetadata;
 
-	@Override
-	String getValue();
+/**
+ * @deprecated Use {@link ModMetadata} instead
+ */
+@Deprecated
+public interface LoaderModMetadata extends ModMetadata {
+	boolean loadsInEnvironment(EnvType type);
+	List<? extends EntrypointMetadata> getEntrypoints(String type);
+	Collection<String> getEntrypointKeys();
 }

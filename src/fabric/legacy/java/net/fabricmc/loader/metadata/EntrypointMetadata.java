@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package net.fabricmc.loader.metadata;
 
-public interface EntrypointMetadata extends net.fabricmc.loader.metadata.EntrypointMetadata {
-
-	@Override
+/**
+ * @deprecated Internal API, do not use
+ */
+@Deprecated
+public interface EntrypointMetadata {
 	String getAdapter();
-
-	@Override
 	String getValue();
 }

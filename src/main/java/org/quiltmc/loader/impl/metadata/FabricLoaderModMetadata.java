@@ -35,7 +35,7 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 /**
  * Internal variant of the ModMetadata interface.
  */
-public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMetadata {
+public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMetadata, net.fabricmc.loader.metadata.LoaderModMetadata {
 	int getSchemaVersion();
 
 	default String getOldStyleLanguageAdapter() {
@@ -47,10 +47,13 @@ public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMeta
 	Collection<String> getMixinConfigs(EnvType type);
 	@Nullable
 	String getAccessWidener();
+	@Override
 	boolean loadsInEnvironment(EnvType type);
 
 	Collection<String> getOldInitializers();
+	@Override
 	List<EntrypointMetadata> getEntrypoints(String type);
+	@Override
 	Collection<String> getEntrypointKeys();
 
 	void emitFormatWarnings();
