@@ -1,0 +1,69 @@
+/*
+ * Copyright 2022 QuiltMC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.quiltmc.loader.impl.filesystem;
+
+import java.net.URL;
+import java.net.URLStreamHandler;
+import java.net.URLStreamHandlerFactory;
+
+/** Holds the {@link URLStreamHandlerFactory} for all quilt filesystems. This is set to
+ * {@link URL#setURLStreamHandlerFactory(URLStreamHandlerFactory)}.
+ * <p>
+ * Game providers for games other than minecraft are expected to append their games' factories to
+ * {@link #appendFactory(URLStreamHandlerFactory)}, if their game actually needs this. */
+public class DelegatingUrlStreamHandlerFactory implements URLStreamHandlerFactory {
+
+	public static final DelegatingUrlStreamHandlerFactory INSTANCE = new DelegatingUrlStreamHandlerFactory();
+
+	private URLStreamHandlerFactory[] factories = new URLStreamHandlerFactory[0];
+
+	static {
+		URL.setURLStreamHandlerFactory(INSTANCE);
+	}
+
+	static void load() {
+		// Just calls <clinit>
+	}
+
+	public static synchronized void appendFactory(URLStreamHandlerFactory factory) {
+		URLStreamHandlerFactory[] copy = new URLStreamHandlerFactory[INSTANCE.factories.length + 1];
+		System.arraycopy(INSTANCE.factories, 0, copy, 0, INSTANCE.factories.length);
+		copy[INSTANCE.factories.length] = factory;
+		INSTANCE.factories = copy;
+	}
+
+	@Override
+	public URLStreamHandler createURLStreamHandler(String protocol) {
+		if (QuiltMemoryFileSystemProvider.SCHEME.equals(protocol)) {
+			return new org.quiltmc.loader.impl.filesystem.quilt.mfs.Handler();
+		}
+
+		if (QuiltJoinedFileSystemProvider.SCHEME.equals(protocol)) {
+			return new org.quiltmc.loader.impl.filesystem.quilt.jfs.Handler();
+		}
+
+		URLStreamHandlerFactory[] array = factories;
+		for (URLStreamHandlerFactory factory : array) {
+			URLStreamHandler handler = factory.createURLStreamHandler(protocol);
+			if (handler != null) {
+				return handler;
+			}
+		}
+
+		return null;
+	}
+}

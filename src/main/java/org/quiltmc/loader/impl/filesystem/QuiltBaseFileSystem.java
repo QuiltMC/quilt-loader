@@ -35,6 +35,10 @@ public abstract class QuiltBaseFileSystem
 >
 extends FileSystem
 {
+	static {
+		DelegatingUrlStreamHandlerFactory.load();
+	}
+
 	final Class<FS> filesystemClass;
 	final Class<P> pathClass;
 
