@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 
+@Deprecated
 public class ModContainerImpl implements org.quiltmc.loader.api.ModContainer {
 	private final InternalModMetadata meta;
 	private final FabricLoaderModMetadata fabricMeta;

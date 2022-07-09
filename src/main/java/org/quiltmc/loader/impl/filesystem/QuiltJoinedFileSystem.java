@@ -44,6 +44,7 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 
 	public QuiltJoinedFileSystem(String name, List<Path> from, List<Boolean> shouldClose) {
 		super(QuiltJoinedFileSystem.class, QuiltJoinedPath.class, name);
+
 		this.from = from.toArray(new Path[0]);
 		this.shouldCloseFroms = new boolean[from.size()];
 		for (int i = 0; i < shouldCloseFroms.length; i++) {

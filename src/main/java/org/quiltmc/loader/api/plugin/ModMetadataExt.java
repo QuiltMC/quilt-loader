@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModMetadata;
+import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -13,7 +14,7 @@ import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 
 /** Additional metadata that should be implemented by plugin-provided mods that wish to rely on quilt's solver to
  * implement provides or dependency handling. */
-public interface ModMetadataExt extends ModMetadata {
+public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugins {
 
 	// Dependency handling
 

@@ -20,6 +20,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -77,6 +79,7 @@ import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
+import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.ModLanguageAdapter;
@@ -280,7 +283,8 @@ public final class QuiltLoaderImpl {
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
 
-		Path transformedModBundle = getOrCreateTransformBundle(modList, result);
+		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache.zip");
+		Path transformedModBundle = TransformCache.getOrCreateTransformBundle(transformCacheFile, modList, result);
 
 		for (ModLoadOption modOption : modList) {
 
@@ -296,25 +300,27 @@ public final class QuiltLoaderImpl {
 
 				if (Files.exists(excluded)) {
 					throw new Error("// TODO: Implement pre-transform file removal!");
+				} else if (!Files.isDirectory(modTransformed)) {
+					resourceRoot = modOption.resourceRoot();
+				} else {
+
+					List<Path> paths = new ArrayList<>();
+					paths.add(modTransformed);
+					paths.add(from);
+
+					String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
+					resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
 				}
-
-				List<Path> paths = new ArrayList<>();
-				paths.add(modTransformed);
-				paths.add(from);
-
-				String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
-				resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
 			}
 
 			addMod(modOption.convertToMod(resourceRoot));
 		}
 
 		// TODO (in no particular order):
-		// - perform remapping
 		// - turn ModLoadOptions into real mods, and pass them into addMod()
 		// - - which does:
 		// - - Double-checks for duplicates
-		// - - Rejects non-environment-matching mods
+		// - - Rejects non-environment-matching mods (I'm less sure about this now)
 		// - - Creates the container
 		// - puts the mod containing in the mod list & map
 		// - puts the provided mods in the mod map
@@ -361,77 +367,6 @@ public final class QuiltLoaderImpl {
 
 			modList.addAll(lateMods);
 		}
-	}
-
-	/** @return The inside path of the bundle. */
-	private Path getOrCreateTransformBundle(List<ModLoadOption> modList, ModSolveResult result) throws IOException {
-		Map<String, String> map = new TreeMap<>();
-		// Mod order is important? For now, assume it is
-		int index = 0;
-		for (ModLoadOption mod : modList) {
-			map.put("mod#" + index, mod.id());
-		}
-
-		for (Entry<String, ModLoadOption> provided : result.providedMods().entrySet()) {
-			map.put("provided-mod:" + provided.getKey(), provided.getValue().metadata().id());
-		}
-
-		for (Entry<String, ModLoadOption> mod : result.directMods().entrySet()) {
-			byte[] hash = mod.getValue().computeOriginHash();
-			map.put("mod:" + mod.getKey(), HashUtil.hashToString(hash));
-		}
-
-		StringBuilder optionList = new StringBuilder();
-		for (Entry<String, String> entry : map.entrySet()) {
-			optionList.append(entry.getKey());
-			optionList.append("=");
-			optionList.append(entry.getValue());
-			optionList.append("\n");
-		}
-		String options = optionList.toString();
-		optionList = null;
-
-		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache.zip");
-
-		Path existing = checkTransformCache(transformCacheFile, options);
-		if (existing != null) {
-			return existing;
-		}
-
-		return createTransformCache(transformCacheFile, options, modList, result);
-	}
-
-	private Path checkTransformCache(Path transformCacheFile, String options) throws IOException {
-		if (!Files.exists(transformCacheFile)) {
-			return null;
-		}
-		try {
-			Path inner = FileSystems.newFileSystem(transformCacheFile, (ClassLoader) null).getPath("/");
-			Path optionFile = inner.resolve("options.txt");
-
-			try (BufferedReader br = Files.newBufferedReader(optionFile, StandardCharsets.UTF_8)) {
-				for (int i = 0; i < options.length(); i++) {
-					int expected = options.charAt(i);
-					int found = br.read();
-					if (expected != found) {
-						return null;
-					}
-				}
-				if (br.read() != -1) {
-					return null;
-				}
-			}
-			return inner;
-		} catch (IOException | IOError io) {
-			Files.delete(transformCacheFile);
-			return null;
-		}
-	}
-
-	private Path createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
-		ModSolveResult result) {
-
-		
 	}
 
 	private void oldSetup() throws ModResolutionException { 
@@ -530,8 +465,8 @@ public final class QuiltLoaderImpl {
 	protected void finishModLoading() {
 		// add mods to classpath
 		// TODO: This can probably be made safer, but that's a long-term goal
-		for (ModContainerImpl mod : mods) {
-			if (!mod.metadata().id().equals(MOD_ID) && !mod.getInfo().getType().equals("builtin")) {
+		for (ModContainerExt mod : mods) {
+			if (!mod.metadata().id().equals(MOD_ID) && mod.getSourceType() != BasicSourceType.BUILTIN) {
 				FabricLauncherBase.getLauncher().addToClassPath(mod.rootPath());
 			}
 		}
@@ -544,7 +479,7 @@ public final class QuiltLoaderImpl {
 
 			Set<Path> knownModPaths = new HashSet<>();
 
-			for (ModContainerImpl mod : mods) {
+			for (ModContainerExt mod : mods) {
 				if (mod.rootPath() instanceof QuiltJoinedPath) {
 					QuiltJoinedPath joined = (QuiltJoinedPath) mod.rootPath();
 					for (int i = 0; i < joined.getFileSystem().getBackingPathCount(); i++) {
@@ -618,7 +553,12 @@ public final class QuiltLoaderImpl {
 
 		return null;
 	}
+
 	public Collection<org.quiltmc.loader.api.ModContainer> getAllMods() {
+		return Collections.unmodifiableList(mods);
+	}
+
+	public Collection<ModContainerExt> getAllModsExt() {
 		return Collections.unmodifiableList(mods);
 	}
 
@@ -633,11 +573,6 @@ public final class QuiltLoaderImpl {
 			return true;
 		}
 		return launcher.isDevelopment();
-	}
-
-	@Deprecated
-	public List<ModContainerImpl> getMods() {
-		return Collections.unmodifiableList(mods);
 	}
 
 	protected void addMod(ModContainerExt mod) throws ModResolutionException {
@@ -740,19 +675,19 @@ public final class QuiltLoaderImpl {
 	public void loadAccessWideners() {
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
 
-		for (ModContainerImpl mod : mods) {
-			for (String accessWidener : mod.getInternalMeta().accessWideners()) {
+		for (ModContainerExt mod : mods) {
+			for (String accessWidener : mod.metadata().accessWideners()) {
 
 				Path path = mod.getPath(accessWidener);
 
 				if (!Files.isRegularFile(path)) {
-					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.getInternalMeta().id() + " '" + accessWidener + "'");
+					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.metadata().id() + " '" + accessWidener + "'");
 				}
 
 				try (BufferedReader reader = Files.newBufferedReader(path)) {
 					accessWidenerReader.read(reader, getMappingResolver().getCurrentRuntimeNamespace());
 				} catch (Exception e) {
-					throw new RuntimeException("Failed to read accessWidener file from mod " + mod.getInternalMeta().id(), e);
+					throw new RuntimeException("Failed to read accessWidener file from mod " + mod.metadata().id(), e);
 				}
 			}
 		}

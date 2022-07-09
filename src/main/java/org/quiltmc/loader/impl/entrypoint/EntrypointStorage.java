@@ -21,7 +21,6 @@ import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
-import org.quiltmc.loader.impl.ModContainerImpl;
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.log.Log;

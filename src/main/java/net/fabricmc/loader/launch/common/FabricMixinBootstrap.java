@@ -27,8 +27,8 @@ import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.ModMetadata;
-import org.quiltmc.loader.impl.ModContainerImpl;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
@@ -101,11 +101,11 @@ public final class FabricMixinBootstrap {
 		MixinBootstrap.init();
 		getMixinConfigs(loader, side).forEach(FabricMixinBootstrap::addConfiguration);
 
-		Map<String, ModContainerImpl> configToModMap = new HashMap<>();
+		Map<String, ModContainerExt> configToModMap = new HashMap<>();
 
-		for (ModContainerImpl mod : loader.getMods()) {
-			for (String config : mod.getInternalMeta().mixins(side)) {
-				ModContainerImpl prev = configToModMap.putIfAbsent(config, mod);
+		for (ModContainerExt mod : loader.getAllModsExt()) {
+			for (String config : mod.metadata().mixins(side)) {
+				ModContainerExt prev = configToModMap.putIfAbsent(config, mod);
 				if (prev != null) throw new RuntimeException(String.format("Non-unique Mixin config name %s used by the mods %s and %s",
 						config, prev.metadata().id(), mod.metadata().id()));
 
@@ -118,7 +118,7 @@ public final class FabricMixinBootstrap {
 		}
 
 		for (Config config : Mixins.getConfigs()) {
-			ModContainerImpl mod = configToModMap.get(config.getName());
+			ModContainerExt mod = configToModMap.get(config.getName());
 			if (mod == null) continue;
 		}
 
@@ -143,9 +143,9 @@ public final class FabricMixinBootstrap {
 			addVersion("0.12.0-", FabricUtil.COMPATIBILITY_0_10_0);
 		}
 
-		static void apply(Map<String, ModContainerImpl> configToModMap) {
+		static void apply(Map<String, ModContainerExt> configToModMap) {
 			for (Config rawConfig : Mixins.getConfigs()) {
-				ModContainerImpl mod = configToModMap.get(rawConfig.getName());
+				ModContainerExt mod = configToModMap.get(rawConfig.getName());
 				if (mod == null) continue;
 
 				IMixinConfig config = rawConfig.getConfig();
@@ -154,7 +154,7 @@ public final class FabricMixinBootstrap {
 			}
 		}
 
-		public static int getMixinCompat(ModContainerImpl mod) {
+		public static int getMixinCompat(ModContainerExt mod) {
 			return getMixinCompat(mod.getSourceType() == BasicSourceType.NORMAL_FABRIC, mod.metadata());
 		}
 

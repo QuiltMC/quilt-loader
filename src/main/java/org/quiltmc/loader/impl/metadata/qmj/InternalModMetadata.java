@@ -26,7 +26,7 @@ import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 
 /** Internal mod metadata interface which stores implementation detail. */
 public interface InternalModMetadata
-	extends ModMetadata, ModMetadataExt, ModMetadataToBeMovedToPlugins, ConvertibleModMetadata {
+	extends ModMetadata, ModMetadataExt, ConvertibleModMetadata {
 
 	@Override
 	default boolean shouldQuiltDefineDependencies() {
