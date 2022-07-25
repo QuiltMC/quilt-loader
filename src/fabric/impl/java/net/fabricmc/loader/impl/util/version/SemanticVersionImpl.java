@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
+
 package net.fabricmc.loader.impl.util.version;
-/// FABRIC
+
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -36,7 +37,7 @@ import net.fabricmc.loader.api.VersionParsingException;
  * <li>Arbitrary {@code <build>} contents
  * </ul>
  */
-@Deprecated
+@SuppressWarnings("deprecation")
 public class SemanticVersionImpl extends net.fabricmc.loader.util.version.SemanticVersionImpl implements SemanticVersion {
 	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");
 	private static final Pattern UNSIGNED_INTEGER = Pattern.compile("0|[1-9][0-9]*");

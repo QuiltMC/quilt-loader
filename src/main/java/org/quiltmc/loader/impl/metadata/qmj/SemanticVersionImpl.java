@@ -27,7 +27,6 @@ import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
-// TODO: investigate regex and StringTokenizer once we're able to actually test this code
 public class SemanticVersionImpl implements Version.Semantic {
 	private final String raw;
 	private final int[] components;
@@ -59,10 +58,6 @@ public class SemanticVersionImpl implements Version.Semantic {
 
 		if (prerelease != null && !DOT_SEPARATED_ID.matcher(prerelease).matches()) {
 			throw new VersionFormatException("Invalid prerelease string '" + prerelease + "'!");
-		}
-
-		if (build != null && !DOT_SEPARATED_ID.matcher(build).matches()) {
-			throw new VersionFormatException("Invalid build string '" + build + "'!");
 		}
 
 		if (raw.endsWith(".")) {

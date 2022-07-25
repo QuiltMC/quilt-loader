@@ -742,11 +742,25 @@ final class V1ModMetadataReader {
 				return VersionRange.ofInterval(min, true, max, false);
 			}
 			default: {
-				// TODO: confirm before +/-
-				if (string.endsWith(".x")) {
+				// Get just the version part of the string
+				String stripped = string;
+				int preIndex = string.indexOf('-');
+
+				if (preIndex != -1) {
+					stripped = string.substring(0, preIndex);
+
+				}
+				int metadataIndex = string.indexOf('+');
+
+				if (metadataIndex != -1) {
+					stripped = string.substring(0, metadataIndex);
+				}
+
+				if (stripped.endsWith(".x")) {
 					if (string.indexOf(".x") != string.length() - 2) {
 						throw new VersionFormatException(String.format("Invalid version specifier \"%s\"", string));
 					}
+
 					Version.Semantic min = Version.of(string.substring(0, string.length() -2)).semantic();
 					Version.Semantic max = Version.Semantic.of(new int[] {min.versionComponent(0) + 1}, null, null);
 					return VersionRange.ofInterval(min, true, max, false);

@@ -57,7 +57,7 @@ public interface Version {
 	}
 
 	/**
-	 * Representation of a semantic version, but with an arbitrary number of components.
+	 * Representation of a semantic version, but with an arbitrary number of components and arbitrary build metadata.
 	 * <p>Requesting components greater than the number of components in the version will return {@code 0}.
 	 */
 	@ApiStatus.NonExtendable
