@@ -81,7 +81,7 @@ public interface VersionInterval {
 
 	boolean satisfiedBy(Version version);
 	default VersionRange toVersionRange() {
-		return VersionRange.of(this);
+		return VersionRange.ofInterval(this);
 	}
 	default VersionInterval and(VersionInterval o) {
 		return and(this, o);
@@ -106,21 +106,21 @@ public interface VersionInterval {
 	 * Compute the intersection between two potentially disjoint of version intervals.
 	 */
 	static VersionRange and(VersionRange a, VersionRange b) {
-		return VersionRange.of(VersionIntervalImpl.and(a, b));
+		return VersionRange.ofIntervals(VersionIntervalImpl.and(a, b));
 	}
 
 	/**
 	 * Compute the union between multiple version intervals.
 	 */
 	static VersionRange or(VersionRange a, VersionInterval b) {
-		return VersionRange.of(VersionIntervalImpl.or(a, b));
+		return VersionRange.ofIntervals(VersionIntervalImpl.or(a, b));
 	}
 
 	static VersionRange not(VersionInterval interval) {
-		return VersionRange.of(VersionIntervalImpl.not(interval));
+		return VersionRange.ofIntervals(VersionIntervalImpl.not(interval));
 	}
 
 	static VersionRange not(VersionRange intervals) {
-		return VersionRange.of(VersionIntervalImpl.not(intervals));
+		return VersionRange.ofIntervals(VersionIntervalImpl.not(intervals));
 	}
 }

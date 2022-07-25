@@ -73,14 +73,12 @@ public class VersionIntervalImpl implements VersionInterval {
 
 	@Override
 	public boolean satisfiedBy(Version version) {
-		// Since i'm tired and just want to make this work, this method hackily re-uses other code
-
 		boolean satisfied;
 		VersionInterval exact = VersionInterval.ofExact(version);
 		// Check that the provided version is greater than our minimum
 		satisfied = minInclusive ? compareMin(exact, this) >= 0 : compareMin(exact, this) > 0;
 		// Check that the provided version is less than our maximum
-		satisfied = satisfied && maxInclusive ? compareMax(exact, this) <= 0 : compareMax(exact, this) < 0;
+		satisfied = satisfied && (maxInclusive ? compareMax(exact, this) <= 0 : compareMax(exact, this) < 0);
 
 		return satisfied;
 	}
@@ -206,7 +204,7 @@ public class VersionIntervalImpl implements VersionInterval {
 
 		if (a.size() == 1 && b.size() == 1) {
 			VersionInterval merged = and(a.iterator().next(), b.iterator().next());
-			return merged != null ? VersionRange.of(merged) : VersionRange.NONE;
+			return merged != null ? VersionRange.ofInterval(merged) : VersionRange.NONE;
 		}
 
 		// (a0 || a1 || a2) && (b0 || b1 || b2) == a0 && b0 && b1 && b2 || a1 && b0 && b1 && b2 || a2 && b0 && b1 && b2
@@ -221,7 +219,7 @@ public class VersionIntervalImpl implements VersionInterval {
 		}
 
 		if (allMerged.isEmpty()) return VersionRange.NONE;
-		if (allMerged.size() == 1) return VersionRange.of(allMerged);
+		if (allMerged.size() == 1) return VersionRange.ofIntervals(allMerged);
 
 		List<VersionInterval> ret = new ArrayList<>(allMerged.size());
 
@@ -229,7 +227,7 @@ public class VersionIntervalImpl implements VersionInterval {
 			merge(v, ret);
 		}
 
-		return VersionRange.of(ret);
+		return VersionRange.ofIntervals(ret);
 	}
 
 	public static VersionRange or(VersionRange a, VersionInterval b) {
@@ -237,7 +235,7 @@ public class VersionIntervalImpl implements VersionInterval {
 			if (b == null) {
 				return VersionRange.NONE;
 			} else {
-				return VersionRange.of(b);
+				return VersionRange.ofInterval(b);
 			}
 		}
 
@@ -249,7 +247,7 @@ public class VersionIntervalImpl implements VersionInterval {
 
 		merge(b, ret);
 
-		return VersionRange.of(ret);
+		return VersionRange.ofIntervals(ret);
 	}
 
 	private static void merge(VersionInterval a, List<VersionInterval> out) {

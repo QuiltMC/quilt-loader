@@ -86,7 +86,7 @@ final class ModDependencyImpl {
 
 	static final class OnlyImpl implements ModDependency.Only {
 		// TODO make pretty
-		private static final VersionRange ANY = VersionRange.of(Collections.singleton(VersionInterval.ALL));
+		private static final VersionRange ANY = VersionRange.ofIntervals(Collections.singleton(VersionInterval.ALL));
 		private final String location;
 		private final ModDependencyIdentifier id;
 		private final VersionRange range;

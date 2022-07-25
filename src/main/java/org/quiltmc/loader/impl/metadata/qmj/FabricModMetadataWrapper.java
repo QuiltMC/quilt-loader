@@ -200,7 +200,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 				quiltIntervals.add(new VersionIntervalImpl(newMin, versionInterval.isMinInclusive(), newMax, versionInterval.isMaxInclusive()));
 			}
 
-			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dependency", new ModDependencyIdentifierImpl(f.getModId()), VersionRange.of(quiltIntervals), null, false, null));
+			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dependency", new ModDependencyIdentifierImpl(f.getModId()), VersionRange.ofIntervals(quiltIntervals), null, false, null));
 		}
 		return Collections.unmodifiableList(Arrays.asList(out.toArray(new ModDependency[0])));
 	}

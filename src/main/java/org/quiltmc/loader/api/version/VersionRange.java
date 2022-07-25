@@ -19,25 +19,29 @@ package org.quiltmc.loader.api.version;
 import org.quiltmc.loader.impl.metadata.VersionRangeImpl;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * A collection of {@link VersionInterval}s, which are part of one range of versions.
  * For example, a range of versions could be 2.0.0 < x < 3.0.0 OR 4.0.0 < x < 5.0.0
  */
 public interface VersionRange extends Collection<VersionInterval> {
-	static VersionRange of(VersionInterval interval) {
+	static VersionRange ofInterval(VersionInterval interval) {
 		return new VersionRangeImpl(interval);
 	}
 
-	static VersionRange of(Collection<VersionInterval> collection) {
+	static VersionRange ofIntervals(Collection<VersionInterval> collection) {
 		return new VersionRangeImpl(collection);
 	}
 
+	static VersionRange ofRanges(Collection<VersionRange> collection) {
+		return new VersionRangeImpl(collection.stream().flatMap(Collection::stream).collect(Collectors.toList()));
+	}
 	static VersionRange ofExact(Version version) {
 		return new VersionRangeImpl(VersionInterval.ofExact(version));
 	}
 
-	static VersionRange of(Version min, boolean minInlcusive, Version max, boolean maxInclusive) {
+	static VersionRange ofInterval(Version min, boolean minInlcusive, Version max, boolean maxInclusive) {
 		return new VersionRangeImpl(VersionInterval.of(min, minInlcusive, max, maxInclusive));
 	}
 

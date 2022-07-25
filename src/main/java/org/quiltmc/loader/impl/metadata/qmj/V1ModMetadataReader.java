@@ -29,7 +29,6 @@ import org.quiltmc.loader.api.version.Version;
 import org.quiltmc.loader.api.version.VersionFormatException;
 import org.quiltmc.loader.api.version.VersionInterval;
 import org.quiltmc.loader.api.version.VersionRange;
-import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
@@ -645,9 +644,20 @@ final class V1ModMetadataReader {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
-			VersionRange versions = null;
+			List<VersionRange> versions = new ArrayList<>();
 			try {
-				versions = readVersionSpecifier(obj.get("versions"));
+				JsonLoaderValue versionsValue = obj.get("versions");
+				if (versionsValue != null) {
+					if (versionsValue.type().equals(LType.ARRAY)) {
+						for (LoaderValue loaderValue : versionsValue.asArray()) {
+							versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
+						}
+					} else {
+						versions.add(readVersionSpecifier(versionsValue));
+					}
+				} else {
+					versions.add(VersionRange.ANY);
+				}
 			} catch (VersionFormatException e) {
 				throw parseException(obj.get("versions"), "Unable to parse version range", e);
 			}
@@ -660,7 +670,7 @@ final class V1ModMetadataReader {
 				unless = readDependencyObject(true, unlessObj);
 			}
 
-			return new ModDependencyImpl.OnlyImpl(value.location(), id, versions, reason, optional, unless);
+			return new ModDependencyImpl.OnlyImpl(value.location(), id, VersionRange.ofRanges(versions), reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
 			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
@@ -701,15 +711,15 @@ final class V1ModMetadataReader {
 				return VersionRange.ofExact(Version.of(withoutPrefix));
 			case '>':
 				if (string.charAt(1) == '=') {
-					return VersionRange.of(VersionInterval.of(Version.of(string.substring(2)), true, null, false));
+					return VersionRange.ofInterval(Version.of(string.substring(2)), true, null, false);
 				} else {
-					return VersionRange.of(VersionInterval.of(Version.of(withoutPrefix), false, null, false));
+					return VersionRange.ofInterval(Version.of(withoutPrefix), false, null, false);
 				}
 			case '<':
 				if (string.charAt(1) == '=') {
-					return VersionRange.of(VersionInterval.of(null, false, Version.of(string.substring(2)), true));
+					return VersionRange.ofInterval(null, false, Version.of(string.substring(2)), true);
 				} else {
-					return VersionRange.of(VersionInterval.of(null, false, Version.of(withoutPrefix), true));
+					return VersionRange.ofInterval(null, false, Version.of(withoutPrefix), true);
 				}
 		    // Semantic versions only
 			case '~': {
@@ -722,23 +732,24 @@ final class V1ModMetadataReader {
 				}
 
 				Version max = Version.Semantic.of(components, null, null);
-				return VersionRange.of(VersionInterval.of(min, true, max, false));
+				return VersionRange.ofInterval(min, true, max, false);
 			}
 			case '^': {
 				Version.Semantic min = Version.of(withoutPrefix).semantic();
 				int newMajor = min.versionComponent(0) + 1;
 
 				Version max = Version.Semantic.of(new int[] {newMajor}, null, null);
-				return VersionRange.of(VersionInterval.of(min, true, max, false));
+				return VersionRange.ofInterval(min, true, max, false);
 			}
 			default: {
+				// TODO: confirm before +/-
 				if (string.endsWith(".x")) {
 					if (string.indexOf(".x") != string.length() - 2) {
 						throw new VersionFormatException(String.format("Invalid version specifier \"%s\"", string));
 					}
 					Version.Semantic min = Version.of(string.substring(0, string.length() -2)).semantic();
 					Version.Semantic max = Version.Semantic.of(new int[] {min.versionComponent(0) + 1}, null, null);
-					return VersionRange.of(VersionInterval.of(min, true, max, false));
+					return VersionRange.ofInterval(min, true, max, false);
 				} else {
 					Version v = Version.of(string);
 
@@ -749,7 +760,7 @@ final class V1ModMetadataReader {
 						int newMajor = min.versionComponent(0) + 1;
 
 						Version max = Version.Semantic.of(new int[]{newMajor}, null, null);
-						return VersionRange.of(VersionInterval.of(min, true, max, false));
+						return VersionRange.ofInterval(min, true, max, false);
 					} else {
 						// same as =
 						return VersionRange.ofExact(v);
