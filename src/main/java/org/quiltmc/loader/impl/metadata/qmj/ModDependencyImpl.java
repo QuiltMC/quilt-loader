@@ -85,8 +85,6 @@ final class ModDependencyImpl {
 	}
 
 	static final class OnlyImpl implements ModDependency.Only {
-		// TODO make pretty
-		private static final VersionRange ANY = VersionRange.ofIntervals(Collections.singleton(VersionInterval.ALL));
 		private final String location;
 		private final ModDependencyIdentifier id;
 		private final VersionRange range;
@@ -98,7 +96,7 @@ final class ModDependencyImpl {
 		 * Creates a ModDependency that matches any version of a specific mod id.
 		 */
 		OnlyImpl(String location, ModDependencyIdentifier id) {
-			this(location, id, ANY, "", false, null);
+			this(location, id, VersionRange.ANY, "", false, null);
 		}
 		OnlyImpl(String location, ModDependencyIdentifier id, VersionRange range, @Nullable String reason, boolean optional, @Nullable ModDependency unless) {
 			// We need to have at least one constraint
