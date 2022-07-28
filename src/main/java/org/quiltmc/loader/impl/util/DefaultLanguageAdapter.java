@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +20,7 @@ package org.quiltmc.loader.impl.util;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.ModContainer;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandleProxies;
@@ -45,7 +46,7 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 		Class<?> c;
 
 		try {
-			c = Class.forName(methodSplit[0], true, FabricLauncherBase.getLauncher().getTargetClassLoader());
+			c = Class.forName(methodSplit[0], true, QuiltLauncherBase.getLauncher().getTargetClassLoader());
 		} catch (ClassNotFoundException e) {
 			throw new LanguageAdapterException(e);
 		}

@@ -9,7 +9,7 @@
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "net.fabricmc:sponge-mixin:0.11.2+mixin.0.8.5",
+        "name": "net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5",
         "url": "https://maven.fabricmc.net/"
       },
       {
@@ -43,14 +43,18 @@
       {
         "name": "org.ow2.asm:asm-util:9.3",
         "url": "https://maven.fabricmc.net/"
+      },
+      {
+        "name": "org.quiltmc:quilt-config:1.0.0-beta.5",
+        "url": "https://maven.quiltmc.org/repository/release/"
       }
     ],
     "server": [
     ]
   },
   "mainClass": {
-    "client": "net.fabricmc.loader.launch.knot.KnotClient",
-    "server": "net.fabricmc.loader.launch.knot.KnotServer",
-    "serverLauncher": "net.fabricmc.loader.launch.server.FabricServerLauncher"
+    "client": "org.quiltmc.loader.impl.launch.knot.KnotClient",
+    "server": "org.quiltmc.loader.impl.launch.knot.KnotServer",
+    "serverLauncher": "org.quiltmc.loader.impl.launch.server.QuiltServerLauncher"
   }
 }

@@ -1,0 +1,10 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "org.quiltmc.test",
+        "id": "mod-resolving-tests-main",
+        "version": "1.0.0",
+        "depends": [ { "id": "minecraft", "versions": [ "1.19", "1.19-alpha.22.24.a" ] } ],
+        "intermediate_mappings": "net.fabricmc:intermediary"
+    }
+}

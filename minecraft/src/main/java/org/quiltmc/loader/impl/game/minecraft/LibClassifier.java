@@ -39,11 +39,7 @@ final class LibClassifier {
 	private final List<Path> unmatchedOrigins = new ArrayList<>();
 
 	public void process(URL url, EnvType env) throws IOException {
-		try {
-			process(UrlUtil.asPath(url), env);
-		} catch (URISyntaxException e) {
-			throw new RuntimeException("invalid url: "+url);
-		}
+		process(UrlUtil.asPath(url), env);
 	}
 
 	public void process(Iterable<Path> paths, EnvType env) throws IOException {

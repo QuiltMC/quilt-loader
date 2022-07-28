@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +19,6 @@ package org.quiltmc.loader.impl.metadata;
 
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractModMetadata implements ModMetadata {
 	public static final String TYPE_BUILTIN = "builtin";

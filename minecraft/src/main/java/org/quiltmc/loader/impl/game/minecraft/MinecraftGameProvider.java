@@ -51,7 +51,7 @@ import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.minecraft.LibClassifier.Lib;
 import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
 import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
-import net.fabricmc.loader.launch.common.FabricLauncher;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
 import org.quiltmc.loader.impl.metadata.ModDependencyImpl;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
@@ -205,7 +205,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean locateGame(FabricLauncher launcher, String[] args) {
+	public boolean locateGame(QuiltLauncher launcher, String[] args) {
 		this.envType = launcher.getEnvironmentType();
 		this.arguments = new Arguments();
 		arguments.parse(args);
@@ -322,7 +322,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public void initialize(FabricLauncher launcher) {
+	public void initialize(QuiltLauncher launcher) {
 		Map<String, Path> gameJars = new HashMap<>(2);
 		String name = envType.name().toLowerCase(Locale.ENGLISH);
 		gameJars.put(name, gameJar);
@@ -358,7 +358,7 @@ public class MinecraftGameProvider implements GameProvider {
 		TRANSFORMER.locateEntrypoints(launcher, gameJar);
 	}
 
-	private void setupLogHandler(FabricLauncher launcher, boolean useTargetCl) {
+	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {
 		System.setProperty("log4j2.formatMsgNoLookups", "true"); // lookups are not used by mc and cause issues with older log4j2 versions
 
 		try {
@@ -442,7 +442,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public void unlockClassPath(FabricLauncher launcher) {
+	public void unlockClassPath(QuiltLauncher launcher) {
 		if (useGameJarForLogging) {
 			launcher.setAllowedPrefixes(gameJar);
 		} else {

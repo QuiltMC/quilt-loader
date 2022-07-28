@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +18,7 @@
 package org.quiltmc.loader.impl.discovery;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
@@ -47,13 +48,13 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 	}
 
 	public static void findCandidatesStatic(ModCandidateConsumer out) {
-		if (FabricLauncherBase.getLauncher().isDevelopment()) {
+		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
 
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
-				Enumeration<URL> fabricMods = FabricLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
-				Enumeration<URL> quiltMods = FabricLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
+				Enumeration<URL> fabricMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
+				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
 				while (quiltMods.hasMoreElements()) {
 					URL url = quiltMods.nextElement();
 
@@ -142,7 +143,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 
 	public static Path getLoaderPath() {
 		try {
-			return UrlUtil.asPath(FabricLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation());
+			return UrlUtil.asPath(QuiltLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation());
 		} catch (Throwable t) {
 			Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			return null;

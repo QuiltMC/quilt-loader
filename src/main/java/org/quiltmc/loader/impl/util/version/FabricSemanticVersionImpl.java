@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +26,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
-
-import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings("deprecation")
 public class FabricSemanticVersionImpl implements SemanticVersion, org.quiltmc.loader.api.Version {

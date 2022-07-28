@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +22,7 @@ import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -38,8 +39,8 @@ public final class EntrypointStorage {
 
 	@SuppressWarnings("deprecation")
 	private static class OldEntry implements Entry {
-		private static final org.quiltmc.loader.impl.language.LanguageAdapter.Options options = org.quiltmc.loader.impl.language.LanguageAdapter.Options.Builder.create()
-			.missingSuperclassBehaviour(org.quiltmc.loader.impl.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
+		private static final net.fabricmc.loader.language.LanguageAdapter.Options options = net.fabricmc.loader.language.LanguageAdapter.Options.Builder.create()
+			.missingSuperclassBehaviour(net.fabricmc.loader.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
 			.build();
 
 		private final ModContainerExt mod;
@@ -62,7 +63,7 @@ public final class EntrypointStorage {
 		@Override
 		public <T> T getOrCreate(Class<T> type) throws Exception {
 			if (object == null) {
-				org.quiltmc.loader.impl.language.LanguageAdapter adapter = (org.quiltmc.loader.impl.language.LanguageAdapter) Class.forName(languageAdapter, true, FabricLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
+				net.fabricmc.loader.language.LanguageAdapter adapter = (net.fabricmc.loader.language.LanguageAdapter) Class.forName(languageAdapter, true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getConstructor().newInstance();
 				object = adapter.createInstance(value, options);
 			}
 

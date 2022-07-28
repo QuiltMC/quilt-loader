@@ -1,1 +1,1 @@
-net.fabricmc.loader.launch.knot.MixinServiceKnot
+org.quiltmc.loader.impl.launch.knot.MixinServiceKnot

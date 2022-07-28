@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.*;
-import org.quiltmc.loader.api.VersionConstraint.Type;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
@@ -254,9 +253,9 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 			case EQUAL:
 				return VersionConstraint.Type.EQUALS;
 			case SAME_TO_NEXT_MINOR:
-				return VersionConstraint.Type.SAME_MAJOR_AND_MINOR;
+				return VersionConstraint.Type.SAME_TO_NEXT_MINOR;
 			case SAME_TO_NEXT_MAJOR:
-				return VersionConstraint.Type.SAME_MAJOR;
+				return VersionConstraint.Type.SAME_TO_NEXT_MAJOR;
 			default:
 				throw new IllegalArgumentException("Unsupported operator "  + operator);
 		}

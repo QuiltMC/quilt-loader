@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +44,7 @@ public final class VersionConstraintImpl implements VersionConstraint {
 			}
 		}
 		// Spec says that 1.0.0 is the same as ^1.0.0
-		return new VersionConstraintImpl(raw, Type.SAME_MAJOR);
+		return new VersionConstraintImpl(raw, Type.SAME_TO_NEXT_MAJOR);
 	}
 
 	/**
@@ -125,6 +126,13 @@ public final class VersionConstraintImpl implements VersionConstraint {
 					return fVersion.getVersionComponent(0) == semanticVersion.getVersionComponent(0);
 				case SAME_MAJOR_AND_MINOR:
 					return fVersion.getVersionComponent(0) == semanticVersion.getVersionComponent(0)
+						&& fVersion.getVersionComponent(1) == semanticVersion.getVersionComponent(1);
+				case SAME_TO_NEXT_MAJOR:
+					return fVersion.compareTo(semanticVersion) >= 0
+						&& fVersion.getVersionComponent(0) == semanticVersion.getVersionComponent(0);
+				case SAME_TO_NEXT_MINOR:
+					return fVersion.compareTo(semanticVersion) >= 0
+						&& fVersion.getVersionComponent(0) == semanticVersion.getVersionComponent(0)
 						&& fVersion.getVersionComponent(1) == semanticVersion.getVersionComponent(1);
 				default:
 					throw new IllegalStateException("Unknown VersionConstraint.Type " + type);

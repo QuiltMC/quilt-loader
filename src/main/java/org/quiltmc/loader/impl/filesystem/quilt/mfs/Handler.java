@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.filesystem.quilt.mfs;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -50,5 +51,10 @@ public class Handler extends URLStreamHandler {
 				return Files.newInputStream(path);
 			}
 		};
+	}
+
+	@Override
+	protected InetAddress getHostAddress(URL u) {
+		return null;
 	}
 }

@@ -3,17 +3,12 @@
   "quilt_loader": {
     "group": "org.quiltmc",
     "id": "quilt_loader",
-    "provides": [ {
-      "id": "fabricloader",
-      "version": "0.13.3"
-    } ],
     "version": "${version}",
-    "intermediate_mappings": "net.fabricmc:intermediary",
     "metadata": {
       "name": "Quilt Loader",
-      "description": "The base mod loader.",
+      "description": "The mod-loader that cares.",
       "contributors": {
-        "QuiltMC": "Owner"
+        "QuiltMC: Loader Team": "Owner"
       },
       "contact": {
         "homepage": "https://quiltmc.org",
@@ -22,6 +17,13 @@
       },
       "license": "Apache-2.0",
       "icon": "assets/quilt_loader/icon.png"
-    }
+    },
+    "intermediate_mappings": "net.fabricmc:intermediary",
+    "provides": [
+      {
+        "id": "fabricloader",
+        "version": "0.14.8"
+      }
+    ]
   }
 }

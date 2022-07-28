@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -276,7 +276,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 	}
 
 	static final class ReadWrite extends QuiltMemoryFile {
-		private static final int MAX_FILE_SIZE = 1 << 24;
+		private static final int MAX_FILE_SIZE = 512 * 1024 * 1024;
 
 		private byte[] bytes = null;
 		private int length = 0;

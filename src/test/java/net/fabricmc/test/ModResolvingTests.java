@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,15 +158,15 @@ final class ModResolvingTests {
 	}
 
 	// This currently fails
-//	@Test
-//	public void multiTarget() throws Exception {
-//		ModSolveResult modSet = resolveModSet("valid", "multi_target");
-//
-//		assertModPresent(modSet, "minecraft", "1.18.2");
-//		assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
-//		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
-//		assertNoMoreMods(modSet);
-//	}
+	// @Test
+	// public void multiTarget() throws Exception {
+	// ModSolveResult modSet = resolveModSet("valid", "multi_target");
+	//
+	// assertModPresent(modSet, "minecraft", "1.18.2");
+	// assertModPresent(modSet, "mod-resolving-tests-library", "2.0.0");
+	// assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+	// assertNoMoreMods(modSet);
+	// }
 
 	@Test
 	public void testJijProvided() throws ModResolutionException {
@@ -247,6 +247,11 @@ final class ModResolvingTests {
 	@Test
 	public void multiBreaksError() {
 		resolveErrorSet("multi_breaks");
+	}
+
+	@Test
+	public void dependsArrayError() {
+		resolveErrorSet("depends_array");
 	}
 
 	private static void resolveErrorSet(String subpath) {

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,13 +94,25 @@ public interface VersionConstraint {
 		/**
 		 * A version constraint where the major component of the version must match the constraint's major component.
 		 */
-		SAME_MAJOR("^"),
+		SAME_MAJOR("^^"),
 
 		/**
 		 * A version constraint where the major and minor components of the version must match the constraint's major
 		 * and minor components.
 		 */
-		SAME_MAJOR_AND_MINOR("~");
+		SAME_MAJOR_AND_MINOR("~~"),
+
+		/**
+		 * A version constraint where the major component of the version must match the constraint's major component,
+		 * but also be greater than or equal to the version specified.
+		 */
+		SAME_TO_NEXT_MAJOR("^"),
+
+		/**
+		 * A version constraint where the major and minor components of the version must match the constraint's major
+		 * and minor components, but also be greater than or equal to the version specified.
+		 */
+		SAME_TO_NEXT_MINOR("~");
 
 		private final String prefix;
 

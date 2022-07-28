@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 
 import net.fabricmc.loader.api.Version;
 

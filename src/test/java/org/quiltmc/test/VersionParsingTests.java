@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class VersionParsingTests extends JsonTestBase {
 	static void quilt(String raw) {

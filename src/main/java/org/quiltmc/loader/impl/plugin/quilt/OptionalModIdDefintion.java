@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +163,7 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 	public void fallbackErrorDescription(StringBuilder errors) {
 		errors.append(toString());
 		for (ModLoadOption option : sources) {
-			errors.append("\n\t - v");
+			errors.append("\n\t - ");
 			errors.append(option.getSpecificInfo());
 		}
 	}

@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +34,7 @@ public final class LogCategory {
 	public static final LogCategory RESOLUTION = new LogCategory("Resolution");
 	public static final LogCategory SOLVING = new LogCategory("Solving");
 	public static final LogCategory TEST = new LogCategory("Test");
+	public static final LogCategory CONFIG = new LogCategory("Config");
 
 	public static final String SEPARATOR = "/";
 
