@@ -19,31 +19,20 @@ package org.quiltmc.loader.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOError;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
 
@@ -54,9 +43,7 @@ import net.fabricmc.loader.api.ObjectShare;
 
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
-import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -65,47 +52,36 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionResult;
-import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
-import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
-import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.ModLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 import org.spongepowered.asm.mixin.FabricUtil;
-
-import net.fabricmc.loader.api.ObjectShare;
-import net.fabricmc.loader.launch.common.FabricLauncher;
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
-import net.fabricmc.loader.launch.common.FabricMixinBootstrap;
-import net.fabricmc.loader.launch.knot.Knot;
-
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.api.EnvType;
 
 public final class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
@@ -258,11 +234,11 @@ public final class QuiltLoaderImpl {
 		try {
 			result = plugins.run(true);
 		} catch (TimeoutException e) {
-			throw new ModSolvingError("Timout", e);
+			throw new ModSolvingError("Timeout", e);
 		}
 
 		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", "test");
-		QuiltStatusTab tab = tree.addTab("Plugins Test");
+		QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Plugins Test");
 		plugins.guiFileRoot.toNode(tab.node, false);
 		try {
 			QuiltGuiEntry.open(tree, null, true);
@@ -285,15 +261,19 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		List<ModLoadOption> modList = new ArrayList<>();
-		modList.addAll(result.directMods().values());
+		List<ModLoadOption> modList = new ArrayList<>(result.directMods().values());
 
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
 
 		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache.zip");
-		Path transformedModBundle = TransformCache.getOrCreateTransformBundle(transformCacheFile, modList, result);
-
+		TransformCache.populateTransformBundle(transformCacheFile, modList, result);
+		Path transformedModBundle = null;
+		try {
+			transformedModBundle = FileSystemUtil.getJarFileSystem(transformCacheFile, false).get().getPath("/");
+		} catch (IOException e) {
+			throw new RuntimeException(e); // TODO
+		}
 		for (ModLoadOption modOption : modList) {
 
 			final Path resourceRoot;
@@ -323,18 +303,35 @@ public final class QuiltLoaderImpl {
 
 			addMod(modOption.convertToMod(resourceRoot));
 		}
-
 		// TODO (in no particular order):
 		// - turn ModLoadOptions into real mods, and pass them into addMod()
 		// - - which does:
 		// - - Double-checks for duplicates
 		// - - Rejects non-environment-matching mods (I'm less sure about this now)
 		// - - Creates the container
-		// - puts the mod containing in the mod list & map
-		// - puts the provided mods in the mod map
+		// - put the mod containing in the mod list & map
 		// - print mod list
 
-		throw new AbstractMethodError("// TODO: Implement setup!");
+		StringBuilder modListText = new StringBuilder();
+
+		for (ModLoadOption option : modList) {
+			if (modListText.length() > 0) modListText.append('\n');
+			modListText.append(option.id()).append(' ').append(option.version());
+			modListText.append(" from plugin (").append(option.loader().pluginId()).append(')');
+
+		}
+//		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().id())).collect(Collectors.toList())) {
+//			if (modListText.length() > 0) modListText.append('\n');
+//
+//			modListText.append("\t- ");
+//			modListText.append(mod.metadata().id());
+//			modListText.append(' ');
+//			modListText.append(mod.metadata().version());
+//			mod
+//		}
+
+		int count = modList.size();
+		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
 	}
 
 	private static void performMixinReordering(List<ModLoadOption> modList) {
@@ -345,7 +342,7 @@ public final class QuiltLoaderImpl {
 		for (Iterator<ModLoadOption> it = modList.iterator(); it.hasNext();) {
 			ModLoadOption mod = it.next();
 			boolean isFabric = mod instanceof FabricModOption;
-			if (FabricMixinBootstrap.MixinConfigDecorator.getMixinCompat(isFabric, mod.metadata()) != FabricUtil.COMPATIBILITY_0_9_2) {
+			if (QuiltMixinBootstrap.MixinConfigDecorator.getMixinCompat(isFabric, mod.metadata()) != FabricUtil.COMPATIBILITY_0_9_2) {
 				it.remove();
 				newMixinCompatMods.add(mod);
 			}
@@ -377,98 +374,98 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	private void oldSetup() throws ModResolutionException {
-		ModResolver resolver = new ModResolver(this);
-		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
-		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
-		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-		ModSolveResult result = resolver.resolve(this);
-		Map<String, ModCandidate> candidateMap = (Map<String, ModCandidate>) (Object) "nope";//result.modMap;
-		modCandidates = new ArrayList<>(candidateMap.values());
-		// dump mod list
-
-		StringBuilder modListText = new StringBuilder();
-
-		for (ModCandidate mod : modCandidates.stream().sorted(Comparator.comparing(ModCandidate::getId)).collect(Collectors.toList())) {
-			if (modListText.length() > 0) modListText.append('\n');
-
-			modListText.append("\t- ");
-			modListText.append(mod.getId());
-			modListText.append(' ');
-			modListText.append(mod.getVersion().raw());
-// TODO
-//			if (!mod.getParentMods().isEmpty()) {
-//				modListText.append(" via ");
-//				modListText.append(mod.getParentMods().iterator().next().getId());
-//			}
-		}
-
-		int count = modCandidates.size();
-		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
-
-		// TODO
-//		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
-//			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides()));
+//	private void oldSetup() throws ModResolutionException {
+//		ModResolver resolver = new ModResolver(this);
+//		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
+//		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
+//		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
+//		ModSolveResult result = resolver.resolve(this);
+//		Map<String, ModCandidate> candidateMap = (Map<String, ModCandidate>) (Object) "nope";//result.modMap;
+//		modCandidates = new ArrayList<>(candidateMap.values());
+//		// dump mod list
+//
+//		StringBuilder modListText = new StringBuilder();
+//
+//		for (ModCandidate mod : modCandidates.stream().sorted(Comparator.comparing(ModCandidate::getId)).collect(Collectors.toList())) {
+//			if (modListText.length() > 0) modListText.append('\n');
+//
+//			modListText.append("\t- ");
+//			modListText.append(mod.getId());
+//			modListText.append(' ');
+//			modListText.append(mod.getVersion().raw());
+//// TODO
+////			if (!mod.getParentMods().isEmpty()) {
+////				modListText.append(" via ");
+////				modListText.append(mod.getParentMods().iterator().next().getId());
+////			}
 //		}
-
-		Path cacheDir = gameDir.resolve(CACHE_DIR_NAME);
-		Path outputdir = cacheDir.resolve(PROCESSED_MODS_DIR_NAME);
-
-		// runtime mod remapping
-
-		if (isDevelopmentEnvironment()) {
-			if (System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
-				Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
-			} else {
-				RuntimeModRemapper.remap(modCandidates, ModResolver.getInMemoryFs());
-			}
-		}
-
-		// Keep Mixin 0.9.2 compatible mods first in the load order, temporary fix for https://github.com/FabricMC/Mixin/issues/89
-		List<ModCandidate> newMixinCompatMods = new ArrayList<>();
-		for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext();) {
-			ModCandidate mod = it.next();
-			ModContainerImpl tempModContainer = new ModContainerImpl(mod);
-			if (QuiltMixinBootstrap.MixinConfigDecorator.getMixinCompat(tempModContainer) != FabricUtil.COMPATIBILITY_0_9_2) {
-				it.remove();
-				newMixinCompatMods.add(mod);
-			}
-		}
-
-		modCandidates.addAll(newMixinCompatMods);
-
-		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
-
-		if (modsToLoadLate != null) {
-			for (String modId : modsToLoadLate.split(",")) {
-				for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext(); ) {
-					ModCandidate mod = it.next();
-
-					if (mod.getId().equals(modId)) {
-						it.remove();
-						modCandidates.add(mod);
-						break;
-					}
-				}
-			}
-		}
-
-		// add mods
-
-		for (ModCandidate mod : modCandidates) {
-//			if (!mod.hasPath() && !mod.isBuiltin()) {
-//				try {
-//					mod.setPaths(Collections.singletonList(mod.copyToDir(outputdir, false)));
-//				} catch (IOException e) {
-//					throw new RuntimeException("Error extracting mod "+mod, e);
+//
+//		int count = modCandidates.size();
+//		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
+//
+//		// TODO
+////		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
+////			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides()));
+////		}
+//
+//		Path cacheDir = gameDir.resolve(CACHE_DIR_NAME);
+//		Path outputdir = cacheDir.resolve(PROCESSED_MODS_DIR_NAME);
+//
+//		// runtime mod remapping
+//
+//		if (isDevelopmentEnvironment()) {
+//			if (System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
+//				Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
+//			} else {
+//				RuntimeModRemapper.remap(modCandidates, ModResolver.getInMemoryFs());
+//			}
+//		}
+//
+//		// Keep Mixin 0.9.2 compatible mods first in the load order, temporary fix for https://github.com/FabricMC/Mixin/issues/89
+//		List<ModCandidate> newMixinCompatMods = new ArrayList<>();
+//		for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext();) {
+//			ModCandidate mod = it.next();
+//			ModContainerImpl tempModContainer = new ModContainerImpl(mod);
+//			if (QuiltMixinBootstrap.MixinConfigDecorator.getMixinCompat(tempModContainer) != FabricUtil.COMPATIBILITY_0_9_2) {
+//				it.remove();
+//				newMixinCompatMods.add(mod);
+//			}
+//		}
+//
+//		modCandidates.addAll(newMixinCompatMods);
+//
+//		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
+//
+//		if (modsToLoadLate != null) {
+//			for (String modId : modsToLoadLate.split(",")) {
+//				for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext(); ) {
+//					ModCandidate mod = it.next();
+//
+//					if (mod.getId().equals(modId)) {
+//						it.remove();
+//						modCandidates.add(mod);
+//						break;
+//					}
 //				}
 //			}
-
-			addMod(mod);
-		}
-
-		//modCandidates = null;
-	}
+//		}
+//
+//		// add mods
+//
+//		for (ModCandidate mod : modCandidates) {
+////			if (!mod.hasPath() && !mod.isBuiltin()) {
+////				try {
+////					mod.setPaths(Collections.singletonList(mod.copyToDir(outputdir, false)));
+////				} catch (IOException e) {
+////					throw new RuntimeException("Error extracting mod "+mod, e);
+////				}
+////			}
+//
+//			addMod(mod);
+//		}
+//
+//		//modCandidates = null;
+//	}
 
 	protected void finishModLoading() {
 		// add mods to classpath
@@ -602,38 +599,38 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	@Deprecated
-	protected void addMod(ModCandidate candidate) throws ModResolutionException {
-		InternalModMetadata meta = candidate.getMetadata();
-		if (modMap.containsKey(meta.id())) {
-			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "!"/* + " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
-		}
-
-		if (!meta.environment().matches(getEnvironmentType())) {
-			if (candidate.getDepth() < 1) {
-				Log.warn(LogCategory.DISCOVERY, "Not loading mod " + meta.id()
-						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
-			} else {
-
-				Log.debug(LogCategory.DISCOVERY, "Not loading mod " + meta.id() + "(from " + ModResolver.getReadablePath(this, candidate) + ") "
-						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
-
-			}
-			return;
-		}
-
-		ModContainerImpl container = new ModContainerImpl(candidate);
-		mods.add(container);
-		modMap.put(meta.id(), container);
-
-		for (ProvidedMod provided : meta.provides()) {
-			if (modMap.containsKey(provided.id())) {
-				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
-			}
-
-			modMap.put(provided.id(), container);
-		}
-	}
+//	@Deprecated
+//	protected void addMod(ModCandidate candidate) throws ModResolutionException {
+//		InternalModMetadata meta = candidate.getMetadata();
+//		if (modMap.containsKey(meta.id())) {
+//			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "!"/* + " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
+//		}
+//
+//		if (!meta.environment().matches(getEnvironmentType())) {
+//			if (candidate.getDepth() < 1) {
+//				Log.warn(LogCategory.DISCOVERY, "Not loading mod " + meta.id()
+//						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
+//			} else {
+//
+//				Log.debug(LogCategory.DISCOVERY, "Not loading mod " + meta.id() + "(from " + ModResolver.getReadablePath(this, candidate) + ") "
+//						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
+//
+//			}
+//			return;
+//		}
+//
+//		ModContainerImpl container = new ModContainerImpl(candidate);
+//		mods.add(container);
+//		modMap.put(meta.id(), container);
+//
+//		for (ProvidedMod provided : meta.provides()) {
+//			if (modMap.containsKey(provided.id())) {
+//				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
+//			}
+//
+//			modMap.put(provided.id(), container);
+//		}
+//	}
 
 	protected void postprocessModMetadata() {
 		// do nothing for now; most warnings have been moved to V1ModMetadataParser

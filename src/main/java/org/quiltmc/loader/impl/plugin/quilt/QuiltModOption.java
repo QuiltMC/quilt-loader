@@ -12,9 +12,8 @@ import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 public class QuiltModOption extends InternalModOptionBase {
 
 	public QuiltModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, Path resourceRoot,
-		boolean mandatory) {
-
-		super(pluginContext, meta, from, resourceRoot, mandatory);
+		boolean mandatory, boolean requiresRemap) {
+		super(pluginContext, meta, from, resourceRoot, mandatory, requiresRemap);
 	}
 
 	@Override
@@ -26,4 +25,5 @@ public class QuiltModOption extends InternalModOptionBase {
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
 		return new QuiltModContainer(pluginContext.pluginId(), metadata, from, transformedResourceRoot);
 	}
+
 }

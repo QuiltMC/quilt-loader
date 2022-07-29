@@ -15,17 +15,19 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	protected final InternalModMetadata metadata;
 	protected final Path from, resourceRoot;
 	protected final boolean mandatory;
+	protected final boolean requiresRemap;
 
 	byte[] hash;
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from,
-		Path resourceRoot, boolean mandatory) {
+		Path resourceRoot, boolean mandatory, boolean requiresRemap) {
 
 		this.pluginContext = pluginContext;
 		this.metadata = meta;
 		this.from = from;
 		this.resourceRoot = resourceRoot;
 		this.mandatory = mandatory;
+		this.requiresRemap = requiresRemap;
 	}
 
 	@Override
@@ -73,7 +75,7 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 
 	@Override
 	public @Nullable String namespaceMappingFrom() {
-		return metadata.intermediateMappings();
+		return requiresRemap ? metadata.intermediateMappings() : null;
 	}
 
 	@Override

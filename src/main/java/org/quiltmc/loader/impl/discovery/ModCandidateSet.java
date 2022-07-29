@@ -27,9 +27,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.impl.metadata.qmj.ModProvided;
 
 import net.fabricmc.loader.api.Version;
+
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
 
 /**
  * @deprecated Plugins don't use this.
@@ -82,7 +83,7 @@ public class ModCandidateSet {
 		}
 
 		candidates.put(version, candidate);
-		for (ProvidedMod provided : candidate.getMetadata().provides()) {
+		for (ModMetadataExt.ProvidedMod provided : candidate.getMetadata().provides()) {
 			modProvides.add(provided.id());
 		}
 		if (candidate.getDepth() == 0) {

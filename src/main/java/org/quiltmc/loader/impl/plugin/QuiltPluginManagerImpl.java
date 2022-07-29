@@ -171,7 +171,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						return qRoot;
 					}
 					case COPY_ZIP:
-						// TODO: Implement this!
+						throw new UnsupportedOperationException();
 					case READ_ZIP: {
 						pathParents.put(root, zip);
 						return root;
@@ -198,7 +198,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			current++;
 		}
 		allocatedFileSystemIndices.put(rawName, current);
-		return rawName + "." + current;
+		return rawName + ".i" + current;
 
 	}
 

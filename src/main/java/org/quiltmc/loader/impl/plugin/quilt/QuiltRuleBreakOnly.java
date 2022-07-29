@@ -26,7 +26,6 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
-import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -45,7 +44,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		okayOptions = new ArrayList<>();
 		allOptions = new ArrayList<>();
 
-		if (ModSolver.DEBUG_PRINT_STATE) {
+		if (StandardQuiltPlugin.DEBUG_PRINT_STATE) {
 			Log.info(LogCategory.SOLVING, "Adding a mod break from " + source + " to " + publicDep.id().id());
 		}
 
@@ -53,7 +52,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		if (except != null && !except.shouldIgnore()) {
 			QuiltModDepOption option = new QuiltModDepOption(except);
 			ctx.addOption(option);
-			this.unless = ModSolver.createModDepLink(ctx, option, except);
+			this.unless = StandardQuiltPlugin.createModDepLink(ctx, option, except);
 			ctx.addRule(unless);
 		} else {
 			this.unless = null;
@@ -77,14 +76,14 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 			if (groupMatches && publicDep.matches(mod.version())) {
 				conflictingOptions.add(mod);
 
-				if (ModSolver.DEBUG_PRINT_STATE) {
+				if (StandardQuiltPlugin.DEBUG_PRINT_STATE) {
 					Log.info(LogCategory.SOLVING, "  x  conflicting option: " + mod.fullString());
 				}
 				return true;
 			} else {
 				okayOptions.add(mod);
 
-				if (ModSolver.DEBUG_PRINT_STATE) {
+				if (StandardQuiltPlugin.DEBUG_PRINT_STATE) {
 					String reason = groupMatches ? "different group" : "different version";
 					Log.info(LogCategory.SOLVING, "  +  okay option: " + mod.fullString() + " because " + reason);
 				}

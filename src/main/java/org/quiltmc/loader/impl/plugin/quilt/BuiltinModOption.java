@@ -12,7 +12,7 @@ import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 public class BuiltinModOption extends InternalModOptionBase {
 
 	public BuiltinModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, Path resourceRoot) {
-		super(pluginContext, meta, from, resourceRoot, true);
+		super(pluginContext, meta, from, resourceRoot, true, false);
 	}
 
 	@Override

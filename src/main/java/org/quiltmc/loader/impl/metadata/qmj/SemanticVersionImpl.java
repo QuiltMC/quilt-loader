@@ -188,6 +188,11 @@ public class SemanticVersionImpl implements Version.Semantic {
 		return Objects.hash(raw, major, minor, patch, preRelease, buildMeta);
 	}
 
+	@Override
+	public String toString() {
+		return raw;
+	}
+
 	private static @Nullable Integer parsePositiveIntNullable(String bit) {
 		if (bit.startsWith("+")) {
 			return null;

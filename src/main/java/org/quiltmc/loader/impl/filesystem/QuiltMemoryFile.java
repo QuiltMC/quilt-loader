@@ -160,6 +160,8 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 					}
 
 					dst.put(buffer, offset, toRead);
+					// TODO HACK BUGFIX MIGHT NOT WORK I HAVE NO IDEA WHAT IM DOING
+					position = bufferPosition;
 					return toRead;
 				}
 			};

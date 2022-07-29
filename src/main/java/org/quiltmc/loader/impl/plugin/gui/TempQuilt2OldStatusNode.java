@@ -1,6 +1,7 @@
 package org.quiltmc.loader.impl.plugin.gui;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
@@ -51,13 +52,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 			}
 		}
 
-		childrenByAlphabetical.sort((a, b) -> {
-			int cmp = a.sortPrefix.compareTo(b.sortPrefix);
-			if (cmp != 0) {
-				return cmp;
-			}
-			return a.text.compareTo(b.text);
-		});
+		childrenByAlphabetical.sort(Comparator.comparing((TempQuilt2OldStatusNode a) -> a.sortPrefix).thenComparing(a -> a.text));
 
 		for (TempQuilt2OldStatusNode n : childrenByAlphabetical) {
 			if (debug || n.directLevel != WarningLevel.DEBUG_ONLY) {

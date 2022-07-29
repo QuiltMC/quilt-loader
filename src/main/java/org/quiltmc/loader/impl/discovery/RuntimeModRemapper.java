@@ -21,9 +21,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -49,18 +54,14 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 public final class RuntimeModRemapper {
 
-	public static void remap(List<ModCandidate> modCandidates, FileSystem fileSystem) {
-		List<ModCandidate> modsToRemap = modCandidates.stream()
-				.filter(ModCandidate::requiresRemap)
+	public static void remap(Path cache, List<ModLoadOption> modList) {
+		List<ModLoadOption> modsToRemap = modList.stream()
+				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 
 		if (modsToRemap.isEmpty()) {
 			return;
 		}
-
-		List<ModCandidate> modsToSkip = modCandidates.stream()
-				.filter(mc -> !mc.requiresRemap())
-				.collect(Collectors.toList());
 
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 
@@ -75,35 +76,26 @@ public final class RuntimeModRemapper {
 			throw new RuntimeException("Failed to populate remap classpath", e);
 		}
 
-		List<ModCandidate> remappedMods = new ArrayList<>();
-
 		try {
-			Map<ModCandidate, RemapInfo> infoMap = new HashMap<>();
+			Map<ModLoadOption, RemapInfo> infoMap = new HashMap<>();
 
-			for (ModCandidate mod : modsToRemap) {
+			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = new RemapInfo();
 				infoMap.put(mod, info);
 
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
-				info.inputPath = mod.getOriginPath().toAbsolutePath();
+				info.inputPath = mod.resourceRoot().toAbsolutePath();
 				remapper.readInputsAsync(tag, info.inputPath);
 			}
 
 			//Done in a 2nd loop as we need to make sure all the inputs are present before remapping
-			for (ModCandidate mod : modsToRemap) {
+			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-				info.outputPath = fileSystem.getPath(info.inputPath.getFileName().toString() + "-" + UUID.randomUUID() + "-remappedOutput.jar");
-				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).build();
+				info.outputPath = cache.resolve("/" + mod.id());
+				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).assumeArchive(true).build();
 
-				FileSystemUtil.FileSystemDelegate delegate = FileSystemUtil.getJarFileSystem(info.inputPath, false);
-
-				if (delegate.get() == null) {
-					throw new RuntimeException("Could not open JAR file " + info.inputPath.getFileName() + " for NIO reading!");
-				}
-
-				Path inputJar = delegate.get().getRootDirectories().iterator().next();
-				outputConsumer.addNonClassFiles(inputJar, NonClassCopyMode.FIX_META_INF, remapper);
+				outputConsumer.addNonClassFiles(mod.resourceRoot(), NonClassCopyMode.FIX_META_INF, remapper);
 
 				info.outputConsumerPath = outputConsumer;
 
@@ -111,50 +103,35 @@ public final class RuntimeModRemapper {
 			}
 
 			//Done in a 3rd loop as this can happen when the remapper is doing its thing.
-			for (ModCandidate mod : modsToRemap) {
+			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-				if (!mod.getMetadata().accessWideners().isEmpty()) {
+				if (!mod.metadata().accessWideners().isEmpty()) {
 					info.accessWideners = new HashMap<>();
-					try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.inputPath, false)) {
-						FileSystem fs = jarFs.get();
-						for (String accessWidener : mod.getMetadata().accessWideners()) {
-							info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(fs.getPath(accessWidener)), remapper.getRemapper()));
-						}
-					} catch (Throwable t) {
-						throw new RuntimeException("Error remapping access widener for mod '"+mod.getId()+"'!", t);
+					for (String accessWidener : mod.metadata().accessWideners()) {
+						info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(info.inputPath.resolve(accessWidener)), remapper.getRemapper()));
 					}
 				}
 			}
 
 			remapper.finish();
 
-			for (ModCandidate mod : modsToRemap) {
+			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 
 				info.outputConsumerPath.close();
 
 				if (info.accessWideners != null) {
-					try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.outputPath, false)) {
-						FileSystem fs = jarFs.get();
-						for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
-							Files.delete(fs.getPath(entry.getKey()));
-							Files.write(fs.getPath(entry.getKey()), entry.getValue());
-						}
+					for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
+						Files.delete(info.outputPath.resolve(entry.getKey()));
+						Files.write(info.outputPath.resolve(entry.getKey()), entry.getValue());
 					}
 				}
-				// TODO: intentional leak?
-				FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(info.outputPath, false);
-				remappedMods.add(new ModCandidate(mod.getOriginPath(), jarFs.get().getPath("/"), mod.getInfo(), mod.getDepth(), false));
 			}
 
 		} catch (IOException e) {
 			remapper.finish();
 			throw new RuntimeException("Failed to remap mods", e);
 		}
-		// TODO: erases order
-		modCandidates.clear();
-		modCandidates.addAll(remappedMods);
-		modCandidates.addAll(modsToSkip);
 	}
 
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {

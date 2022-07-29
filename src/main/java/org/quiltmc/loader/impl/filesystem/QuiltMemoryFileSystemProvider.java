@@ -259,7 +259,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 							if (entry instanceof QuiltMemoryFolder.ReadOnly) {
 								entries = ((QuiltMemoryFolder.ReadOnly) entry).children;
 							} else if (entry instanceof QuiltMemoryFolder.ReadWrite) {
-								entries = ((QuiltMemoryFolder.ReadWrite) entry).children//
+								entries = ((QuiltMemoryFolder.ReadWrite) entry).children
 										.toArray(new QuiltMemoryPath[0]);
 							} else {
 								throw new DirectoryIteratorException(new NotDirectoryException("Not a directory: " + dir));

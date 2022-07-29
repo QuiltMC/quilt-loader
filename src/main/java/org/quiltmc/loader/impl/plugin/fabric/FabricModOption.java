@@ -12,9 +12,9 @@ import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 public class FabricModOption extends InternalModOptionBase {
 
 	public FabricModOption(QuiltPluginContext pluginContext, FabricLoaderModMetadata meta, Path from, Path resourceRoot,
-		boolean mandatory) {
+		boolean mandatory, boolean requiresRemap) {
 
-		super(pluginContext, meta.asQuiltModMetadata(), from, resourceRoot, mandatory);
+		super(pluginContext, meta.asQuiltModMetadata(), from, resourceRoot, mandatory, requiresRemap);
 	}
 
 	@Override

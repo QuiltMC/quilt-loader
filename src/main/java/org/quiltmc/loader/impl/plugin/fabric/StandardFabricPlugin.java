@@ -5,6 +5,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -66,8 +67,10 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			}
 
 			boolean mandatory = fromClasspath || from.getFileSystem() == FileSystems.getDefault();
-
-			return new ModLoadOption[] { new FabricModOption(context(), meta, from, root, mandatory) };
+			// a mod needs to be remapped if we are in a development environment, and the mod
+			// did not come from the classpath
+			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
+			return new ModLoadOption[] { new FabricModOption(context(), meta, from, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
 			guiNode.addChild("TODO:TRANSLATE('invalid-fabric.mod.json %s', " + parse.getMessage() + ")")//
 				.setError(parse);

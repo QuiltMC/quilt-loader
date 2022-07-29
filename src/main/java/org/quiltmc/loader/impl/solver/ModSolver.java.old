@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -42,7 +43,6 @@ import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModResolver;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.discovery.ModSolvingException;
-import org.quiltmc.loader.impl.metadata.qmj.ModLoadType;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
@@ -357,7 +357,7 @@ public final class ModSolver {
 
 		// TODO: Warn on suspiciously similar versions!
 
-		return new ModSolveResult(resultingModMap, providedModMap, extraResults);
+		return new ModSolveResultImpl(resultingModMap, providedModMap, extraResults);
 	}
 
 	private boolean blameSingleRule(Sat4jWrapper sat, List<Rule> causes) {

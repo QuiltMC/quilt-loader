@@ -48,7 +48,6 @@ extends FileSystem
 	QuiltBaseFileSystem(Class<FS> filesystemClass, Class<P> pathClass, String name) {
 		this.filesystemClass = filesystemClass;
 		this.pathClass = pathClass;
-
 		this.name = name;
 		this.root = createPath(null, QuiltBasePath.NAME_ROOT);
 	}

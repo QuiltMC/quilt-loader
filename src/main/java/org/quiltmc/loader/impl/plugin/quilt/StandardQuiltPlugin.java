@@ -12,6 +12,7 @@ import java.util.Map;
 
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
@@ -32,6 +33,8 @@ import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 /** Quilt-loader's plugin. For simplicities sake this is a builtin plugin - and cannot be disabled, or reloaded (since
  * quilt-loader can't reload itself to a different version). */
 public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
+
+	public static final boolean DEBUG_PRINT_STATE = false;
 
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
 
@@ -113,8 +116,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			}
 
 			boolean mandatory = fromClasspath || from.getFileSystem() == FileSystems.getDefault();
-
-			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, root, mandatory) };
+			// a mod needs to be remapped if we are in a development environment, and the mod
+			// did not come from the classpath
+			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
+			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, root, mandatory, requiresRemap) };
 		} catch (ParseException parse) {
 			guiNode.addChild("TODO:TRANSLATE('invalid-quilt.mod.json %s', " + parse.getMessage() + ")")//
 				.mainIcon(guiNode.manager().iconJsonFile()).setError(parse);

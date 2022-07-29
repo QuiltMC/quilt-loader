@@ -10,8 +10,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -20,12 +18,13 @@ import java.util.Map.Entry;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
+import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
+import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
 
 public class TransformCache {
 
-	/** @return The inside path of the bundle. */
-	public static Path getOrCreateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
+	public static void populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
 		Map<String, String> map = new TreeMap<>();
 		// Mod order is important? For now, assume it is
 		int index = 0;
@@ -64,10 +63,10 @@ public class TransformCache {
 
 		Path existing = checkTransformCache(transformCacheFile, options);
 		if (existing != null) {
-			return existing;
+			return;
 		}
 
-		return createTransformCache(transformCacheFile, options, modList, result);
+		createTransformCache(transformCacheFile, options, modList, result);
 	}
 
 	private static Path checkTransformCache(Path transformCacheFile, String options) throws ModResolutionException {
@@ -117,21 +116,18 @@ public class TransformCache {
 		}
 	}
 
-	private static Path createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
+	private static void createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 
-		try {
-			Map<String, String> env = new HashMap<>();
-			env.put("create", "true");
+		try(FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, true)) {
 			URI fileUri = transformCacheFile.toUri();
 			URI zipUri = new URI("jar:" + fileUri.getScheme(), fileUri.getPath(), null);
-			Path inner = FileSystems.newFileSystem(zipUri, env).getPath("/");
+
+			Path inner = fs.get().getPath("/");
 
 			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 
 			populateTransformCache(inner, modList, result);
-
-			return inner;
 		} catch (IOException e) {
 			throw new ModResolutionException("Failed to create the transform bundle!", e);
 		} catch (URISyntaxException e) {
@@ -140,6 +136,7 @@ public class TransformCache {
 	}
 
 	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result) {
+		RuntimeModRemapper.remap(root, modList);
 		// TODO: Perform remapping
 		// TODO: Invoke chasm
 	}

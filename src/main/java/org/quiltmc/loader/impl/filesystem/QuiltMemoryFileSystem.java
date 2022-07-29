@@ -177,6 +177,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 					} else {
 						String pathName = relative.getFileName().toString();
 						QuiltMemoryPath path = stack.peek().folder.resolve(pathName);
+						stack.peek().children.add(path);
 						stats[STAT_MEMORY] += pathName.length() + 28;
 						stack.push(new DirBuildState(path));
 					}
