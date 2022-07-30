@@ -35,6 +35,7 @@ import org.quiltmc.loader.impl.solver.ModSolveResult;
 import org.quiltmc.loader.impl.solver.ModSolver;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -400,7 +401,8 @@ public class ModResolver {
 		try {
 			pool.shutdown();
 			// Comment out for debugging
-			pool.awaitTermination(30, TimeUnit.SECONDS);
+			int time = Integer.parseInt(System.getProperty(SystemProperties.DEBUG_RESOLUTION_TIME_LIMIT, "60"));
+			pool.awaitTermination(time, TimeUnit.SECONDS);
 			for (ProcessAction action : allActions) {
 				if (!action.isDone()) {
 					tookTooLong = true;
@@ -430,6 +432,9 @@ public class ModResolver {
 		ModSolveResult result = solver.findCompatibleSet(candidatesById);
 
 		long time3 = System.currentTimeMillis();
+		if (time3 - time2 > 30*1000) {
+			Log.warn(LogCategory.RESOLUTION, "Mod resolution took %dms, which is too long!", time3 - time2);
+		}
 		Log.debug(LogCategory.RESOLUTION, "Mod resolution detection time: " + (time2 - time1) + "ms");
 		Log.debug(LogCategory.RESOLUTION, "Mod resolution time: " + (time3 - time2) + "ms");
 
