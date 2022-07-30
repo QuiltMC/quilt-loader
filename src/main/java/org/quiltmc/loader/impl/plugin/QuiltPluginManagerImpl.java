@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.Normalizer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1116,9 +1117,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		} else {
 			set.byVersionSingles.remove(version);
 
-			for (ModLoadOption option : already) {
-				set.extras.add(option);
-			}
+			set.extras.addAll(already);
 		}
 
 		if (!(mod instanceof TentativeLoadOption) && mod.metadata().plugin() != null) {

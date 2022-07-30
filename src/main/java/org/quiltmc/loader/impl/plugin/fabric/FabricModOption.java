@@ -1,5 +1,6 @@
 package org.quiltmc.loader.impl.plugin.fabric;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.ModContainerExt;

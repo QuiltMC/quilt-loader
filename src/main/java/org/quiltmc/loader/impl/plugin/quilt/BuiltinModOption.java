@@ -1,5 +1,6 @@
 package org.quiltmc.loader.impl.plugin.quilt;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.ModContainerExt;
@@ -22,6 +23,13 @@ public class BuiltinModOption extends InternalModOptionBase {
 
 	@Override
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
+		if (!transformedResourceRoot.equals(resourceRoot)) {
+			try {
+				resourceRoot.getFileSystem().close();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
 		return new BuiltinModContainer(pluginContext.pluginId(), metadata, from, transformedResourceRoot);
 	}
 }

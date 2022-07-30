@@ -268,7 +268,7 @@ public final class QuiltLoaderImpl {
 
 		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache.zip");
 		TransformCache.populateTransformBundle(transformCacheFile, modList, result);
-		Path transformedModBundle = null;
+		Path transformedModBundle;
 		try {
 			transformedModBundle = FileSystemUtil.getJarFileSystem(transformCacheFile, false).get().getPath("/");
 		} catch (IOException e) {
@@ -281,7 +281,7 @@ public final class QuiltLoaderImpl {
 			if (!modOption.needsChasmTransforming() && modOption.namespaceMappingFrom() == null) {
 				resourceRoot = modOption.resourceRoot();
 			} else {
-				Path modTransformed = transformedModBundle.resolve(modOption.id());
+				Path modTransformed = transformedModBundle.resolve(modOption.id() + "/");
 				Path excluded = transformedModBundle.resolve(modOption.id() + ".removed");
 
 				Path from = modOption.resourceRoot();
@@ -294,10 +294,11 @@ public final class QuiltLoaderImpl {
 
 					List<Path> paths = new ArrayList<>();
 					paths.add(modTransformed);
-					paths.add(from);
 
 					String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
-					resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
+					// TODO:
+					// use a joined fs to allow layering
+					resourceRoot = modTransformed;
 				}
 			}
 

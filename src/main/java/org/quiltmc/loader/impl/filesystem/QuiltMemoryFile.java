@@ -142,7 +142,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				}
 
 				@Override
-				public int read(ByteBuffer dst) throws IOException {
+				public synchronized int read(ByteBuffer dst) throws IOException {
 					if (position >= uncompressedSize) {
 						return -1;
 					}
@@ -156,12 +156,11 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 							throw new IOException("Unable to read enough bytes from the gzip stream!");
 						} else {
 							bufferPosition += read;
+							position += read;
 						}
 					}
 
 					dst.put(buffer, offset, toRead);
-					// TODO HACK BUGFIX MIGHT NOT WORK I HAVE NO IDEA WHAT IM DOING
-					position = bufferPosition;
 					return toRead;
 				}
 			};
@@ -208,6 +207,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				int toRead = (int) Math.min(uncompressedSize - position, dst.remaining());
 				int offset = (int) position;
 				dst.put(byteArray(), offset + bytesOffset(), toRead);
+				position += toRead;
 				return toRead;
 			}
 

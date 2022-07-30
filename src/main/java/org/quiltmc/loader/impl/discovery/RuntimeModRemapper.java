@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -82,7 +83,6 @@ public final class RuntimeModRemapper {
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = new RemapInfo();
 				infoMap.put(mod, info);
-
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
 				info.inputPath = mod.resourceRoot().toAbsolutePath();
@@ -93,7 +93,7 @@ public final class RuntimeModRemapper {
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 				info.outputPath = cache.resolve("/" + mod.id());
-				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).assumeArchive(true).build();
+				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).build();
 
 				outputConsumer.addNonClassFiles(mod.resourceRoot(), NonClassCopyMode.FIX_META_INF, remapper);
 
