@@ -48,8 +48,38 @@ extends FileSystem
 	QuiltBaseFileSystem(Class<FS> filesystemClass, Class<P> pathClass, String name) {
 		this.filesystemClass = filesystemClass;
 		this.pathClass = pathClass;
-		this.name = name;
+		this.name = sanitizeName(name);
 		this.root = createPath(null, QuiltBasePath.NAME_ROOT);
+	}
+
+	// Shamelessly stolen from UnixUriUtils
+	private static final long LOW_MASK = 287948901175001088L;
+	private static final long HIGH_MASK = 5188146764422578175L;
+	private static String sanitizeName(String str) {
+		byte[] path = str.getBytes();
+		StringBuilder sb = new StringBuilder();
+
+		for(int i = 1; i < path.length; ++i) {
+			char c = (char)(path[i] & 255);
+
+			if (matchesMagic(c)) {
+				sb.append(c);
+			}
+			// Since we don't need to decode anything,
+			// we just delete characters we don't like!
+		}
+
+		return sb.toString();
+	}
+
+	private static boolean matchesMagic(char c) {
+		if (c < '@') {
+			return (1L << c & LOW_MASK) != 0L;
+		} else if (c < 128) {
+			return (1L << c - '@' & HIGH_MASK) != 0L;
+		} else {
+			return false;
+		}
 	}
 
 	abstract P createPath(@Nullable P parent, String name);
