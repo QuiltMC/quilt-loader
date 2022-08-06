@@ -60,6 +60,7 @@ import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree;
@@ -291,14 +292,18 @@ public final class QuiltLoaderImpl {
 				} else if (!Files.isDirectory(modTransformed)) {
 					resourceRoot = modOption.resourceRoot();
 				} else {
-
+					try {
+						modTransformed = new QuiltMemoryFileSystem.ReadOnly("transformed-stuff-" + modOption.id(), modTransformed).getRoot();
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
 					List<Path> paths = new ArrayList<>();
+
 					paths.add(modTransformed);
+					paths.add(modOption.resourceRoot());
 
 					String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
-					// TODO:
-					// use a joined fs to allow layering
-					resourceRoot = modTransformed;
+					resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
 				}
 			}
 
