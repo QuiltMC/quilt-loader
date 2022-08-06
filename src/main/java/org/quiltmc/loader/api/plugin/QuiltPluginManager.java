@@ -64,7 +64,8 @@ public interface QuiltPluginManager {
 	/** @return True if the given {@link Path} points to multiple root paths. */
 	boolean isJoinedPath(Path path);
 
-	/** @return All of paths that the given path actually refers to. */
+    /** @return All of paths that the given path actually refers to, or null if {@link #isJoinedPath(Path)} returns
+     *         false. */
 	Collection<Path> getJoinedPaths(Path path);
 
 	/** Creates a new {@link FileSystem} which joins the given list of paths, and returns the path at the root of that

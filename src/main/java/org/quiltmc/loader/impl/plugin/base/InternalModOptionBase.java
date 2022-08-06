@@ -63,14 +63,12 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 
 	@Override
 	public String shortString() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return toString();
 	}
 
 	@Override
 	public String getSpecificInfo() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		return toString();
 	}
 
 	@Override

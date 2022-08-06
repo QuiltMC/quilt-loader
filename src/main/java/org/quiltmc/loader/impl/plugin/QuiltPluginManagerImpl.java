@@ -485,7 +485,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					} else {
 						Collection<Rule> parts = solver.getError();
 
-						throw new AbstractMethodError("// TODO: error handling!" + parts);
+						StringBuilder sb = new StringBuilder();
+						for (Rule rule : parts) {
+						    sb.append("\n");
+						    rule.fallbackErrorDescription(sb);
+						}
+
+						throw new AbstractMethodError("// TODO: error handling!" + sb);
 					}
 				}
 				case POST_SOLVE_TENTATIVE: {

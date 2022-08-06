@@ -24,7 +24,7 @@ public class QuiltModOption extends InternalModOptionBase {
 
 	@Override
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
-		return new QuiltModContainer(pluginContext.pluginId(), metadata, from, transformedResourceRoot);
+		return new QuiltModContainer(pluginContext, metadata, from, transformedResourceRoot);
 	}
 
 }

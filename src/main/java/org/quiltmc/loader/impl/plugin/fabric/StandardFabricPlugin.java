@@ -44,7 +44,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			FabricLoaderModMetadata meta = FabricModMetadataReader.parseMetadata(fmj);
 
 			Path from = root;
-			if (fromClasspath) {
+			if (!fromClasspath) {
 				from = context().manager().getParent(root);
 			}
 

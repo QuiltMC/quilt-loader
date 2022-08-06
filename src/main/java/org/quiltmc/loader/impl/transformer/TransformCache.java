@@ -119,6 +119,14 @@ public class TransformCache {
 	private static void createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 
+		if (Files.exists(transformCacheFile)) {
+			try {
+				Files.delete(transformCacheFile);
+			} catch (IOException e) {
+				throw new ModResolutionException("Failed to delete the previous transform bundle!", e);
+			}
+		}
+
 		try(FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, true)) {
 			URI fileUri = transformCacheFile.toUri();
 			URI zipUri = new URI("jar:" + fileUri.getScheme(), fileUri.getPath(), null);
@@ -137,7 +145,6 @@ public class TransformCache {
 
 	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result) {
 		RuntimeModRemapper.remap(root, modList);
-		// TODO: Perform remapping
 		// TODO: Invoke chasm
 	}
 }

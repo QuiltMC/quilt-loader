@@ -30,6 +30,6 @@ public class BuiltinModOption extends InternalModOptionBase {
 				throw new RuntimeException(e);
 			}
 		}
-		return new BuiltinModContainer(pluginContext.pluginId(), metadata, from, transformedResourceRoot);
+		return new BuiltinModContainer(pluginContext, metadata, from, transformedResourceRoot);
 	}
 }

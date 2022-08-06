@@ -3,12 +3,13 @@ package org.quiltmc.loader.impl.plugin.fabric;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 
 public class FabricModContainer extends InternalModContainerBase {
 
-	public FabricModContainer(String pluginId, ModMetadataExt metadata, Path from, Path resourceRoot) {
-		super(pluginId, metadata, from, resourceRoot);
+	public FabricModContainer(QuiltPluginContext pluginContext, ModMetadataExt metadata, Path from, Path resourceRoot) {
+		super(pluginContext, metadata, from, resourceRoot);
 	}
 
 	@Override

@@ -315,12 +315,11 @@ public final class QuiltLoaderImpl {
 		// - - Double-checks for duplicates
 		// - - Rejects non-environment-matching mods (I'm less sure about this now)
 		// - - Creates the container
-		// - put the mod containing in the mod list & map
-		// - print mod list
 
 		StringBuilder modListText = new StringBuilder();
 
 		for (ModLoadOption option : modList) {
+			// TODO: Also include location for JIJ mods
 			if (modListText.length() > 0) modListText.append('\n');
 			modListText.append(option.id()).append(' ').append(option.version());
 			modListText.append(" from plugin (").append(option.loader().pluginId()).append(')');
@@ -654,7 +653,6 @@ public final class QuiltLoaderImpl {
 
 				try {
 					adapterMap.put(laEntry.getKey(), new ModLanguageAdapter(mod, laEntry.getKey(), laEntry.getValue()));
-//					adapterMap.put(laEntry.getKey(), (LanguageAdapter) Class.forName(laEntry.getValue(), true, QuiltLauncherBase.getLauncher().getTargetClassLoader()).getDeclaredConstructor().newInstance());
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to instantiate language adapter: " + laEntry.getKey(), e);
 				}
