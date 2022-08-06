@@ -66,7 +66,7 @@ public class HashUtil {
 			if (i < 0xF) {
 				sb.append("0");
 			}
-			sb.append(Integer.toHexString(b));
+			sb.append(Integer.toHexString(i));
 			sb.append(" ");
 		}
 		return sb.toString();
