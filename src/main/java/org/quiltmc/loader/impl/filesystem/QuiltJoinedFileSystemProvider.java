@@ -130,14 +130,14 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 		if (!SCHEME.equals(uri.getScheme())) {
 			throw new IllegalArgumentException("Wrong scheme! " + uri);
 		}
-		String host = uri.getHost();
+		String authority = uri.getAuthority();
 		WeakReference<QuiltJoinedFileSystem> fsRef;
 		synchronized (this) {
-			fsRef = ACTIVE_FILESYSTEMS.get(host);
+			fsRef = ACTIVE_FILESYSTEMS.get(authority);
 		}
 		QuiltJoinedFileSystem fs;
 		if (fsRef == null || (fs = fsRef.get()) == null) {
-			throw new IllegalArgumentException("Unknown file system name '" + host + "'");
+			throw new IllegalArgumentException("Unknown file system name '" + authority + "'");
 		}
 		return fs.root.resolve(uri.getPath());
 	}
