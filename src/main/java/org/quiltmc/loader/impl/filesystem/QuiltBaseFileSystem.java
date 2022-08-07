@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
@@ -50,20 +51,32 @@ extends FileSystem
 		this.pathClass = pathClass;
 		this.name = sanitizeName(name);
 		this.root = createPath(null, QuiltBasePath.NAME_ROOT);
+		
+		// Validate that our sanitising passes this.name through to
+		// both the host and authority
+		URI uri = root.toUri();
+		if (!name.equals(uri.getHost())) {
+			throw new RuntimeException(name + " wasn't found as the host of " + uri);
+		}
+		if (uri.getAuthority() == null || !uri.getAuthority().contains(name)) {
+			throw new RuntimeException(name + " wasn't found in the authority of " + uri);
+		}
 	}
 
 	// Shamelessly stolen from UnixUriUtils
-	private static final long LOW_MASK = 287948901175001088L;
-	private static final long HIGH_MASK = 5188146764422578175L;
+	private static final long LOW_MASK = 0x3ff600000000000L;
+	private static final long HIGH_MASK = 0x47fffffe07ffffffL;
 	private static String sanitizeName(String str) {
 		byte[] path = str.getBytes();
 		StringBuilder sb = new StringBuilder();
 
-		for(int i = 1; i < path.length; ++i) {
+		for(int i = 0; i < path.length; ++i) {
 			char c = (char)(path[i] & 255);
 
 			if (matchesMagic(c)) {
 				sb.append(c);
+			} else if (c == '_') {
+				sb.append('-');
 			}
 			// Since we don't need to decode anything,
 			// we just delete characters we don't like!
@@ -73,10 +86,10 @@ extends FileSystem
 	}
 
 	private static boolean matchesMagic(char c) {
-		if (c < '@') {
+		if (c < 64) {
 			return (1L << c & LOW_MASK) != 0L;
 		} else if (c < 128) {
-			return (1L << c - '@' & HIGH_MASK) != 0L;
+			return (1L << c - 64 & HIGH_MASK) != 0L;
 		} else {
 			return false;
 		}

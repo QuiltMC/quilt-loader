@@ -132,6 +132,12 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 			throw new IllegalArgumentException("Wrong scheme! " + uri);
 		}
 		String authority = uri.getAuthority();
+		if (authority == null) {
+			authority = uri.getHost();
+		} else if (authority.endsWith(":0")) {
+			// We add a (useless) port to allow URI.authority and host to be populated
+			authority = authority.substring(0, authority.length() - 2);
+		}
 		WeakReference<QuiltMemoryFileSystem> fsRef;
 		synchronized (this) {
 			fsRef = ACTIVE_FILESYSTEMS.get(authority);
