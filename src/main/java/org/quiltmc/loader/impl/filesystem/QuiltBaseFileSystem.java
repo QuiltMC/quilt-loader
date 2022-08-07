@@ -51,15 +51,15 @@ extends FileSystem
 		this.pathClass = pathClass;
 		this.name = sanitizeName(name);
 		this.root = createPath(null, QuiltBasePath.NAME_ROOT);
-		
+
 		// Validate that our sanitising passes this.name through to
 		// both the host and authority
 		URI uri = root.toUri();
-		if (!name.equals(uri.getHost())) {
-			throw new RuntimeException(name + " wasn't found as the host of " + uri);
+		if (!this.name.equals(uri.getHost())) {
+			throw new RuntimeException(this.name + " wasn't found as the host of " + uri);
 		}
-		if (uri.getAuthority() == null || !uri.getAuthority().contains(name)) {
-			throw new RuntimeException(name + " wasn't found in the authority of " + uri);
+		if (uri.getAuthority() == null || !uri.getAuthority().contains(this.name)) {
+			throw new RuntimeException(this.name + " wasn't found in the authority of " + uri);
 		}
 	}
 
