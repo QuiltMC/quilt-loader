@@ -447,7 +447,9 @@ implements Path
 			return toAbsolutePath().toUri();
 		}
 		try {
-			return new URI(fs.provider().getScheme(), fs.name, toString(), null);
+			// Passing as one string ensures that Java goes ahead and normalizes everything for us
+			// Adding the port stores the important info in both the authority and host
+			return new URI(fs.provider().getScheme() + "://" + fs.name + ":0" + this);
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
