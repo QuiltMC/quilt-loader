@@ -285,12 +285,10 @@ public final class QuiltLoaderImpl {
 				Path modTransformed = transformedModBundle.resolve(modOption.id() + "/");
 				Path excluded = transformedModBundle.resolve(modOption.id() + ".removed");
 
-				final Path from;
-
 				if (Files.exists(excluded)) {
 					throw new Error("// TODO: Implement pre-transform file removal!");
 				} else if (!Files.isDirectory(modTransformed)) {
-					from = modOption.resourceRoot();
+					resourceRoot = modOption.resourceRoot();
 				} else {
 					List<Path> paths = new ArrayList<>();
 
@@ -302,16 +300,12 @@ public final class QuiltLoaderImpl {
 					 * or create the "cached filemap" filesystem. */
 
 					// if (paths.size() == 1) {
-					// from = paths.get(0);
+					// resourceRoot = paths.get(0);
 					// } else {
 					String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
-					from = new QuiltJoinedFileSystem(fsName, paths).getRoot();
+					resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
 					// }
 				}
-
-				// TODO: Look into creating a "cached filemap" filesystem
-				// which does nothing except cache all of the file names
-				resourceRoot = from;
 			}
 
 			addMod(modOption.convertToMod(resourceRoot));
