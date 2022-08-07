@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.WeakReference;
@@ -213,6 +214,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 		QuiltJoinedPath qmp = (QuiltJoinedPath) dir;
 		return new DirectoryStream<Path>() {
 
+			final List<Path> backingPaths = new ArrayList<>();
 			final List<DirectoryStream<Path>> streams = new ArrayList<>();
 			boolean opened = false;
 			boolean closed = false;
@@ -220,10 +222,11 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 			{
 				boolean anyReal = false;
 				for (int i = 0; i < qmp.fs.getBackingPathCount(); i++) {
-					Path real = qmp.fs.getBackingPath(i, qmp);
+					Path backing = qmp.fs.getBackingPath(i, qmp);
+					backingPaths.add(backing);
 					try {
-						streams.add(Files.newDirectoryStream(real, path -> {
-							return filter.accept(toJoinedPath(real, path));
+						streams.add(Files.newDirectoryStream(backing, path -> {
+							return filter.accept(toJoinedPath(backing, path));
 						}));
 						anyReal = true;
 					} catch (NotDirectoryException e) {
@@ -236,8 +239,8 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 				}
 			}
 
-			private QuiltJoinedPath toJoinedPath(Path real, Path path) {
-				Path relative = real.relativize(path);
+			private QuiltJoinedPath toJoinedPath(Path backing, Path path) {
+				Path relative = backing.relativize(path);
 				QuiltJoinedPath joined;
 				if (relative.getFileSystem().getSeparator().equals(qmp.fs.getSeparator())) {
 					joined = qmp.resolve(relative.toString());
@@ -319,7 +322,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 						while (true) {
 							try {
 								if (subIterator != null && subIterator.hasNext()) {
-									next = toJoinedPath(qmp.fs.from[index], subIterator.next());
+									next = toJoinedPath(backingPaths.get(index), subIterator.next());
 									if (paths.add(next)) {
 										return true;
 									} else {
@@ -416,7 +419,8 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 			Path real = quiltPath.fs.getBackingPath(i, quiltPath);
 			try {
 				real.getFileSystem().provider().checkAccess(real, modes);
-			} catch (NoSuchFileException e) {
+				return;
+			} catch (NoSuchFileException | FileNotFoundException e) {
 				// Ignored
 			}
 		}
@@ -446,7 +450,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 			Path real = quiltPath.fs.getBackingPath(i, quiltPath);
 			try {
 				return Files.readAttributes(real, type, options);
-			} catch (NoSuchFileException e) {
+			} catch (NoSuchFileException | FileNotFoundException e) {
 				// Ignored
 			}
 		}
@@ -461,7 +465,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 			Path real = quiltPath.fs.getBackingPath(i, quiltPath);
 			try {
 				return Files.readAttributes(real, attributes, options);
-			} catch (NoSuchFileException e) {
+			} catch (NoSuchFileException | FileNotFoundException e) {
 				// Ignored
 			}
 		}
