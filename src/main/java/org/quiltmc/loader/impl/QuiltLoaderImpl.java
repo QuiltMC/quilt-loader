@@ -285,26 +285,33 @@ public final class QuiltLoaderImpl {
 				Path modTransformed = transformedModBundle.resolve(modOption.id() + "/");
 				Path excluded = transformedModBundle.resolve(modOption.id() + ".removed");
 
-				Path from = modOption.resourceRoot();
+				final Path from;
 
 				if (Files.exists(excluded)) {
 					throw new Error("// TODO: Implement pre-transform file removal!");
 				} else if (!Files.isDirectory(modTransformed)) {
-					resourceRoot = modOption.resourceRoot();
+					from = modOption.resourceRoot();
 				} else {
-					try {
-						modTransformed = new QuiltMemoryFileSystem.ReadOnly("transformed-stuff-" + modOption.id(), modTransformed).getRoot();
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
 					List<Path> paths = new ArrayList<>();
 
 					paths.add(modTransformed);
-					paths.add(modOption.resourceRoot());
 
+					/* Single path optimisation disabled since
+					 * URLClassPath can't handle loading folders from inside a zip.
+					 * We can re-enable it if we either move to our own classloader
+					 * or create the "cached filemap" filesystem. */
+
+					// if (paths.size() == 1) {
+					// from = paths.get(0);
+					// } else {
 					String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
-					resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
+					from = new QuiltJoinedFileSystem(fsName, paths).getRoot();
+					// }
 				}
+
+				// TODO: Look into creating a "cached filemap" filesystem
+				// which does nothing except cache all of the file names
+				resourceRoot = from;
 			}
 
 			addMod(modOption.convertToMod(resourceRoot));

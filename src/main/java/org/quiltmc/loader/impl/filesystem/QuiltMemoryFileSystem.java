@@ -23,6 +23,7 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
@@ -116,7 +117,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		if (entry != null) {
 			return entry.createAttributes();
 		} else {
-			throw new FileNotFoundException();
+			throw new NoSuchFileException(qmp.name);
 		}
 	}
 

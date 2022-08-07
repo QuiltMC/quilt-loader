@@ -124,7 +124,11 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 	public Path getBackingPath(int index, QuiltJoinedPath thisPath) {
 		Path other = from[index];
 		if (getSeparator().equals(other.getFileSystem().getSeparator())) {
-			return other.resolve(thisPath.toString());
+			String thisPathStr = thisPath.toString();
+			if (thisPathStr.startsWith("/")) {
+				thisPathStr = thisPathStr.substring(1);
+			}
+			return other.resolve(thisPathStr);
 		} else {
 			for (String segment : thisPath.names()) {
 				other = other.resolve(segment);
