@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
 
@@ -48,6 +50,7 @@ import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -89,7 +92,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.17.2-beta.1";
+	public static final String VERSION = "0.18.0-beta.4";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -317,27 +320,158 @@ public final class QuiltLoaderImpl {
 		// - - Rejects non-environment-matching mods (I'm less sure about this now)
 		// - - Creates the container
 
-		StringBuilder modListText = new StringBuilder();
+		int count = mods.size();
+		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
+	}
 
-		for (ModLoadOption option : modList) {
-			// TODO: Also include location for JIJ mods
-			if (modListText.length() > 0) modListText.append('\n');
-			modListText.append(option.id()).append(' ').append(option.version());
-			modListText.append(" from plugin (").append(option.loader().pluginId()).append(')');
+	public String createModTable() {
 
+		// Columns:
+		// - Index
+		// - ID
+		// - version
+		// - loader plugin
+		// - source path(s)
+
+		int maxIdLength = "Mod".length();
+		int maxVersionLength = "Version".length();
+		int maxPluginLength = "Plugin".length();
+		List<Integer> maxSourcePathLengths = new ArrayList<>();
+
+		for (ModContainerExt mod : mods) {
+			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
+			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
+			maxPluginLength = Math.max(maxPluginLength, mod.pluginId().length());
+
+			for (List<Path> paths : mod.getSourcePaths()) {
+				for (int i = 0; i < paths.size(); i++) {
+					Path path = paths.get(i);
+					String pathStr = path.startsWith(gameDir) ? "<game>/" + gameDir.relativize(path).toString() : path.toString();
+					if (maxSourcePathLengths.size() <= i) {
+						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
+						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
+					} else {
+						Integer old = maxSourcePathLengths.get(i);
+						maxSourcePathLengths.set(i, Math.max(old, pathStr.length() + 1));
+					}
+				}
+			}
 		}
-//		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().id())).collect(Collectors.toList())) {
-//			if (modListText.length() > 0) modListText.append('\n');
-//
-//			modListText.append("\t- ");
-//			modListText.append(mod.metadata().id());
-//			modListText.append(' ');
-//			modListText.append(mod.metadata().version());
-//			mod
-//		}
 
-		int count = modList.size();
-		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
+		maxIdLength++;
+		maxVersionLength++;
+		maxPluginLength++;
+
+		StringBuilder sbTab = new StringBuilder();
+		StringBuilder sbSep = new StringBuilder();
+
+		// Table header
+		sbTab.append("| Index | Mod ");
+		sbSep.append("|-------|-----");
+		for (int i = 3; i < maxIdLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| Version ");
+		sbSep.append("|---------");
+		for (int i = "Version".length(); i < maxVersionLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| Plugin ");
+		sbSep.append("|--------");
+		for (int i = "Plugin".length(); i < maxPluginLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("|");
+		sbSep.append("|");
+
+		String start = "File(s)";
+
+		for (int len : maxSourcePathLengths) {
+			sbTab.append(" ").append(start);
+			for (int i = start.length(); i <= len; i++) {
+				sbTab.append(" ");
+			}
+			for (int i = -1; i <= len; i++) {
+				sbSep.append("-");
+			}
+			sbTab.append("|");
+			sbSep.append("|");
+			start = "Sub-Files";
+		}
+
+		sbTab.append("\n");
+		sbTab.append(sbSep);
+
+		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().id())).collect(Collectors.toList())) {
+			sbTab.append("\n| ");
+			String index = Integer.toString(mods.indexOf(mod));
+			for (int i = index.length(); i < "Index".length(); i++) {
+				sbTab.append(" ");
+			}
+			// - ID
+			// - version
+			// - loader plugin
+			// - source path(s)
+			sbTab.append(index).append(" | ").append(mod.metadata().id());
+			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.metadata().version());
+			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.pluginId());
+			for (int i = mod.pluginId().length(); i < maxPluginLength; i++) {
+				sbTab.append(" ");
+			}
+
+			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
+				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
+
+				if (pathsIndex != 0) {
+					sbTab.append("\n| ");
+					for (int i = 0; i < "Index".length(); i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
+					for (int i = 0; i < maxIdLength; i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
+					for (int i = 0; i < maxVersionLength; i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
+					for (int i = 0; i < maxPluginLength; i++) {
+						sbTab.append(" ");
+					}
+				}
+
+				for (int pathIndex = 0; pathIndex < maxSourcePathLengths.size(); pathIndex++) {
+					sbTab.append(" | ");
+					final String pathStr;
+					if (pathIndex < paths.size()) {
+						Path path = paths.get(pathIndex);
+						pathStr = path.startsWith(gameDir) ? "<game>/" + gameDir.relativize(path) : path.toString();
+					} else {
+						pathStr = "";
+					}
+					sbTab.append(pathStr);
+					for (int i = pathStr.length(); i < maxSourcePathLengths.get(pathIndex); i++) {
+						sbTab.append(" ");
+					}
+				}
+				sbTab.append(" |");
+			}
+		}
+
+		sbTab.append("\n");
+		sbTab.append(sbSep);
+		sbTab.append("\n");
+		return sbTab.toString();
 	}
 
 	private static void performMixinReordering(List<ModLoadOption> modList) {

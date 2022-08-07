@@ -52,10 +52,18 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		javaMeta.version = Version.of(javaVersion);
 		javaMeta.name = System.getProperty("java.vm.name");
 		Path javaPath = new File(System.getProperty("java.home")).toPath();
-		addBuiltinMod(new BuiltinMod(Collections.singletonList(javaPath), javaMeta.build()), "java");
+		addSystemMod(new BuiltinMod(Collections.singletonList(javaPath), javaMeta.build()), "java");
+	}
+
+	private void addSystemMod(BuiltinMod mod, String name) {
+		addInternalMod(mod, name, true);
 	}
 
 	private void addBuiltinMod(BuiltinMod mod, String name) {
+		addInternalMod(mod, name, false);
+	}
+
+	private void addInternalMod(BuiltinMod mod, String name, boolean system) {
 		Path path;
 		if (mod.paths.size() == 1) {
 			path = mod.paths.get(0);
@@ -64,7 +72,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		}
 
 		// We don't go via context().addModOption since we don't really have a good gui node to base it off
-		context().ruleContext().addOption(new BuiltinModOption(context(), mod.metadata, path, path));
+		context().ruleContext().addOption(system
+				? new SystemModOption(context(), mod.metadata, path, path)
+				: new BuiltinModOption(context(), mod.metadata, path, path)
+		);
 	}
 
 	@Override

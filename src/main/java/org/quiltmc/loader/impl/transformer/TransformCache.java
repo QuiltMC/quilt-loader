@@ -12,8 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -97,7 +97,7 @@ public class TransformCache {
 		} catch (IOException | IOError io) {
 
 			try {
-				if (fileSystem != null){
+				if (fileSystem != null) {
 					fileSystem.close();
 				}
 			} catch (IOException | IOError e) {
@@ -127,7 +127,7 @@ public class TransformCache {
 			}
 		}
 
-		try(FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, true)) {
+		try (FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, true)) {
 			URI fileUri = transformCacheFile.toUri();
 			URI zipUri = new URI("jar:" + fileUri.getScheme(), fileUri.getPath(), null);
 

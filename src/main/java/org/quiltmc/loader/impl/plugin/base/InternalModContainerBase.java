@@ -66,6 +66,11 @@ public abstract class InternalModContainerBase implements ModContainerExt {
 	}
 
 	@Override
+	public String pluginId() {
+		return pluginId;
+	}
+
+	@Override
 	public ModMetadataExt metadata() {
 		return metadata;
 	}
