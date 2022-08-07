@@ -29,7 +29,7 @@ public class TransformCache {
 		// Mod order is important? For now, assume it is
 		int index = 0;
 		for (ModLoadOption mod : modList) {
-			map.put("mod#" + index, mod.id());
+			map.put("mod#" + index++, mod.id());
 		}
 
 		for (Entry<String, ModLoadOption> provided : result.providedMods().entrySet()) {
