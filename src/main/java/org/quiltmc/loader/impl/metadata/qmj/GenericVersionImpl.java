@@ -29,4 +29,9 @@ public class GenericVersionImpl implements Version {
 	public String raw() {
 		return raw;
 	}
+
+	@Override
+	public String toString() {
+		return raw;
+	}
 }

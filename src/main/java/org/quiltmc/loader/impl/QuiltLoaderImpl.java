@@ -414,7 +414,7 @@ public final class QuiltLoaderImpl {
 		sbTab.append("\n");
 		sbTab.append(sbSep);
 
-		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().id())).collect(Collectors.toList())) {
+		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
 			// - Index
 			// - Name
 			// - ID
