@@ -957,15 +957,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				guiNode.mainIcon(guiNode.manager().iconZipFile());
 			}
 
-			if (zipRoot.getFileSystem() instanceof QuiltMemoryFileSystem.ReadOnly) {
-				QuiltMemoryFileSystem.ReadOnly qmfs = (QuiltMemoryFileSystem.ReadOnly) zipRoot.getFileSystem();
-				PluginGuiTreeNode memNode = guiNode.addChild("Loaded into memory");
-				memNode.mainIcon(memNode.manager().iconPackage());
-				memNode.addChild("Used bytes: " + qmfs.getUsedSize());
-				memNode.addChild("Uncompressed bytes: " + qmfs.getUncompressedSize());
-				memNode.addChild("Estimated memory footprint: " + qmfs.getEstimatedMemoryFootprint());
-			}
-
 			if (this.config.singleThreadedLoading) {
 				scanZip(file, zipRoot, guiNode);
 			} else {
