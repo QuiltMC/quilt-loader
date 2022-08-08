@@ -32,8 +32,8 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * will be opened, and checked for a "quilt.mod.json" file. If one is found, then it is loaded as a quilt mod (and
  * possibly as a new plugin - which will be loaded instantly, rather than waiting until the next cycle).</li>
  * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to
- * {@link #scanZip(Path, PluginGuiTreeNode)}</li>
- * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, PluginGuiTreeNode)}</li>
+ * {@link #scanZip(Path, boolean, PluginGuiTreeNode)}</li>
+ * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, boolean, PluginGuiTreeNode)}</li>
  * </ol>
  * </li>
  * <li>{@link #beforeSolve()} is called.</li>
@@ -77,28 +77,30 @@ public interface QuiltLoaderPlugin {
 	 * Note that this will be called for <em>all</em> plugins, even if previous plugins loaded the zip as a mod!
 	 * 
 	 * @param root The root of the zip file.
+	 * @param fromClasspath TODO
 	 * @param guiNode TODO
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
-	default ModLoadOption[] scanZip(Path root, PluginGuiTreeNode guiNode) throws IOException {
+	default ModLoadOption[] scanZip(Path root, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
 	/** Called once per file encountered which loader can't open (I.E. those which are not passed to
-	 * {@link #scanZip(Path, PluginGuiTreeNode)}). However system files are not passed here.
+	 * {@link #scanZip(Path, boolean, PluginGuiTreeNode)}). However system files are not passed here.
 	 * 
 	 * @param file
+	 * @param fromClasspath TODO
 	 * @param guiNode TODO
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
-	default ModLoadOption[] scanUnknownFile(Path file, PluginGuiTreeNode guiNode) throws IOException {
+	default ModLoadOption[] scanUnknownFile(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
 	/** Called once per folder group found on the classpath. Both zips and other files found on the classpath are passed
-	 * to {@link #scanZip(Path, PluginGuiTreeNode)} and {@link #scanUnknownFile(Path, PluginGuiTreeNode)} as normal.
+	 * to {@link #scanZip(Path, boolean, PluginGuiTreeNode)} and {@link #scanUnknownFile(Path, boolean, PluginGuiTreeNode)} as normal.
 	 * <p>
 	 * Folder groups are configured via the system property "loader.classPathGroups". You can check if the given path is
 	 * made up of multiple other paths by using {@link QuiltPluginManager}

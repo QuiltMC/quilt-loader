@@ -27,32 +27,36 @@ abstract class MainThreadTask {
 	static final class ScanZipTask extends MainThreadTask {
 		final Path zipFile;
 		final Path zipRoot;
+		final boolean fromClasspath;
 		final PluginGuiTreeNode guiNode;
 
-		public ScanZipTask(Path zipFile, Path zipRoot, PluginGuiTreeNode guiNode) {
+		public ScanZipTask(Path zipFile, Path zipRoot, boolean fromClasspath, PluginGuiTreeNode guiNode) {
 			this.zipFile = zipFile;
 			this.zipRoot = zipRoot;
+			this.fromClasspath = fromClasspath;
 			this.guiNode = guiNode;
 		}
 
 		@Override
 		void execute(QuiltPluginManagerImpl manager) {
-			manager.scanZip(zipFile, zipRoot, guiNode);
+			manager.scanZip(zipFile, zipRoot, fromClasspath, guiNode);
 		}
 	}
 
 	static final class ScanUnknownFileTask extends MainThreadTask {
 		final Path file;
+		final boolean fromClasspath;
 		final PluginGuiTreeNode guiNode;
 
-		public ScanUnknownFileTask(Path file, PluginGuiTreeNode guiNode) {
+		public ScanUnknownFileTask(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) {
 			this.file = file;
+			this.fromClasspath = fromClasspath;
 			this.guiNode = guiNode;
 		}
 
 		@Override
 		void execute(QuiltPluginManagerImpl manager) {
-			manager.scanUnknownFile(file, guiNode);
+			manager.scanUnknownFile(file, fromClasspath, guiNode);
 		}
 	}
 }

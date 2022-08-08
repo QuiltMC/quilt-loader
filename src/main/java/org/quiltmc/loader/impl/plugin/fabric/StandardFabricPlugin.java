@@ -18,7 +18,7 @@ import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
 	@Override
-	public ModLoadOption[] scanZip(Path root, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanZip(Path root, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
 
 		Path parent = context().manager().getParent(root);
 
@@ -26,7 +26,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, false, guiNode);
+		return scan0(root, fromClasspath, guiNode);
 	}
 
 	@Override

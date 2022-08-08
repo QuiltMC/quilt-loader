@@ -50,7 +50,7 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	@Override
 	public void addFileToScan(Path file, PluginGuiTreeNode guiNode) {
 		// TODO: Log / store / do something to store the plugin
-		manager.scanModFile(file, guiNode);
+		manager.scanModFile(file, false, guiNode);
 	}
 
 	@Override

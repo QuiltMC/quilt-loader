@@ -101,16 +101,16 @@ public interface QuiltPluginManager {
 	Set<Path> getModPaths();
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
-	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, PluginGuiTreeNode)}. (Paths in
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
+	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
 	 * @return The mod id of the loader plugin that added a mod directly from the given path. */
 	@Nullable
 	String getModProvider(Path mod);
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
-	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, PluginGuiTreeNode)}. (Paths in
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
+	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
 	 * @return The mod load option that is loaded from the given path. */
 	@Nullable

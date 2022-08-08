@@ -435,7 +435,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					clNode.mainIcon(clNode.manager().iconFolder());
 					scanClasspathFolder(path, clNode);
 				} else {
-					scanModFile(path, clNode);
+					scanModFile(path, true, clNode);
 				}
 			}
 		});
@@ -860,7 +860,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						node = guiNode.addChild("*no-parent-file* " + name, SortOrder.ALPHABETICAL_ORDER);
 					}
 
-					scanModFile(file, node);
+					scanModFile(file, false, node);
 					return FileVisitResult.CONTINUE;
 				}
 			});
@@ -897,7 +897,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		addModOption(map, guiNode);
 	}
 
-	void scanModFile(Path file, PluginGuiTreeNode guiNode) {
+	void scanModFile(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) {
 
 		// We only propose a file as a possible mod in the following scenarios:
 		// General: must not end with ".disabled".
@@ -924,15 +924,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 
 		if (config.singleThreadedLoading) {
-			scanModFile0(file, guiNode);
+			scanModFile0(file, fromClasspath, guiNode);
 		} else {
 			executor.submit(() -> {
-				scanModFile0(file, guiNode);
+				scanModFile0(file, fromClasspath, guiNode);
 			});
 		}
 	}
 
-	private void scanModFile0(Path file, PluginGuiTreeNode guiNode) {
+	private void scanModFile0(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) {
 		try {
 			if (Files.isHidden(file)) {
 				guiNode.sortPrefix("disabled");
@@ -958,9 +958,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			if (this.config.singleThreadedLoading) {
-				scanZip(file, zipRoot, guiNode);
+				scanZip(file, zipRoot, fromClasspath, guiNode);
 			} else {
-				mainThreadTasks.add(new MainThreadTask.ScanZipTask(file, zipRoot, guiNode));
+				mainThreadTasks.add(new MainThreadTask.ScanZipTask(file, zipRoot, fromClasspath, guiNode));
 			}
 
 		} catch (ZipException e) {
@@ -984,15 +984,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			guiNode.mainIcon(guiNode.manager().iconUnknownFile());
 
 			if (this.config.singleThreadedLoading) {
-				scanUnknownFile(file, guiNode);
+				scanUnknownFile(file, fromClasspath, guiNode);
 			} else {
-				mainThreadTasks.add(new MainThreadTask.ScanUnknownFileTask(file, guiNode));
+				mainThreadTasks.add(new MainThreadTask.ScanUnknownFileTask(file, fromClasspath, guiNode));
 			}
 		}
 	}
 
 	/** Called by {@link MainThreadTask.ScanZipTask} */
-	void scanZip(Path zipFile, Path zipRoot, PluginGuiTreeNode guiNode) {
+	void scanZip(Path zipFile, Path zipRoot, boolean fromClasspath, PluginGuiTreeNode guiNode) {
 
 		try {
 			state.push(guiNode);
@@ -1002,7 +1002,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			for (QuiltPluginContext ctx : plugins.values()) {
 				ModLoadOption[] mods;
 				try {
-					mods = ctx.plugin().scanZip(zipRoot, guiNode);
+					mods = ctx.plugin().scanZip(zipRoot, fromClasspath, guiNode);
 				} catch (IOException e) {
 					// FOR NOW
 					// TODO: Proper error handling!
@@ -1030,7 +1030,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	/** Called by {@link MainThreadTask.ScanUnknownFileTask} */
-	void scanUnknownFile(Path file, PluginGuiTreeNode guiNode) {
+	void scanUnknownFile(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) {
 
 		try {
 			state.push(guiNode);
@@ -1040,7 +1040,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			for (QuiltPluginContext ctx : plugins.values()) {
 				ModLoadOption[] mods;
 				try {
-					mods = ctx.plugin().scanUnknownFile(file, guiNode);
+					mods = ctx.plugin().scanUnknownFile(file, fromClasspath, guiNode);
 				} catch (IOException e) {
 					// FOR NOW
 					// TODO: Proper error handling!
