@@ -328,17 +328,20 @@ public final class QuiltLoaderImpl {
 
 		// Columns:
 		// - Index
+		// - Name
 		// - ID
 		// - version
 		// - loader plugin
 		// - source path(s)
 
-		int maxIdLength = "Mod".length();
+		int maxNameLength = "Mod".length();
+		int maxIdLength = "ID".length();
 		int maxVersionLength = "Version".length();
 		int maxPluginLength = "Plugin".length();
 		List<Integer> maxSourcePathLengths = new ArrayList<>();
 
 		for (ModContainerExt mod : mods) {
+			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
 			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
 			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
 			maxPluginLength = Math.max(maxPluginLength, mod.pluginId().length());
@@ -367,8 +370,14 @@ public final class QuiltLoaderImpl {
 
 		// Table header
 		sbTab.append("| Index | Mod ");
-		sbSep.append("|-------|-----");
-		for (int i = 3; i < maxIdLength; i++) {
+		sbSep.append("|------:|-----");
+		for (int i = "Mod".length(); i < maxNameLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| ID ");
+		sbSep.append("|----");
+		for (int i = "ID".length(); i < maxIdLength; i++) {
 			sbTab.append(" ");
 			sbSep.append("-");
 		}
@@ -406,16 +415,22 @@ public final class QuiltLoaderImpl {
 		sbTab.append(sbSep);
 
 		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().id())).collect(Collectors.toList())) {
+			// - Index
+			// - Name
+			// - ID
+			// - version
+			// - loader plugin
+			// - source path(s)
 			sbTab.append("\n| ");
 			String index = Integer.toString(mods.indexOf(mod));
 			for (int i = index.length(); i < "Index".length(); i++) {
 				sbTab.append(" ");
 			}
-			// - ID
-			// - version
-			// - loader plugin
-			// - source path(s)
-			sbTab.append(index).append(" | ").append(mod.metadata().id());
+			sbTab.append(index).append(" | ").append(mod.metadata().name());
+			for (int i = mod.metadata().name().length(); i < maxNameLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.metadata().id());
 			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
 				sbTab.append(" ");
 			}
