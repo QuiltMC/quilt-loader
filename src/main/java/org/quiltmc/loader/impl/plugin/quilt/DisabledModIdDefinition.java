@@ -1,33 +1,18 @@
-/*
- * Copyright 2022 QuiltMC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.quiltmc.loader.impl.plugin.quilt;
+
 
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 
-/** A concrete definition that mandates that the modid must be loaded by the given singular {@link ModCandidate}, and no
+/** A concrete definition that mandates that the modid must <strong>not</strong> be loaded by the given singular {@link ModCandidate}, and no
  * others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid by the time
  * this is used). */
-public final class MandatoryModIdDefinition extends ModIdDefinition {
+public final class DisabledModIdDefinition extends ModIdDefinition {
 	final ModLoadOption option;
 
-	public MandatoryModIdDefinition(ModLoadOption candidate) {
+	public DisabledModIdDefinition(ModLoadOption candidate) {
 		this.option = candidate;
 	}
 
@@ -43,7 +28,7 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public void define(RuleDefiner definer) {
-		definer.atLeastOneOf(option);
+		definer.atMost(0, option);
 	}
 
 	@Override
@@ -63,12 +48,12 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public String toString() {
-		return "mandatory " + option.fullString();
+		return "disabled " + option.fullString();
 	}
 
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
-		errors.append("Mandatory mod ");
+		errors.append("Disabled mod ");
 		errors.append(getFriendlyName());
 		errors.append(" v");
 		errors.append(option.metadata().version());

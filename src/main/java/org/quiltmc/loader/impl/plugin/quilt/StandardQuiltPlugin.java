@@ -14,6 +14,7 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -155,6 +156,14 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			ModLoadOption mod = (ModLoadOption) option;
 			ModMetadataExt metadata = mod.metadata();
 			RuleContext ctx = context().ruleContext();
+
+			// TODO: this minecraft-specific extension should be moved to its own plugin
+			// If the mod's environment doesn't match the current one,
+			// then add a rule so that the mod is never loaded.
+			if (!metadata.environment().matches(MinecraftQuiltLoader.getEnvironmentType())) {
+				ctx.addRule(new DisabledModIdDefinition(mod));
+				return;
+			}
 
 			OptionalModIdDefintion def = modDefinitions.get(mod.id());
 			if (def == null) {
