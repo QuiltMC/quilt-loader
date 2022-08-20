@@ -718,18 +718,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	private static void forceGcButBadly() {
-		try {
-			Object[] objs = new Object[1];
-
-			while (true) {
-				Object old = objs;
-				objs = new Object[1024];
-				objs[0] = old;
-			}
-
-		} catch (OutOfMemoryError oome) {
-			// Ignored
-		}
+		// What part of this is badly?
+		// Shh, don't check git log
+		System.gc();
+		System.gc();
+		System.gc();
+		System.gc();
 	}
 
 	// #########
