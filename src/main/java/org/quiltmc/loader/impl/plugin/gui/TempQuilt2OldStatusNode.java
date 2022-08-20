@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltTreeWarningLevel;
 
@@ -15,7 +16,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	final TempQuilt2OldStatusNode parent;
 
-	String text = "";
+	Text text = Text.EMPTY;
 	String sortPrefix = "";
 	Throwable exception;
 
@@ -36,7 +37,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	}
 
 	public void toNode(QuiltStatusTree.QuiltStatusNode node, boolean debug) {
-		node.name = text;
+		node.name = text.toString();
 
 		if (mainIcon != GuiManagerImpl.ICON_NULL) {
 			node.iconType = mainIcon.tempToStatusNodeStr() + (subIcon == null ? "" : ("+" + subIcon
@@ -55,15 +56,15 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 		for (TempQuilt2OldStatusNode n : childrenByAddition) {
 			if (debug || n.directLevel != WarningLevel.DEBUG_ONLY) {
-				n.toNode(node.addChild(n.text), debug);
+				n.toNode(node.addChild(n.text.toString()), debug);
 			}
 		}
 
-		childrenByAlphabetical.sort(Comparator.comparing((TempQuilt2OldStatusNode a) -> a.sortPrefix).thenComparing(a -> a.text));
+		childrenByAlphabetical.sort(Comparator.comparing((TempQuilt2OldStatusNode a) -> a.sortPrefix).thenComparing(a -> a.text.toString()));
 
 		for (TempQuilt2OldStatusNode n : childrenByAlphabetical) {
 			if (debug || n.directLevel != WarningLevel.DEBUG_ONLY) {
-				n.toNode(node.addChild(n.text), debug);
+				n.toNode(node.addChild(n.text.toString()), debug);
 			}
 		}
 	}
@@ -80,11 +81,11 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	@Override
 	public PluginGuiTreeNode addChild(SortOrder sortOrder) {
-		return addChild("", sortOrder);
+		return addChild(Text.EMPTY, sortOrder);
 	}
 
 	@Override
-	public PluginGuiTreeNode addChild(String text, SortOrder sortOrder) {
+	public PluginGuiTreeNode addChild(Text text, SortOrder sortOrder) {
 		TempQuilt2OldStatusNode child = new TempQuilt2OldStatusNode(this);
 		child.text = text;
 		switch (sortOrder) {
@@ -104,12 +105,12 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	}
 
 	@Override
-	public String text() {
+	public Text text() {
 		return text;
 	}
 
 	@Override
-	public TempQuilt2OldStatusNode text(String text) {
+	public PluginGuiTreeNode text(Text text) {
 		this.text = text;
 		return this;
 	}

@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
+import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
@@ -62,7 +63,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 					continue;
 				}
 
-				PluginGuiTreeNode jarNode = guiNode.addChild(jar, SortOrder.ALPHABETICAL_ORDER);
+				PluginGuiTreeNode jarNode = guiNode.addChild(Text.of(jar), SortOrder.ALPHABETICAL_ORDER);
 				context().addFileToScan(inner, jarNode);
 			}
 
@@ -72,7 +73,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
-			guiNode.addChild("TODO:TRANSLATE('invalid-fabric.mod.json %s', " + parse.getMessage() + ")")//
+			guiNode.addChild(Text.translate("gui.text.invalid_metadata", "fabric.mod.json", parse.getMessage()))
 				.setError(parse);
 			return null;
 		}

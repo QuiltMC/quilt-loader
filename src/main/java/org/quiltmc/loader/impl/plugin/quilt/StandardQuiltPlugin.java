@@ -19,6 +19,7 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
+import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -123,7 +124,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 					continue;
 				}
 
-				PluginGuiTreeNode jarNode = guiNode.addChild(jar, SortOrder.ALPHABETICAL_ORDER);
+				PluginGuiTreeNode jarNode = guiNode.addChild(Text.of(jar), SortOrder.ALPHABETICAL_ORDER);
 				context().addFileToScan(inner, jarNode);
 			}
 
@@ -133,7 +134,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
 			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, root, mandatory, requiresRemap) };
 		} catch (ParseException parse) {
-			guiNode.addChild("TODO:TRANSLATE('invalid-quilt.mod.json %s', " + parse.getMessage() + ")")//
+			guiNode.addChild(Text.translate("gui.text.invalid_metadata", "quilt.mod.json", parse.getMessage()))
 				.mainIcon(guiNode.manager().iconJsonFile()).setError(parse);
 			// TODO: Work out how to handle errors!
 			return null;
@@ -181,7 +182,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 				for (ProvidedMod provided : provides) {
 					PluginGuiTreeNode guiNode = context().manager().getGuiNode(mod)//
-						.addChild("Providing " + provided.id());
+						.addChild(Text.translate("gui.text.providing", provided.id()));
 					guiNode.mainIcon(guiNode.manager().iconUnknownFile());
 					context().addModLoadOption(new ProvidedModOption(mod, provided), guiNode);
 				}

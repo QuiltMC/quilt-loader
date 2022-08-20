@@ -1,5 +1,6 @@
 package org.quiltmc.loader.api.plugin.gui;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 public interface PluginGuiTreeNode {
@@ -51,24 +52,32 @@ public interface PluginGuiTreeNode {
 
 	PluginGuiTreeNode addChild(SortOrder sortOrder);
 
-	PluginGuiTreeNode addChild(String text, SortOrder sortOrder);
+	@Contract("_, _ -> new")
+	PluginGuiTreeNode addChild(Text text, SortOrder sortOrder);
 
-	default PluginGuiTreeNode addChild(String text) {
+	@Contract("_ -> new")
+	default PluginGuiTreeNode addChild(Text text) {
 		return addChild(text, SortOrder.ADDITION_ORDER);
 	}
 
-	String text();
+	Text text();
 
-	PluginGuiTreeNode text(String text);
+	@Contract("_ -> this")
+	PluginGuiTreeNode text(Text text);
 
 	String sortPrefix();
 
+	@Contract("_ -> this")
 	PluginGuiTreeNode sortPrefix(String prefix);
 
 	/** Sets the {@link WarningLevel} of this node. If it's {@link WarningLevel#ERROR} then <em>loading will fail</em>.
 	 * Use this when a critical error occurred that the user needs to fix manually. */
+
+	@Contract("_ -> this")
 	PluginGuiTreeNode setDirectLevel(WarningLevel level);
 
+
+	@Contract("-> this")
 	default PluginGuiTreeNode debug() {
 		return setDirectLevel(WarningLevel.DEBUG_ONLY);
 	}
@@ -83,18 +92,21 @@ public interface PluginGuiTreeNode {
 		throw exception;
 	}
 
+	@Contract("_ -> this")
 	default PluginGuiTreeNode setError(Throwable exception) {
 		setDirectLevel(WarningLevel.ERROR);
 		setException(exception);
 		return this;
 	}
 
+	@Contract("_ -> this")
 	default PluginGuiTreeNode setWarn(Throwable exception) {
 		setDirectLevel(WarningLevel.WARN);
 		setException(exception);
 		return this;
 	}
 
+	@Contract("_ -> this")
 	PluginGuiTreeNode setException(Throwable exception);
 
 	WarningLevel getDirectLevel();
@@ -104,11 +116,13 @@ public interface PluginGuiTreeNode {
 
 	PluginGuiIcon mainIcon();
 
+	@Contract("_ -> this")
 	PluginGuiTreeNode mainIcon(PluginGuiIcon icon);
 
 	@Nullable
 	PluginGuiIcon subIcon();
 
+	@Contract("_ -> this")
 	PluginGuiTreeNode subIcon(PluginGuiIcon icon);
 
 
