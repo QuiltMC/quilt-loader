@@ -9,7 +9,7 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltTreeWarningLevel;
 
 public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
@@ -27,6 +27,8 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	final List<TempQuilt2OldStatusNode> childrenByAddition, childrenByAlphabetical;
 
+	Boolean expandByDefault = null;
+
 	public TempQuilt2OldStatusNode(TempQuilt2OldStatusNode parent) {
 		this.parent = parent;
 		childrenByAddition = new ArrayList<>();
@@ -43,8 +45,13 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 			node.iconType = subIcon.tempToStatusNodeStr();
 		}
 
-		node.setWarningLevel(FabricTreeWarningLevel.fromApiLevel(directLevel));
-		node.expandByDefault = true;
+		node.setWarningLevel(QuiltTreeWarningLevel.fromApiLevel(directLevel));
+
+		if (expandByDefault == null) {
+			node.expandByDefault = QuiltTreeWarningLevel.fromApiLevel(cachedLevel).isAtLeast(QuiltTreeWarningLevel.CONCERN);
+		} else {
+			node.expandByDefault = expandByDefault;
+		}
 
 		for (TempQuilt2OldStatusNode n : childrenByAddition) {
 			if (debug || n.directLevel != WarningLevel.DEBUG_ONLY) {
@@ -121,10 +128,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	@Override
 	public TempQuilt2OldStatusNode setDirectLevel(WarningLevel level) {
 		this.directLevel = level;
-
-		if (parent != null) {
-			parent.resetCachedLevel();
-		}
+		this.resetCachedLevel();
 		return this;
 	}
 
@@ -132,13 +136,13 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 		WarningLevel max = directLevel;
 
 		for (TempQuilt2OldStatusNode c : childrenByAddition) {
-			if (max.ordinal() < c.getMaximumLevel().ordinal()) {
+			if (c.getMaximumLevel().ordinal() < max.ordinal()) {
 				max = c.getMaximumLevel();
 			}
 		}
 
 		for (TempQuilt2OldStatusNode c : childrenByAlphabetical) {
-			if (max.ordinal() < c.getMaximumLevel().ordinal()) {
+			if (c.getMaximumLevel().ordinal() < max.ordinal()) {
 				max = c.getMaximumLevel();
 			}
 		}
@@ -186,5 +190,10 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	public TempQuilt2OldStatusNode subIcon(PluginGuiIcon icon) {
 		this.subIcon = icon;
 		return this;
+	}
+
+	@Override
+	public void expandByDefault(boolean autoCollapse) {
+		this.expandByDefault = autoCollapse;
 	}
 }

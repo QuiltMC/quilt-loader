@@ -239,13 +239,20 @@ public final class QuiltLoaderImpl {
 			throw new ModSolvingError("Timeout", e);
 		}
 
-		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", "test");
+		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", null);
 		QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Plugins Test");
 		plugins.guiFileRoot.toNode(tab.node, false);
-		try {
-			QuiltGuiEntry.open(tree, null, true);
-		} catch (Exception e) {
-			throw new Error(e);
+
+		// TODO: currently GUI is always enabled
+		if (tree.getMaximumWarningLevel().isAtLeast(QuiltStatusTree.QuiltTreeWarningLevel.WARN) || true) {
+			try {
+				QuiltGuiEntry.open(tree, null, true);
+				if (tree.getMaximumWarningLevel().isAtLeast(QuiltStatusTree.QuiltTreeWarningLevel.ERROR)) {
+					System.exit(1);
+				}
+			} catch (Exception e) {
+				throw new Error(e);
+			}
 		}
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);

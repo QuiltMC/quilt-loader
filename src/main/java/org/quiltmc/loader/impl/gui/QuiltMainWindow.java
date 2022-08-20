@@ -68,7 +68,7 @@ import javax.swing.tree.TreeNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusButton;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.util.StringUtil;
 
 class QuiltMainWindow {
@@ -190,7 +190,7 @@ class QuiltMainWindow {
 	}
 
 
-	private static JPanel createTreePanel(QuiltStatusNode rootNode, FabricTreeWarningLevel minimumWarningLevel,
+	private static JPanel createTreePanel(QuiltStatusNode rootNode, QuiltTreeWarningLevel minimumWarningLevel,
 										  IconSet iconSet) {
 
 		JPanel panel = new JPanel();
@@ -366,11 +366,11 @@ class QuiltMainWindow {
 
 			final String main;
 			List<String> decors = new ArrayList<>();
-			FabricTreeWarningLevel warnLevel = node.getMaximumWarningLevel();
+			QuiltTreeWarningLevel warnLevel = node.getMaximumWarningLevel();
 
 			if (split.length == 0) {
 				// Empty string, but we might replace it with a warning
-				if (warnLevel == FabricTreeWarningLevel.NONE) {
+				if (warnLevel == QuiltTreeWarningLevel.NONE) {
 					main = "missing";
 				} else {
 					main = "level_" + warnLevel.lowerCaseName;
@@ -378,7 +378,7 @@ class QuiltMainWindow {
 			} else {
 				main = split[0];
 
-				if (warnLevel == FabricTreeWarningLevel.NONE) {
+				if (warnLevel == QuiltTreeWarningLevel.NONE) {
 					// Just to add a gap
 					decors.add(null);
 				} else {
@@ -464,7 +464,7 @@ class QuiltMainWindow {
 		public final List<CustomTreeNode> displayedChildren = new ArrayList<>();
 		private IconInfo iconInfo;
 
-		CustomTreeNode(TreeNode parent, QuiltStatusNode node, FabricTreeWarningLevel minimumWarningLevel) {
+		CustomTreeNode(TreeNode parent, QuiltStatusNode node, QuiltTreeWarningLevel minimumWarningLevel) {
 			this.parent = parent;
 			this.node = node;
 

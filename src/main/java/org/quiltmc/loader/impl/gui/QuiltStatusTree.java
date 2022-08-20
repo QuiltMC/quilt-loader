@@ -36,10 +36,9 @@ import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.FormattedException;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.FabricTreeWarningLevel;
 
 public final class QuiltStatusTree {
-	public enum FabricTreeWarningLevel {
+	public enum QuiltTreeWarningLevel {
 		FATAL,
 		ERROR,
 		WARN,
@@ -47,30 +46,30 @@ public final class QuiltStatusTree {
 		INFO,
 		NONE;
 
-		static final Map<String, FabricTreeWarningLevel> nameToValue = new HashMap<>();
+		static final Map<String, QuiltTreeWarningLevel> nameToValue = new HashMap<>();
 
 		public final String lowerCaseName = name().toLowerCase(Locale.ROOT);
 
 		static {
-			for (FabricTreeWarningLevel level : values()) {
+			for (QuiltTreeWarningLevel level : values()) {
 				nameToValue.put(level.lowerCaseName, level);
 			}
 		}
 
-		public boolean isHigherThan(FabricTreeWarningLevel other) {
+		public boolean isHigherThan(QuiltTreeWarningLevel other) {
 			return ordinal() < other.ordinal();
 		}
 
-		public boolean isAtLeast(FabricTreeWarningLevel other) {
+		public boolean isAtLeast(QuiltTreeWarningLevel other) {
 			return ordinal() <= other.ordinal();
 		}
 
-		public static FabricTreeWarningLevel getHighest(FabricTreeWarningLevel a, FabricTreeWarningLevel b) {
+		public static QuiltTreeWarningLevel getHighest(QuiltTreeWarningLevel a, QuiltTreeWarningLevel b) {
 			return a.isHigherThan(b) ? a : b;
 		}
 
 		/** @return The level to use, or null if the given char doesn't map to any level. */
-		public static FabricTreeWarningLevel fromChar(char c) {
+		public static QuiltTreeWarningLevel fromChar(char c) {
 			switch (c) {
 				case '-':
 					return NONE;
@@ -85,12 +84,12 @@ public final class QuiltStatusTree {
 			}
 		}
 
-		static FabricTreeWarningLevel read(JsonReader reader) throws IOException {
+		static QuiltTreeWarningLevel read(JsonReader reader) throws IOException {
 			String string = reader.nextString();
 			if (string.isEmpty()) {
 				return NONE;
 			}
-			FabricTreeWarningLevel level = nameToValue.get(string);
+			QuiltTreeWarningLevel level = nameToValue.get(string);
 			if (level != null) {
 				return level;
 			} else {
@@ -98,7 +97,7 @@ public final class QuiltStatusTree {
 			}
 		}
 
-		public static FabricTreeWarningLevel fromApiLevel(PluginGuiTreeNode.WarningLevel level) {
+		public static QuiltTreeWarningLevel fromApiLevel(PluginGuiTreeNode.WarningLevel level) {
 			switch (level) {
 				case FATAL: {
 					return FATAL;
@@ -245,6 +244,17 @@ public final class QuiltStatusTree {
 		writer.endObject();
 	}
 
+	public QuiltTreeWarningLevel getMaximumWarningLevel() {
+		QuiltTreeWarningLevel max = QuiltTreeWarningLevel.NONE;
+		for (QuiltStatusTab tab : this.tabs) {
+			if (tab.node.getMaximumWarningLevel().isHigherThan(max)) {
+				max = tab.node.getMaximumWarningLevel();
+			}
+		}
+
+		return max;
+	}
+
 	static void expectName(JsonReader reader, String expected) throws IOException {
 		String name = reader.nextName();
 		if (!expected.equals(name)) {
@@ -318,7 +328,7 @@ public final class QuiltStatusTree {
 		public final QuiltStatusNode node;
 
 		/** The minimum warning level to display for this tab. */
-		public FabricTreeWarningLevel filterLevel = FabricTreeWarningLevel.NONE;
+		public QuiltTreeWarningLevel filterLevel = QuiltTreeWarningLevel.NONE;
 
 		public QuiltStatusTab(String name) {
 			this.node = new QuiltStatusNode(null, name);
@@ -331,7 +341,7 @@ public final class QuiltStatusTree {
 		QuiltStatusTab(JsonReader reader) throws IOException {
 			reader.beginObject();
 			expectName(reader, "level");
-			filterLevel = FabricTreeWarningLevel.read(reader);
+			filterLevel = QuiltTreeWarningLevel.read(reader);
 			expectName(reader, "node");
 			node = new QuiltStatusNode(null, reader);
 			reader.endObject();
@@ -352,11 +362,11 @@ public final class QuiltStatusTree {
 		public String name;
 
 		/** The icon type. There can be a maximum of 2 decorations (added with "+" symbols), or 3 if the
-		 * {@link #setWarningLevel(FabricTreeWarningLevel) warning level} is set to
-		 * {@link FabricTreeWarningLevel#NONE } */
+		 * {@link #setWarningLevel(QuiltTreeWarningLevel) warning level} is set to
+		 * {@link QuiltTreeWarningLevel#NONE } */
 		public String iconType = ICON_TYPE_DEFAULT;
 
-		private FabricTreeWarningLevel warningLevel = FabricTreeWarningLevel.NONE;
+		private QuiltTreeWarningLevel warningLevel = QuiltTreeWarningLevel.NONE;
 
 		public boolean expandByDefault = false;
 
@@ -378,7 +388,7 @@ public final class QuiltStatusTree {
 			expectName(reader, "icon");
 			iconType = reader.nextString();
 			expectName(reader, "level");
-			warningLevel = FabricTreeWarningLevel.read(reader);
+			warningLevel = QuiltTreeWarningLevel.read(reader);
 			expectName(reader, "expandByDefault");
 			expandByDefault = reader.nextBoolean();
 			expectName(reader, "details");
@@ -417,11 +427,11 @@ public final class QuiltStatusTree {
 			newParent.children.add(this);
 		}
 
-		public FabricTreeWarningLevel getMaximumWarningLevel() {
+		public QuiltTreeWarningLevel getMaximumWarningLevel() {
 			return warningLevel;
 		}
 
-		public void setWarningLevel(FabricTreeWarningLevel level) {
+		public void setWarningLevel(QuiltTreeWarningLevel level) {
 			if (this.warningLevel == level || level == null) {
 				return;
 			}
@@ -439,20 +449,20 @@ public final class QuiltStatusTree {
 		}
 
 		public void setError() {
-			setWarningLevel(FabricTreeWarningLevel.ERROR);
+			setWarningLevel(QuiltTreeWarningLevel.ERROR);
 		}
 
 		public void setWarning() {
-			setWarningLevel(FabricTreeWarningLevel.WARN);
+			setWarningLevel(QuiltTreeWarningLevel.WARN);
 		}
 
 		public void setInfo() {
-			setWarningLevel(FabricTreeWarningLevel.INFO);
+			setWarningLevel(QuiltTreeWarningLevel.INFO);
 		}
 
 		public QuiltStatusNode addChild(String string) {
 			int indent = 0;
-			FabricTreeWarningLevel level = null;
+			QuiltTreeWarningLevel level = null;
 
 			while (string.startsWith("\t")) {
 				indent++;
@@ -463,7 +473,7 @@ public final class QuiltStatusTree {
 
 			if (string.length() > 1) {
 				if (Character.isWhitespace(string.charAt(1))) {
-					level = FabricTreeWarningLevel.fromChar(string.charAt(0));
+					level = QuiltTreeWarningLevel.fromChar(string.charAt(0));
 
 					if (level != null) {
 						string = string.substring(2);

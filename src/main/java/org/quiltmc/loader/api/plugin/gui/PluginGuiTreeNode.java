@@ -110,4 +110,11 @@ public interface PluginGuiTreeNode {
 	PluginGuiIcon subIcon();
 
 	PluginGuiTreeNode subIcon(PluginGuiIcon icon);
+
+
+	/**
+	 * Whether the node is automatically expanded in the GUI. Defaults to {@code true} when {@link #getMaximumLevel()}
+	 * is {@link WarningLevel#CONCERN CONCERN} or higher, and {@code false} otherwise.
+	 */
+	void expandByDefault(boolean autoCollapse);
 }

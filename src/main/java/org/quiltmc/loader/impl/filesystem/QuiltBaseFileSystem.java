@@ -70,8 +70,8 @@ extends FileSystem
 		byte[] path = str.getBytes();
 		StringBuilder sb = new StringBuilder();
 
-		for(int i = 0; i < path.length; ++i) {
-			char c = (char)(path[i] & 255);
+		for (byte b : path) {
+			char c = (char) (b & 255);
 
 			if (matchesMagic(c)) {
 				sb.append(c);
