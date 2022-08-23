@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import net.fabricmc.mappings.EntryTriple;
@@ -35,7 +36,7 @@ import net.fabricmc.mapping.tree.TinyTree;
 class QuiltMappingResolver implements MappingResolver {
 	private final Supplier<TinyTree> mappingsSupplier;
 	private final Set<String> namespaces;
-	private final Map<String, NamespaceData> namespaceDataMap = new HashMap<>();
+	private final Map<String, NamespaceData> namespaceDataMap = new ConcurrentHashMap<>();
 	private final String targetNamespace;
 
 	private static class NamespaceData {
