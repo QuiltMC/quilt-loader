@@ -31,12 +31,18 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
+import net.fabricmc.loader.api.metadata.version.VersionInterval;
+import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import net.fabricmc.api.EnvType;
 
 public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	private final InternalModMetadata quiltMeta;
 	private Version version;
+	private final Collection<String> provides;
+	private final Collection<ModDependency> depsAndBreaks;
+	private final Collection<ModDependency> depends;
+	private final Collection<ModDependency> breaks;
 	private final Collection<Person> authors;
 	private final Collection<Person> contributors;
 	private final ContactInformation contact;
@@ -45,6 +51,31 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	public QuiltModMetadataWrapperFabric(InternalModMetadata quiltMeta) {
 		this.quiltMeta = quiltMeta;
+		ArrayList<String> provides = new ArrayList<>();
+		for (ModProvided provided : quiltMeta.provides()) {
+			provides.add(provided.id);
+		}
+		this.provides = Collections.unmodifiableCollection(provides);
+		ArrayList<ModDependency> depsAndBreaks = new ArrayList<>();
+		ArrayList<ModDependency> depends = new ArrayList<>();
+		ArrayList<ModDependency> breaks = new ArrayList<>();
+		for (org.quiltmc.loader.api.ModDependency dep : quiltMeta.depends()) {
+			if (dep instanceof org.quiltmc.loader.api.ModDependency.Only) {
+				Quilt2FabricModDependency q2f = new Quilt2FabricModDependency(true, (org.quiltmc.loader.api.ModDependency.Only) dep);
+				depsAndBreaks.add(q2f);
+				depends.add(q2f);
+			}
+		}
+		for (org.quiltmc.loader.api.ModDependency dep : quiltMeta.breaks()) {
+			if (dep instanceof org.quiltmc.loader.api.ModDependency.Only) {
+				Quilt2FabricModDependency q2f = new Quilt2FabricModDependency(false, (org.quiltmc.loader.api.ModDependency.Only) dep);
+				depsAndBreaks.add(q2f);
+				breaks.add(q2f);
+			}
+		}
+		this.depsAndBreaks = Collections.unmodifiableCollection(depsAndBreaks);
+		this.depends = Collections.unmodifiableCollection(depends);
+		this.breaks = Collections.unmodifiableCollection(breaks);
 		ArrayList<Person> authors = new ArrayList<>();
 		ArrayList<Person> contributors = new ArrayList<>();
 		for (ModContributor contributor : quiltMeta.contributors()) {
@@ -114,7 +145,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<String> getProvides() {
-		throw new UnsupportedOperationException("Provides cannot be represented as a Fabric construct");
+		return provides;
 	}
 
 	@Override
@@ -145,8 +176,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getDependencies() {
-		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
-		throw new UnsupportedOperationException("Quilt dependencies cannot be represented as a Fabric construct");
+		return depsAndBreaks;
 	}
 
 	@Override
@@ -156,8 +186,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getDepends() {
-		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
-		throw new UnsupportedOperationException("Quilt dependencies cannot be represented as a Fabric construct!");
+		return depends;
 	}
 
 	@Override
@@ -177,8 +206,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<ModDependency> getBreaks() {
-		// TODO: we might want to approximate this in the future, but for now let's see how this is actually used
-		throw new UnsupportedOperationException("Quilt dependencies cannot be represented as a Fabric construct!");
+		return breaks;
 	}
 
 	@Override
@@ -290,5 +318,45 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	@Override
 	public void emitFormatWarnings() {
 
+	}
+
+	static final class Quilt2FabricModDependency implements ModDependency {
+
+		final boolean isDepends;
+		final org.quiltmc.loader.api.ModDependency.Only quiltDep;
+
+		public Quilt2FabricModDependency(boolean isDepends, org.quiltmc.loader.api.ModDependency.Only quiltDep) {
+			this.isDepends = isDepends;
+			this.quiltDep = quiltDep;
+		}
+
+		@Override
+		public Kind getKind() {
+			return isDepends ? Kind.DEPENDS : Kind.BREAKS;
+		}
+
+		@Override
+		public String getModId() {
+			return quiltDep.id().id();
+		}
+
+		@Override
+		public boolean matches(Version version) {
+			if (version instanceof org.quiltmc.loader.api.Version) {
+				return quiltDep.matches((org.quiltmc.loader.api.Version) version);
+			} else {
+				return quiltDep.matches(org.quiltmc.loader.api.Version.of(version.getFriendlyString()));
+			}
+		}
+
+		@Override
+		public Collection<VersionPredicate> getVersionRequirements() {
+			return Collections.emptyList();
+		}
+
+		@Override
+		public List<VersionInterval> getVersionIntervals() {
+			return Collections.emptyList();
+		}
 	}
 }
