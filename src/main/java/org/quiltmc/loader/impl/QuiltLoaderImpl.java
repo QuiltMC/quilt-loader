@@ -79,7 +79,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.17.3";
+	public static final String VERSION = "0.17.4";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -223,26 +223,6 @@ public final class QuiltLoaderImpl {
 		ModSolveResult result = resolver.resolve(this);
 		Map<String, ModCandidate> candidateMap = result.modMap;
 		modCandidates = new ArrayList<>(candidateMap.values());
-		// dump mod list
-
-		StringBuilder modListText = new StringBuilder();
-
-		for (ModCandidate mod : modCandidates.stream().sorted(Comparator.comparing(ModCandidate::getId)).collect(Collectors.toList())) {
-			if (modListText.length() > 0) modListText.append('\n');
-
-			modListText.append("\t- ");
-			modListText.append(mod.getId());
-			modListText.append(' ');
-			modListText.append(mod.getVersion().raw());
-// TODO
-//			if (!mod.getParentMods().isEmpty()) {
-//				modListText.append(" via ");
-//				modListText.append(mod.getParentMods().iterator().next().getId());
-//			}
-		}
-
-		int count = modCandidates.size();
-		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
 
 		// TODO
 //		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
@@ -306,6 +286,89 @@ public final class QuiltLoaderImpl {
 		}
 
 		//modCandidates = null;
+
+		int count = mods.size();
+		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
+	}
+
+	public String createModTable() {
+
+		// Columns:
+		// - Index
+		// - Name
+		// - ID
+		// - version
+
+		int maxNameLength = "Mod".length();
+		int maxIdLength = "ID".length();
+		int maxVersionLength = "Version".length();
+
+		for (ModContainerImpl mod : mods) {
+			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
+			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
+			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
+		}
+
+		maxIdLength++;
+		maxVersionLength++;
+
+		StringBuilder sbTab = new StringBuilder();
+		StringBuilder sbSep = new StringBuilder();
+
+		// Table header
+		sbTab.append("| Index | Mod ");
+		sbSep.append("|------:|-----");
+		for (int i = "Mod".length(); i < maxNameLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| ID ");
+		sbSep.append("|----");
+		for (int i = "ID".length(); i < maxIdLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| Version ");
+		sbSep.append("|---------");
+		for (int i = "Version".length(); i < maxVersionLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("|");
+		sbSep.append("|");
+
+		sbTab.append("\n");
+		sbTab.append(sbSep);
+
+		for (ModContainerImpl mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
+			// - Index
+			// - Name
+			// - ID
+			// - version
+			sbTab.append("\n| ");
+			String index = Integer.toString(mods.indexOf(mod));
+			for (int i = index.length(); i < "Index".length(); i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(index).append(" | ").append(mod.metadata().name());
+			for (int i = mod.metadata().name().length(); i < maxNameLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.metadata().id());
+			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.metadata().version());
+			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" |");
+		}
+
+		sbTab.append("\n");
+		sbTab.append(sbSep);
+		sbTab.append("\n");
+		return sbTab.toString();
 	}
 
 	protected void finishModLoading() {

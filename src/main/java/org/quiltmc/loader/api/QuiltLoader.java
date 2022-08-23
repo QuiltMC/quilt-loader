@@ -212,6 +212,14 @@ public final class QuiltLoader {
 		return impl().getObjectShare();
 	}
 
+	/**
+	 * Creates a table describing the mods currently loaded, suitable for printing in log files or in crash reports.
+	 * All of the information contained here is available through {@link #getAllMods()}.
+	 */
+	public static String createModTable() {
+		return impl().createModTable();
+	}
+
 	private static QuiltLoaderImpl impl() {
 		if (QuiltLoaderImpl.INSTANCE == null) {
 			throw new RuntimeException("Accessed QuiltLoader too early!");
