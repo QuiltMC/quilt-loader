@@ -29,6 +29,7 @@ import com.electronwill.nightconfig.core.UnmodifiableCommentedConfig;
 import com.electronwill.nightconfig.core.io.ConfigParser;
 import com.electronwill.nightconfig.core.io.ConfigWriter;
 import org.quiltmc.config.api.Config;
+import org.quiltmc.config.api.Constraint;
 import org.quiltmc.config.api.MarshallingUtils;
 import org.quiltmc.config.api.Serializer;
 import org.quiltmc.config.api.annotations.Comment;
@@ -134,6 +135,10 @@ public final class NightConfigSerializer<C extends CommentedConfig> implements S
 					}
 
 					comments.add(options.toString());
+				}
+
+				for (Constraint<?> constraint : trackedValue.constraints()) {
+					comments.add(constraint.getRepresentation());
 				}
 
 				if (!(defaultValue instanceof CompoundConfigValue<?>)) {
