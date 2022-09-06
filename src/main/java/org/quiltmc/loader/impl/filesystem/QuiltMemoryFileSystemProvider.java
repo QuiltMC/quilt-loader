@@ -39,6 +39,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
@@ -493,7 +494,8 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
-		return null;
+		QuiltMemoryPath qmp = (QuiltMemoryPath) path;
+		return qmp.fs.getFileAttributeView(qmp, type);
 	}
 
 	@Override
