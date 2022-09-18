@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,14 +26,19 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.zip.ZipException;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependency.Only;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -56,14 +62,19 @@ import org.quiltmc.loader.impl.QuiltLoaderConfig;
 import org.quiltmc.loader.impl.QuiltLoaderConfig.ZipLoadType;
 import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
+import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
 import org.quiltmc.loader.impl.plugin.quilt.StandardQuiltPlugin;
+import org.quiltmc.loader.impl.report.QuiltReport;
+import org.quiltmc.loader.impl.report.QuiltReportedError;
+import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
@@ -82,6 +93,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final GameProvider game;
 	final Version gameVersion;
 
+	private final Path modsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
 	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
@@ -91,10 +103,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<ModLoadOption, String> modProviders = new HashMap<>();
 	final Map<String, PotentialModSet> modIds = new LinkedHashMap<>();
 
-	final Map<TentativeLoadOption, QuiltPluginContext> tentativeLoadOptions = new LinkedHashMap<>();
+	final Map<TentativeLoadOption, BasePluginContext> tentativeLoadOptions = new LinkedHashMap<>();
 
 	private final StandardQuiltPlugin theQuiltPlugin;
-	final Map<QuiltLoaderPlugin, QuiltPluginContext> plugins = new LinkedHashMap<>();
+	final Map<QuiltLoaderPlugin, BasePluginContext> plugins = new LinkedHashMap<>();
 	final Map<String, QuiltPluginContextImpl> pluginsById = new HashMap<>();
 	final Map<String, QuiltPluginClassLoader> pluginsByPackage = new HashMap<>();
 
@@ -114,6 +126,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private PluginGuiTreeNode guiNodeModsFromPlugins;
 	final Map<ModLoadOption, PluginGuiTreeNode> modGuiNodes = new HashMap<>();
 
+	/** Only written by {@link #runSingleCycle()}, only read during crash report generation. */
+	private PerCycleStep perCycleStep;
+
+	/** Only written by {@link #runInternal(boolean)}, only read during crash report generation. */
+	private int cycleNumber = 0;
+
 	// TEMP
 	final Deque<PluginGuiTreeNode> state = new ArrayDeque<>();
 
@@ -126,6 +144,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		this.game = game;
 		gameVersion = game == null ? null : Version.of(game.getNormalizedGameVersion());
 		this.config = config;
+		this.modsDir = modsDir;
 
 		this.executor = config.singleThreadedLoading ? null : Executors.newCachedThreadPool();
 		this.mainThreadTasks = config.singleThreadedLoading ? new ArrayDeque<>() : new ConcurrentLinkedQueue<>();
@@ -134,12 +153,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		mainThreadTasks.add(new MainThreadTask.ScanFolderTask(modsDir, QUILT_ID));
 		theQuiltPlugin = new StandardQuiltPlugin();
-		addBuiltinPlugin(theQuiltPlugin);
-		addBuiltinPlugin(new StandardFabricPlugin());
+		addBuiltinPlugin(theQuiltPlugin, QUILT_ID);
+		addBuiltinPlugin(new StandardFabricPlugin(), "quilted_fabric_loader");
 	}
 
-	private void addBuiltinPlugin(BuiltinQuiltPlugin plugin) {
-		BuiltinPluginContext ctx = new BuiltinPluginContext(this, QUILT_ID, plugin);
+	private void addBuiltinPlugin(BuiltinQuiltPlugin plugin, String id) {
+		BuiltinPluginContext ctx = new BuiltinPluginContext(this, id, plugin);
 		plugin.load(ctx, Collections.emptyMap());
 		plugins.put(plugin, ctx);
 		plugin.addModFolders(ctx.modFolderSet);
@@ -395,7 +414,467 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	// Internal (Running)
 
-	public ModSolveResultImpl run(boolean scanClasspath) throws ModSolvingError, TimeoutException {
+	public ModSolveResultImpl run(boolean scanClasspath) throws QuiltReportedError {
+
+		final QuiltReport report;
+
+		outer: try {
+			return runInternal(scanClasspath);
+		} catch (ModSolvingError e) {
+			e.printStackTrace();
+			report = new QuiltReport("Quilt Loader: Crash Report");
+			report.addStacktraceSection("ModSolvingError", -100, e);
+
+			break outer;
+		} catch (TreeContainsModError e) {
+			report = new QuiltReport("Quilt Loader: Load Error Report");
+			break outer;
+		} catch (TimeoutException e) {
+			e.printStackTrace();
+			report = new QuiltReport("Quilt Loader: Load Failed Report");
+			report.addStacktraceSection("TimeoutException", -100, e);
+			break outer;
+		} catch (QuiltReportedError e) {
+			report = e.report;
+			break outer;
+		} catch (Throwable t) {
+			t.printStackTrace();
+			report = new QuiltReport("Quilt Loader: Crash Report");
+			report.addStacktraceSection("Unhandled Exception", -100, t);
+			break outer;
+		}
+
+		QuiltStringSection pluginState = report.addStringSection("Plugin State", 0);
+		if (perCycleStep != null) {
+			pluginState.lines("Cycle number = " + cycleNumber, "Cycle Step = " + perCycleStep, "");
+		}
+
+		pluginState.lines("Loaded Plugins (" + plugins.size() + "):");
+		for (BasePluginContext ctx : plugins.values()) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(" - '").append(ctx.pluginId()).append("'");
+			if (ctx instanceof BuiltinPluginContext) {
+				sb.append(" (Builtin)");
+			} else if (ctx instanceof QuiltPluginContextImpl) {
+				QuiltPluginContextImpl impl = (QuiltPluginContextImpl) ctx;
+				sb.append(" from " + describePath(impl.optionFrom.from()));
+			}
+			pluginState.lines(sb.toString());
+		}
+		pluginState.lines("");
+
+		// TODO: What other loader state do we need?
+		pluginState.lines("");
+
+		pluginState.lines("-- Mod Table (sorted by id) --");
+
+		appendModTable(pluginState::lines);
+
+		pluginState.lines("-- Mod Details (sorted by path) --");
+
+		appendModDetails(pluginState::lines);
+
+		throw new QuiltReportedError(report);
+	}
+
+	public String createModTable() {
+		StringBuilder sb = new StringBuilder();
+		appendModTable(line -> {
+			sb.append(line);
+			sb.append("\n");
+		});
+		return sb.toString();
+	}
+
+	private void appendModTable(Consumer<String> to) {
+
+		// Columns:
+		// - Name
+		// - ID
+		// - version
+		// - loader plugin
+		// - source path(s)
+
+		int maxNameLength = "Mod".length();
+		int maxIdLength = "ID".length();
+		int maxVersionLength = "Version".length();
+		int maxPluginLength = "Plugin".length();
+		List<Integer> maxSourcePathLengths = new ArrayList<>();
+
+		List<ModLoadOption> mods = new ArrayList<>();
+		Map<ModLoadOption, List<List<Path>>> sourcePathMap = new HashMap<>();
+
+		for (PotentialModSet set : this.modIds.values()) {
+			mods.addAll(set.all);
+		}
+
+		for (ModLoadOption mod : mods) {
+			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
+			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
+			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
+			maxPluginLength = Math.max(maxPluginLength, mod.loader().pluginId().length());
+
+			List<List<Path>> sourcePaths = InternalModContainerBase.walkSourcePaths(this, mod.from());
+			sourcePathMap.put(mod, sourcePaths);
+
+			for (List<Path> paths : sourcePaths) {
+				for (int i = 0; i < paths.size(); i++) {
+					Path path = paths.get(i);
+					String pathStr = path.startsWith(modsDir) ? "<mods>/" + modsDir.relativize(path).toString() : path.toString();
+					if (maxSourcePathLengths.size() <= i) {
+						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
+						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
+					} else {
+						Integer old = maxSourcePathLengths.get(i);
+						maxSourcePathLengths.set(i, Math.max(old, pathStr.length() + 1));
+					}
+				}
+			}
+		}
+
+		maxIdLength++;
+		maxVersionLength++;
+		maxPluginLength++;
+
+		StringBuilder sbTab = new StringBuilder();
+		StringBuilder sbSep = new StringBuilder();
+
+		// Table header
+		sbTab.append("| Mod ");
+		sbSep.append("|-----");
+		for (int i = "Mod".length(); i < maxNameLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| ID ");
+		sbSep.append("|----");
+		for (int i = "ID".length(); i < maxIdLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| Version ");
+		sbSep.append("|---------");
+		for (int i = "Version".length(); i < maxVersionLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| Plugin ");
+		sbSep.append("|--------");
+		for (int i = "Plugin".length(); i < maxPluginLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("|");
+		sbSep.append("|");
+
+		String start = "File(s)";
+
+		for (int len : maxSourcePathLengths) {
+			sbTab.append(" ").append(start);
+			for (int i = start.length(); i <= len; i++) {
+				sbTab.append(" ");
+			}
+			for (int i = -1; i <= len; i++) {
+				sbSep.append("-");
+			}
+			sbTab.append("|");
+			sbSep.append("|");
+			start = "Sub-Files";
+		}
+
+		to.accept(sbTab.toString());
+		sbTab.setLength(0);
+		to.accept(sbSep.toString());
+
+		for (ModLoadOption mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
+			// - Index
+			// - Name
+			// - ID
+			// - version
+			// - loader plugin
+			// - source path(s)
+			sbTab.append("| ").append(mod.metadata().name());
+			for (int i = mod.metadata().name().length(); i < maxNameLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.metadata().id());
+			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.metadata().version());
+			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" | ").append(mod.loader().pluginId());
+			for (int i = mod.loader().pluginId().length(); i < maxPluginLength; i++) {
+				sbTab.append(" ");
+			}
+
+			List<List<Path>> allPaths = sourcePathMap.get(mod);
+
+			for (int pathsIndex = 0; pathsIndex < allPaths.size(); pathsIndex++) {
+				List<Path> paths = allPaths.get(pathsIndex);
+
+				if (pathsIndex != 0) {
+					to.accept(sbTab.toString());
+					sbTab.setLength(0);
+					sbTab.append("| ");
+					for (int i = 0; i < "Index".length(); i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
+					for (int i = 0; i < maxIdLength; i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
+					for (int i = 0; i < maxVersionLength; i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
+					for (int i = 0; i < maxPluginLength; i++) {
+						sbTab.append(" ");
+					}
+				}
+
+				for (int pathIndex = 0; pathIndex < maxSourcePathLengths.size(); pathIndex++) {
+					sbTab.append(" | ");
+					final String pathStr;
+					if (pathIndex < paths.size()) {
+						Path path = paths.get(pathIndex);
+						pathStr = path.startsWith(modsDir) ? "<mods>/" + modsDir.relativize(path) : path.toString();
+					} else {
+						pathStr = "";
+					}
+					sbTab.append(pathStr);
+					for (int i = pathStr.length(); i < maxSourcePathLengths.get(pathIndex); i++) {
+						sbTab.append(" ");
+					}
+				}
+				sbTab.append(" |");
+			}
+			to.accept(sbTab.toString());
+			sbTab.setLength(0);
+		}
+
+		to.accept(sbSep.toString());
+	}
+
+	public String createModDetails() {
+		StringBuilder sb = new StringBuilder();
+		appendModTable(line -> {
+			sb.append(line);
+			sb.append("\n");
+		});
+		return sb.toString();
+	}
+
+	private void appendModDetails(Consumer<String> to) {
+		// Sorted by path
+
+		// Path to contained paths (each is sorted)
+		// Each path is the highest-level parent path
+		// so for real folders this is `mods/`
+		// and for jij it's the file of the containing mod
+		// so <mods>/buildcraft-9.0.0.jar!META-INF/jars/LibBlockAttributes-1.0.0.jar
+		//  would have one entry:
+		// - '<mods>/buildcraft-9.0.0.jar' -> [ '/META-INF/jars/LibBlockAttributes-1.0.0.jar' ]
+		Comparator<Path> pathComparator = (a, b) -> {
+			if (a.getClass() == b.getClass()) {
+				return a.compareTo(b);
+			}
+			return a.toAbsolutePath().toString().compareTo(b.toAbsolutePath().toString());
+		}; 
+		Map<Path, Set<Path>> pathMap = new TreeMap<>(pathComparator);
+		Set<Path> rootFsPaths = Collections.newSetFromMap(new TreeMap<>());
+
+		Map<ModLoadOption, List<String>> insideBox = new HashMap<>();
+
+		for (ModLoadOption mod : modProviders.keySet()) {
+
+			Path file = mod.from();
+
+			List<String> text = new ArrayList<>();
+			insideBox.put(mod, text);
+			text.add("Loaded by  '" + mod.loader().pluginId() + "'");
+			text.add("Name     = '" + mod.metadata().name() + "'");
+			text.add("ID       = '" + mod.metadata().id() + "'");
+			text.add("Version  = '" + mod.metadata().version() + "'");
+			text.add("LoadType = " + mod.metadata().loadType());
+			boolean first = true;
+			for (ProvidedMod provided : mod.metadata().provides()) {
+				String start = first ? "Provides   '" : "           '";
+				text.add(start + provided.id() + "' " + provided.version());
+				first = false;
+			}
+
+			for (ModDependency dep : mod.metadata().depends()) {
+				first = true;
+				for (String line : describeDependency(dep)) {
+					if (first) {
+						text.add("Depends on " + line);						
+					} else {
+						text.add("           " + line);
+					}
+					first = false;
+				}
+			}
+
+			for (ModDependency dep : mod.metadata().breaks()) {
+				first = true;
+				for (String line : describeDependency(dep)) {
+					if (first) {
+						text.add("Breaks  on " + line);
+					} else {
+						text.add("           " + line);
+					}
+					first = false;
+				}
+			}
+
+			while (true) {
+				Path parentFile = file;
+				Path parent = null;
+				while ((parentFile = parentFile.getParent()) != null) {
+					parent = parentFile;
+				}
+				Path realParent = getParent(parent);
+				if (realParent == null) {
+					rootFsPaths.add(file);
+					break;
+				} else {
+					pathMap.computeIfAbsent(realParent, p -> Collections.newSetFromMap(new TreeMap<>(pathComparator))).add(file);
+					file = realParent;
+				}
+			}
+		}
+
+		for (Path root : rootFsPaths) {
+			to.accept(root.toString() + ": ");
+			for (String line : processDetail(pathMap, insideBox, root, 0)) {
+				to.accept(line);
+			}
+			to.accept("");
+		}
+	}
+
+	private static List<String> describeDependency(ModDependency dep) {
+		List<String> lines = new ArrayList<>();
+
+		if (dep instanceof ModDependency.Only) {
+			ModDependency.Only on = (ModDependency.Only) dep;
+			StringBuilder sb = new StringBuilder("'");
+			if (!on.id().mavenGroup().isEmpty()) {
+				sb.append(on.id().mavenGroup());
+				sb.append(":");
+			}
+			sb.append(on.id().id());
+			sb.append("'");
+			if (!on.versions().isEmpty()) {
+				sb.append(" ");
+				sb.append(on.versions().toString());
+			}
+			lines.add(sb.toString());
+		} else {
+			final Collection<? extends ModDependency> collection;
+			if (dep instanceof ModDependency.Any) {
+				ModDependency.Any any = (ModDependency.Any) dep;
+				collection = any;
+				lines.add("Any of:");
+			} else {
+				collection = (ModDependency.All) dep;
+				lines.add("All of:");
+			}
+
+			for (ModDependency sub : collection) {
+				List<String> subLines = describeDependency(sub);
+				boolean first = true;
+				for (String line : subLines) {
+					if (first) {
+						lines.add("  - " + line);
+					} else {
+						lines.add("    " + line);
+					}
+					first = false;
+				}
+			}
+		}
+
+		return lines;
+	}
+
+	/** Packed array of "box lookups", with indices being used according to the following:<br>
+	 * 011111111111112<br>
+	 * 3_____________4<br>
+	 * 3_____________4<br>
+	 * 3_____________4<br>
+	 * 566666666666667 */
+	private static final String[] BOXES = { "########", "+-+||+-+", "...:::.:" };
+
+	private List<String> processDetail(Map<Path, Set<Path>> pathMap, Map<ModLoadOption, List<String>> insideBox, Path path, int depth) {
+
+		List<String> allLines = new ArrayList<>();
+
+		List<String> boxLines = insideBox.get(modPaths.get(path));
+		if (boxLines != null) {
+			allLines.addAll(boxLines);
+		}
+
+		Set<Path> subPaths = pathMap.get(path);
+		if (subPaths != null) {
+
+			allLines.add("");
+			allLines.add("Contained Jars (" + subPaths.size() + "):");
+			allLines.add("");
+
+			for (Path sub : subPaths) {
+				allLines.add(sub.toString() + ":");
+				allLines.addAll(processDetail(pathMap, insideBox, sub, depth + 1));
+				allLines.add("");
+			}
+		}
+
+		int maxLength = 0;
+
+		for (String line : allLines) {
+			maxLength = Math.max(maxLength, line.length());
+		}
+
+		String box = BOXES[depth % BOXES.length];
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(box.charAt(0));
+		for (int i = -4; i < maxLength; i++) {
+			sb.append(box.charAt(1));
+		}
+		sb.append(box.charAt(2));
+
+		allLines.add(0, sb.toString());
+		sb.setLength(0);
+
+		for (int i = 1; i < allLines.size(); i++) {
+			String inner = allLines.get(i);
+			sb.setLength(0);
+			sb.append(box.charAt(3));
+			sb.append("  ");
+			sb.append(inner);
+			for (int j = inner.length() - 2; j < maxLength; j++) {
+				sb.append(' ');
+			}
+			sb.append(box.charAt(4));
+			allLines.set(i, sb.toString());
+		}
+		sb.setLength(0);
+		sb.append(box.charAt(5));
+		for (int i = -4; i < maxLength; i++) {
+			sb.append(box.charAt(6));
+		}
+		sb.append(box.charAt(7));
+		allLines.add(sb.toString());
+
+		return allLines;
+	}
+
+	private ModSolveResultImpl runInternal(boolean scanClasspath) throws ModResolutionException, TimeoutException {
 
 		if (game != null) {
 			theQuiltPlugin.addBuiltinMods(game);
@@ -406,7 +885,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 
 		for (int cycle = 0; cycle < 1000; cycle++) {
+			this.cycleNumber = cycle + 1;
 			ModSolveResultImpl result = runSingleCycle();
+			checkForErrors();
 			if (result != null) {
 				return result;
 			}
@@ -441,11 +922,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		});
 	}
 
-	private ModSolveResultImpl runSingleCycle() throws ModSolvingError, TimeoutException {
-
-		refreshPlugins();
+	private ModSolveResultImpl runSingleCycle() throws ModResolutionException, TimeoutException {
 
 		PerCycleStep step = PerCycleStep.START;
+		this.perCycleStep = step;
+
+		refreshPlugins();
+		checkForErrors();
+
 		ModSolveResultImpl result = null;
 
 		while (true) {
@@ -466,7 +950,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					for (QuiltPluginContext pluginCtx : plugins.values()) {
 						pluginCtx.plugin().beforeSolve();
 					}
-					step = PerCycleStep.SOLVE;
+					checkForErrors();
+					this.perCycleStep = step = PerCycleStep.SOLVE;
 					break;
 				}
 				case SOLVE: {
@@ -475,9 +960,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						ModSolveResultImpl partialResult = getPartialSolution();
 
 						if (processTentatives(partialResult)) {
-							step = PerCycleStep.POST_SOLVE_TENTATIVE;
+							this.perCycleStep = step = PerCycleStep.POST_SOLVE_TENTATIVE;
 						} else {
-							step = PerCycleStep.SUCCESS;
+							this.perCycleStep = step = PerCycleStep.SUCCESS;
 							result = partialResult;
 						}
 
@@ -485,13 +970,30 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					} else {
 						Collection<Rule> parts = solver.getError();
 
-						StringBuilder sb = new StringBuilder();
+						QuiltReport report = new QuiltReport("Quilt Loader: Solve Failed Report");
+						QuiltStringSection rulesSection = report.addStringSection("Relevant Solver Rules", -100);
+
+						int ruleNumber = 1;
 						for (Rule rule : parts) {
-						    sb.append("\n");
-						    rule.fallbackErrorDescription(sb);
+						    StringBuilder sb = new StringBuilder();
+						    try {
+						    	rule.fallbackErrorDescription(sb);
+						    } catch (Exception e) {
+						    	report.addStacktraceSection("Suppressed Error", +100, e);
+						    	sb.append("\n~EXCEPTION~");
+						    	continue;
+						    }
+
+							rulesSection.lines("- Rule " + ruleNumber);
+							rulesSection.lines(sb.toString().split("\n"));
+							rulesSection.lines("");
+							ruleNumber++;
 						}
 
-						throw new AbstractMethodError("// TODO: error handling!" + sb);
+						// TODO: Turn erroring rules into a readable error!
+						// describeError(parts);
+
+						throw new QuiltReportedError(report);
 					}
 				}
 				case POST_SOLVE_TENTATIVE: {
@@ -509,6 +1011,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		}
 
+	}
+
+	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if
+	 * this is the case. */
+	private void checkForErrors() throws TreeContainsModError {
+		WarningLevel maximumLevel = guiFileRoot.getMaximumLevel();
+		if (maximumLevel == WarningLevel.FATAL || maximumLevel == WarningLevel.ERROR) {
+			throw new TreeContainsModError();
+		}
 	}
 
 	private void refreshPlugins() throws ModSolvingError {
@@ -865,9 +1376,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	void scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) {
-		Map<ModLoadOption, QuiltPluginContext> map = new HashMap<>();
+		Map<ModLoadOption, BasePluginContext> map = new HashMap<>();
 
-		for (QuiltPluginContext ctx : plugins.values()) {
+		for (BasePluginContext ctx : plugins.values()) {
 			ModLoadOption[] mods;
 			try {
 				mods = ctx.plugin().scanClasspathFolder(folder, guiNode);
@@ -991,9 +1502,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		try {
 			state.push(guiNode);
 
-			Map<ModLoadOption, QuiltPluginContext> map = new HashMap<>();
+			Map<ModLoadOption, BasePluginContext> map = new HashMap<>();
 
-			for (QuiltPluginContext ctx : plugins.values()) {
+			for (BasePluginContext ctx : plugins.values()) {
 				ModLoadOption[] mods;
 				try {
 					mods = ctx.plugin().scanZip(zipRoot, fromClasspath, guiNode);
@@ -1029,9 +1540,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		try {
 			state.push(guiNode);
 
-			Map<ModLoadOption, QuiltPluginContext> map = new HashMap<>();
+			Map<ModLoadOption, BasePluginContext> map = new HashMap<>();
 
-			for (QuiltPluginContext ctx : plugins.values()) {
+			for (BasePluginContext ctx : plugins.values()) {
 				ModLoadOption[] mods;
 				try {
 					mods = ctx.plugin().scanUnknownFile(file, fromClasspath, guiNode);
@@ -1058,25 +1569,25 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	private void addModOption(Map<ModLoadOption, QuiltPluginContext> map, PluginGuiTreeNode guiNode) {
+	private void addModOption(Map<ModLoadOption, BasePluginContext> map, PluginGuiTreeNode guiNode) {
 		if (map == null || map.isEmpty()) {
 			guiNode.addChild(Text.translate("gui.warn.no_plugin_could_load"))//TODO: translate
 				.setDirectLevel(WarningLevel.WARN);
 		} else if (map.size() == 1) {
 			ModLoadOption option = map.keySet().iterator().next();
-			QuiltPluginContext plugin = map.values().iterator().next();
+			BasePluginContext plugin = map.values().iterator().next();
 			addSingleModOption(option, plugin, true, guiNode);
 		} else {
 			guiNode.addChild(Text.translate("gui.warn.overloaded"));//TODO:translate
 			// TODO: Report the mod as being "overloaded"?
 			// or just add all, and let the solver figure out which is which.
-			for (Map.Entry<ModLoadOption, QuiltPluginContext> entry : map.entrySet()) {
+			for (Map.Entry<ModLoadOption, BasePluginContext> entry : map.entrySet()) {
 				addSingleModOption(entry.getKey(), entry.getValue(), false, guiNode);
 			}
 		}
 	}
 
-	void addSingleModOption(ModLoadOption mod, QuiltPluginContext provider, boolean only, PluginGuiTreeNode guiNode) {
+	void addSingleModOption(ModLoadOption mod, BasePluginContext provider, boolean only, PluginGuiTreeNode guiNode) {
 
 		PluginGuiTreeNode loadedBy = guiNode.addChild(Text.translate("gui.text.mod_loaded_by", provider.pluginId()))//
 			.mainIcon(mod.modTypeIcon());
@@ -1122,7 +1633,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// # Sat4j Rules #
 	// ###############
 
-	void addLoadOption(LoadOption option, QuiltPluginContext provider) {
+	void addLoadOption(LoadOption option, BasePluginContext provider) {
 		solver.addOption(option);
 
 		if (option instanceof TentativeLoadOption) {

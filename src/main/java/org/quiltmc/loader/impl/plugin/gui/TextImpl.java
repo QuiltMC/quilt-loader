@@ -16,6 +16,7 @@ public final class TextImpl implements Text {
 		this.translate = true;
 	}
 
+	@Override
 	public String toString() {
 		try {
 			return String.format(translate ? I18n.translate(translationKey) : translationKey, extra);

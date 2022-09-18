@@ -20,9 +20,12 @@ package org.quiltmc.loader.impl;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,6 +68,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltStatusTree;
+import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltBasicButtonType;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -75,6 +79,8 @@ import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
+import org.quiltmc.loader.impl.report.QuiltReportedError;
+import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -230,30 +236,7 @@ public final class QuiltLoaderImpl {
 
 	private void setup() throws ModResolutionException {
 
-		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
-
-		ModSolveResult result;
-		try {
-			result = plugins.run(true);
-		} catch (TimeoutException e) {
-			throw new ModSolvingError("Timeout", e);
-		}
-
-		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", null);
-		QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Plugins Test");
-		plugins.guiFileRoot.toNode(tab.node, false);
-
-		// TODO: currently GUI is always enabled
-		if (tree.getMaximumWarningLevel().isAtLeast(QuiltStatusTree.QuiltTreeWarningLevel.WARN) || true) {
-			try {
-				QuiltGuiEntry.open(tree, null, true);
-				if (tree.getMaximumWarningLevel().isAtLeast(QuiltStatusTree.QuiltTreeWarningLevel.ERROR)) {
-					System.exit(1);
-				}
-			} catch (Exception e) {
-				throw new Error(e);
-			}
-		}
+		ModSolveResult result = runPlugins();
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
@@ -327,6 +310,66 @@ public final class QuiltLoaderImpl {
 
 		int count = mods.size();
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
+	}
+
+	private ModSolveResult runPlugins() {
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
+
+		Path crashReportFile = null;
+
+		try {
+			ModSolveResultImpl result = plugins.run(true);
+
+			QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", null);
+			QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Plugin Debugging");
+			plugins.guiFileRoot.toNode(tab.node, false);
+
+			// TODO: Look into writing a report!
+
+			if (tree.getMaximumWarningLevel().isAtLeast(QuiltStatusTree.QuiltTreeWarningLevel.WARN)) {
+				try {
+					QuiltGuiEntry.open(tree, null, true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+
+			return result;
+		} catch (QuiltReportedError reported) {
+			Path crashReportDir = gameDir.resolve("crash-reports");
+			try {
+				Files.createDirectories(crashReportDir);
+			} catch (IOException io) {
+				reported.report.addStacktraceSection("Suppressed", 100, io);
+			}
+
+			try {
+				StringBuilder sb = new StringBuilder("quilt-loader-report-");
+				sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS"))).append(".txt");
+				crashReportFile = crashReportDir.resolve(sb.toString());
+				reported.report.write(crashReportFile);
+			} catch (IOException e) {
+				// It probably didn't write at all - that's really bad.
+				e.printStackTrace();
+				reported.report.write(new PrintWriter(System.err));
+			}
+		}
+
+		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", null);
+		QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Crashed!");
+		plugins.guiFileRoot.toNode(tab.node, false);
+		if (crashReportFile != null) {
+			// TODO - pass the crash report path into the error gui!
+			tree.addButton("Open Crash Report", QuiltBasicButtonType.CLICK_MANY);
+		}
+
+		try {
+			QuiltGuiEntry.open(tree, null, true);
+			System.exit(1);
+			throw new Error("System.exit(1) Failed!");
+		} catch (Exception e) {
+			throw new Error(e);
+		}
 	}
 
 	public String createModTable() {
