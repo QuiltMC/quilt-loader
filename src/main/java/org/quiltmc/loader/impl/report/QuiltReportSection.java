@@ -6,6 +6,7 @@ public abstract class QuiltReportSection implements Comparable<QuiltReportSectio
 
 	private final int ordering;
 	final String name;
+	boolean showInLogs = true;
 
 	public QuiltReportSection(int ordering, String name) {
 		this.ordering = ordering;
@@ -18,4 +19,8 @@ public abstract class QuiltReportSection implements Comparable<QuiltReportSectio
 	}
 
 	public abstract void write(PrintWriter to);
+
+	public void setShowInLogs(boolean b) {
+		showInLogs = b;
+	}
 }

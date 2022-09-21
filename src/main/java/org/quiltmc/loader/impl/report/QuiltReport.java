@@ -45,11 +45,17 @@ public class QuiltReport {
 
 	public void write(Path to) throws IOException {
 		try (BufferedWriter writer = Files.newBufferedWriter(to, StandardOpenOption.CREATE_NEW)) {
-			write(new PrintWriter(writer));
+			PrintWriter printer = new PrintWriter(writer);
+			write(printer);
+			printer.flush();
 		}
 	}
 
 	public void write(PrintWriter to) {
+		writeInternal(to, false);
+	}
+
+	private void writeInternal(PrintWriter to, boolean toLog) {
 		to.println("---- " + header + " ----");
 
 		LocalDateTime now = LocalDateTime.now();
@@ -65,11 +71,27 @@ public class QuiltReport {
 
 		for (QuiltReportSection section : sections) {
 
+			if (toLog && !section.showInLogs) {
+				continue;
+			}
+
 			to.println("-- " + section.name + " --");
 			to.println();
 			section.write(to);
 			to.println();
 			to.println();
+		}
+
+		to.println("---- end of report ----");
+		to.flush();
+	}
+
+	public void writeToLog() {
+		PrintWriter writer = new PrintWriter(System.out);
+		try {
+			writeInternal(writer, true);
+		} finally {
+			writer.flush();
 		}
 	}
 }

@@ -4,6 +4,7 @@ package org.quiltmc.loader.impl.plugin.gui;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 

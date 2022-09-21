@@ -57,6 +57,12 @@ public interface QuiltPluginManager {
 	 * {@link Path#getParent()} */
 	Path getParent(Path path);
 
+	/** Retrieves the file in the default {@link FileSystem} (that the user can view directly in a file browser) that
+	 * contains the given path.
+	 * 
+	 * @return Either a Path with a {@link FileSystem} equal to {@link FileSystems#getDefault()}, or null. */
+	Path getRealContainingFile(Path file);
+
 	// #################
 	// Joined Paths
 	// #################

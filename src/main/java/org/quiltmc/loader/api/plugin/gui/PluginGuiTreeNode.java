@@ -2,6 +2,7 @@ package org.quiltmc.loader.api.plugin.gui;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.plugin.QuiltPluginError;
 
 public interface PluginGuiTreeNode {
 
@@ -92,10 +93,13 @@ public interface PluginGuiTreeNode {
 		throw exception;
 	}
 
+	/** Sets the {@link WarningLevel} of this node to {@link WarningLevel#ERROR}, and associates it with the given
+	 * {@link QuiltPluginError}. */
 	@Contract("_ -> this")
-	default PluginGuiTreeNode setError(Throwable exception) {
+	default PluginGuiTreeNode setError(Throwable exception, QuiltPluginError reportedError) {
 		setDirectLevel(WarningLevel.ERROR);
 		setException(exception);
+		assert reportedError != null;
 		return this;
 	}
 

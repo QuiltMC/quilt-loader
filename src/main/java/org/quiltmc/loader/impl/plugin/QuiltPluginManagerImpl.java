@@ -1,6 +1,8 @@
 package org.quiltmc.loader.impl.plugin;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.ref.WeakReference;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -46,6 +48,7 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -71,6 +74,7 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
+import org.quiltmc.loader.impl.plugin.gui.TextImpl;
 import org.quiltmc.loader.impl.plugin.quilt.StandardQuiltPlugin;
 import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
@@ -106,6 +110,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<TentativeLoadOption, BasePluginContext> tentativeLoadOptions = new LinkedHashMap<>();
 
 	private final StandardQuiltPlugin theQuiltPlugin;
+	private final BuiltinPluginContext theQuiltPluginContext;
+	private final StandardFabricPlugin theFabricPlugin;
+	private final BuiltinPluginContext theFabricPluginContext;
+
 	final Map<QuiltLoaderPlugin, BasePluginContext> plugins = new LinkedHashMap<>();
 	final Map<String, QuiltPluginContextImpl> pluginsById = new HashMap<>();
 	final Map<String, QuiltPluginClassLoader> pluginsByPackage = new HashMap<>();
@@ -125,6 +133,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public final TempQuilt2OldStatusNode guiFileRoot = new TempQuilt2OldStatusNode(null);
 	private PluginGuiTreeNode guiNodeModsFromPlugins;
 	final Map<ModLoadOption, PluginGuiTreeNode> modGuiNodes = new HashMap<>();
+	final List<QuiltPluginErrorImpl> errors = new ArrayList<>();
 
 	/** Only written by {@link #runSingleCycle()}, only read during crash report generation. */
 	private PerCycleStep perCycleStep;
@@ -152,16 +161,19 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		customPathNames.put(modsDir, "<mods>");
 
 		mainThreadTasks.add(new MainThreadTask.ScanFolderTask(modsDir, QUILT_ID));
+
 		theQuiltPlugin = new StandardQuiltPlugin();
-		addBuiltinPlugin(theQuiltPlugin, QUILT_ID);
-		addBuiltinPlugin(new StandardFabricPlugin(), "quilted_fabric_loader");
+		theQuiltPluginContext = addBuiltinPlugin(theQuiltPlugin, QUILT_ID);
+		theFabricPlugin = new StandardFabricPlugin();
+		theFabricPluginContext = addBuiltinPlugin(theFabricPlugin, "quilted_fabric_loader");
 	}
 
-	private void addBuiltinPlugin(BuiltinQuiltPlugin plugin, String id) {
+	private BuiltinPluginContext addBuiltinPlugin(BuiltinQuiltPlugin plugin, String id) {
 		BuiltinPluginContext ctx = new BuiltinPluginContext(this, id, plugin);
 		plugin.load(ctx, Collections.emptyMap());
 		plugins.put(plugin, ctx);
 		plugin.addModFolders(ctx.modFolderSet);
+		return ctx;
 	}
 
 	// #######
@@ -276,6 +288,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	@Override
 	public Path getParent(Path path) {
 		return pathParents.getOrDefault(path, path.getParent());
+	}
+
+	@Override
+	public Path getRealContainingFile(Path file) {
+		Path next = file;
+		while (next.getFileSystem() != FileSystems.getDefault()) {
+			next = getParent(next);
+			if (next == null) {
+				return null;
+			}
+		}
+		return next;
 	}
 
 	// #################
@@ -393,6 +417,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return modGuiNodes.get(mod);
 	}
 
+	public QuiltPluginError reportError(BasePluginContext reporter, Text title) {
+		QuiltPluginErrorImpl error = new QuiltPluginErrorImpl(reporter.pluginId, title);
+		errors.add(error);
+		return error;
+	}
+
 	// ############
 	// # Internal #
 	// ############
@@ -466,13 +496,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		// TODO: What other loader state do we need?
 		pluginState.lines("");
 
-		pluginState.lines("-- Mod Table (sorted by id) --");
+		QuiltStringSection modTable = report.addStringSection("Mod Table", 100);
+		appendModTable(modTable::lines);
+		modTable.setShowInLogs(false);
 
-		appendModTable(pluginState::lines);
-
-		pluginState.lines("-- Mod Details (sorted by path) --");
-
-		appendModDetails(pluginState::lines);
+		QuiltStringSection modDetails = report.addStringSection("Mod Details", 100);
+		appendModDetails(modDetails::lines);
+		modDetails.setShowInLogs(false);
 
 		throw new QuiltReportedError(report);
 	}
@@ -1015,7 +1045,37 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if
 	 * this is the case. */
-	private void checkForErrors() throws TreeContainsModError {
+	private void checkForErrors() throws TreeContainsModError, QuiltReportedError {
+
+		if (!errors.isEmpty()) {
+			QuiltReport report = new QuiltReport("Quilt Loader: Failed to load");
+
+			int number = 1;
+
+			for (QuiltPluginErrorImpl error : errors) {
+				List<String> lines = new ArrayList<>();
+				lines.addAll(error.reportLines);
+
+				if (lines.isEmpty()) {
+					lines.add("The plugin that created this error (" + error.reportingPlugin + ") forgot to call 'appendReportText'!");
+					lines.add("The next stacktrace is where the plugin created the error, not the actual error.'");
+					error.exceptions.add(0, error.reportTrace);
+				}
+
+				for (Throwable ex : error.exceptions) {
+					lines.add("");
+					StringWriter writer = new StringWriter();
+					ex.printStackTrace(new PrintWriter(writer));
+					Collections.addAll(lines, writer.toString().split("\n"));
+				}
+
+				report.addStringSection("Error " + number, -100, lines.toArray(new String[0]));
+				number++;
+			}
+
+			throw new QuiltReportedError(report);
+		}
+
 		WarningLevel maximumLevel = guiFileRoot.getMaximumLevel();
 		if (maximumLevel == WarningLevel.FATAL || maximumLevel == WarningLevel.ERROR) {
 			throw new TreeContainsModError();
@@ -1447,8 +1507,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		} catch (IOException e) {
 
-			guiNode.addChild(Text.translate("gui.text.ioexception_files_hidden", e.getMessage()))// TODO translate
-				.setError(e);
+			Text title = Text.translate("gui.text.ioexception_files_hidden", e.getMessage());
+			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			error.appendReportText("Failed to check if " + describePath(file) + " is hidden or not!");
+			error.appendDescription(Text.translate("gui.text.ioexception_files_hidden.desc.0", describePath(file)));
+			error.appendThrowable(e);
+
+			guiNode.addChild(title).setError(e, error);
 			e.printStackTrace();
 
 			return;
@@ -1473,16 +1538,28 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// TODO: check for common cases and print those
 			// (I.E zero-byte file)
 
+			Text title = Text.translate("gui.error.zipexception.title", e.getMessage());
+			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			error.appendReportText("Failed to unzip " + describePath(file) + "!");
+			error.appendDescription(Text.translate("gui.error.zipexception.desc.0", describePath(file)));
+			error.appendDescription(Text.translate("gui.error.zipexception.desc.1"));
+			error.appendThrowable(e);
+			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file));
+
 			guiNode.addChild(Text.translate("gui.error.zipexception", e.getMessage()))//TODO: translate
-				.setError(e);
-			new Error("Failed to load " + describePath(file), e).printStackTrace();
+				.setError(e, error);
 
 		} catch (IOException e) {
 
-			guiNode.addChild(Text.translate("gui.error.ioexception", e.getMessage()))//TODO: translate
-				.setError(e);
+			Text title = Text.translate("gui.error.ioexception.title", e.getMessage());
+			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			error.appendReportText("Failed to read " + describePath(file) + "!");
+			error.appendDescription(Text.translate("gui.error.ioexception.desc.0", describePath(file)));
+			error.appendThrowable(e);
+			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file));
 
-			new Error("Failed to load " + describePath(file), e).printStackTrace();
+			guiNode.addChild(Text.translate("gui.error.ioexception", e.getMessage()))//TODO: translate
+				.setError(e, error);
 
 		} catch (NonZipException e) {
 

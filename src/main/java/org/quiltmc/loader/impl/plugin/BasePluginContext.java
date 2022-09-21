@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -58,6 +59,11 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	public void lockZip(Path path) {
 		// TODO Auto-generated method stub
 		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	@Override
+	public QuiltPluginError reportError(Text title) {
+		return manager.reportError(this, title);
 	}
 
 	@Override

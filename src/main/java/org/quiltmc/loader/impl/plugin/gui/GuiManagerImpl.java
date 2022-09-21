@@ -23,6 +23,11 @@ public class GuiManagerImpl implements PluginGuiManager {
 	public static final PluginGuiIcon ICON_FABRIC = new PluginIconBuiltin("fabric");
 	public static final PluginGuiIcon ICON_TICK = new PluginIconBuiltin("tick");
 	public static final PluginGuiIcon ICON_CROSS = new PluginIconBuiltin("lesser_cross");
+	public static final PluginGuiIcon ICON_LEVEL_FATAL = new PluginIconBuiltin("level_fatal");
+	public static final PluginGuiIcon ICON_LEVEL_ERROR = new PluginIconBuiltin("level_error");
+	public static final PluginGuiIcon ICON_LEVEL_WARN = new PluginIconBuiltin("level_warn");
+	public static final PluginGuiIcon ICON_LEVEL_CONCERN = new PluginIconBuiltin("level_concern");
+	public static final PluginGuiIcon ICON_LEVEL_INFO = new PluginIconBuiltin("level_info");
 
 	// Icons
 
@@ -89,5 +94,30 @@ public class GuiManagerImpl implements PluginGuiManager {
 	@Override
 	public PluginGuiIcon iconCross() {
 		return ICON_CROSS;
+	}
+
+	@Override
+	public PluginGuiIcon iconLevelFatal() {
+		return ICON_LEVEL_FATAL;
+	}
+
+	@Override
+	public PluginGuiIcon iconLevelError() {
+		return ICON_LEVEL_ERROR;
+	}
+
+	@Override
+	public PluginGuiIcon iconLevelWarn() {
+		return ICON_LEVEL_WARN;
+	}
+
+	@Override
+	public PluginGuiIcon iconLevelConcern() {
+		return ICON_LEVEL_CONCERN;
+	}
+
+	@Override
+	public PluginGuiIcon iconLevelInfo() {
+		return ICON_LEVEL_INFO;
 	}
 }

@@ -348,6 +348,9 @@ public final class QuiltLoaderImpl {
 				sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS"))).append(".txt");
 				crashReportFile = crashReportDir.resolve(sb.toString());
 				reported.report.write(crashReportFile);
+				Log.error(LogCategory.GENERAL, "Crashed! The full crash report has been saved to " + crashReportFile);
+				reported.report.writeToLog();
+				Log.error(LogCategory.GENERAL, "For more details see the full crash report file: " + crashReportFile);
 			} catch (IOException e) {
 				// It probably didn't write at all - that's really bad.
 				e.printStackTrace();

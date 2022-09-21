@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.Text;
@@ -73,8 +74,16 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
-			guiNode.addChild(Text.translate("gui.text.invalid_metadata", "fabric.mod.json", parse.getMessage()))
-				.setError(parse);
+			Text title = Text.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());
+			QuiltPluginError error = context().reportError(title);
+			String describedPath = context().manager().describePath(fmj);
+			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
+			error.appendDescription(Text.translate("gui.text.invalid_metadata.desc.0", describedPath));
+			error.appendThrowable(parse);
+			error.addFileViewButton(Text.translate("gui.view_file"), context().manager().getRealContainingFile(root));
+
+			guiNode.addChild(Text.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
+				.setError(parse, error);
 			return null;
 		}
 	}

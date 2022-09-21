@@ -31,4 +31,14 @@ public interface PluginGuiManager {
 	PluginGuiIcon iconTick();
 
 	PluginGuiIcon iconCross();
+
+	PluginGuiIcon iconLevelFatal();
+
+	PluginGuiIcon iconLevelError();
+
+	PluginGuiIcon iconLevelWarn();
+
+	PluginGuiIcon iconLevelConcern();
+
+	PluginGuiIcon iconLevelInfo();
 }
