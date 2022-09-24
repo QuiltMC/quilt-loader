@@ -65,16 +65,16 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusButton;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusNode;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.util.StringUtil;
 
 class QuiltMainWindow {
 	static Icon missingIcon = null;
 
-	static void open(QuiltStatusTree tree, boolean shouldWait) throws Exception {
+	static void open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
 		if (GraphicsEnvironment.isHeadless()) {
 			throw new HeadlessException();
 		}
@@ -87,7 +87,7 @@ class QuiltMainWindow {
 		open0(tree, shouldWait);
 	}
 
-	private static void open0(QuiltStatusTree tree, boolean shouldWait) throws Exception {
+	private static void open0(QuiltJsonGui tree, boolean shouldWait) throws Exception {
 		CountDownLatch guiTerminatedLatch = new CountDownLatch(1);
 
 		SwingUtilities.invokeAndWait(() -> {
@@ -99,7 +99,7 @@ class QuiltMainWindow {
 		}
 	}
 
-	private static void createUi(CountDownLatch onCloseLatch, QuiltStatusTree tree) {
+	private static void createUi(CountDownLatch onCloseLatch, QuiltJsonGui tree) {
 		JFrame window = new JFrame();
 		window.setVisible(false);
 		window.setTitle(tree.title);
@@ -138,17 +138,17 @@ class QuiltMainWindow {
 		IconSet icons = new IconSet();
 
 		if (tree.tabs.isEmpty()) {
-			QuiltStatusTab tab = new QuiltStatusTab("Opening Errors");
+			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab("Opening Errors");
 			tab.addChild("No tabs provided! (Something is very broken)").setError();
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
 		} else if (tree.tabs.size() == 1) {
-			QuiltStatusTab tab = tree.tabs.get(0);
+			QuiltJsonGuiTreeTab tab = tree.tabs.get(0);
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
 		} else {
 			JTabbedPane tabs = new JTabbedPane();
 			contentPane.add(tabs, BorderLayout.CENTER);
 
-			for (QuiltStatusTab tab : tree.tabs) {
+			for (QuiltJsonGuiTreeTab tab : tree.tabs) {
 				tabs.addTab(tab.node.name, createTreePanel(tab.node, tab.filterLevel, icons));
 			}
 		}
@@ -158,11 +158,11 @@ class QuiltMainWindow {
 			contentPane.add(buttons, BorderLayout.SOUTH);
 			buttons.setLayout(new FlowLayout(FlowLayout.TRAILING));
 
-			for (QuiltStatusButton button : tree.buttons) {
+			for (QuiltJsonButton button : tree.buttons) {
 				JButton btn = new JButton(button.text);
 				buttons.add(btn);
 				btn.addActionListener(event -> {
-					if (button.type == QuiltStatusTree.QuiltBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
+					if (button.type == QuiltJsonGui.QuiltBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
 
 					if (button.clipboard != null) {
 						try {

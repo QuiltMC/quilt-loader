@@ -67,8 +67,8 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltBasicButtonType;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonType;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -320,13 +320,13 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", null);
-			QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Plugin Debugging");
+			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader", null);
+			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Plugin Debugging");
 			plugins.guiFileRoot.toNode(tab.node, false);
 
 			// TODO: Look into writing a report!
 
-			if (tree.getMaximumWarningLevel().isAtLeast(QuiltStatusTree.QuiltTreeWarningLevel.WARN)) {
+			if (tree.getMaximumWarningLevel().isAtLeast(QuiltJsonGui.QuiltTreeWarningLevel.WARN)) {
 				try {
 					QuiltGuiEntry.open(tree, null, true);
 				} catch (Exception e) {
@@ -358,8 +358,8 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		QuiltStatusTree tree = new QuiltStatusTree("Quilt Loader", null);
-		QuiltStatusTree.QuiltStatusTab tab = tree.addTab("Crashed!");
+		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader", null);
+		QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Crashed!");
 		plugins.guiFileRoot.toNode(tab.node, false);
 		if (crashReportFile != null) {
 			// TODO - pass the crash report path into the error gui!

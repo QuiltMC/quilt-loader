@@ -37,7 +37,7 @@ import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.FormattedException;
 
-public final class QuiltStatusTree {
+public final class QuiltJsonGui {
 	public enum QuiltTreeWarningLevel {
 		FATAL,
 		ERROR,
@@ -177,30 +177,30 @@ public final class QuiltStatusTree {
 	 * of {@link #ICON_TYPE_TICK} */
 	public static final String ICON_TYPE_LESSER_CROSS = "lesser_cross";
 
-	public final List<QuiltStatusTab> tabs = new ArrayList<>();
-	public final List<QuiltStatusButton> buttons = new ArrayList<>();
+	public final List<QuiltJsonGuiTreeTab> tabs = new ArrayList<>();
+	public final List<QuiltJsonButton> buttons = new ArrayList<>();
 
 	public final String title;
 	public final String mainText;
 
-	public QuiltStatusTree(String title, String mainText) {
+	public QuiltJsonGui(String title, String mainText) {
 		this.title = title;
 		this.mainText = mainText;
 	}
 
-	public QuiltStatusTab addTab(String name) {
-		QuiltStatusTab tab = new QuiltStatusTab(name);
+	public QuiltJsonGuiTreeTab addTab(String name) {
+		QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab(name);
 		tabs.add(tab);
 		return tab;
 	}
 
-	public QuiltStatusButton addButton(String text, QuiltBasicButtonType type) {
-		QuiltStatusButton button = new QuiltStatusButton(text, type);
+	public QuiltJsonButton addButton(String text, QuiltBasicButtonType type) {
+		QuiltJsonButton button = new QuiltJsonButton(text, type);
 		buttons.add(button);
 		return button;
 	}
 
-	public QuiltStatusTree(JsonReader reader) throws IOException {
+	public QuiltJsonGui(JsonReader reader) throws IOException {
 		reader.beginObject();
 		expectName(reader, "title");
 		title = reader.nextString();
@@ -212,14 +212,14 @@ public final class QuiltStatusTree {
 		expectName(reader, "tabs");
 		reader.beginArray();
 		while (reader.peek() != JsonToken.END_ARRAY) {
-			tabs.add(new QuiltStatusTab(reader));
+			tabs.add(new QuiltJsonGuiTreeTab(reader));
 		}
 		reader.endArray();
 
 		expectName(reader, "buttons");
 		reader.beginArray();
 		while (reader.peek() != JsonToken.END_ARRAY) {
-			buttons.add(new QuiltStatusButton(reader));
+			buttons.add(new QuiltJsonButton(reader));
 		}
 		reader.endArray();
 
@@ -232,12 +232,12 @@ public final class QuiltStatusTree {
 		writer.name("title").value(title);
 		writer.name("mainText").value(mainText);
 		writer.name("tabs").beginArray();
-		for (QuiltStatusTab tab : tabs) {
+		for (QuiltJsonGuiTreeTab tab : tabs) {
 			tab.write(writer);
 		}
 		writer.endArray();
 		writer.name("buttons").beginArray();
-		for (QuiltStatusButton button : buttons) {
+		for (QuiltJsonButton button : buttons) {
 			button.write(writer);
 		}
 		writer.endArray();
@@ -246,7 +246,7 @@ public final class QuiltStatusTree {
 
 	public QuiltTreeWarningLevel getMaximumWarningLevel() {
 		QuiltTreeWarningLevel max = QuiltTreeWarningLevel.NONE;
-		for (QuiltStatusTab tab : this.tabs) {
+		for (QuiltJsonGuiTreeTab tab : this.tabs) {
 			if (tab.node.getMaximumWarningLevel().isHigherThan(max)) {
 				max = tab.node.getMaximumWarningLevel();
 			}
@@ -271,28 +271,28 @@ public final class QuiltStatusTree {
 		}
 	}
 
-	public static final class QuiltStatusButton {
+	public static final class QuiltJsonButton {
 		public final String text;
 		public final QuiltBasicButtonType type;
 		public String clipboard = "";
 		public boolean shouldClose, shouldContinue;
 
-		public QuiltStatusButton(String text, QuiltBasicButtonType type) {
+		public QuiltJsonButton(String text, QuiltBasicButtonType type) {
 			this.text = text;
 			this.type = type;
 		}
 
-		public QuiltStatusButton makeClose() {
+		public QuiltJsonButton makeClose() {
 			shouldClose = true;
 			return this;
 		}
 
-		public QuiltStatusButton makeContinue() {
+		public QuiltJsonButton makeContinue() {
 			this.shouldContinue = true;
 			return this;
 		}
 
-		QuiltStatusButton(JsonReader reader) throws IOException {
+		QuiltJsonButton(JsonReader reader) throws IOException {
 			reader.beginObject();
 			expectName(reader, "text");
 			text = reader.nextString();
@@ -318,19 +318,19 @@ public final class QuiltStatusTree {
 			writer.endObject();
 		}
 
-		public QuiltStatusButton withClipboard(String clipboard) {
+		public QuiltJsonButton withClipboard(String clipboard) {
 			this.clipboard = clipboard;
 			return this;
 		}
 	}
 
-	public static final class QuiltStatusTab {
+	public static final class QuiltJsonGuiTreeTab {
 		public final QuiltStatusNode node;
 
 		/** The minimum warning level to display for this tab. */
 		public QuiltTreeWarningLevel filterLevel = QuiltTreeWarningLevel.NONE;
 
-		public QuiltStatusTab(String name) {
+		public QuiltJsonGuiTreeTab(String name) {
 			this.node = new QuiltStatusNode(null, name);
 		}
 
@@ -338,7 +338,7 @@ public final class QuiltStatusTree {
 			return node.addChild(name);
 		}
 
-		QuiltStatusTab(JsonReader reader) throws IOException {
+		QuiltJsonGuiTreeTab(JsonReader reader) throws IOException {
 			reader.beginObject();
 			expectName(reader, "level");
 			filterLevel = QuiltTreeWarningLevel.read(reader);
@@ -648,7 +648,7 @@ public final class QuiltStatusTree {
 					}
 				}
 
-				if (fileNode.iconType.equals(QuiltStatusTree.ICON_TYPE_DEFAULT)) {
+				if (fileNode.iconType.equals(QuiltJsonGui.ICON_TYPE_DEFAULT)) {
 					fileNode.iconType = folderType;
 				}
 

@@ -39,20 +39,20 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.gui.QuiltStatusTree.QuiltStatusTab;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** The main entry point for all quilt-based stuff. */
 public final class QuiltGuiEntry {
-	/** Opens the given {@link QuiltStatusTree} in a new swing window.
+	/** Opens the given {@link QuiltJsonGui} in a new swing window.
 	 * 
 	 * @throws Exception if something went wrong while opening the window. */
-	public static void open(QuiltStatusTree tree) throws Exception {
+	public static void open(QuiltJsonGui tree) throws Exception {
 		open(tree, null, true);
 	}
 
-	/** Opens the given {@link QuiltStatusTree} in a new swing window.
+	/** Opens the given {@link QuiltJsonGui} in a new swing window.
 	 * 
 	 * @param forceFork If true then this will create a new process to host the window, false will always use this
 	 *            process, and null will only fork if the current operating system doesn't support LWJGL + swing windows
@@ -60,7 +60,7 @@ public final class QuiltGuiEntry {
 	 * @param shouldWait If true then this call will wait until either the user clicks the "continue" button or the
 	 *            window is closed before returning, otherwise this method will return as soon as the window has opened.
 	 * @throws Exception if something went wrong while opening the window. */
-	public static void open(QuiltStatusTree tree, Boolean forceFork, boolean shouldWait) throws Exception {
+	public static void open(QuiltJsonGui tree, Boolean forceFork, boolean shouldWait) throws Exception {
 		final boolean fork;
 
 		if (forceFork != null) {
@@ -86,7 +86,7 @@ public final class QuiltGuiEntry {
 		return false;
 	}
 
-	private static void openWindow(QuiltStatusTree tree, boolean shouldWait) throws Exception {
+	private static void openWindow(QuiltJsonGui tree, boolean shouldWait) throws Exception {
 		QuiltMainWindow.open(tree, shouldWait);
 	}
 
@@ -101,8 +101,8 @@ public final class QuiltGuiEntry {
 
 		if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
 			String title = "Quilt Loader " + QuiltLoaderImpl.VERSION;
-			QuiltStatusTree tree = new QuiltStatusTree(title, mainText);
-			QuiltStatusTab crashTab = tree.addTab("Crash");
+			QuiltJsonGui tree = new QuiltJsonGui(title, mainText);
+			QuiltJsonGuiTreeTab crashTab = tree.addTab("Crash");
 
 			crashTab.node.addCleanedException(exception);
 
@@ -111,7 +111,7 @@ public final class QuiltGuiEntry {
 			// TODO: Add crash report generation functionality?
 			// and then have a button to open a file explorer pointed to that file
 			// and a button to open that file directly
-			tree.addButton("Exit", QuiltStatusTree.QuiltBasicButtonType.CLICK_ONCE).makeClose();
+			tree.addButton("Exit", QuiltJsonGui.QuiltBasicButtonType.CLICK_ONCE).makeClose();
 
 			try {
 				open(tree);
@@ -129,7 +129,7 @@ public final class QuiltGuiEntry {
 		}
 	}
 
-	private static void fork(QuiltStatusTree tree, boolean shouldWait) throws Exception {
+	private static void fork(QuiltJsonGui tree, boolean shouldWait) throws Exception {
 		List<String> commands = new ArrayList<>();
 		commands.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
 		commands.add("-cp");
@@ -183,7 +183,7 @@ public final class QuiltGuiEntry {
 
 			try (InputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(from)))) {
 				JsonReader reader = JsonReader.json(new InputStreamReader(is, StandardCharsets.UTF_8));
-				QuiltStatusTree tree = new QuiltStatusTree(reader);
+				QuiltJsonGui tree = new QuiltJsonGui(reader);
 				System.out.println("Status:Opening");
 				openWindow(tree, true);
 			}

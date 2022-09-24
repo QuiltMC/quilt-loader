@@ -234,15 +234,5 @@ abstract class BasePluginContext implements QuiltPluginContext {
 		public void redefine(Rule rule) {
 			manager.solver.redefine(rule);
 		}
-
-		@Override
-		public boolean isNegated(LoadOption option) {
-			return manager.solver.isNegated(option);
-		}
-
-		@Override
-		public LoadOption negate(LoadOption option) {
-			return manager.solver.negate(option);
-		}
 	}
 }
