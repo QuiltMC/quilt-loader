@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.solver;
 
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -241,13 +240,11 @@ public class Sat4jWrapper implements RuleContext {
 		rule.define(new RuleDefinerInternal(rule));
 	}
 
-	@Override
-	public boolean isNegated(LoadOption option) {
+	public static boolean isNegated(LoadOption option) {
 		return option instanceof NegatedLoadOption;
 	}
 
-	@Override
-	public LoadOption negate(LoadOption option) {
+	public static LoadOption negate(LoadOption option) {
 		if (option instanceof NegatedLoadOption) {
 			return ((NegatedLoadOption) option).not;
 		} else {

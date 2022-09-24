@@ -40,7 +40,6 @@ import java.util.zip.ZipException;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModDependency.Only;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -75,6 +74,10 @@ import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
 import org.quiltmc.loader.impl.plugin.gui.TextImpl;
+import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
+import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
 import org.quiltmc.loader.impl.plugin.quilt.StandardQuiltPlugin;
 import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
@@ -110,7 +113,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<TentativeLoadOption, BasePluginContext> tentativeLoadOptions = new LinkedHashMap<>();
 
 	private final StandardQuiltPlugin theQuiltPlugin;
-	private final BuiltinPluginContext theQuiltPluginContext;
+	final BuiltinPluginContext theQuiltPluginContext;
 	private final StandardFabricPlugin theFabricPlugin;
 	private final BuiltinPluginContext theFabricPluginContext;
 
@@ -998,32 +1001,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 						break;
 					} else {
-						Collection<Rule> parts = solver.getError();
-
-						QuiltReport report = new QuiltReport("Quilt Loader: Solve Failed Report");
-						QuiltStringSection rulesSection = report.addStringSection("Relevant Solver Rules", -100);
-
-						int ruleNumber = 1;
-						for (Rule rule : parts) {
-						    StringBuilder sb = new StringBuilder();
-						    try {
-						    	rule.fallbackErrorDescription(sb);
-						    } catch (Exception e) {
-						    	report.addStacktraceSection("Suppressed Error", +100, e);
-						    	sb.append("\n~EXCEPTION~");
-						    	continue;
-						    }
-
-							rulesSection.lines("- Rule " + ruleNumber);
-							rulesSection.lines(sb.toString().split("\n"));
-							rulesSection.lines("");
-							ruleNumber++;
-						}
-
-						// TODO: Turn erroring rules into a readable error!
-						// describeError(parts);
-
-						throw new QuiltReportedError(report);
+						handleSolverFailure();
+						checkForErrors();
+						// If we reach this point then a plugin successfully handled the error
+						// so we should move on to the next cycle.
+						return null;
 					}
 				}
 				case POST_SOLVE_TENTATIVE: {
@@ -1041,6 +1023,101 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		}
 
+	}
+
+	private void handleSolverFailure() throws TimeoutException {
+
+		boolean failed = false;
+
+		solver_error_iteration: do {
+			Collection<Rule> rules = solver.getError();
+
+			for (Entry<QuiltLoaderPlugin, BasePluginContext> entry : plugins.entrySet()) {
+				QuiltLoaderPlugin plugin = entry.getKey();
+				BasePluginContext ctx = entry.getValue();
+				boolean recovered = plugin.handleError(rules);
+				Rule blamed = null;
+				try {
+					ctx.blameableRules = rules;
+					recovered = plugin.handleError(rules);
+					blamed = ctx.blamedRule;
+				} finally {
+					ctx.blameableRules = null;
+					ctx.blamedRule = null;
+				}
+
+				if (recovered) {
+
+					if (blamed != null) {
+						// Okay, so plugins aren't meant to do this
+						// (Either blame a rule, OR handle it in some other way)
+						// Since this is an invalid state we'll report this error
+						// and report that the plugin did the wrong thing
+						failed = true;
+						reportSolverError(rules);
+						solver.removeRule(blamed);
+						reportError(theQuiltPluginContext, Text.translate("plugin.illegal_state.recovered_and_blambed", ctx.pluginId));
+						return;
+					}
+
+					if (blamed == null) {
+						// A plugin recovered from an error
+						if (failed) {
+							// but we already failed, so it's too late
+							// since the recovery probably messed something up
+							// we'll just exit the loop here and drop any other errors.
+							break solver_error_iteration;
+						}
+						// And it's the first error, so we can just move on to the next cycle
+						return;
+					}
+				} else if (blamed != null) {
+					failed = true;
+					reportSolverError(rules);
+					solver.removeRule(blamed);
+					continue solver_error_iteration;
+				}
+			}
+
+			// No plugin blamed any rules
+			// So we'll just pick one of them randomly and remove it.
+
+			failed = true;
+			reportSolverError(rules);
+
+			Rule pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleBreak).findAny().orElse(null);
+
+			if (pickedRule == null) {
+				pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleDep).findAny().orElse(null);
+			}
+
+			if (pickedRule == null) {
+				pickedRule = rules.stream().filter(r -> !(r instanceof ModIdDefinition)).findAny().orElse(null);
+			}
+
+			if (pickedRule == null) {
+				pickedRule = rules.iterator().next();
+			}
+
+			solver.removeRule(pickedRule);
+
+		} while (!solver.hasSolution());
+
+		if (failed) {
+			// Okay, so we failed but we've reached the end of the list of problems
+			// Just return here since the cycle handles this
+			return;
+		} else {
+			// This is an odd state where we encountered an error,
+			// but then found a solution, and DIDN'T exit from this method
+			// so something has gone wrong internally.
+			reportError(theQuiltPluginContext, Text.translate("solver.illegal_state.TODO"));
+			return;
+		}
+	}
+
+	private void reportSolverError(Collection<Rule> rules) {
+		SolverErrorHelper.reportSolverError(this, rules);
 	}
 
 	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if

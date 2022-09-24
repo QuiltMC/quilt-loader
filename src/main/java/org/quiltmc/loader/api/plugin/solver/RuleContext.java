@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
+import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+
 public interface RuleContext {
 
 	/** Adds a new {@link LoadOption}, without any weight. */
@@ -38,7 +40,11 @@ public interface RuleContext {
 	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
 	void redefine(Rule rule);
 
-	boolean isNegated(LoadOption option);
+	public static boolean isNegated(LoadOption option) {
+		return Sat4jWrapper.isNegated(option);
+	}
 
-	LoadOption negate(LoadOption option);
+	public static LoadOption negate(LoadOption option) {
+		return Sat4jWrapper.negate(option);
+	}
 }

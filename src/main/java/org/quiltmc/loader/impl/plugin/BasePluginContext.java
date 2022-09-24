@@ -28,6 +28,8 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	final RuleContext ruleContext = new ModRuleContext();
 
 	PluginGuiTreeNode extraModsRoot;
+	Collection<Rule> blameableRules = null;
+	Rule blamedRule = null;
 
 	public BasePluginContext(QuiltPluginManagerImpl manager, String pluginId) {
 		this.manager = manager;
@@ -97,8 +99,21 @@ abstract class BasePluginContext implements QuiltPluginContext {
 
 	@Override
 	public void blameRule(Rule rule) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		if (blameableRules == null) {
+			throw new IllegalStateException(
+				"Cannot call 'blameRule' unless we are in the middle of recovering from a solver failure!"
+			);
+		}
+
+		if (!blameableRules.contains(rule)) {
+			throw new IllegalArgumentException("Cannot blame a rule that isn't part of the current problem!");
+		}
+
+		if (blamedRule != null) {
+			throw new IllegalStateException("Cannot blame more than 1 rule!");
+		}
+
+		blamedRule = rule;
 	}
 
 	class ModFolderSet implements Set<Path> {

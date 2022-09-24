@@ -16,14 +16,13 @@
 
 package org.quiltmc.loader.impl.plugin.quilt;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
-import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
-import org.quiltmc.loader.util.sat4j.pb.tools.DependencyHelper;
 
 /** A concrete definition of a modid. This also maps the modid to the {@link LoadOption} candidates, and so is used
  * instead of {@link LoadOption} in other links. */
@@ -43,17 +42,13 @@ public abstract class ModIdDefinition extends Rule {
 		return false;
 	}
 
-	/** @deprecated Not used yet. In the future this will be used for better error message generation. */
-	@Deprecated
 	@Override
 	public Collection<? extends LoadOption> getNodesFrom() {
 		return Collections.emptySet();
 	}
 
-	/** @deprecated Not used yet. In the future this will be used for better error message generation. */
-	@Deprecated
 	@Override
 	public Collection<? extends LoadOption> getNodesTo() {
-		return Collections.emptySet();
+		return Arrays.asList(sources());
 	}
 }

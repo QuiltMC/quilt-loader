@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -153,7 +154,7 @@ public interface QuiltLoaderPlugin {
 	 *         If no plugin can identify a rule to be removed then loader will remove a random rule in order to move on
 	 *         to the next error. If this returns true then no rules will be removed, and instead loader will assume
 	 *         that the error has been handled in some other way. (and it will promptly crash if you haven't) */
-	default boolean handleError(List<Rule> ruleChain) {
+	default boolean handleError(Collection<Rule> ruleChain) {
 		return false;
 	}
 

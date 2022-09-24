@@ -25,7 +25,7 @@ import org.quiltmc.loader.impl.discovery.ModCandidate;
  * others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid by the time
  * this is used). */
 public final class MandatoryModIdDefinition extends ModIdDefinition {
-	final ModLoadOption option;
+	public final ModLoadOption option;
 
 	public MandatoryModIdDefinition(ModLoadOption candidate) {
 		this.option = candidate;

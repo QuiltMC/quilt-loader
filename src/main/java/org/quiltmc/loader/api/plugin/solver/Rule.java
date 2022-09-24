@@ -56,16 +56,14 @@ public abstract class Rule {
 		return true;
 	}
 
-	/** TODO: Better name!
-	 * 
-	 * @deprecated Not used yet. In the future this will be used for better error message generation. */
-	@Deprecated
+	/** Used to create a graph of all rules, in order to find out the root problems. This should return all
+	 * {@link LoadOption}s which 'cause' this rule to exist. (For example 'buildcraft' might declare a dependency on
+	 * 'minecraft', and that dependency rule would return 'buildcraft' from this). */
 	public abstract Collection<? extends LoadOption> getNodesFrom();
 
-	/** TODO: Better name!
-	 * 
-	 * @deprecated Not used yet. In the future this will be used for better error message generation. */
-	@Deprecated
+	/** Used to create a graph of all rules, in order to find out the root problems. This should return all
+	 * {@link LoadOption}s which are modified by this rule (but don't cause it). (For example 'buildcraft' might declare
+	 * a dependency on 'minecraft', and that dependency rule would return 'minecraft' from this). */
 	public abstract Collection<? extends LoadOption> getNodesTo();
 
 	public abstract void fallbackErrorDescription(StringBuilder errors);

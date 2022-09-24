@@ -31,12 +31,12 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 public class QuiltRuleDepOnly extends QuiltRuleDep {
 
-	final ModDependency.Only publicDep;
-	final List<ModLoadOption> validOptions;
-	final List<ModLoadOption> invalidOptions;
-	final List<ModLoadOption> allOptions;
+	public final ModDependency.Only publicDep;
+	private final List<ModLoadOption> validOptions;
+	private final List<ModLoadOption> invalidOptions;
+	private final List<ModLoadOption> allOptions;
 
-	final QuiltRuleDep unless;
+	public final QuiltRuleDep unless;
 
 	public QuiltRuleDepOnly(RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
@@ -148,6 +148,14 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 	@Override
 	public Collection<? extends LoadOption> getNodesTo() {
 		return allOptions;
+	}
+
+	public List<ModLoadOption> getValidOptions() {
+		return Collections.unmodifiableList(validOptions);
+	}
+
+	public List<ModLoadOption> getWrongOptions() {
+		return Collections.unmodifiableList(invalidOptions);
 	}
 
 	@Override
