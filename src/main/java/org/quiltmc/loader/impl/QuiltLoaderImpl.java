@@ -349,8 +349,9 @@ public final class QuiltLoaderImpl {
 			}
 
 			try {
-				StringBuilder sb = new StringBuilder("quilt-loader-report-");
-				sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS"))).append(".txt");
+				StringBuilder sb = new StringBuilder("crash-");
+				sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS")))
+				.append("-quilt_loader.txt");
 				crashReportFile = crashReportDir.resolve(sb.toString());
 				reported.report.write(crashReportFile);
 				Log.error(LogCategory.GENERAL, "Crashed! The full crash report has been saved to " + crashReportFile);
