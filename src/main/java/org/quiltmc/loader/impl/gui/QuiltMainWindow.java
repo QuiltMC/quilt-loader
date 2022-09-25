@@ -106,7 +106,7 @@ class QuiltMainWindow {
 		window.setTitle(tree.title);
 
 		try {
-			List<BufferedImage> images = new ArrayList<BufferedImage>();
+			List<BufferedImage> images = new ArrayList<>();
 			images.add(loadImage("/ui/icon/quilt_x16.png"));
 			images.add(loadImage("/ui/icon/quilt_x128.png"));
 			window.setIconImages(images);
@@ -115,7 +115,8 @@ class QuiltMainWindow {
 			e.printStackTrace();
 		}
 
-		window.setMinimumSize(new Dimension(640, 480));
+		// TODO: change this back to normal after debugging
+		window.setMinimumSize(new Dimension(1, 1));
 		window.setPreferredSize(new Dimension(800, 480));
 		window.setLocationByPlatform(true);
 		window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -145,7 +146,7 @@ class QuiltMainWindow {
 		} else if (tree.tabs.size() == 1 && tree.messages.isEmpty()) {
 			QuiltJsonGuiTreeTab tab = tree.tabs.get(0);
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
-		} else if (tree.tabs.size() == 0 && !tree.messages.isEmpty()) {
+		} else if (tree.tabs.isEmpty()) {
 			contentPane.add(createMessagesPanel(icons, tree.messages), BorderLayout.CENTER);
 		} else {
 			JTabbedPane tabs = new JTabbedPane();
@@ -158,6 +159,7 @@ class QuiltMainWindow {
 			for (QuiltJsonGuiTreeTab tab : tree.tabs) {
 				tabs.addTab(tab.node.name, createTreePanel(tab.node, tab.filterLevel, icons));
 			}
+
 		}
 
 		if (!tree.buttons.isEmpty()) {
@@ -196,7 +198,7 @@ class QuiltMainWindow {
 		window.requestFocus();
 	}
 
-	private static JPanel createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
+	private static JScrollPane createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
@@ -204,11 +206,12 @@ class QuiltMainWindow {
 			panel.add(createMessagePanel(icons, message));
 		}
 
-		return panel;
+		return new JScrollPane(panel);
 	}
 
 	private static JPanel createMessagePanel(IconSet icons, QuiltJsonGuiMessage message) {
 		JPanel panel = new JPanel();
+		panel.setAlignmentX(0);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
 		JPanel top = new JPanel();
