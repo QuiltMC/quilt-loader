@@ -66,8 +66,9 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.util.StringUtil;
 
@@ -137,16 +138,22 @@ class QuiltMainWindow {
 
 		IconSet icons = new IconSet();
 
-		if (tree.tabs.isEmpty()) {
+		if (tree.tabs.isEmpty() && tree.messages.isEmpty()) {
 			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab("Opening Errors");
 			tab.addChild("No tabs provided! (Something is very broken)").setError();
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
-		} else if (tree.tabs.size() == 1) {
+		} else if (tree.tabs.size() == 1 && tree.messages.isEmpty()) {
 			QuiltJsonGuiTreeTab tab = tree.tabs.get(0);
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
+		} else if (tree.tabs.size() == 0 && !tree.messages.isEmpty()) {
+			contentPane.add(createMessagesPanel(icons, tree.messages), BorderLayout.CENTER);
 		} else {
 			JTabbedPane tabs = new JTabbedPane();
 			contentPane.add(tabs, BorderLayout.CENTER);
+
+			if (!tree.messages.isEmpty()) {
+				tabs.addTab("Messages", createMessagesPanel(icons, tree.messages));
+			}
 
 			for (QuiltJsonGuiTreeTab tab : tree.tabs) {
 				tabs.addTab(tab.node.name, createTreePanel(tab.node, tab.filterLevel, icons));
@@ -189,6 +196,36 @@ class QuiltMainWindow {
 		window.requestFocus();
 	}
 
+	private static JPanel createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
+		JPanel panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+		for (QuiltJsonGuiMessage message : messages) {
+			panel.add(createMessagePanel(icons, message));
+		}
+
+		return panel;
+	}
+
+	private static JPanel createMessagePanel(IconSet icons, QuiltJsonGuiMessage message) {
+		JPanel panel = new JPanel();
+		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+		JPanel top = new JPanel();
+		top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
+		panel.add(top);
+
+		top.add(new JLabel(icons.get(new IconInfo("level_error"))));
+		top.add(new JLabel(message.title));
+
+		for (String desc : message.description) {
+			panel.add(new JLabel(desc));
+		}
+
+		// TODO: The rest!
+
+		return panel;
+	}
 
 	private static JPanel createTreePanel(QuiltStatusNode rootNode, QuiltTreeWarningLevel minimumWarningLevel,
 										  IconSet iconSet) {

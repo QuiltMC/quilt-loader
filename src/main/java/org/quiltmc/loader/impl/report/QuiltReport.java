@@ -43,6 +43,11 @@ public class QuiltReport {
 		return addSection(new QuiltStacktraceSection(ordering, name, ex));
 	}
 
+	public List<QuiltReportSection> getSections() {
+		sections.sort(null);
+		return Collections.unmodifiableList(sections);
+	}
+
 	public void write(Path to) throws IOException {
 		try (BufferedWriter writer = Files.newBufferedWriter(to, StandardOpenOption.CREATE_NEW)) {
 			PrintWriter printer = new PrintWriter(writer);

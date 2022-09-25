@@ -437,6 +437,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return guiNodeModsFromPlugins;
 	}
 
+	public List<QuiltPluginErrorImpl> getErrors() {
+		return Collections.unmodifiableList(errors);
+	}
+
 	Class<?> findClass(String name, String pkg) throws ClassNotFoundException {
 		if (pkg == null) {
 			return null;

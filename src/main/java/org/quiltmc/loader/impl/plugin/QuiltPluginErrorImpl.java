@@ -8,7 +8,12 @@ import java.util.List;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonType;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
+import org.quiltmc.loader.impl.plugin.gui.TextImpl;
 
 public class QuiltPluginErrorImpl implements QuiltPluginError {
 
@@ -70,12 +75,33 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		throw new AbstractMethodError("// TODO: Implement this!");
 	}
 
+	public QuiltJsonGuiMessage toGuiMessage(QuiltJsonGui json) {
+		QuiltJsonGuiMessage msg = new QuiltJsonGuiMessage();
+
+		// TODO: Change the gui json stuff to embed 'Text' rather than 'String'
+		msg.title = title.toString();
+		for (Text t : description) {
+			msg.description.add(t.toString());
+		}
+		for (Text t : additionalInfo) {
+			msg.additionalInfo.add(t.toString());
+		}
+
+		for (ErrorButton btn : buttons) {
+			msg.buttons.add(btn.toGuiButton(json));
+		}
+
+		return msg;
+	}
+
 	static abstract class ErrorButton {
 		final Text name;
 
 		public ErrorButton(Text name) {
 			this.name = name;
 		}
+
+		protected abstract QuiltJsonButton toGuiButton(QuiltJsonGui json);
 	}
 
 	static class FileViewButton extends ErrorButton {
@@ -84,6 +110,12 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		public FileViewButton(Text name, Path file) {
 			super(name);
 			this.file = file;
+		}
+
+		@Override
+		protected QuiltJsonButton toGuiButton(QuiltJsonGui json) {
+			// TODO: Change json gui buttons to actually work!
+			return new QuiltJsonButton(Text.translate("button.view_file").toString(), QuiltBasicButtonType.CLICK_MANY);
 		}
 	}
 }

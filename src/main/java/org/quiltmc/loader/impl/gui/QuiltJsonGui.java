@@ -17,6 +17,7 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,12 +25,12 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.Map;
 
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
@@ -177,15 +178,26 @@ public final class QuiltJsonGui {
 	 * of {@link #ICON_TYPE_TICK} */
 	public static final String ICON_TYPE_LESSER_CROSS = "lesser_cross";
 
-	public final List<QuiltJsonGuiTreeTab> tabs = new ArrayList<>();
-	public final List<QuiltJsonButton> buttons = new ArrayList<>();
-
 	public final String title;
 	public final String mainText;
+	private final List<Map<Integer, BufferedImage>> customIcons = new ArrayList<>();
+
+	public final List<QuiltJsonGuiMessage> messages = new ArrayList<>();
+	public final List<QuiltJsonGuiTreeTab> tabs = new ArrayList<>();
+	public final List<QuiltJsonButton> buttons = new ArrayList<>();
 
 	public QuiltJsonGui(String title, String mainText) {
 		this.title = title;
 		this.mainText = mainText;
+	}
+
+	public int allocateCustomIcon(BufferedImage image) {
+		return allocateCustomIcon(Collections.singletonMap(image.getWidth(), image));
+	}
+
+	public int allocateCustomIcon(Map<Integer, BufferedImage> imageSizes) {
+		customIcons.add(imageSizes);
+		return customIcons.size() - 1;
 	}
 
 	public QuiltJsonGuiTreeTab addTab(String name) {
@@ -209,6 +221,13 @@ public final class QuiltJsonGui {
 		expectName(reader, "mainText");
 		mainText = reader.nextString();
 
+		expectName(reader, "messages");
+		reader.beginArray();
+		while (reader.peek() != JsonToken.END_ARRAY) {
+			messages.add(new QuiltJsonGuiMessage(reader));
+		}
+		reader.endArray();
+
 		expectName(reader, "tabs");
 		reader.beginArray();
 		while (reader.peek() != JsonToken.END_ARRAY) {
@@ -231,6 +250,11 @@ public final class QuiltJsonGui {
 		writer.beginObject();
 		writer.name("title").value(title);
 		writer.name("mainText").value(mainText);
+		writer.name("messages").beginArray();
+		for (QuiltJsonGuiMessage sub : messages) {
+			sub.write(writer);
+		}
+		writer.endArray();
 		writer.name("tabs").beginArray();
 		for (QuiltJsonGuiTreeTab tab : tabs) {
 			tab.write(writer);
@@ -304,7 +328,6 @@ public final class QuiltJsonGui {
 			shouldContinue = reader.nextBoolean();
 			expectName(reader, "clipboard");
 			clipboard = reader.nextString();
-			;
 			reader.endObject();
 		}
 
@@ -321,6 +344,111 @@ public final class QuiltJsonGui {
 		public QuiltJsonButton withClipboard(String clipboard) {
 			this.clipboard = clipboard;
 			return this;
+		}
+	}
+
+	public static final class QuiltJsonGuiMessage {
+
+		/** The icon type. */
+		public String iconType = ICON_TYPE_DEFAULT;
+
+		public String title;
+
+		public final List<String> description = new ArrayList<>();
+		public final List<String> additionalInfo = new ArrayList<>();
+
+		public final List<QuiltJsonButton> buttons = new ArrayList<>();
+
+		public String subMessageHeader;
+		public final List<QuiltJsonGuiMessage> subMessages = new ArrayList<>();
+
+		public QuiltJsonGuiMessage() {
+
+		}
+
+		public QuiltJsonGuiMessage(JsonReader reader) throws IOException {
+			reader.beginObject();
+			expectName(reader, "title");
+			title = reader.nextString();
+
+			expectName(reader, "icon");
+			iconType = reader.nextString();
+
+			expectName(reader, "description");
+			reader.beginArray();
+			while (reader.peek() != JsonToken.END_ARRAY) {
+				description.add(reader.nextString());
+			}
+			reader.endArray();
+
+			expectName(reader, "info");
+			reader.beginArray();
+			while (reader.peek() != JsonToken.END_ARRAY) {
+				additionalInfo.add(reader.nextString());
+			}
+			reader.endArray();
+
+			expectName(reader, "buttons");
+			reader.beginArray();
+			while (reader.peek() != JsonToken.END_ARRAY) {
+				buttons.add(new QuiltJsonButton(reader));
+			}
+			reader.endArray();
+
+			expectName(reader, "sub_message_header");
+			subMessageHeader = reader.nextString();
+
+			expectName(reader, "sub_messages");
+			reader.beginArray();
+			while (reader.peek() != JsonToken.END_ARRAY) {
+				subMessages.add(new QuiltJsonGuiMessage(reader));
+			}
+			reader.endArray();
+
+			reader.endObject();
+		}
+
+		void write(JsonWriter writer) throws IOException {
+			writer.beginObject();
+
+			writer.name("title");
+			writer.value(title);
+
+			writer.name("icon");
+			writer.value(iconType);
+
+			writer.name("description");
+			writer.beginArray();
+			for (String desc : description) {
+				writer.value(desc);
+			}
+			writer.endArray();
+
+			writer.name("info");
+			writer.beginArray();
+			for (String info : additionalInfo) {
+				writer.value(info);
+			}
+			writer.endArray();
+
+			writer.name("buttons");
+			writer.beginArray();
+			for (QuiltJsonButton btn : buttons) {
+				btn.write(writer);
+			}
+			writer.endArray();
+
+			writer.name("sub_message_header");
+			writer.value(subMessageHeader);
+
+			writer.name("sub_messages");
+			writer.beginArray();
+			for (QuiltJsonGuiMessage sub : subMessages) {
+				sub.write(writer);
+			}
+			writer.endArray();
+
+			writer.endObject();
 		}
 	}
 

@@ -53,6 +53,7 @@ import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -69,6 +70,7 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonType;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -77,8 +79,11 @@ import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
+import org.quiltmc.loader.impl.report.QuiltReport;
+import org.quiltmc.loader.impl.report.QuiltReportSection;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
@@ -359,7 +364,13 @@ public final class QuiltLoaderImpl {
 		}
 
 		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader", null);
-		QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Crashed!");
+
+		for (QuiltPluginErrorImpl error : plugins.getErrors()) {
+			tree.messages.add(error.toGuiMessage(tree));
+		}
+
+		QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
+		plugins.guiFileRoot.text(Text.translate("tab.file_list"));
 		plugins.guiFileRoot.toNode(tab.node, false);
 		if (crashReportFile != null) {
 			// TODO - pass the crash report path into the error gui!
