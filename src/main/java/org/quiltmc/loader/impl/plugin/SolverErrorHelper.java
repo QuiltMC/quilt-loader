@@ -52,7 +52,7 @@ class SolverErrorHelper {
 		}
 
 		QuiltPluginError error = manager.theQuiltPluginContext.reportError(
-			Text.of("Unhandled solver error, see the crash-report for details")
+			Text.translate("gui.text.unhandled_solver")
 		);
 		error.appendReportText("Unhandled solver error involving the following rules:");
 

@@ -361,6 +361,7 @@ public final class QuiltLoaderImpl {
 				// It probably didn't write at all - that's really bad.
 				e.printStackTrace();
 				reported.report.write(new PrintWriter(System.err));
+				crashReportFile = null; // Disable "open crash report" button
 			}
 		}
 
@@ -375,7 +376,7 @@ public final class QuiltLoaderImpl {
 		plugins.guiFileRoot.toNode(tab.node, false);
 		if (crashReportFile != null) {
 			// TODO - pass the crash report path into the error gui!
-			tree.addButton("Open Crash Report", QuiltBasicButtonType.CLICK_MANY);
+			tree.addButton(Text.translate("button.open_crash_report").toString(), QuiltBasicButtonType.CLICK_MANY);
 		}
 
 		try {
