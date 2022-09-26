@@ -286,7 +286,12 @@ final class V1ModMetadataReader {
 					}
 					Map<String, String> intermediate = new HashMap<>();
 					readStringMap(contributorsValue.asObject(), "contributors", intermediate);
-					intermediate.forEach((k, v) -> contributors.add(new ModContributorImpl(k, v)));
+
+					intermediate.forEach((k, v) -> {
+						List<String> roles = new ArrayList<>();
+						roles.add(v);
+						contributors.add(new ModContributorImpl(k, roles));
+					});
 				}
 
 				@Nullable

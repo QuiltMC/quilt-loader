@@ -16,15 +16,17 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.List;
+
 import org.quiltmc.loader.api.ModContributor;
 
 class ModContributorImpl implements ModContributor {
 	private final String name;
-	private final String role;
+	private final List<String> roles;
 
-	ModContributorImpl(String name, String role) {
+	ModContributorImpl(String name, List<String> roles) {
 		this.name = name;
-		this.role = role;
+		this.roles = roles;
 	}
 
 	@Override
@@ -34,6 +36,11 @@ class ModContributorImpl implements ModContributor {
 
 	@Override
 	public String role() {
-		return role;
+		return roles.get(0);
+	}
+
+	@Override
+	public List<String> roles() {
+		return roles;
 	}
 }
