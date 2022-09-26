@@ -36,7 +36,7 @@ class ModContributorImpl implements ModContributor {
 
 	@Override
 	public String role() {
-		return roles.get(0);
+		return roles.isEmpty() ? "" : roles.get(0);
 	}
 
 	@Override

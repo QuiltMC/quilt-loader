@@ -33,7 +33,7 @@ public interface ModContributor {
 
 	/**
 	 * @return the role that represents a contributor's relation to a mod.
-	 * @Deprecated contributors may have multiple roles, use {@link #roles()} instead.
+	 * @deprecated contributors may have multiple roles, use {@link #roles()} instead.
 	 */
 	@Deprecated
 	String role();
