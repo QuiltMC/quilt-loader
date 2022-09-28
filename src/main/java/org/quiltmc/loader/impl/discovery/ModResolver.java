@@ -305,6 +305,8 @@ public class ModResolver {
 
 									if (Files.isDirectory(modPath)) {
 										list.add(modPath);
+									} else if ("fabric".equals(i.getType()) && !Files.exists(modPath)) {
+										Log.warn(LogCategory.RESOLUTION, "Didn't find nested JAR: " + modPath + " in " + getReadablePath(candidate.getOriginPath()));
 									} else {
 										// TODO: pre-check the JAR before loading it, if possible
 										Log.debug(LogCategory.RESOLUTION, "Found nested JAR: " + modPath);
