@@ -25,6 +25,7 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
@@ -32,6 +33,8 @@ import org.quiltmc.loader.impl.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
@@ -77,6 +80,15 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 				}
 
 				if (inner == from) {
+					continue;
+				}
+
+				if (!Files.exists(inner)) {
+					Log.warn(LogCategory.DISCOVERY, "Didn't find nested jar " + inner + " in " + context().manager().describePath(from));
+					PluginGuiTreeNode missingJij = guiNode.addChild(Text.of(inner.toString()), SortOrder.ALPHABETICAL_ORDER);
+					missingJij.mainIcon(missingJij.manager().iconJarFile());
+					missingJij.addChild(Text.translate("fabric.jar_in_jar.missing"))//
+						.setDirectLevel(WarningLevel.CONCERN);
 					continue;
 				}
 
