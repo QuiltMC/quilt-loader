@@ -17,7 +17,7 @@
 
 package org.quiltmc.loader.api;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.jetbrains.annotations.ApiStatus;
 
@@ -41,5 +41,5 @@ public interface ModContributor {
 	/**
 	 * @return the roles that represent a contributor's relation to a mod.
 	 */
-	List<String> roles();
+	Collection<String> roles();
 }
