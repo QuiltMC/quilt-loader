@@ -50,6 +50,8 @@ public final class SystemProperties {
 	//public static final String DEBUG_RESOLUTION_TIMEOUT = "fabric.debug.resolutionTimeout";
 	// replace mod versions (modA:versionA,modB:versionB,...)
 	public static final String DEBUG_REPLACE_VERSION = "loader.debug.replaceVersion";
+	// defaults to 60 seconds; can be changed by setting the system property
+	public static final String DEBUG_RESOLUTION_TIME_LIMIT = "loader.debug.resolutionTimeLimit";
 	private SystemProperties() {
 	}
 }

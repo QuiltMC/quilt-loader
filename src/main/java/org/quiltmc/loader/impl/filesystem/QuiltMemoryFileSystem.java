@@ -28,7 +28,12 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.WatchService;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.FileOwnerAttributeView;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayDeque;
@@ -119,6 +124,31 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		} else {
 			throw new NoSuchFileException(qmp.name);
 		}
+	}
+
+	public <V extends FileAttributeView> V getFileAttributeView(QuiltMemoryPath qmp, Class<V> type) {
+		if (type == BasicFileAttributeView.class) {
+			BasicFileAttributeView view = new BasicFileAttributeView() {
+				@Override
+				public String name() {
+					return "basic";
+				}
+
+				@Override
+				public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+					// Unsupported
+					// Since we don't need to throw we won't
+				}
+
+				@Override
+				public BasicFileAttributes readAttributes() throws IOException {
+					return QuiltMemoryFileSystem.this.readAttributes(qmp);
+				}
+			};
+			return (V) view;
+		}
+
+		return null;
 	}
 
 	static final class DirBuildState {
