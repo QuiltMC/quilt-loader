@@ -27,6 +27,8 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 
@@ -104,6 +106,16 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	@Override
 	public PluginGuiIcon modTypeIcon() {
 		return provider.modTypeIcon();
+	}
+
+	@Override
+	public void populateModsTabInfo(PluginGuiTreeNode guiNode) {
+		guiNode.mainIcon(guiNode.manager().iconJavaClassFile());
+
+		PluginGuiTreeNode c = guiNode.addChild(Text.of(provider.id() + " " + provider.version()));
+		c.mainIcon(provider.modTypeIcon());
+		c.addChild(Text.of(loader().manager().describePath(provider.from())))
+			.mainIcon(guiNode.manager().iconFolder());
 	}
 
 	@Override

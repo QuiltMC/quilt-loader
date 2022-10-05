@@ -119,8 +119,9 @@ public interface QuiltPluginContext {
 	 * information.
 	 * <p>
 	 * This is preferable to calling {@link RuleContext#addOption(LoadOption)} since that adds a "floating" parent node
-	 * associated with the plugin itself, not where it might have been loaded from. */
-	void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode guiNode);
+	 * associated with the plugin itself, not where it might have been loaded from. 
+	 * @param fileNode The {@link PluginGuiTreeNode} which is shown in the 'Files' tab of the error window.*/
+	void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode fileNode);
 
 	/** Adds a tentative option which can be resolved later by
 	 * {@link QuiltLoaderPlugin#resolve(QuiltPluginContext, TentativeLoadOption)}, if it is selected.

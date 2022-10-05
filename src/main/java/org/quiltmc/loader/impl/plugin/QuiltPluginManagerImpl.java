@@ -545,20 +545,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			for (ModLoadOption option : set.all) {
-				PluginGuiTreeNode gOption = gui.addChild(Text.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER);
-				if (option instanceof ProvidedModOption) {
-					ProvidedModOption p = (ProvidedModOption) option;
-					gOption.mainIcon(gOption.manager().iconJavaClassFile());
-					ModLoadOption targetMod = p.getTarget();
-					PluginGuiTreeNode c = gOption.addChild(Text.of(targetMod.id() + " " + targetMod.version().toString()));
-					c.mainIcon(c.manager().iconJarFile());
-					c.addChild(Text.of(describePath(targetMod.from())))
-						.mainIcon(gOption.manager().iconFolder());
-				} else {
-					gOption.mainIcon(gOption.manager().iconJarFile());
-					gOption.addChild(Text.of(describePath(option.from())))
-						.mainIcon(gOption.manager().iconFolder());
-				}
+				option.populateModsTabInfo(gui.addChild(Text.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER));
 			}
 		}
 
