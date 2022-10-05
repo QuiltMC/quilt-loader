@@ -18,19 +18,28 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.imageio.ImageIO;
 
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
@@ -180,15 +189,16 @@ public final class QuiltJsonGui {
 
 	public final String title;
 	public final String mainText;
-	private final List<Map<Integer, BufferedImage>> customIcons = new ArrayList<>();
+	private final List<NavigableMap<Integer, BufferedImage>> customIcons = new ArrayList<>();
 
+	public String messagesTabName = "_MESSAGES_";
 	public final List<QuiltJsonGuiMessage> messages = new ArrayList<>();
 	public final List<QuiltJsonGuiTreeTab> tabs = new ArrayList<>();
 	public final List<QuiltJsonButton> buttons = new ArrayList<>();
 
 	public QuiltJsonGui(String title, String mainText) {
 		this.title = title;
-		this.mainText = mainText;
+		this.mainText = mainText == null ? "" : mainText;
 	}
 
 	public int allocateCustomIcon(BufferedImage image) {
@@ -196,8 +206,19 @@ public final class QuiltJsonGui {
 	}
 
 	public int allocateCustomIcon(Map<Integer, BufferedImage> imageSizes) {
-		customIcons.add(imageSizes);
+		customIcons.add(new TreeMap<>(imageSizes));
 		return customIcons.size() - 1;
+	}
+
+	public NavigableMap<Integer, BufferedImage> getCustomIcon(int index) {
+		if (index < 0 || index >= customIcons.size()) {
+			return Collections.emptyNavigableMap();
+		}
+		return Collections.unmodifiableNavigableMap(customIcons.get(index));
+	}
+
+	public int getCustomIconCount() {
+		return customIcons.size();
 	}
 
 	public QuiltJsonGuiTreeTab addTab(String name) {
@@ -207,7 +228,11 @@ public final class QuiltJsonGui {
 	}
 
 	public QuiltJsonButton addButton(String text, QuiltBasicButtonType type) {
-		QuiltJsonButton button = new QuiltJsonButton(text, type);
+		return addButton(text, "", type);
+	}
+
+	public QuiltJsonButton addButton(String text, String icon, QuiltBasicButtonType type) {
+		QuiltJsonButton button = new QuiltJsonButton(text, icon, type);
 		buttons.add(button);
 		return button;
 	}
@@ -221,6 +246,8 @@ public final class QuiltJsonGui {
 		expectName(reader, "mainText");
 		mainText = reader.nextString();
 
+		expectName(reader, "message_tab_name");
+		messagesTabName = reader.nextString();
 		expectName(reader, "messages");
 		reader.beginArray();
 		while (reader.peek() != JsonToken.END_ARRAY) {
@@ -242,6 +269,22 @@ public final class QuiltJsonGui {
 		}
 		reader.endArray();
 
+		expectName(reader, "custom_icons");
+		reader.beginArray();
+		while (reader.peek() != JsonToken.END_ARRAY) {
+			reader.beginObject();
+			NavigableMap<Integer, BufferedImage> map = new TreeMap<>();
+			while (reader.peek() != JsonToken.END_OBJECT) {
+				int size = Integer.parseInt(reader.nextName());
+				String base64 = reader.nextString();
+				byte[] bytes = Base64.getDecoder().decode(base64);
+				map.put(size, ImageIO.read(new ByteArrayInputStream(bytes)));
+			}
+			customIcons.add(map);
+			reader.endObject();
+		}
+		reader.endArray();
+
 		reader.endObject();
 	}
 
@@ -250,6 +293,7 @@ public final class QuiltJsonGui {
 		writer.beginObject();
 		writer.name("title").value(title);
 		writer.name("mainText").value(mainText);
+		writer.name("message_tab_name").value(messagesTabName);
 		writer.name("messages").beginArray();
 		for (QuiltJsonGuiMessage sub : messages) {
 			sub.write(writer);
@@ -263,6 +307,19 @@ public final class QuiltJsonGui {
 		writer.name("buttons").beginArray();
 		for (QuiltJsonButton button : buttons) {
 			button.write(writer);
+		}
+		writer.endArray();
+
+		writer.name("custom_icons").beginArray();
+		for (Map<Integer, BufferedImage> map : customIcons) {
+			writer.beginObject();
+			for (Entry<Integer, BufferedImage> entry : map.entrySet()) {
+				writer.name(entry.getKey().toString());
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				ImageIO.write(entry.getValue(), "png", baos);
+				writer.value(Base64.getEncoder().encodeToString(baos.toByteArray()));
+			}
+			writer.endObject();
 		}
 		writer.endArray();
 		writer.endObject();
@@ -296,13 +353,14 @@ public final class QuiltJsonGui {
 	}
 
 	public static final class QuiltJsonButton {
-		public final String text;
+		public final String text, icon;
 		public final QuiltBasicButtonType type;
 		public String clipboard = "";
 		public boolean shouldClose, shouldContinue;
 
-		public QuiltJsonButton(String text, QuiltBasicButtonType type) {
+		public QuiltJsonButton(String text, String icon, QuiltBasicButtonType type) {
 			this.text = text;
+			this.icon = icon;
 			this.type = type;
 		}
 
@@ -320,6 +378,8 @@ public final class QuiltJsonGui {
 			reader.beginObject();
 			expectName(reader, "text");
 			text = reader.nextString();
+			expectName(reader, "icon");
+			icon = reader.nextString();
 			expectName(reader, "type");
 			type = QuiltBasicButtonType.valueOf(reader.nextString());
 			expectName(reader, "shouldClose");
@@ -334,6 +394,7 @@ public final class QuiltJsonGui {
 		void write(JsonWriter writer) throws IOException {
 			writer.beginObject();
 			writer.name("text").value(text);
+			writer.name("icon").value(icon);
 			writer.name("type").value(type.name());
 			writer.name("shouldClose").value(shouldClose);
 			writer.name("shouldContinue").value(shouldContinue);
@@ -359,7 +420,7 @@ public final class QuiltJsonGui {
 
 		public final List<QuiltJsonButton> buttons = new ArrayList<>();
 
-		public String subMessageHeader;
+		public String subMessageHeader = "";
 		public final List<QuiltJsonGuiMessage> subMessages = new ArrayList<>();
 
 		public QuiltJsonGuiMessage() {

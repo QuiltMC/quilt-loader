@@ -16,12 +16,16 @@
 
 package org.quiltmc.loader.impl.plugin.gui;
 
+import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 
 public class GuiManagerImpl implements PluginGuiManager {
-
-	public static final GuiManagerImpl INSTANCE = new GuiManagerImpl();
 
 	public static final PluginGuiIcon ICON_NULL = new PluginIconBuiltin("null");
 
@@ -45,7 +49,28 @@ public class GuiManagerImpl implements PluginGuiManager {
 	public static final PluginGuiIcon ICON_LEVEL_CONCERN = new PluginIconBuiltin("level_concern");
 	public static final PluginGuiIcon ICON_LEVEL_INFO = new PluginIconBuiltin("level_info");
 
+	private final List<Map<Integer, BufferedImage>> customIcons = new ArrayList<>();
+
 	// Icons
+
+	@Override
+	public PluginGuiIcon allocateIcon(Map<Integer, BufferedImage> image) {
+		int index = customIcons.size();
+		customIcons.add(image);
+		return new PluginIconCustom(index);
+	}
+
+	public void putIcons(QuiltJsonGui tree) {
+		for (int i = 0; i < customIcons.size(); i++) {
+			Map<Integer, BufferedImage> map = customIcons.get(i);
+			int index = tree.allocateCustomIcon(map);
+			if (index != i) {
+				throw new IllegalStateException("GuiManagerImpl.putIcons must be called first!");
+			}
+		}
+	}
+
+	// Builtin
 
 	@Override
 	public PluginGuiIcon iconFolder() {

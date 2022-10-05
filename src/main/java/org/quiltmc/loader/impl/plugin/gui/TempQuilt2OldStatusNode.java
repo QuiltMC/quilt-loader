@@ -30,6 +30,7 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 
 public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
+	final GuiManagerImpl guiManager;
 	final TempQuilt2OldStatusNode parent;
 
 	Text text = Text.EMPTY;
@@ -46,7 +47,15 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	Boolean expandByDefault = null;
 
+	public TempQuilt2OldStatusNode(GuiManagerImpl guiManager) {
+		this.guiManager = guiManager;
+		this.parent = null;
+		childrenByAddition = new ArrayList<>();
+		childrenByAlphabetical = new ArrayList<>();
+	}
+
 	public TempQuilt2OldStatusNode(TempQuilt2OldStatusNode parent) {
+		this.guiManager = parent.guiManager;
 		this.parent = parent;
 		childrenByAddition = new ArrayList<>();
 		childrenByAlphabetical = new ArrayList<>();
@@ -87,7 +96,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	@Override
 	public PluginGuiManager manager() {
-		return GuiManagerImpl.INSTANCE;
+		return guiManager;
 	}
 
 	@Override

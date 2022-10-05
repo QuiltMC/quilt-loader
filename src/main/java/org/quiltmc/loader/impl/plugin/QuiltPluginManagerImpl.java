@@ -66,6 +66,7 @@ import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
@@ -88,10 +89,12 @@ import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
+import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
 import org.quiltmc.loader.impl.plugin.gui.TextImpl;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
+import org.quiltmc.loader.impl.plugin.quilt.ProvidedModOption;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
 import org.quiltmc.loader.impl.plugin.quilt.StandardQuiltPlugin;
@@ -148,8 +151,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	final Queue<MainThreadTask> mainThreadTasks;
 
+	public final GuiManagerImpl guiManager = new GuiManagerImpl();
 	/** The root tree node for the "files" tab. */
-	public final TempQuilt2OldStatusNode guiFileRoot = new TempQuilt2OldStatusNode(null);
+	public final TempQuilt2OldStatusNode guiFileRoot = new TempQuilt2OldStatusNode(guiManager);
+	public final TempQuilt2OldStatusNode guiModsRoot = new TempQuilt2OldStatusNode(guiManager);
 	private PluginGuiTreeNode guiNodeModsFromPlugins;
 	final Map<ModLoadOption, PluginGuiTreeNode> modGuiNodes = new HashMap<>();
 	final List<QuiltPluginErrorImpl> errors = new ArrayList<>();
@@ -526,6 +531,36 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		QuiltStringSection modDetails = report.addStringSection("Mod Details", 100);
 		appendModDetails(modDetails::lines);
 		modDetails.setShowInLogs(false);
+
+		// WARNING Temporary mod list
+		// (This will be moved to on mod load option addition)
+		for (Entry<String, PotentialModSet> entry : modIds.entrySet()) {
+			String id = entry.getKey();
+			PotentialModSet set = entry.getValue();
+			PluginGuiTreeNode gui = guiModsRoot.addChild(Text.of(id), SortOrder.ALPHABETICAL_ORDER);
+			if (set.all.size() > 1) {
+				gui.mainIcon(gui.manager().iconFolder());
+			} else {
+				gui.mainIcon(gui.manager().iconUnknownFile());
+			}
+
+			for (ModLoadOption option : set.all) {
+				PluginGuiTreeNode gOption = gui.addChild(Text.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER);
+				if (option instanceof ProvidedModOption) {
+					ProvidedModOption p = (ProvidedModOption) option;
+					gOption.mainIcon(gOption.manager().iconJavaClassFile());
+					ModLoadOption targetMod = p.getTarget();
+					PluginGuiTreeNode c = gOption.addChild(Text.of(targetMod.id() + " " + targetMod.version().toString()));
+					c.mainIcon(c.manager().iconJarFile());
+					c.addChild(Text.of(describePath(targetMod.from())))
+						.mainIcon(gOption.manager().iconFolder());
+				} else {
+					gOption.mainIcon(gOption.manager().iconJarFile());
+					gOption.addChild(Text.of(describePath(option.from())))
+						.mainIcon(gOption.manager().iconFolder());
+				}
+			}
+		}
 
 		throw new QuiltReportedError(report);
 	}

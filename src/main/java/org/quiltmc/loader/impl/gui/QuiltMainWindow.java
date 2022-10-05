@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
@@ -42,6 +43,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 
 import javax.imageio.ImageIO;
@@ -50,17 +53,20 @@ import javax.swing.BoxLayout;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
+import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
@@ -92,7 +98,7 @@ class QuiltMainWindow {
 		CountDownLatch guiTerminatedLatch = new CountDownLatch(1);
 
 		SwingUtilities.invokeAndWait(() -> {
-			createUi(guiTerminatedLatch, tree);
+			new QuiltMainWindow(guiTerminatedLatch, tree).open();
 		});
 
 		if (shouldWait) {
@@ -100,8 +106,13 @@ class QuiltMainWindow {
 		}
 	}
 
-	private static void createUi(CountDownLatch onCloseLatch, QuiltJsonGui tree) {
-		JFrame window = new JFrame();
+	final JFrame window;
+	final CountDownLatch onCloseLatch;
+	final IconSet icons;
+
+	public QuiltMainWindow(CountDownLatch onCloseLatch, QuiltJsonGui tree) {
+		this.onCloseLatch = onCloseLatch;
+		window = new JFrame();
 		window.setVisible(false);
 		window.setTitle(tree.title);
 
@@ -137,7 +148,7 @@ class QuiltMainWindow {
 			contentPane.add(errorLabel, BorderLayout.NORTH);
 		}
 
-		IconSet icons = new IconSet();
+		icons = new IconSet(tree);
 
 		if (tree.tabs.isEmpty() && tree.messages.isEmpty()) {
 			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab("Opening Errors");
@@ -153,7 +164,7 @@ class QuiltMainWindow {
 			contentPane.add(tabs, BorderLayout.CENTER);
 
 			if (!tree.messages.isEmpty()) {
-				tabs.addTab("Messages", createMessagesPanel(icons, tree.messages));
+				tabs.addTab(tree.messagesTabName, createMessagesPanel(icons, tree.messages));
 			}
 
 			for (QuiltJsonGuiTreeTab tab : tree.tabs) {
@@ -168,66 +179,137 @@ class QuiltMainWindow {
 			buttons.setLayout(new FlowLayout(FlowLayout.TRAILING));
 
 			for (QuiltJsonButton button : tree.buttons) {
-				JButton btn = new JButton(button.text);
-				buttons.add(btn);
-				btn.addActionListener(event -> {
-					if (button.type == QuiltJsonGui.QuiltBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
-
-					if (button.clipboard != null) {
-						try {
-							StringSelection clipboard = new StringSelection(button.clipboard);
-							Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
-						} catch (IllegalStateException e) {
-							//Clipboard unavailable?
-						}
-					}
-
-					if (button.shouldClose) {
-						window.dispose();
-					}
-
-					if (button.shouldContinue) {
-						onCloseLatch.countDown();
-					}
-				});
+				convertToJButton(buttons, button);
 			}
 		}
+	}
 
+	private void convertToJButton(JPanel addTo, QuiltJsonButton button) {
+		JButton btn = button.icon.isEmpty() 
+			? new JButton(button.text) 
+			: new JButton(button.text, icons.get(IconInfo.parse(button.icon)));
+
+		addTo.add(btn);
+		btn.addActionListener(event -> {
+			if (button.type == QuiltJsonGui.QuiltBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
+
+			if (button.clipboard != null) {
+				try {
+					StringSelection clipboard = new StringSelection(button.clipboard);
+					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
+				} catch (IllegalStateException e) {
+					//Clipboard unavailable?
+				}
+			}
+
+			if (button.shouldClose) {
+				window.dispose();
+			}
+
+			if (button.shouldContinue) {
+				this.onCloseLatch.countDown();
+			}
+		});
+	}
+
+	private void open() {
 		window.pack();
 		window.setVisible(true);
 		window.requestFocus();
 	}
 
-	private static JScrollPane createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
-		JPanel panel = new JPanel();
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+	private JComponent createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
+		JScrollPane pane = new JScrollPane();
+		pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+		pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		pane.setOpaque(true);
+		pane.setBackground(Color.WHITE);
+
+		JPanel outerPanel = new JPanel();
+		outerPanel.setLayout(new BorderLayout());
+
+		JPanel panel = null;
 
 		for (QuiltJsonGuiMessage message : messages) {
-			panel.add(createMessagePanel(icons, message));
+			if (panel == null) {
+				panel = outerPanel;
+			} else {
+				JPanel outer = panel;
+				panel = new JPanel();
+				panel.setLayout(new BorderLayout());
+				panel.setBackground(Color.WHITE);
+				outer.add(panel, BorderLayout.CENTER);
+			}
+			panel.add(createMessagePanel(icons, message), BorderLayout.NORTH);
 		}
 
-		return new JScrollPane(panel);
+		pane.setViewportView(outerPanel);
+		return pane;
 	}
 
-	private static JPanel createMessagePanel(IconSet icons, QuiltJsonGuiMessage message) {
-		JPanel panel = new JPanel();
-		panel.setAlignmentX(0);
-		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+	private JPanel createMessagePanel(IconSet icons, QuiltJsonGuiMessage message) {
+		JPanel container = new JPanel();
+		container.setLayout(new BorderLayout());
+		container.setAlignmentY(0);
 
 		JPanel top = new JPanel();
-		top.setLayout(new BoxLayout(top, BoxLayout.X_AXIS));
-		panel.add(top);
+		top.setLayout(new BorderLayout());
+		container.add(top, BorderLayout.NORTH);
+		top.setAlignmentY(0);
+		top.setAlignmentX(0);
 
-		top.add(new JLabel(icons.get(new IconInfo("level_error"))));
-		top.add(new JLabel(message.title));
+		JLabel icon = new JLabel(icons.get(IconInfo.parse(message.iconType), 32));
+		icon.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+		top.add(icon, BorderLayout.WEST);
+		JLabel title = new JLabel(message.title);
+		title.setFont(title.getFont().deriveFont(Font.BOLD));
+		top.add(title, BorderLayout.CENTER);
+
+		JPanel panel = container;
 
 		for (String desc : message.description) {
-			panel.add(new JLabel(desc));
+			JPanel outer = panel;
+			panel = new JPanel();
+			panel.setAlignmentY(0);
+			panel.setLayout(new BorderLayout());
+			outer.add(panel, BorderLayout.CENTER);
+
+			panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
 		}
 
-		// TODO: The rest!
+		for (String info : message.additionalInfo) {
+			JPanel outer = panel;
+			panel = new JPanel();
+			panel.setAlignmentY(0);
+			panel.setLayout(new BorderLayout());
+			outer.add(panel, BorderLayout.CENTER);
 
-		return panel;
+			JLabel label = new JLabel(applyWrapping(info));
+			label.setFont(label.getFont().deriveFont(Font.ITALIC));
+			panel.add(label, BorderLayout.NORTH);
+		}
+
+		if (!message.buttons.isEmpty()) {
+			JPanel buttons = new JPanel();
+			buttons.setAlignmentY(0);
+			buttons.setLayout(new FlowLayout(FlowLayout.LEADING));
+			panel.add(buttons, BorderLayout.CENTER);
+
+			for (QuiltJsonButton button : message.buttons) {
+				convertToJButton(buttons, button);
+			}
+		}
+
+		JPanel outer = new JPanel();
+		outer.setAlignmentY(0);
+		Border b0 = BorderFactory.createMatteBorder(5, 5, 0, 5, Color.WHITE);
+		Border b1 = BorderFactory.createEtchedBorder();
+		Border b2 = BorderFactory.createEmptyBorder(4, 4, 4, 4);
+		outer.setBorder(BorderFactory.createCompoundBorder(b0, BorderFactory.createCompoundBorder(b1, b2)));
+		outer.setLayout(new BorderLayout());
+		outer.add(container, BorderLayout.WEST);
+
+		return outer;
 	}
 
 	private static JPanel createTreePanel(QuiltStatusNode rootNode, QuiltTreeWarningLevel minimumWarningLevel,
@@ -264,7 +346,7 @@ class QuiltMainWindow {
 		return panel;
 	}
 
-	private static BufferedImage loadImage(String str) throws IOException {
+	static BufferedImage loadImage(String str) throws IOException {
 		return ImageIO.read(loadStream(str));
 	}
 
@@ -292,13 +374,23 @@ class QuiltMainWindow {
 	}
 
 	static final class IconSet {
+
+		private final QuiltJsonGui tree;
+
 		/** Map of IconInfo -> Integer Size -> Real Icon. */
 		private final Map<IconInfo, Map<Integer, Icon>> icons = new HashMap<>();
 
+		public IconSet(QuiltJsonGui tree) {
+			this.tree = tree;
+		}
+
 		public Icon get(IconInfo info) {
+			return get(info, 16);
+		}
+
+		public Icon get(IconInfo info, int scale) {
 			// TODO: HDPI
 
-			int scale = 16;
 			Map<Integer, Icon> map = icons.computeIfAbsent(info, k -> new HashMap<>());
 
 			Icon icon = map.get(scale);
@@ -315,6 +407,61 @@ class QuiltMainWindow {
 			}
 
 			return icon;
+		}
+
+		Icon loadIcon(IconInfo info, int scale) throws IOException {
+			return new ImageIcon(generateIcon(info, scale));
+		}
+
+		BufferedImage generateIcon(IconInfo info, int scale) throws IOException {
+			BufferedImage img = new BufferedImage(scale, scale, BufferedImage.TYPE_INT_ARGB);
+			Graphics2D imgG2d = img.createGraphics();
+
+			BufferedImage main = loadImage(info.mainPath, false, scale);
+			if (main != null) {
+				imgG2d.drawImage(main, 0, 0, scale, scale, null);
+			}
+
+			final int[][] coords = { { 0, scale / 2 }, { scale / 2, scale / 2 }, { scale / 2, 0 } };
+
+			for (int i = 0; i < info.decor.length; i++) {
+				String decor = info.decor[i];
+
+				if (decor == null) {
+					continue;
+				}
+
+				BufferedImage decorImg = loadImage(decor, true, scale);
+				if (decorImg != null) {
+					imgG2d.drawImage(decorImg, coords[i][0], coords[i][1], scale / 2, scale / 2, null);
+				}
+			}
+			return img;
+		}
+
+		BufferedImage loadImage(String path, boolean isDecor, int scale) throws IOException {
+			if (path.startsWith("!")) {
+				// Custom icon
+				NavigableMap<Integer, BufferedImage> iconMap = tree.getCustomIcon(Integer.parseInt(path.substring(1)));
+				if (iconMap.isEmpty()) {
+					return null;
+				}
+				Entry<Integer, BufferedImage> bestSource = iconMap.ceilingEntry(scale);
+				if (bestSource == null) {
+					bestSource = iconMap.floorEntry(scale);
+				}
+				return bestSource.getValue();
+			}
+
+			// Mandate correct scale
+			// since we only ship x16 (main) and x8 (decor) we restrict file scale to that scale
+			final int fileScale;
+			if (isDecor) {
+				fileScale = 8;
+			} else {
+				fileScale = 16;
+			}
+			return QuiltMainWindow.loadImage("/ui/icon/" + (isDecor ? "decoration/" : "") + path + "_x" + fileScale + ".png");
 		}
 	}
 
@@ -346,33 +493,6 @@ class QuiltMainWindow {
 		return missingIcon;
 	}
 
-	private static Icon loadIcon(IconInfo info, int scale) throws IOException {
-		BufferedImage img = new BufferedImage(scale, scale, BufferedImage.TYPE_INT_ARGB);
-		Graphics2D imgG2d = img.createGraphics();
-
-		BufferedImage main = loadImage("/ui/icon/" + info.mainPath + "_x" + scale + ".png");
-		assert main.getWidth() == scale;
-		assert main.getHeight() == scale;
-		imgG2d.drawImage(main, null, 0, 0);
-
-		final int[][] coords = { { 0, 8 }, { 8, 8 }, { 8, 0 } };
-
-		for (int i = 0; i < info.decor.length; i++) {
-			String decor = info.decor[i];
-
-			if (decor == null) {
-				continue;
-			}
-
-			BufferedImage decorImg = loadImage("/ui/icon/decoration/" + decor + "_x" + (scale / 2) + ".png");
-			assert decorImg.getWidth() == scale / 2;
-			assert decorImg.getHeight() == scale / 2;
-			imgG2d.drawImage(decorImg, null, coords[i][0], coords[i][1]);
-		}
-
-		return new ImageIcon(img);
-	}
-
 	static final class IconInfo {
 		public final String mainPath;
 		public final String[] decor;
@@ -395,6 +515,22 @@ class QuiltMainWindow {
 			} else {
 				hash = mainPath.hashCode() * 31 + Arrays.hashCode(decor);
 			}
+		}
+
+		public static IconInfo parse(String desc) {
+			String[] split = desc.split("\\+");
+			if (split.length == 0 || (split.length == 1 && split[0].isEmpty())) {
+				return new IconInfo("missing");
+			}
+
+			List<String> decors = new ArrayList<>();
+			// The warning gap
+			decors.add(null);
+			for (int i = 1; i < split.length && i < 3; i++) {
+				decors.add(split[i]);
+			}
+
+			return new IconInfo(split[0], decors.toArray(new String[0]));
 		}
 
 		public static IconInfo fromNode(QuiltStatusNode node) {

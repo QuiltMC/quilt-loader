@@ -326,6 +326,7 @@ public final class QuiltLoaderImpl {
 			ModSolveResultImpl result = plugins.run(true);
 
 			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader", null);
+			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Plugin Debugging");
 			plugins.guiFileRoot.toNode(tab.node, false);
 
@@ -365,19 +366,31 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader", null);
-
+		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, null);
+		plugins.guiManager.putIcons(tree);
+		tree.messagesTabName = Text.translate("tab.messages").toString();
 		for (QuiltPluginErrorImpl error : plugins.getErrors()) {
 			tree.messages.add(error.toGuiMessage(tree));
 		}
 
+		// TODO: Move tab creation to the plugin manager
+		// so that the plugin manager can have tabs of both the file list
+		// AND mod list!
 		QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
 		plugins.guiFileRoot.text(Text.translate("tab.file_list"));
 		plugins.guiFileRoot.toNode(tab.node, false);
+
+		QuiltJsonGui.QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
+		plugins.guiModsRoot.text(Text.translate("tab.mod_list"));
+		plugins.guiModsRoot.toNode(tab2.node, false);
+
 		if (crashReportFile != null) {
 			// TODO - pass the crash report path into the error gui!
-			tree.addButton(Text.translate("button.open_crash_report").toString(), QuiltBasicButtonType.CLICK_MANY);
+			tree.addButton(Text.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonType.CLICK_MANY);
+			tree.addButton(Text.translate("button.copy_crash_report").toString(), "text_file", QuiltBasicButtonType.CLICK_MANY);
 		}
+
+		tree.addButton(Text.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonType.CLICK_MANY);
 
 		try {
 			QuiltGuiEntry.open(tree, null, true);

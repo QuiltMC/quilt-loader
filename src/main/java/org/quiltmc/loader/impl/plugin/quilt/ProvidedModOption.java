@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.nio.file.Path;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
@@ -27,7 +28,6 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
-import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 
 /** A mod that is provided from the jar of a different mod. */
@@ -76,7 +76,8 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
-	public LoadOption getTarget() {
+	@NotNull
+	public ModLoadOption getTarget() {
 		return provider;
 	}
 

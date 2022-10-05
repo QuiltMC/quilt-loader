@@ -152,9 +152,9 @@ public final class QuiltGuiEntry {
 		commands.add(jsonFile.getAbsolutePath());
 
 		ProcessBuilder pb = new ProcessBuilder(commands);
-		pb.redirectError(Redirect.PIPE);
-		// TODO: handle more complex button presses by sending data over sysout?
-		pb.redirectOutput(Redirect.PIPE);
+		pb.redirectError(Redirect.INHERIT);
+		// TODO: handle more complex button presses by sending them through PIPE?
+		pb.redirectOutput(Redirect.INHERIT);
 
 		Process p = pb.start();
 

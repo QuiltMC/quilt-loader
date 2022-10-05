@@ -16,12 +16,18 @@
 
 package org.quiltmc.loader.impl.plugin;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.Text;
@@ -196,11 +202,33 @@ class SolverErrorHelper {
 					Text title = Text.translate(titleKey, titleData);
 					QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
 
+					// TODO: Only upload a ModLoadOption's icon once!
+					Map<Integer, BufferedImage> modIcons = new HashMap<>();
+					for (int size : new int[]{16, 32}) {
+						String iconPath = mandatoryMod.metadata().icon(size);
+						if (iconPath != null) {
+							Path path = mandatoryMod.resourceRoot().resolve(iconPath);
+							try (InputStream stream = Files.newInputStream(path)) {
+								BufferedImage image = ImageIO.read(stream);
+								modIcons.put(image.getWidth(), image);
+							} catch (IOException io) {
+								// TODO: Warn about this somewhere!
+								io.printStackTrace();
+							}
+						}
+					}
+
+					if (!modIcons.isEmpty()) {
+						error.setIcon(manager.guiManager.allocateIcon(modIcons));
+					}
+
 					Path rootModPath = mandatoryMod.from();
 					Object[] rootModDescArgs = { rootModName, rootModPath };
 					error.appendDescription(Text.translate("info.root_mod_loaded_from", rootModDescArgs));
 
-					error.addFileViewButton(Text.translate("button.view_file"), rootModPath);
+					error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath);
+					// TODO: Add a way to copy text to the clipboard!
+//					error.addFileViewButton(Text.of("Copy Error Details"), null);
 
 					StringBuilder report = new StringBuilder(rootModName);
 					if (transitive) {

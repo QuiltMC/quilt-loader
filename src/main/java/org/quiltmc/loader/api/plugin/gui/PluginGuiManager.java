@@ -16,9 +16,19 @@
 
 package org.quiltmc.loader.api.plugin.gui;
 
+import java.awt.image.BufferedImage;
+import java.util.Collections;
+import java.util.Map;
+
 public interface PluginGuiManager {
 
 	// Icons
+
+	default PluginGuiIcon allocateIcon(BufferedImage image) {
+		return allocateIcon(Collections.singletonMap(image.getWidth(), image));
+	}
+
+	PluginGuiIcon allocateIcon(Map<Integer, BufferedImage> image);
 
 	// Builtin icons
 

@@ -96,6 +96,7 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 
 		// TODO: Change the gui json stuff to embed 'Text' rather than 'String'
 		msg.title = title.toString();
+		msg.iconType = icon.tempToStatusNodeStr();
 		for (Text t : description) {
 			msg.description.add(t.toString());
 		}
@@ -131,7 +132,7 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		@Override
 		protected QuiltJsonButton toGuiButton(QuiltJsonGui json) {
 			// TODO: Change json gui buttons to actually work!
-			return new QuiltJsonButton(Text.translate("button.view_file").toString(), QuiltBasicButtonType.CLICK_MANY);
+			return new QuiltJsonButton(name.toString(), file == null ? "text_file" : "jar+fabric", QuiltBasicButtonType.CLICK_MANY);
 		}
 	}
 }
