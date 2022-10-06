@@ -227,7 +227,7 @@ class SolverErrorHelper {
 					}
 
 					Path rootModPath = mandatoryMod.from();
-					Object[] rootModDescArgs = { rootModName, rootModPath };
+					Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
 					error.appendDescription(Text.translate("info.root_mod_loaded_from", rootModDescArgs));
 
 					error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath)
