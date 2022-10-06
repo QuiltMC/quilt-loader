@@ -20,6 +20,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -32,16 +33,23 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Map.Entry;
@@ -56,6 +64,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -184,6 +193,12 @@ class QuiltMainWindow {
 		}
 	}
 
+	private void open() {
+		window.pack();
+		window.setVisible(true);
+		window.requestFocus();
+	}
+
 	private void convertToJButton(JPanel addTo, QuiltJsonButton button) {
 		JButton btn = button.icon.isEmpty() 
 			? new JButton(button.text) 
@@ -191,31 +206,191 @@ class QuiltMainWindow {
 
 		addTo.add(btn);
 		btn.addActionListener(event -> {
-			if (button.type == QuiltJsonGui.QuiltBasicButtonType.CLICK_ONCE) btn.setEnabled(false);
 
-			if (button.clipboard != null) {
-				try {
-					StringSelection clipboard = new StringSelection(button.clipboard);
-					Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
-				} catch (IllegalStateException e) {
-					//Clipboard unavailable?
+			switch (button.action) {
+				case CONTINUE: {
+					onCloseLatch.countDown();
+					return;
 				}
+				case CLOSE: {
+					window.dispose();
+					return;
+				}
+				case VIEW_FILE: {
+					browseFile(button.arguments.get("file"));
+					return;
+				}
+				case VIEW_FOLDER: {
+					browseFolder(button.arguments.get("folder"));
+					return;
+				}
+				case OPEN_FILE: {
+					openFile(button.arguments.get("file"));
+					return;
+				}
+				case OPEN_WEB_URL: {
+					openWebUrl(button.arguments.get("url"));
+					return;
+				}
+				case PASTE_CLIPBOARD_TEXT: {
+					copyClipboardText(button.arguments.get("text"));
+					return;
+				}
+				case PASTE_CLIPBOARD_FILE: {
+					copyClipboardFile(button.arguments.get("file"));
+					return;
+				}
+				case PASTE_CLIPBOARD_FILE_SECTION:
+					break;
+				case RETURN_SIGNAL_MANY:
+				case RETURN_SIGNAL_ONCE:
+				default:
+					throw new IllegalStateException("Unknown / unimplemented action " + button.action);
 			}
 
-			if (button.shouldClose) {
-				window.dispose();
-			}
-
-			if (button.shouldContinue) {
-				this.onCloseLatch.countDown();
-			}
+//			if (button.type == QuiltJsonGui.QuiltBasicButtonAction.CLICK_ONCE) btn.setEnabled(false);
 		});
 	}
 
-	private void open() {
-		window.pack();
-		window.setVisible(true);
-		window.requestFocus();
+	private void browseFile(String file) {
+		// Desktop.browseFileDirectory exists!
+		// But it's Java 9 only
+		// However that doesn't stop us from trying it, since it works on mac
+		// (and who knows, maybe it will get implemented at some point in the future?)
+		if (browseFileJava9(file)) {
+			return;
+		}
+
+		// And now for the ugly route
+		if (browseFileNativeExec(file)) {
+			return;
+		}
+
+		// If even that failed then we'll just admit defeat and open the file browser to the parent folder instead
+		try {
+			Desktop.getDesktop().open(new File(file).getParentFile());
+		} catch (IOException | UnsupportedOperationException e) {
+			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			e.printStackTrace();
+		}
+	}
+
+	private boolean browseFileJava9(String file) {
+		Desktop d = Desktop.getDesktop();
+		Desktop.Action action = null;
+		try {
+			action = Desktop.Action.valueOf("BROWSE_FILE_DIR");
+		} catch (IllegalArgumentException invalidEnum) {
+			action = null;
+		}
+
+		if (action != null && d.isSupported(action)) {
+			try {
+				Method method = d.getClass().getMethod("browseFileDirectory", File.class);
+				method.invoke(d, new File(file));
+				return true;
+			} catch (ReflectiveOperationException e) {
+				JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+				e.printStackTrace();
+			}
+		}
+		return false;
+	}
+
+	private boolean browseFileNativeExec(String file) {
+		String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+
+		if (osName.contains("windows")) {
+			// This is fairly simple - there's only one file explorer
+			// (a least, I assume most people just use the microsoft file explorer)
+			try {
+				Runtime.getRuntime().exec("explorer /select,\"" + file.replace("/", "\\") + "\"");
+				return true;
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		} else if (osName.contains("mac")) {
+			// Again, mac os just lets this work
+			try {
+				Runtime.getRuntime().exec("open -R \"" + file+ "\"");
+				return true;
+			} catch (IOException e) {
+				e.printStackTrace();
+				return false;
+			}
+		} else if (osName.contains("linux")) {
+			// Linux... is more complicated
+			// Searching the internet shows us that 'xdg-open' is the *correct* thing to run
+			// however that just opens the file in the appropriate "file viewer", not in a file explorer
+			// Since this might be used for stuff like jar files that might either try to execute them
+			// or open them in a zip viewer, which is not what we want.
+
+			// So instead try a list of known file explorers
+			// (Yes, this is a short list, and needs to be expanded)
+			for (String cmd : new String[] { "nemo \"%s\"", "nautilus \"%s\"" }) {
+				try {
+					Runtime.getRuntime().exec(cmd.replace("%s", file));
+					return true;
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private void browseFolder(String file) {
+		try {
+			Desktop.getDesktop().open(new File(file));
+		} catch (IOException | UnsupportedOperationException e) {
+			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			e.printStackTrace();
+		}
+	}
+
+	private void openFile(String file) {
+		try {
+			Desktop.getDesktop().open(new File(file));
+		} catch (IOException | UnsupportedOperationException e) {
+			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			e.printStackTrace();
+		}
+	}
+
+	private void openWebUrl(String url) {
+		try {
+			URI uri = new URI(url);
+			Desktop.getDesktop().browse(uri);
+		} catch (URISyntaxException | IOException | UnsupportedOperationException e) {
+			JOptionPane.showMessageDialog(window, "Failed to open '" + url + "'");
+			e.printStackTrace();
+		}
+	}
+
+	private void copyClipboardText(String text) {
+		try {
+			StringSelection clipboard = new StringSelection(text);
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
+		} catch (IllegalStateException e) {
+			JOptionPane.showMessageDialog(window, "Failed to paste clipboard text!");
+			e.printStackTrace();
+		}
+	}
+
+	private void copyClipboardFile(String file) {
+		try {
+			String text = new String(Files.readAllBytes(Paths.get(file)), StandardCharsets.UTF_8);
+			StringSelection clipboard = new StringSelection(text);
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
+		} catch (IllegalStateException e) {
+			JOptionPane.showMessageDialog(window, "Failed to paste clipboard text!");
+			e.printStackTrace();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(window, "Failed to open file to paste from: '" + file + "'!");
+			e.printStackTrace();
+		}
 	}
 
 	private JComponent createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
@@ -223,6 +398,7 @@ class QuiltMainWindow {
 		pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		pane.setOpaque(true);
+		pane.getVerticalScrollBar().setUnitIncrement(16);
 		pane.setBackground(Color.WHITE);
 
 		JPanel outerPanel = new JPanel();

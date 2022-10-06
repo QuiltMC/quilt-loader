@@ -54,6 +54,8 @@ public interface PluginGuiManager {
 
 	PluginGuiIcon iconQuilt();
 
+	PluginGuiIcon iconFabric();
+
 	PluginGuiIcon iconTick();
 
 	PluginGuiIcon iconCross();

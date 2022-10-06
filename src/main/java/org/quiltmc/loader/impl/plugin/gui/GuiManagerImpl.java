@@ -27,27 +27,27 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 
 public class GuiManagerImpl implements PluginGuiManager {
 
-	public static final PluginGuiIcon ICON_NULL = new PluginIconBuiltin("null");
+	public static final PluginIconImpl ICON_NULL = new PluginIconImpl("null");
 
-	public static final PluginGuiIcon ICON_FOLDER = new PluginIconBuiltin("folder");
-	public static final PluginGuiIcon ICON_TEXT_FILE = new PluginIconBuiltin("text_file");
-	public static final PluginGuiIcon ICON_GENERIC_FILE = new PluginIconBuiltin("generic_file");
-	public static final PluginGuiIcon ICON_JAR = new PluginIconBuiltin("jar");
-	public static final PluginGuiIcon ICON_ZIP = new PluginIconBuiltin("zip");
-	public static final PluginGuiIcon ICON_JSON = new PluginIconBuiltin("json");
-	public static final PluginGuiIcon ICON_JAVA_CLASS = new PluginIconBuiltin("java_class");
-	public static final PluginGuiIcon ICON_PACKAGE = new PluginIconBuiltin("package");
-	public static final PluginGuiIcon ICON_JAVA_PACKAGE = new PluginIconBuiltin("java_package");
-	public static final PluginGuiIcon ICON_DISABLED = new PluginIconBuiltin("disabled");
-	public static final PluginGuiIcon ICON_QUILT = new PluginIconBuiltin("quilt");
-	public static final PluginGuiIcon ICON_FABRIC = new PluginIconBuiltin("fabric");
-	public static final PluginGuiIcon ICON_TICK = new PluginIconBuiltin("tick");
-	public static final PluginGuiIcon ICON_CROSS = new PluginIconBuiltin("lesser_cross");
-	public static final PluginGuiIcon ICON_LEVEL_FATAL = new PluginIconBuiltin("level_fatal");
-	public static final PluginGuiIcon ICON_LEVEL_ERROR = new PluginIconBuiltin("level_error");
-	public static final PluginGuiIcon ICON_LEVEL_WARN = new PluginIconBuiltin("level_warn");
-	public static final PluginGuiIcon ICON_LEVEL_CONCERN = new PluginIconBuiltin("level_concern");
-	public static final PluginGuiIcon ICON_LEVEL_INFO = new PluginIconBuiltin("level_info");
+	public static final PluginIconImpl ICON_FOLDER = new PluginIconImpl("folder");
+	public static final PluginIconImpl ICON_TEXT_FILE = new PluginIconImpl("text_file");
+	public static final PluginIconImpl ICON_GENERIC_FILE = new PluginIconImpl("generic_file");
+	public static final PluginIconImpl ICON_JAR = new PluginIconImpl("jar");
+	public static final PluginIconImpl ICON_ZIP = new PluginIconImpl("zip");
+	public static final PluginIconImpl ICON_JSON = new PluginIconImpl("json");
+	public static final PluginIconImpl ICON_JAVA_CLASS = new PluginIconImpl("java_class");
+	public static final PluginIconImpl ICON_PACKAGE = new PluginIconImpl("package");
+	public static final PluginIconImpl ICON_JAVA_PACKAGE = new PluginIconImpl("java_package");
+	public static final PluginIconImpl ICON_DISABLED = new PluginIconImpl("disabled");
+	public static final PluginIconImpl ICON_QUILT = new PluginIconImpl("quilt");
+	public static final PluginIconImpl ICON_FABRIC = new PluginIconImpl("fabric");
+	public static final PluginIconImpl ICON_TICK = new PluginIconImpl("tick");
+	public static final PluginIconImpl ICON_CROSS = new PluginIconImpl("lesser_cross");
+	public static final PluginIconImpl ICON_LEVEL_FATAL = new PluginIconImpl("level_fatal");
+	public static final PluginIconImpl ICON_LEVEL_ERROR = new PluginIconImpl("level_error");
+	public static final PluginIconImpl ICON_LEVEL_WARN = new PluginIconImpl("level_warn");
+	public static final PluginIconImpl ICON_LEVEL_CONCERN = new PluginIconImpl("level_concern");
+	public static final PluginIconImpl ICON_LEVEL_INFO = new PluginIconImpl("level_info");
 
 	private final List<Map<Integer, BufferedImage>> customIcons = new ArrayList<>();
 
@@ -57,7 +57,7 @@ public class GuiManagerImpl implements PluginGuiManager {
 	public PluginGuiIcon allocateIcon(Map<Integer, BufferedImage> image) {
 		int index = customIcons.size();
 		customIcons.add(image);
-		return new PluginIconCustom(index);
+		return new PluginIconImpl(index);
 	}
 
 	public void putIcons(QuiltJsonGui tree) {
@@ -125,6 +125,11 @@ public class GuiManagerImpl implements PluginGuiManager {
 	@Override
 	public PluginGuiIcon iconQuilt() {
 		return ICON_QUILT;
+	}
+
+	@Override
+	public PluginGuiIcon iconFabric() {
+		return ICON_FABRIC;
 	}
 
 	@Override

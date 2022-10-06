@@ -47,8 +47,20 @@ public interface QuiltPluginError {
 	QuiltPluginError setIcon(PluginGuiIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
-	QuiltPluginError addFileViewButton(Text name, Path openedPath);
+	QuiltPluginButton addFileViewButton(Text name, Path openedPath);
+
+	/** Adds a button to this error, which will open a file browser showing the selected folder. */
+	QuiltPluginButton addFolderViewButton(Text name, Path openedFolder);
 
 	/** Adds a button to this error, which will open the specified URL in a browser window. */
-	QuiltPluginError addOpenLinkButton(Text name, String url);
+	QuiltPluginButton addOpenLinkButton(Text name, String url);
+
+	QuiltPluginButton addCopyTextToClipboardButton(Text name, String fullText);
+
+	QuiltPluginButton addCopyFileToClipboardButton(Text name, Path openedFile);
+
+	@ApiStatus.NonExtendable
+	public interface QuiltPluginButton {
+		QuiltPluginButton icon(PluginGuiIcon icon);
+	}
 }

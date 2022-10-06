@@ -18,7 +18,7 @@ package org.quiltmc.loader.api.plugin.gui;
 
 public interface PluginGuiIcon {
 
-	String tempToStatusNodeStr();
-
-	boolean isInLoader();
+	/** Adds a sub-icon to this main icon. The given sub-icon must not already have sub-icons. If the given sub-icon is
+	 * null then this is returned. */
+	PluginGuiIcon withDecoration(PluginGuiIcon subIcon);
 }

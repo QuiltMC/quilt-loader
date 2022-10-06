@@ -85,7 +85,13 @@ public abstract class ModLoadOption extends LoadOption {
 		return metadata().version();
 	}
 
+	public abstract PluginGuiIcon modFileIcon();
+
 	public abstract PluginGuiIcon modTypeIcon();
+
+	public PluginGuiIcon modCompleteIcon() {
+		return modFileIcon().withDecoration(modTypeIcon());
+	}
 
 	/** Populates the given gui node with information about this mod. The {@link PluginGuiTreeNode#text()} will have
 	 * been set to the {@link #version()} before this method is called. */

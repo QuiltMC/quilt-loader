@@ -35,6 +35,7 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 
@@ -74,8 +75,10 @@ class SolverErrorHelper {
 		}
 
 		QuiltPluginError error = manager.theQuiltPluginContext.reportError(
-			Text.translate("gui.text.unhandled_solver")
+			Text.translate("error.unhandled_solver")
 		);
+		error.appendDescription(Text.of("error.unhandled_solver.desc"));
+		error.addOpenLinkButton(Text.of("error.unhandled_solver.button.quilt_loader_github"), "https://github.com/QuiltMC/quilt-loader/issues");
 		error.appendReportText("Unhandled solver error involving the following rules:");
 
 		StringBuilder sb = new StringBuilder();
@@ -144,6 +147,7 @@ class SolverErrorHelper {
 
 	/** Reports an error where there is only one root rule, of a {@link MandatoryModIdDefinition}. */
 	private static boolean reportSingleMandatoryError(QuiltPluginManagerImpl manager, RuleLink rootRule) {
+		GuiManagerImpl guiManager = manager.guiManager;
 		MandatoryModIdDefinition def = (MandatoryModIdDefinition) rootRule.rule;
 		ModLoadOption mandatoryMod = def.option;
 
@@ -226,9 +230,13 @@ class SolverErrorHelper {
 					Object[] rootModDescArgs = { rootModName, rootModPath };
 					error.appendDescription(Text.translate("info.root_mod_loaded_from", rootModDescArgs));
 
-					error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath);
-					// TODO: Add a way to copy text to the clipboard!
-//					error.addFileViewButton(Text.of("Copy Error Details"), null);
+					error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath)
+						.icon(mandatoryMod.modCompleteIcon());
+
+					String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
+					if (issuesUrl != null) {
+						error.addOpenLinkButton(Text.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
+					}
 
 					StringBuilder report = new StringBuilder(rootModName);
 					if (transitive) {

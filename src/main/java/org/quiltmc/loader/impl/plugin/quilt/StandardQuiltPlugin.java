@@ -34,6 +34,8 @@ import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.Text;
@@ -106,15 +108,15 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, fromClasspath, guiNode);
+		return scan0(root, guiNode.manager().iconJarFile(), fromClasspath, guiNode);
 	}
 
 	@Override
 	public ModLoadOption[] scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, true, guiNode);
+		return scan0(folder, guiNode.manager().iconFolder(), true, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
+	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
 		Path qmj = root.resolve("quilt.mod.json");
 		if (!Files.isRegularFile(qmj)) {
 			return null;
@@ -149,7 +151,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			// a mod needs to be remapped if we are in a development environment, and the mod
 			// did not come from the classpath
 			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
-			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, root, mandatory, requiresRemap) };
+			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseException parse) {
 			Text title = Text.translate("gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage());
 			QuiltPluginError error = context().reportError(title);
@@ -157,7 +159,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
 			error.appendDescription(Text.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
-			error.addFileViewButton(Text.translate("gui.view_file"), context().manager().getRealContainingFile(root));
+			PluginGuiManager guiManager = context().manager().getGuiManager();
+			error.addFileViewButton(Text.translate("gui.view_file"), context().manager().getRealContainingFile(root))
+				.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
 
 			guiNode.addChild(Text.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
 				.setError(parse, error);

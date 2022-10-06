@@ -111,7 +111,7 @@ public final class QuiltGuiEntry {
 			// TODO: Add crash report generation functionality?
 			// and then have a button to open a file explorer pointed to that file
 			// and a button to open that file directly
-			tree.addButton("Exit", QuiltJsonGui.QuiltBasicButtonType.CLICK_ONCE).makeClose();
+			tree.addButton("Exit", QuiltJsonGui.QuiltBasicButtonAction.CLOSE);
 
 			try {
 				open(tree);

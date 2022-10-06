@@ -16,20 +16,25 @@
 
 package org.quiltmc.loader.impl.plugin;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonType;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
-import org.quiltmc.loader.impl.plugin.gui.TextImpl;
+import org.quiltmc.loader.impl.plugin.gui.PluginIconImpl;
 
 public class QuiltPluginErrorImpl implements QuiltPluginError {
 
@@ -79,16 +84,59 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		return this;
 	}
 
-	@Override
-	public QuiltPluginError addFileViewButton(Text name, Path openedPath) {
-		buttons.add(new FileViewButton(name, openedPath));
-		return this;
+	private ErrorButton button(Text name, QuiltBasicButtonAction action) {
+		ErrorButton button = new ErrorButton(name, action);
+		buttons.add(button);
+		return button;
 	}
 
 	@Override
-	public QuiltPluginError addOpenLinkButton(Text name, String url) {
+	public QuiltPluginButton addFileViewButton(Text name, Path openedPath) {
+		return button(name, QuiltBasicButtonAction.VIEW_FILE).arg("file", openedPath.toString());
+	}
+
+	@Override
+	public QuiltPluginButton addFolderViewButton(Text name, Path openedFolder) {
+		if (Files.exists(openedFolder) && Files.isRegularFile(openedFolder)) {
+			return addFileViewButton(name, openedFolder);
+		} else {
+			return button(name, QuiltBasicButtonAction.VIEW_FOLDER).arg("folder", openedFolder.toString());
+		}
+	}
+
+	@Override
+	public QuiltPluginButton addOpenLinkButton(Text name, String url) {
+		return button(name, QuiltBasicButtonAction.OPEN_WEB_URL).arg("url", url);
+	}
+
+	@Override
+	public QuiltPluginButton addCopyTextToClipboardButton(Text name, String fullText) {
+		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_TEXT).arg("text", fullText);
+	}
+
+	@Override
+	public QuiltPluginButton addCopyFileToClipboardButton(Text name, Path openedFile) {
 		// TODO Auto-generated method stub
 		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	public List<String> toReportText() {
+		List<String> lines = new ArrayList<>();
+		lines.addAll(reportLines);
+
+		if (lines.isEmpty()) {
+			lines.add("The plugin that created this error (" + reportingPlugin + ") forgot to call 'appendReportText'!");
+			lines.add("The next stacktrace is where the plugin created the error, not the actual error.'");
+			exceptions.add(0, reportTrace);
+		}
+
+		for (Throwable ex : exceptions) {
+			lines.add("");
+			StringWriter writer = new StringWriter();
+			ex.printStackTrace(new PrintWriter(writer));
+			Collections.addAll(lines, writer.toString().split("\n"));
+		}
+		return lines;
 	}
 
 	public QuiltJsonGuiMessage toGuiMessage(QuiltJsonGui json) {
@@ -96,13 +144,25 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 
 		// TODO: Change the gui json stuff to embed 'Text' rather than 'String'
 		msg.title = title.toString();
-		msg.iconType = icon.tempToStatusNodeStr();
+		msg.iconType = PluginIconImpl.fromApi(icon).path;
 		for (Text t : description) {
-			msg.description.add(t.toString());
+			for (String line : t.toString().split("\\n")) {
+				msg.description.add(line);
+			}
 		}
+
 		for (Text t : additionalInfo) {
-			msg.additionalInfo.add(t.toString());
+			for (String line : t.toString().split("\\n")) {
+				msg.additionalInfo.add(line);
+			}
 		}
+
+		StringBuilder reportText = new StringBuilder();
+		for (String line : toReportText()) {
+			reportText.append(line);
+			reportText.append("\n");
+		}
+		addCopyTextToClipboardButton(Text.translate("button.copy_section"), reportText.toString());
 
 		for (ErrorButton btn : buttons) {
 			msg.buttons.add(btn.toGuiButton(json));
@@ -111,28 +171,31 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		return msg;
 	}
 
-	static abstract class ErrorButton {
+	static class ErrorButton implements QuiltPluginButton {
 		final Text name;
+		final QuiltBasicButtonAction action;
+		PluginGuiIcon icon;
+		final Map<String, String> arguments = new HashMap<>();
 
-		public ErrorButton(Text name) {
+		public ErrorButton(Text name, QuiltBasicButtonAction action) {
 			this.name = name;
+			this.action = action;
 		}
 
-		protected abstract QuiltJsonButton toGuiButton(QuiltJsonGui json);
-	}
-
-	static class FileViewButton extends ErrorButton {
-		final Path file;
-
-		public FileViewButton(Text name, Path file) {
-			super(name);
-			this.file = file;
+		protected QuiltJsonButton toGuiButton(QuiltJsonGui json) {
+			String iconStr = icon == null ? action.defaultIcon : PluginIconImpl.fromApi(icon).path;
+			return new QuiltJsonButton(name.toString(), iconStr, action).arguments(arguments);
 		}
 
 		@Override
-		protected QuiltJsonButton toGuiButton(QuiltJsonGui json) {
-			// TODO: Change json gui buttons to actually work!
-			return new QuiltJsonButton(name.toString(), file == null ? "text_file" : "jar+fabric", QuiltBasicButtonType.CLICK_MANY);
+		public ErrorButton icon(PluginGuiIcon icon) {
+			this.icon = icon;
+			return this;
+		}
+
+		ErrorButton arg(String key, String value) {
+			arguments.put(key, value);
+			return this;
 		}
 	}
 }

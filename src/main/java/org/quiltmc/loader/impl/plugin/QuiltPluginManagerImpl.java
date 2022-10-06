@@ -441,6 +441,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return modGuiNodes.get(mod);
 	}
 
+	@Override
+	public PluginGuiManager getGuiManager() {
+		return guiManager;
+	}
+
 	public QuiltPluginError reportError(BasePluginContext reporter, Text title) {
 		QuiltPluginErrorImpl error = new QuiltPluginErrorImpl(reporter.pluginId, title);
 		errors.add(error);
@@ -1172,21 +1177,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			int number = 1;
 
 			for (QuiltPluginErrorImpl error : errors) {
-				List<String> lines = new ArrayList<>();
-				lines.addAll(error.reportLines);
-
-				if (lines.isEmpty()) {
-					lines.add("The plugin that created this error (" + error.reportingPlugin + ") forgot to call 'appendReportText'!");
-					lines.add("The next stacktrace is where the plugin created the error, not the actual error.'");
-					error.exceptions.add(0, error.reportTrace);
-				}
-
-				for (Throwable ex : error.exceptions) {
-					lines.add("");
-					StringWriter writer = new StringWriter();
-					ex.printStackTrace(new PrintWriter(writer));
-					Collections.addAll(lines, writer.toString().split("\n"));
-				}
+				List<String> lines = error.toReportText();
 
 				report.addStringSection("Error " + number, -100, lines.toArray(new String[0]));
 				number++;
@@ -1663,7 +1654,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(Text.translate("gui.error.zipexception.desc.0", describePath(file)));
 			error.appendDescription(Text.translate("gui.error.zipexception.desc.1"));
 			error.appendThrowable(e);
-			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file));
+			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file))
+				.icon(guiManager.iconZipFile());
 
 			guiNode.addChild(Text.translate("gui.error.zipexception", e.getMessage()))//TODO: translate
 				.setError(e, error);
@@ -1675,7 +1667,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendReportText("Failed to read " + describePath(file) + "!");
 			error.appendDescription(Text.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
-			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file));
+			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file))
+				.icon(guiManager.iconZipFile());
 
 			guiNode.addChild(Text.translate("gui.error.ioexception", e.getMessage()))//TODO: translate
 				.setError(e, error);

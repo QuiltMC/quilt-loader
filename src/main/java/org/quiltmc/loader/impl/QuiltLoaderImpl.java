@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -69,7 +70,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonType;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -82,6 +83,7 @@ import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
+import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReportSection;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
@@ -321,6 +323,8 @@ public final class QuiltLoaderImpl {
 		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
 
 		Path crashReportFile = null;
+		QuiltReport crashReport = null;
+		IOException crashReportFileError = null;
 
 		try {
 			ModSolveResultImpl result = plugins.run(true);
@@ -342,6 +346,7 @@ public final class QuiltLoaderImpl {
 
 			return result;
 		} catch (QuiltReportedError reported) {
+			crashReport = reported.report;
 			Path crashReportDir = gameDir.resolve("crash-reports");
 			try {
 				Files.createDirectories(crashReportDir);
@@ -363,12 +368,38 @@ public final class QuiltLoaderImpl {
 				e.printStackTrace();
 				reported.report.write(new PrintWriter(System.err));
 				crashReportFile = null; // Disable "open crash report" button
+				crashReportFileError = e;
 			}
 		}
 
 		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, null);
 		plugins.guiManager.putIcons(tree);
 		tree.messagesTabName = Text.translate("tab.messages").toString();
+
+		String fullCrashText = null;
+
+		if (crashReportFileError != null) {
+
+			List<String> lines = new ArrayList<>();
+			lines.add("Failed to save the crash report!");
+			lines.add("");
+			StringWriter writer = new StringWriter();
+			crashReportFileError.printStackTrace(new PrintWriter(writer));
+			Collections.addAll(lines, writer.toString().split("\n"));
+			crashReport.addStringSection("Error 0", -200, lines.toArray(new String[0]));
+
+			writer = new StringWriter();
+			crashReport.write(new PrintWriter(writer));
+			fullCrashText = writer.toString();
+
+			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", Text.translate("error.failed_to_save_crash_report"));
+			error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
+			error.appendDescription(Text.translate("error.failed_to_save_crash_report.desc"));
+			error.appendAdditionalInformation(Text.translate("error.failed_to_save_crash_report.info"));
+			error.addCopyTextToClipboardButton(Text.translate("button.copy_crash_report"), fullCrashText);
+			tree.messages.add(error.toGuiMessage(tree));
+		}
+
 		for (QuiltPluginErrorImpl error : plugins.getErrors()) {
 			tree.messages.add(error.toGuiMessage(tree));
 		}
@@ -385,12 +416,14 @@ public final class QuiltLoaderImpl {
 		plugins.guiModsRoot.toNode(tab2.node, false);
 
 		if (crashReportFile != null) {
-			// TODO - pass the crash report path into the error gui!
-			tree.addButton(Text.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonType.CLICK_MANY);
-			tree.addButton(Text.translate("button.copy_crash_report").toString(), "text_file", QuiltBasicButtonType.CLICK_MANY);
+			tree.addButton(Text.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//
+				.arg("file", crashReportFile.toString());
+			tree.addButton(Text.translate("button.copy_crash_report").toString(), QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE)//
+				.arg("file", crashReportFile.toString());
 		}
 
-		tree.addButton(Text.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonType.CLICK_MANY);
+		tree.addButton(Text.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
+			.arg("folder", getModsDir().toString());
 
 		try {
 			QuiltGuiEntry.open(tree, null, true);

@@ -29,11 +29,16 @@ import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 public class BuiltinModOption extends InternalModOptionBase {
 
 	public BuiltinModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, Path resourceRoot) {
-		super(pluginContext, meta, from, resourceRoot, true, false);
+		super(pluginContext, meta, from, GuiManagerImpl.ICON_JAVA_PACKAGE, resourceRoot, true, false);
 	}
 
 	@Override
 	public PluginGuiIcon modTypeIcon() {
+		return GuiManagerImpl.ICON_JAVA_PACKAGE;
+	}
+
+	@Override
+	public PluginGuiIcon modCompleteIcon() {
 		return GuiManagerImpl.ICON_JAVA_PACKAGE;
 	}
 

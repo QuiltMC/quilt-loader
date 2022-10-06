@@ -17,6 +17,8 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.awt.Desktop;
+import java.awt.datatransfer.Clipboard;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -131,11 +134,38 @@ public final class QuiltJsonGui {
 		}
 	}
 
-	public enum QuiltBasicButtonType {
-		/** Sends the status message to the main application, then disables itself. */
-		CLICK_ONCE,
-		/** Sends the status message to the main application, remains enabled. */
-		CLICK_MANY
+	public enum QuiltBasicButtonAction {
+		CLOSE(ICON_TYPE_DEFAULT),
+		CONTINUE(ICON_TYPE_DEFAULT),
+		VIEW_FILE(ICON_TYPE_GENERIC_FILE, "file"),
+		VIEW_FOLDER(ICON_TYPE_FOLDER, "folder"),
+		OPEN_FILE(ICON_TYPE_GENERIC_FILE, "file"),
+
+		/** Copies the given 'text' into the clipboard */
+		PASTE_CLIPBOARD_TEXT(ICON_TYPE_CLIPBOARD, "text"),
+
+		/** Copies the contents of a {@link File} (given in 'file') into the clipboard. */
+		PASTE_CLIPBOARD_FILE(ICON_TYPE_CLIPBOARD, "file"),
+
+		/** Copies a sub-sequence of characters from a {@link File} (given in 'file'), starting with the byte indexed by
+		 * 'from' and stopping one byte before 'to' */
+		PASTE_CLIPBOARD_FILE_SECTION(ICON_TYPE_CLIPBOARD, "file", "from", "to"),
+		OPEN_WEB_URL(ICON_TYPE_WEB, "url"),
+
+		/** Runs a {@link Runnable} in the original application, but only the first time the button is pressed. */
+		RETURN_SIGNAL_ONCE(ICON_TYPE_DEFAULT),
+
+		/** Runs a {@link Runnable} in the original application, every time the button is pressed. */
+		RETURN_SIGNAL_MANY(ICON_TYPE_DEFAULT);
+
+		public final String defaultIcon;
+		private final Set<String> requiredArgs;
+
+		private QuiltBasicButtonAction(String defaultIcon, String... args) {
+			this.defaultIcon = defaultIcon;
+			requiredArgs = new HashSet<>();
+			Collections.addAll(requiredArgs, args);
+		}
 	}
 
 	/** No icon is displayed. */
@@ -145,7 +175,7 @@ public final class QuiltJsonGui {
 	public static final String ICON_TYPE_FOLDER = "folder";
 
 	/** Generic (unknown contents) file. */
-	public static final String ICON_TYPE_UNKNOWN_FILE = "file";
+	public static final String ICON_TYPE_GENERIC_FILE = "generic_file";
 
 	/** Generic non-Fabric jar file. */
 	public static final String ICON_TYPE_JAR_FILE = "jar";
@@ -179,6 +209,12 @@ public final class QuiltJsonGui {
 
 	/** A folder that contains Java class files. */
 	public static final String ICON_TYPE_JAVA_PACKAGE = "java_package";
+
+	/** A URL link */
+	public static final String ICON_TYPE_WEB = "web_link";
+
+	/** The {@link Clipboard} */
+	public static final String ICON_TYPE_CLIPBOARD = "clipboard";
 
 	/** A tick symbol, used to indicate that something matched. */
 	public static final String ICON_TYPE_TICK = "tick";
@@ -227,12 +263,12 @@ public final class QuiltJsonGui {
 		return tab;
 	}
 
-	public QuiltJsonButton addButton(String text, QuiltBasicButtonType type) {
-		return addButton(text, "", type);
+	public QuiltJsonButton addButton(String text, QuiltBasicButtonAction action) {
+		return addButton(text, action.defaultIcon, action);
 	}
 
-	public QuiltJsonButton addButton(String text, String icon, QuiltBasicButtonType type) {
-		QuiltJsonButton button = new QuiltJsonButton(text, icon, type);
+	public QuiltJsonButton addButton(String text, String icon, QuiltBasicButtonAction action) {
+		QuiltJsonButton button = new QuiltJsonButton(text, icon, action);
 		buttons.add(button);
 		return button;
 	}
@@ -354,24 +390,17 @@ public final class QuiltJsonGui {
 
 	public static final class QuiltJsonButton {
 		public final String text, icon;
-		public final QuiltBasicButtonType type;
-		public String clipboard = "";
-		public boolean shouldClose, shouldContinue;
+		public final QuiltBasicButtonAction action;
+		public final Map<String, String> arguments = new HashMap<>();
 
-		public QuiltJsonButton(String text, String icon, QuiltBasicButtonType type) {
+		/** Only used for {@link QuiltBasicButtonAction#RETURN_SIGNAL_ONCE} and
+		 * {@link QuiltBasicButtonAction#RETURN_SIGNAL_MANY} */
+		Runnable returnSignalAction;
+
+		public QuiltJsonButton(String text, String icon, QuiltBasicButtonAction action) {
 			this.text = text;
 			this.icon = icon;
-			this.type = type;
-		}
-
-		public QuiltJsonButton makeClose() {
-			shouldClose = true;
-			return this;
-		}
-
-		public QuiltJsonButton makeContinue() {
-			this.shouldContinue = true;
-			return this;
+			this.action = action;
 		}
 
 		QuiltJsonButton(JsonReader reader) throws IOException {
@@ -380,14 +409,14 @@ public final class QuiltJsonGui {
 			text = reader.nextString();
 			expectName(reader, "icon");
 			icon = reader.nextString();
-			expectName(reader, "type");
-			type = QuiltBasicButtonType.valueOf(reader.nextString());
-			expectName(reader, "shouldClose");
-			shouldClose = reader.nextBoolean();
-			expectName(reader, "shouldContinue");
-			shouldContinue = reader.nextBoolean();
-			expectName(reader, "clipboard");
-			clipboard = reader.nextString();
+			expectName(reader, "action");
+			action = QuiltBasicButtonAction.valueOf(reader.nextString());
+			expectName(reader, "arguments");
+			reader.beginObject();
+			while (reader.peek() != JsonToken.END_OBJECT) {
+				arguments.put(reader.nextName(), reader.nextString());
+			}
+			reader.endObject();
 			reader.endObject();
 		}
 
@@ -395,15 +424,27 @@ public final class QuiltJsonGui {
 			writer.beginObject();
 			writer.name("text").value(text);
 			writer.name("icon").value(icon);
-			writer.name("type").value(type.name());
-			writer.name("shouldClose").value(shouldClose);
-			writer.name("shouldContinue").value(shouldContinue);
-			writer.name("clipboard").value(clipboard);
+			writer.name("action").value(action.name());
+			writer.name("arguments").beginObject();
+			for (Entry<String, String> entry : arguments.entrySet()) {
+				writer.name(entry.getKey()).value(entry.getValue());
+			}
+			writer.endObject();
 			writer.endObject();
 		}
 
-		public QuiltJsonButton withClipboard(String clipboard) {
-			this.clipboard = clipboard;
+		public QuiltJsonButton arg(String key, String value) {
+			arguments.put(key, value);
+			return this;
+		}
+
+		public QuiltJsonButton arguments(Map<String, String> args) {
+			arguments.putAll(args);
+			return this;
+		}
+
+		public QuiltJsonButton setAction(Runnable action) {
+			this.returnSignalAction = action;
 			return this;
 		}
 	}

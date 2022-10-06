@@ -40,8 +40,8 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	WarningLevel directLevel = WarningLevel.NONE;
 	WarningLevel cachedLevel = WarningLevel.NONE;
 
-	PluginGuiIcon mainIcon = GuiManagerImpl.ICON_NULL;
-	PluginGuiIcon subIcon = null;
+	PluginIconImpl mainIcon = GuiManagerImpl.ICON_NULL;
+	PluginIconImpl subIcon = null;
 
 	final List<TempQuilt2OldStatusNode> childrenByAddition, childrenByAlphabetical;
 
@@ -65,10 +65,9 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 		node.name = text.toString();
 
 		if (mainIcon != GuiManagerImpl.ICON_NULL) {
-			node.iconType = mainIcon.tempToStatusNodeStr() + (subIcon == null ? "" : ("+" + subIcon
-				.tempToStatusNodeStr()));
+			node.iconType = mainIcon.withDecoration(subIcon).path;
 		} else if (subIcon != null) {
-			node.iconType = subIcon.tempToStatusNodeStr();
+			node.iconType = subIcon.path;
 		}
 
 		node.setWarningLevel(QuiltTreeWarningLevel.fromApiLevel(directLevel));
@@ -203,7 +202,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	@Override
 	public TempQuilt2OldStatusNode mainIcon(PluginGuiIcon icon) {
-		mainIcon = icon;
+		mainIcon = PluginIconImpl.fromApi(icon);
 		return this;
 	}
 
@@ -214,7 +213,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	@Override
 	public TempQuilt2OldStatusNode subIcon(PluginGuiIcon icon) {
-		this.subIcon = icon;
+		this.subIcon =  PluginIconImpl.fromApi(icon);
 		return this;
 	}
 

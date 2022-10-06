@@ -104,6 +104,11 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
+	public PluginGuiIcon modFileIcon() {
+		return loader().manager().getGuiManager().iconUnknownFile();
+	}
+
+	@Override
 	public PluginGuiIcon modTypeIcon() {
 		return provider.modTypeIcon();
 	}

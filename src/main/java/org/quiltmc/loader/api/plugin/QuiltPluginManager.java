@@ -28,6 +28,7 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 
@@ -161,4 +162,6 @@ public interface QuiltPluginManager {
 	// #######
 
 	PluginGuiTreeNode getGuiNode(ModLoadOption mod);
+
+	PluginGuiManager getGuiManager();
 }

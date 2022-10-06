@@ -18,20 +18,32 @@ package org.quiltmc.loader.impl.plugin.gui;
 
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 
-final class PluginIconBuiltin implements PluginGuiIcon {
-	final String path;
+public final class PluginIconImpl implements PluginGuiIcon {
+	public final String path;
 
-	public PluginIconBuiltin(String path) {
+	PluginIconImpl(String path) {
 		this.path = path;
 	}
 
-	@Override
-	public String tempToStatusNodeStr() {
-		return path;
+	PluginIconImpl(int index) {
+		this.path = "!" + index;
+	}
+
+	public static PluginIconImpl fromApi(PluginGuiIcon icon) {
+		if (icon instanceof PluginIconImpl) {
+			return (PluginIconImpl) icon;
+		} else if (icon == null) {
+			return null;
+		} else {
+			throw new IllegalArgumentException(icon.getClass() + " implements PluginGuiIcon, even though this is disallowed!");
+		}
 	}
 
 	@Override
-	public boolean isInLoader() {
-		return true;
+	public PluginIconImpl withDecoration(PluginGuiIcon subIcon) {
+		if (subIcon == null) {
+			return this;
+		}
+		return new PluginIconImpl(path + "+" + fromApi(subIcon).path);
 	}
 }
