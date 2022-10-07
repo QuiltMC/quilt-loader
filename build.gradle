@@ -11,7 +11,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id 'org.quiltmc.gradle.licenser' version '1.1.+'
-	id 'org.quiltmc.loom' version '0.12.+' apply false
+	id 'org.quiltmc.loom' version '1.0.+' apply false
 	id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
