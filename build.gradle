@@ -111,7 +111,7 @@ processResources {
 	}
 }
 
-// Required for syncing required libraries over to installer and fabric's launchwrapper.
+// Required for syncing required libraries over to installer.
 processResources {
 	inputs.property "net.fabricmc:tiny-mappings-parser", project.tiny_mappings_parser
 	inputs.property "net.fabricmc:sponge-mixin", project.sponge_mixin
