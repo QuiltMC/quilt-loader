@@ -111,6 +111,64 @@ processResources {
 	}
 }
 
+// Required for syncing required libraries over to installer and fabric's launchwrapper.
+processResources {
+	inputs.property "net.fabricmc:tiny-mappings-parser", project.tiny_mappings_parser
+	inputs.property "net.fabricmc:sponge-mixin", project.sponge_mixin
+	inputs.property "net.fabricmc:tiny-remapper", project.tiny_remapper
+	inputs.property "net.fabricmc:access-widener", project.access_widener
+	inputs.property "org.quiltmc:quilt-json5", project.quilt_json5
+	inputs.property "net.fabricmc:asm", project.asm
+	inputs.property "net.fabricmc:asm-analysis", project.asm
+	inputs.property "net.fabricmc:asm-commons", project.asm
+	inputs.property "net.fabricmc:asm-tree", project.asm
+	inputs.property "net.fabricmc:asm-util", project.asm
+	inputs.property "org.quiltmc:quilt-config", project.quilt_config
+
+	filesMatching("quilt_installer.json") {
+		expand "net.fabricmc:tiny-mappings-parser": project.version
+		expand "net.fabricmc:sponge-mixin": project.version
+		expand "net.fabricmc:tiny-remapper": project.version
+		expand "net.fabricmc:access-widener": project.version
+		expand "org.quiltmc:quilt-json5": project.version
+		expand "net.fabricmc:asm": project.version
+		expand "net.fabricmc:asm-analysis": project.version
+		expand "net.fabricmc:asm-commons": project.version
+		expand "net.fabricmc:asm-tree": project.version
+		expand "net.fabricmc:asm-util": project.version
+		expand "org.quiltmc:quilt-config": project.version
+	}
+}
+
+// Same as above but for the launchwrapper.
+processResources {
+	inputs.property "net.fabricmc:tiny-mappings-parser", project.tiny_mappings_parser
+	inputs.property "net.fabricmc:sponge-mixin", project.sponge_mixin
+	inputs.property "net.fabricmc:tiny-remapper", project.tiny_remapper
+	inputs.property "net.fabricmc:access-widener", project.access_widener
+	inputs.property "org.quiltmc:quilt-json5", project.quilt_json5
+	inputs.property "net.fabricmc:asm", project.asm
+	inputs.property "net.fabricmc:asm-analysis", project.asm
+	inputs.property "net.fabricmc:asm-commons", project.asm
+	inputs.property "net.fabricmc:asm-tree", project.asm
+	inputs.property "net.fabricmc:asm-util", project.asm
+	inputs.property "org.quiltmc:quilt-config", project.quilt_config
+
+	filesMatching("fabric-installer.launchwrapper.json") {
+		expand "net.fabricmc:tiny-mappings-parser": project.version
+		expand "net.fabricmc:sponge-mixin": project.version
+		expand "net.fabricmc:tiny-remapper": project.version
+		expand "net.fabricmc:access-widener": project.version
+		expand "org.quiltmc:quilt-json5": project.version
+		expand "net.fabricmc:asm": project.version
+		expand "net.fabricmc:asm-analysis": project.version
+		expand "net.fabricmc:asm-commons": project.version
+		expand "net.fabricmc:asm-tree": project.version
+		expand "net.fabricmc:asm-util": project.version
+		expand "org.quiltmc:quilt-config": project.version
+	}
+}
+
 java {
 	sourceCompatibility = 8
 	targetCompatibility = 8
