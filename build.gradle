@@ -125,7 +125,7 @@ processResources {
 	inputs.property "net.fabricmc:asm-util", project.asm
 	inputs.property "org.quiltmc:quilt-config", project.quilt_config
 
-	filesMatching("quilt_installer.json") {
+	filesMatching("quilt_installer.json", "fabric-installer.launchwrapper.json") {
 		expand "net.fabricmc:tiny-mappings-parser": project.version
 		expand "net.fabricmc:sponge-mixin": project.version
 		expand "net.fabricmc:tiny-remapper": project.version
