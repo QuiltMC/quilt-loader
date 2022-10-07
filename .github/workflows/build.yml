@@ -27,7 +27,7 @@ jobs:
 #    needs: build
     runs-on: ubuntu-22.04
     container:
-      image: openjdk:17-jdk
+      image: eclipse-temurin:17
       options: --user root
     steps:
       - uses: actions/checkout@v3
