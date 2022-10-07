@@ -14,7 +14,7 @@ jobs:
 #    strategy:
 #      matrix:
 #        java: [17-jdk]
-#    runs-on: ubuntu-20.04
+#    runs-on: ubuntu-22.04
 #    container:
 #      image: openjdk:${{ matrix.java }}
 #      options: --user root
@@ -25,12 +25,12 @@ jobs:
 
   publish:
 #    needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     container:
       image: openjdk:17-jdk
       options: --user root
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v3
       - uses: gradle/wrapper-validation-action@v1
       - run: ./gradlew build publish --stacktrace
         env:
