@@ -105,38 +105,36 @@ test {
 
 processResources {
 	inputs.property "version", project.version
+	inputs.property "tiny_mappings_parser", project.tiny_mappings_parser
+	inputs.property "sponge_mixin", project.sponge_mixin
+	inputs.property "tiny_remapper", project.tiny_remapper
+	inputs.property "access_widener", project.access_widener
+	inputs.property "quilt_json5", project.quilt_json5
+	inputs.property "asm", project.asm
+	inputs.property "asm_analysis", project.asm
+	inputs.property "asm_commons", project.asm
+	inputs.property "asm_tree", project.asm
+	inputs.property "asm_util", project.asm
+	inputs.property "quilt_config", project.quilt_config
 
 	filesMatching("quilt.mod.json") {
 		expand "version": project.version
 	}
-}
-
-// Required for syncing required libraries over to installer.
-processResources {
-	inputs.property "net.fabricmc:tiny-mappings-parser", project.tiny_mappings_parser
-	inputs.property "net.fabricmc:sponge-mixin", project.sponge_mixin
-	inputs.property "net.fabricmc:tiny-remapper", project.tiny_remapper
-	inputs.property "net.fabricmc:access-widener", project.access_widener
-	inputs.property "org.quiltmc:quilt-json5", project.quilt_json5
-	inputs.property "net.fabricmc:asm", project.asm
-	inputs.property "net.fabricmc:asm-analysis", project.asm
-	inputs.property "net.fabricmc:asm-commons", project.asm
-	inputs.property "net.fabricmc:asm-tree", project.asm
-	inputs.property "net.fabricmc:asm-util", project.asm
-	inputs.property "org.quiltmc:quilt-config", project.quilt_config
 
 	filesMatching(["quilt_installer.json", "fabric-installer.launchwrapper.json"]) {
-		expand "net.fabricmc:tiny-mappings-parser": project.version
-		expand "net.fabricmc:sponge-mixin": project.version
-		expand "net.fabricmc:tiny-remapper": project.version
-		expand "net.fabricmc:access-widener": project.version
-		expand "org.quiltmc:quilt-json5": project.version
-		expand "net.fabricmc:asm": project.version
-		expand "net.fabricmc:asm-analysis": project.version
-		expand "net.fabricmc:asm-commons": project.version
-		expand "net.fabricmc:asm-tree": project.version
-		expand "net.fabricmc:asm-util": project.version
-		expand "org.quiltmc:quilt-config": project.version
+		expand(
+			"tiny_mappings_parser": project.tiny_mappings_parser,
+			"sponge_mixin": project.sponge_mixin,
+			"tiny_remapper": project.tiny_remapper,
+			"access_widener": project.access_widener,
+			"quilt_json5": project.quilt_json5,
+			"asm": project.asm,
+			"asm_analysis": project.asm,
+			"asm_commons": project.asm,
+			"asm_tree": project.asm,
+			"asm_util": project.asm,
+			"quilt_config": project.quilt_config,
+		)
 	}
 }
 
@@ -261,6 +259,9 @@ task testJar(type: Jar) {
 
 
 task copyJson() {
+	doFirst {
+		processResources
+	}
 	def inJson = file('src/main/resources/quilt_installer.json')
 	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 

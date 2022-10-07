@@ -5,47 +5,47 @@
     ],
     "common": [
       {
-        "name": "net.fabricmc:tiny-mappings-parser:0.3.0+build.17",
+        "name": "net.fabricmc:tiny-mappings-parser:${tiny_mappings_parser}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "net.fabricmc:sponge-mixin:0.11.4+mixin.0.8.5",
+        "name": "net.fabricmc:sponge-mixin:${sponge_mixin}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "net.fabricmc:tiny-remapper:0.8.6",
+        "name": "net.fabricmc:tiny-remapper:${tiny_remapper}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "net.fabricmc:access-widener:2.1.0",
+        "name": "net.fabricmc:access-widener:${access_widener}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.quiltmc:quilt-json5:1.0.2",
+        "name": "org.quiltmc:quilt-json5:${quilt_json5}",
         "url": "https://maven.quiltmc.org/repository/release/"
       },
       {
-        "name": "org.ow2.asm:asm:9.3",
+        "name": "org.ow2.asm:asm:${asm}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-analysis:9.3",
+        "name": "org.ow2.asm:asm-analysis:${asm_analysis}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-commons:9.3",
+        "name": "org.ow2.asm:asm-commons:${asm_commons}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-tree:9.3",
+        "name": "org.ow2.asm:asm-tree:${asm_tree}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.ow2.asm:asm-util:9.3",
+        "name": "org.ow2.asm:asm-util:${asm_util}",
         "url": "https://maven.fabricmc.net/"
       },
       {
-        "name": "org.quiltmc:quilt-config:1.0.0-beta.6",
+        "name": "org.quiltmc:quilt-config:${quilt_config}",
         "url": "https://maven.quiltmc.org/repository/release/"
       }
     ],
