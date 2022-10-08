@@ -17,6 +17,8 @@
 
 package org.quiltmc.loader.api;
 
+import java.util.Collection;
+
 import org.jetbrains.annotations.ApiStatus;
 
 /**
@@ -31,6 +33,13 @@ public interface ModContributor {
 
 	/**
 	 * @return the role that represents a contributor's relation to a mod.
+	 * @deprecated contributors may have multiple roles, use {@link #roles()} instead.
 	 */
+	@Deprecated
 	String role();
+
+	/**
+	 * @return the roles that represent a contributor's relation to a mod.
+	 */
+	Collection<String> roles();
 }

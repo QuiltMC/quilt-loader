@@ -263,10 +263,14 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private static Collection<ModContributor> convertContributors(FabricLoaderModMetadata metadata) {
 		List<ModContributor> contributors = new ArrayList<>();
 		for (Person author : metadata.getAuthors()) {
-			contributors.add(new ModContributorImpl(author.getName(), "Author"));
+			List<String> roles = new ArrayList<>();
+			roles.add("Author");
+			contributors.add(new ModContributorImpl(author.getName(), roles));
 		}
 		for (Person contributor : metadata.getContributors()) {
-			contributors.add(new ModContributorImpl(contributor.getName(), "Contributor"));
+			List<String> roles = new ArrayList<>();
+			roles.add("Contributor");
+			contributors.add(new ModContributorImpl(contributor.getName(), roles));
 		}
 		return Collections.unmodifiableList(contributors);
 	}

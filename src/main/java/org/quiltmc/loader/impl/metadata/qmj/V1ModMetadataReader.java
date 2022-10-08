@@ -284,8 +284,8 @@ final class V1ModMetadataReader {
 					if (contributorsValue.type() != LType.OBJECT) {
 						throw parseException(contributorsValue, "contributors must be an object");
 					}
-					Map<String, String> intermediate = new HashMap<>();
-					readStringMap(contributorsValue.asObject(), "contributors", intermediate);
+					Map<String, List<String>> intermediate = new HashMap<>();
+					readStringToStringOrListMap(contributorsValue.asObject(), "contributors", intermediate);
 					intermediate.forEach((k, v) -> contributors.add(new ModContributorImpl(k, v)));
 				}
 
@@ -509,6 +509,26 @@ final class V1ModMetadataReader {
 			}
 
 			if (destination.put(key, value.asString()) != null) {
+				// TODO: Warn in dev environment about duplicate keys
+			}
+		}
+	}
+
+	private static void readStringToStringOrListMap(JsonLoaderValue.ObjectImpl object, String inside, Map<String, List<String>> destination) {
+		for (Map.Entry<String, LoaderValue> entry : object.entrySet()) {
+			String key = entry.getKey();
+			LoaderValue value = entry.getValue();
+			List<String> result = new ArrayList<>();
+
+			if (value.type() == LoaderValue.LType.STRING) {
+				result.add(value.asString());
+			} else if (value.type() == LoaderValue.LType.ARRAY) {
+				readStringList((JsonLoaderValue.ArrayImpl) value.asArray(), key, result);
+			} else {
+				throw parseException((JsonLoaderValue) value, String.format("entry with key %s inside \"%s\" must be a string or array of strings", key, inside));
+			}
+
+			if (destination.put(key, result) != null) {
 				// TODO: Warn in dev environment about duplicate keys
 			}
 		}

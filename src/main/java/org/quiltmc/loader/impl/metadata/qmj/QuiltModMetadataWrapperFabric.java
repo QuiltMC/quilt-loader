@@ -80,7 +80,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 		ArrayList<Person> contributors = new ArrayList<>();
 		for (ModContributor contributor : quiltMeta.contributors()) {
 			// "Owner" is the only defined role in the QMJ spec
-			if (contributor.role().equals("Owner")) {
+			if (contributor.roles().contains("Owner")) {
 				authors.add(new SimplePerson(contributor.name()));
 			} else {
 				contributors.add(new SimplePerson(contributor.name()));
