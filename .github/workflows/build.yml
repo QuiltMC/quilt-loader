@@ -16,7 +16,7 @@ jobs:
 #        java: [17-jdk]
 #    runs-on: ubuntu-22.04
 #    container:
-#      image: openjdk:${{ matrix.java }}
+#      image: eclipse-temurin:${{ matrix.java }}
 #      options: --user root
 #    steps:
 #      - uses: actions/checkout@v3
@@ -24,7 +24,7 @@ jobs:
 #      - run: ./gradlew build --stacktrace
 
   publish:
-#    needs: build
+#   needs: build
     runs-on: ubuntu-22.04
     container:
       image: eclipse-temurin:17
