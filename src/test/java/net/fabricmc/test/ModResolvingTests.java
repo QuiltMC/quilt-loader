@@ -100,6 +100,15 @@ final class ModResolvingTests {
 	}
 
 	@Test
+	public void lowBreaks() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "lowbreaks");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-optional", "1.19-1.0.6");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void altDep() throws Exception {
 		// Run the test multiple times to ensure we always pick the right dep
 		// (and also makes sure we never mess up)
@@ -204,6 +213,15 @@ final class ModResolvingTests {
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
 		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void quiltIncludedOptional() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_included_optional");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-optional-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 
