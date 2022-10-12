@@ -64,15 +64,15 @@ public final class UrlUtil {
 	public static Path asPath(URL url) {
 		try {
 			return Paths.get(
-					new URI(
-							url.getProtocol(),
-							url.getUserInfo(),
-							url.getHost(),
-							url.getPort(),
-							url.getPath(),
-							url.getQuery(),
-							null
-					)
+				new URI(
+					url.getProtocol(),
+					url.getUserInfo(),
+					url.getHost(),
+					url.getPort(),
+					url.getPath(),
+					url.getQuery(),
+					null
+				)
 			);
 		} catch (URISyntaxException e) {
 			throw ExceptionUtil.wrap(e);
