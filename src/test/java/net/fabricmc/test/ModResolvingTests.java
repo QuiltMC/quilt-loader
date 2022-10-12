@@ -35,7 +35,7 @@ final class ModResolvingTests {
 	private static Path testLocation;
 
 	@BeforeAll
-	private static void setupPaths() {
+	public static void setupPaths() {
 		testLocation = new File(System.getProperty("user.dir")).toPath()//
 			.resolve("src")//
 			.resolve("test")//
