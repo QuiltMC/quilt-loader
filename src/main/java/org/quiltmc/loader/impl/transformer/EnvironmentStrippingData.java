@@ -27,11 +27,7 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.TypeReference;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.ClientOnlyInterface;
-import org.quiltmc.loader.api.minecraft.ClientOnlyInterfaces;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnlyInterface;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnlyInterfaces;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -48,10 +44,6 @@ public class EnvironmentStrippingData extends ClassVisitor {
 	// Quilt annotations
 	private static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
 	private static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
-	private static final String CLIENT_ONLY_INTERFACE_DESCRIPTOR = Type.getDescriptor(ClientOnlyInterface.class);
-	private static final String CLIENT_ONLY_INTERFACES_DESCRIPTOR = Type.getDescriptor(ClientOnlyInterfaces.class);
-	private static final String SERVER_ONLY_INTERFACE_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnlyInterface.class);
-	private static final String SERVER_ONLY_INTERFACES_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnlyInterfaces.class);
 
 	private final EnvType envType;
 	private final String envTypeString;
@@ -139,46 +131,6 @@ public class EnvironmentStrippingData extends ClassVisitor {
 		}
 	}
 
-	private class QuiltInterfaceAnnotationVisitor extends AnnotationVisitor {
-		private Type itf;
-
-		private QuiltInterfaceAnnotationVisitor(int api) {
-			super(api);
-		}
-
-		@Override
-		public void visit(String name, Object value) {
-			if ("value".equals(name)) {
-				itf = (Type) value;
-			}
-		}
-
-		@Override
-		public void visitEnd() {
-			stripInterfaces.add(itf.getInternalName());
-		}
-	}
-
-	private class QuiltMultiInterfaceAnnotationVisitor extends AnnotationVisitor {
-		private QuiltMultiInterfaceAnnotationVisitor(int api) {
-			super(api);
-		}
-
-		@Override
-		public AnnotationVisitor visitArray(String name) {
-			if ("value".equals(name)) {
-				return new AnnotationVisitor(api) {
-					@Override
-					public AnnotationVisitor visitAnnotation(String name, String descriptor) {
-						return new QuiltInterfaceAnnotationVisitor(api);
-					}
-				};
-			}
-
-			return null;
-		}
-	}
-
 	private AnnotationVisitor visitMemberAnnotation(String descriptor, boolean visible, Runnable onEnvMismatch,
 		Runnable onEnvMismatchLambdas) {
 		if (ENVIRONMENT_DESCRIPTOR.equals(descriptor)) {
@@ -221,10 +173,6 @@ public class EnvironmentStrippingData extends ClassVisitor {
 			return new FabricEnvironmentAnnotationVisitor(api, () -> stripEntireClass = true);
 		} else if (ENVIRONMENT_INTERFACE_DESCRIPTOR.equals(descriptor)) {
 			return new FabricEnvironmentInterfaceAnnotationVisitor(api);
-		} else if (CLIENT_ONLY_INTERFACE_DESCRIPTOR.equals(descriptor) && envType == EnvType.SERVER) {
-			return new QuiltInterfaceAnnotationVisitor(api);
-		} else if (SERVER_ONLY_INTERFACE_DESCRIPTOR.equals(descriptor) && envType == EnvType.CLIENT) {
-			return new QuiltInterfaceAnnotationVisitor(api);
 		} else if (ENVIRONMENT_INTERFACES_DESCRIPTOR.equals(descriptor)) {
 			return new AnnotationVisitor(api) {
 				@Override
@@ -241,12 +189,6 @@ public class EnvironmentStrippingData extends ClassVisitor {
 					return null;
 				}
 			};
-		}
-
-		if (CLIENT_ONLY_INTERFACES_DESCRIPTOR.equals(descriptor) && envType == EnvType.SERVER) {
-			return new QuiltMultiInterfaceAnnotationVisitor(api);
-		} else if (SERVER_ONLY_INTERFACES_DESCRIPTOR.equals(descriptor) && envType == EnvType.CLIENT) {
-			return new QuiltMultiInterfaceAnnotationVisitor(api);
 		}
 
 		return null;

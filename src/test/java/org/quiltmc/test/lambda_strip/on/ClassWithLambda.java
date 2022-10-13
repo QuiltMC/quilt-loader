@@ -17,10 +17,8 @@
 package org.quiltmc.test.lambda_strip.on;
 
 import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.ClientOnlyInterface;
 
-@ClientOnlyInterface(ClientItf.class)
-public class ClassWithLambda implements ClientItf {
+public class ClassWithLambda implements @ClientOnly ClientItf {
 
 	@ClientOnly
 	public static void sayHello() {

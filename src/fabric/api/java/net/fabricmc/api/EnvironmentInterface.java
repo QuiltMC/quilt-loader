@@ -24,9 +24,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.ClientOnlyInterface;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnlyInterface;
 
 /**
  * Applied to declare that a class implements an interface only in the specified environment.
@@ -37,7 +35,8 @@ import org.quiltmc.loader.api.minecraft.DedicatedServerOnlyInterface;
  * <p>Implemented methods are not removed. To remove implemented methods, use {@link Environment}.</p>
  *
  * @see Environment
- * @deprecated Please use one of quilt's annotations: either {@link ClientOnlyInterface} or {@link DedicatedServerOnlyInterface}.
+ * @deprecated Please use one of quilt's annotations: either {@link ClientOnly} or {@link DedicatedServerOnly}.
+ * Those annotations can be directly applied to the implemented interface.
  */
 @Retention(RetentionPolicy.CLASS)
 @Repeatable(EnvironmentInterfaces.class)
