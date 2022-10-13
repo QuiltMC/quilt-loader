@@ -42,6 +42,7 @@ public class LambdaStripTester {
 	public static void main(String[] args) throws IOException {
 		String[] files = { //
 			"bin/test/org/quiltmc/test/lambda_strip/on/ClassWithLambda.class", //
+			"bin/test/org/quiltmc/test/lambda_strip/on/ClassWithLambdaTyped.class", //
 			"bin/test/org/quiltmc/test/lambda_strip/on/ClassWithCaptureLambda.class", //
 			"bin/test/org/quiltmc/test/lambda_strip/on/ClassWithMethodReference.class"//
 		};

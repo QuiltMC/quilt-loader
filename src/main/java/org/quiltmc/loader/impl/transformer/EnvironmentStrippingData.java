@@ -24,6 +24,8 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
+import org.objectweb.asm.TypePath;
+import org.objectweb.asm.TypeReference;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.ClientOnlyInterface;
 import org.quiltmc.loader.api.minecraft.ClientOnlyInterfaces;
@@ -55,6 +57,7 @@ public class EnvironmentStrippingData extends ClassVisitor {
 	private final String envTypeString;
 
 	private boolean stripEntireClass = false;
+	private String[] interfaces;
 	private final Collection<String> stripInterfaces = new HashSet<>();
 	private final Collection<String> stripFields = new HashSet<>();
 	private final Collection<String> stripMethods = new HashSet<>();
@@ -200,6 +203,12 @@ public class EnvironmentStrippingData extends ClassVisitor {
 	}
 
 	@Override
+	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+		super.visit(version, access, name, signature, superName, interfaces);
+		this.interfaces = interfaces;
+	}
+
+	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (CLIENT_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.SERVER) {
@@ -239,6 +248,39 @@ public class EnvironmentStrippingData extends ClassVisitor {
 			return new QuiltMultiInterfaceAnnotationVisitor(api);
 		} else if (SERVER_ONLY_INTERFACES_DESCRIPTOR.equals(descriptor) && envType == EnvType.CLIENT) {
 			return new QuiltMultiInterfaceAnnotationVisitor(api);
+		}
+
+		return null;
+	}
+
+	@Override
+	public AnnotationVisitor visitTypeAnnotation(int typeRef, TypePath typePath, String descriptor, boolean visible) {
+
+		TypeReference ref = new TypeReference(typeRef);
+
+		if (ref.getSort() != TypeReference.CLASS_EXTENDS) {
+			return null;
+		}
+
+		int interfaceIdx = ref.getSuperTypeIndex();
+
+		if (interfaceIdx < 0) {
+			// Wrongly applied to the super class
+			return null;
+		}
+
+		final EnvType annotationEnv;
+
+		if (CLIENT_ONLY_DESCRIPTOR.equals(descriptor)) {
+			annotationEnv = EnvType.CLIENT;
+		} else if (SERVER_ONLY_DESCRIPTOR.equals(descriptor)) {
+			annotationEnv = EnvType.SERVER;
+		} else {
+			return null;
+		}
+
+		if (annotationEnv != envType) {
+			stripInterfaces.add(interfaces[interfaceIdx]);
 		}
 
 		return null;
