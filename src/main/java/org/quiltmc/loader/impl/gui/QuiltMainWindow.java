@@ -313,7 +313,7 @@ class QuiltMainWindow {
 		} else if (osName.contains("mac")) {
 			// Again, mac os just lets this work
 			try {
-				Runtime.getRuntime().exec("open -R \"" + file+ "\"");
+				Runtime.getRuntime().exec("open -R \"" + file + "\"");
 				return true;
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -328,9 +328,13 @@ class QuiltMainWindow {
 
 			// So instead try a list of known file explorers
 			// (Yes, this is a short list, and needs to be expanded)
-			for (String cmd : new String[] { "nemo \"%s\"", "nautilus \"%s\"" }) {
+			for (String[] cmd : new String[][] { { "nemo", "%s" }, { "nautilus", "%s" } }) {
 				try {
-					Runtime.getRuntime().exec(cmd.replace("%s", file));
+					String[] result = new String[cmd.length];
+					for (int i = 0; i < cmd.length; i++) {
+						result[i] = cmd[i].replace("%s", file);
+					}
+					Runtime.getRuntime().exec(result);
 					return true;
 				} catch (IOException e) {
 					e.printStackTrace();

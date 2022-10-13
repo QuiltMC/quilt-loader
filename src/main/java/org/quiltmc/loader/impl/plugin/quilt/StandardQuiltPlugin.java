@@ -108,15 +108,15 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, guiNode.manager().iconJarFile(), fromClasspath, guiNode);
+		return scan0(root, guiNode.manager().iconJarFile(), fromClasspath, true, guiNode);
 	}
 
 	@Override
 	public ModLoadOption[] scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, guiNode.manager().iconFolder(), true, guiNode);
+		return scan0(folder, guiNode.manager().iconFolder(), true, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
+	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
 		Path qmj = root.resolve("quilt.mod.json");
 		if (!Files.isRegularFile(qmj)) {
 			return null;
@@ -126,7 +126,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			InternalModMetadata meta = ModMetadataReader.read(qmj);
 
 			Path from = root;
-			if (!fromClasspath) {
+			if (isZip) {
 				from = context().manager().getParent(root);
 			}
 

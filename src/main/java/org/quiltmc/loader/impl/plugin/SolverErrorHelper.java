@@ -23,19 +23,23 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.imageio.ImageIO;
 
+import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 
@@ -147,7 +151,6 @@ class SolverErrorHelper {
 
 	/** Reports an error where there is only one root rule, of a {@link MandatoryModIdDefinition}. */
 	private static boolean reportSingleMandatoryError(QuiltPluginManagerImpl manager, RuleLink rootRule) {
-		GuiManagerImpl guiManager = manager.guiManager;
 		MandatoryModIdDefinition def = (MandatoryModIdDefinition) rootRule.rule;
 		ModLoadOption mandatoryMod = def.option;
 
@@ -161,109 +164,216 @@ class SolverErrorHelper {
 		// and then check for transitive (and fully valid) dependency paths!
 
 		OptionLink modLink = rootRule.to.get(0);
+		List<OptionLink> modLinks = Collections.singletonList(modLink);
+		Set<OptionLink> nextModLinks = new LinkedHashSet<>();
+		List<List<OptionLink>> fullChain = new ArrayList<>();
 
-		if (modLink.to.isEmpty()) {
-			// Apparently nothing is stopping this mod from loading
-			// (so there's a bug here somewhere)
-			return false;
-		}
+		String groupOn = null;
+		String modOn = null;
 
-		// FOR NOW
-		// just handle a single dependency / problem at a time
-		if (modLink.to.size() > 1) {
-			return false;
-		}
+		while (true) {
+			groupOn = null;
+			modOn = null;
+			Boolean areAllInvalid = null;
+			nextModLinks = new LinkedHashSet<>();
 
-		RuleLink mandatoryRule = modLink.to.get(0);
+			for (OptionLink link : modLinks) {
+				if (link.to.isEmpty()) {
+					// Apparently nothing is stopping this mod from loading
+					// (so there's a bug here somewhere)
+					return false;
+				}
 
-		if (mandatoryRule.rule instanceof QuiltRuleDepOnly) {
-			QuiltRuleDepOnly dep = (QuiltRuleDepOnly) mandatoryRule.rule;
+				if (link.to.size() > 1) {
+					// FOR NOW
+					// just handle a single dependency / problem at a time
+					return false;
+				}
 
-			if (dep.getValidOptions().isEmpty()) {
-				// The root mod depends on a mod which is either missing, or is the wrong version
-				if (dep.getWrongOptions().isEmpty()) {
-					// Completely missing
+				RuleLink rule = link.to.get(0);
+				if (rule.rule instanceof QuiltRuleDepOnly) {
+					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) rule.rule;
 
-					boolean transitive = false;
-					boolean anyVersion = false;
-
-					// Title:
-					// "BuildCraft" [transitively] requires [version 1.5.1] of "Quilt Standard Libraries", which is
-					// missing!
-
-					// Description:
-					// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
-
-					String titleKey = "error.dep." + (transitive ? "transitive" : "direct") //
-						+ (anyVersion ? ".any" : ".versioned") + ".title";
-					Object[] titleData = new Object[anyVersion ? 2 : 3];
-					String rootModName = mandatoryMod.metadata().name();
-					titleData[0] = rootModName;
-					if (!anyVersion) {
-						titleData[1] = "version [TODO:GET_VERSION]";
+					ModDependencyIdentifier id = dep.publicDep.id();
+					if (groupOn == null) {
+						if (!id.mavenGroup().isEmpty()) {
+							groupOn = id.mavenGroup();
+						}
+					} else if (!id.mavenGroup().isEmpty() && !groupOn.equals(id.mavenGroup())) {
+						// A previous dep targets a different group of the same mod, so this is a branching condition
+						return false;
 					}
-					titleData[anyVersion ? 1 : 2] = getDepName(dep);
-					Text title = Text.translate(titleKey, titleData);
-					QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
 
-					// TODO: Only upload a ModLoadOption's icon once!
-					Map<Integer, BufferedImage> modIcons = new HashMap<>();
-					for (int size : new int[]{16, 32}) {
-						String iconPath = mandatoryMod.metadata().icon(size);
-						if (iconPath != null) {
-							Path path = mandatoryMod.resourceRoot().resolve(iconPath);
-							try (InputStream stream = Files.newInputStream(path)) {
-								BufferedImage image = ImageIO.read(stream);
-								modIcons.put(image.getWidth(), image);
-							} catch (IOException io) {
-								// TODO: Warn about this somewhere!
-								io.printStackTrace();
-							}
+					if (modOn == null) {
+						modOn = id.id();
+					} else if (!modOn.equals(id.id())) {
+						// A previous dep targets a different mod, so this is a branching condition
+						return false;
+					}
+
+					if (dep.publicDep.unless() != null) {
+						// TODO: handle 'unless' clauses!
+						return false;
+					}
+
+					if (dep.getValidOptions().isEmpty()) {
+						// Loop exit condition!
+						if (areAllInvalid != null && areAllInvalid) {
+							continue;
+						} else if (nextModLinks.isEmpty()) {
+							areAllInvalid = true;
+							continue;
+						} else {
+							// Some deps are mismatched, others aren't
+							// so this isn't necessarily a flat dep chain
+							// (However it could be if the chain ends with a mandatory mod
+							// like minecraft, which doesn't have anything else at the end of the chain
+							return false;
 						}
 					}
 
-					if (!modIcons.isEmpty()) {
-						error.setIcon(manager.guiManager.allocateIcon(modIcons));
+					if (dep.getValidOptions().size() != rule.to.size()) {
+						return false;
 					}
 
-					Path rootModPath = mandatoryMod.from();
-					Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
-					error.appendDescription(Text.translate("info.root_mod_loaded_from", rootModDescArgs));
-
-					error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath)
-						.icon(mandatoryMod.modCompleteIcon());
-
-					String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
-					if (issuesUrl != null) {
-						error.addOpenLinkButton(Text.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
+					// Now check that they all match up
+					for (ModLoadOption option : dep.getValidOptions()) {
+						boolean found = false;
+						for (OptionLink link2 : rule.to) {
+							if (option == link2.option) {
+								found = true;
+							}
+						}
+						if (!found) {
+							return false;
+						}
 					}
 
-					StringBuilder report = new StringBuilder(rootModName);
-					if (transitive) {
-						report.append(" transitively");
-					}
-					report.append(" requires");
-					if (anyVersion) {
-						report.append(" any version of ");
-					} else {
-						report.append(" version [TODO:GET_VERSION] of ");
-					}
-					report.append(getDepName(dep));
-					report.append(", which is missing!");
-					error.appendReportText(report.toString(), rootModName + " is loaded from " + rootModPath);
+					nextModLinks.addAll(rule.to);
 
-					return true;
 				} else {
-
+					// TODO: Handle other conditions!
+					return false;
 				}
 			}
 
-			// TODO!
-			return false;
+			fullChain.add(modLinks);
 
-		} else {
-			// Unhandled, at least for now
-			return false;
+			if (areAllInvalid != null && areAllInvalid) {
+				// Now we have validated that every mod in the previous list all depend on the same mod
+
+				// Technically we should think about how to handle multiple *conflicting* version deps.
+				// For example:
+				// buildcraft requires abstract_base *
+				// abstract_base 18 requires minecraft 1.18.x
+				// abstract_base 19 requires minecraft 1.19.x
+
+				// Technically we are just showing deps as "transitive" so
+				// we just say that buildcraft requires minecraft 1.18.x or 1.19.x
+				// so we need to make the required version list "bigger" rather than smaller
+
+				// This breaks down if "abstract_base" requires an additional library though.
+				// (Although we aren't handling that here)
+
+				Set<ModLoadOption> allInvalidOptions = new HashSet<>();
+				for (OptionLink link : fullChain.get(fullChain.size() - 1)) {
+					// We validate all this earlier
+					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) link.to.get(0).rule;
+					allInvalidOptions.addAll(dep.getWrongOptions());
+				}
+
+				boolean transitive = fullChain.size() > 1;
+				boolean anyVersion = false; // TODO: Capture versions!
+				boolean missing = allInvalidOptions.isEmpty();
+
+				// Title:
+				// "BuildCraft" [transitively] requires [version 1.5.1] of "Quilt Standard Libraries", which is
+				// missing!
+
+				// Description:
+				// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
+
+				String titleKey = "error.dep."//
+					+ (transitive ? "transitive" : "direct") //
+					+ (anyVersion ? ".any" : ".versioned") //
+					+ ".title";
+				Object[] titleData = new Object[anyVersion ? 2 : 3];
+				String rootModName = mandatoryMod.metadata().name();
+				titleData[0] = rootModName;
+				if (!anyVersion) {
+					titleData[1] = "version [TODO:GET_VERSION]";
+				}
+				titleData[anyVersion ? 1 : 2] = modOn;//getDepName(dep);
+				Text first = Text.translate(titleKey, titleData);
+				Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
+				String secondKey = "error.dep.";
+				if (missing) {
+					secondKey += "missing";
+				} else if (allInvalidOptions.size() > 1) {
+					secondKey += "multi_mismatch";
+				} else {
+					secondKey += "single_mismatch";
+					secondData[0] = allInvalidOptions.iterator().next().version().toString();
+				}
+				Text second = Text.translate(secondKey + ".title", secondData);
+				Text title = Text.translate("error.dep.join.title", first, second);
+				QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
+
+				// TODO: Only upload a ModLoadOption's icon once!
+				Map<Integer, BufferedImage> modIcons = new HashMap<>();
+				for (int size : new int[] { 16, 32 }) {
+					String iconPath = mandatoryMod.metadata().icon(size);
+					if (iconPath != null) {
+						Path path = mandatoryMod.resourceRoot().resolve(iconPath);
+						try (InputStream stream = Files.newInputStream(path)) {
+							BufferedImage image = ImageIO.read(stream);
+							modIcons.put(image.getWidth(), image);
+						} catch (IOException io) {
+							// TODO: Warn about this somewhere!
+							io.printStackTrace();
+						}
+					}
+				}
+
+				if (!modIcons.isEmpty()) {
+					error.setIcon(manager.guiManager.allocateIcon(modIcons));
+				}
+
+				Path rootModPath = mandatoryMod.from();
+				Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
+				error.appendDescription(Text.translate("info.root_mod_loaded_from", rootModDescArgs));
+
+				for (List<OptionLink> list : fullChain.subList(1, fullChain.size())) {
+					OptionLink firstMod = list.get(0);
+					error.appendDescription(Text.of("via " + ((ModLoadOption) firstMod.option).id()));
+				}
+
+				error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath)
+					.icon(mandatoryMod.modCompleteIcon());
+
+				String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
+				if (issuesUrl != null) {
+					error.addOpenLinkButton(Text.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
+				}
+
+				StringBuilder report = new StringBuilder(rootModName);
+				if (transitive) {
+					report.append(" transitively");
+				}
+				report.append(" requires");
+				if (anyVersion) {
+					report.append(" any version of ");
+				} else {
+					report.append(" version [TODO:GET_VERSION] of ");
+				}
+				report.append(modOn);// TODO
+				report.append(", which is missing!");
+				error.appendReportText(report.toString(), rootModName + " is loaded from " + rootModPath);
+
+				return true;
+			}
+
+			modLinks = new ArrayList<>(nextModLinks);
 		}
 	}
 
