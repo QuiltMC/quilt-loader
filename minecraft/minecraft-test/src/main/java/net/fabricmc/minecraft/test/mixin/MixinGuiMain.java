@@ -21,6 +21,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import net.fabricmc.minecraft.test.server_only.TestMixinGuiHelper;
+
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.TitleScreen;
 import net.minecraft.client.util.math.MatrixStack;
@@ -35,5 +37,6 @@ public abstract class MixinGuiMain extends Screen {
 	@Inject(method = "render", at = @At("RETURN"))
 	public void render(MatrixStack matrixStack, int mouseX, int mouseY, float delta, CallbackInfo info) {
 		this.textRenderer.draw(matrixStack, "Fabric Test Mod", 2, this.height - 30, -1);
+		TestMixinGuiHelper.help();
 	}
 }

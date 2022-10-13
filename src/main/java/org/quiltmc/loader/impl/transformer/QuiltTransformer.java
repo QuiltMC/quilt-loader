@@ -53,8 +53,11 @@ public final class QuiltTransformer {
 			EnvironmentStrippingData stripData = new EnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType);
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
-			if (stripData.stripEntireClass() && !name.endsWith(".package-info")) {
-				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
+			if (stripData.stripEntireClass()) {
+				if (!name.endsWith(".package-info")) {
+					// package-info classes are only loaded during calls to get their annotations, which is the wrong time to throw this
+					throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
+				}
 			}
 
 			Collection<String> stripMethods = stripData.getStripMethods();

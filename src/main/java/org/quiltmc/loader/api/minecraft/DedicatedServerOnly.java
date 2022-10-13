@@ -39,7 +39,7 @@ import java.lang.annotation.Target;
  *
  * @see ClientOnly
  * @see DedicatedServerOnlyInterface */
-@Retention(RetentionPolicy.CLASS)
+@Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.TYPE_USE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.PACKAGE })
 @Documented
 public @interface DedicatedServerOnly {
