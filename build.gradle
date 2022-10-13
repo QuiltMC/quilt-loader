@@ -259,10 +259,7 @@ task testJar(type: Jar) {
 
 
 task copyJson() {
-	doFirst {
-		processResources
-	}
-	def inJson = file('src/main/resources/quilt_installer.json')
+	def inJson = file('build/resources/main/quilt_installer.json')
 	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 
 	def outJson = file("build/libs/${archivesBaseName}-${version}.json")
@@ -276,6 +273,7 @@ task copyJson() {
 		//outLwJson.text = inLwJson.text
 	}
 }
+tasks.copyJson.dependsOn "processResources"
 tasks.build.dependsOn "copyJson"
 
 tasks.withType(JavaCompile).configureEach {
@@ -339,7 +337,8 @@ publishing {
 			}
 			artifact(sourcesJar)
 			artifact javadocJar
-			artifact(file('src/main/resources/quilt_installer.json')) {
+			artifact(file('build/resources/main/quilt_installer.json')) {
+				builtBy processResources
 				builtBy copyJson
 			}
 //			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
