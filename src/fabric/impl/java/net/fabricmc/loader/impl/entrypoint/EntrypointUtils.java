@@ -15,31 +15,14 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api;
+package net.fabricmc.loader.impl.entrypoint;
 
-import java.util.Collection;
+import java.util.function.Consumer;
 
-import org.jetbrains.annotations.ApiStatus;
+@Deprecated
+public class EntrypointUtils {
 
-/**
- * A contributor to a mod.
- */
-@ApiStatus.NonExtendable
-public interface ModContributor {
-	/**
-	 * @return the name of the contributor
-	 */
-	String name();
-
-	/**
-	 * @return the role that represents a contributor's relation to a mod.
-	 * @deprecated contributors may have multiple roles, use {@link #roles()} instead.
-	 */
-	@Deprecated
-	String role();
-
-	/**
-	 * @return the roles that represent a contributor's relation to a mod.
-	 */
-	Collection<String> roles();
+	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
+		org.quiltmc.loader.impl.entrypoint.EntrypointUtils.invoke(name, type, invoker);
+	}
 }

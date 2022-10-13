@@ -40,7 +40,7 @@ final class ModResolvingTests {
 	private static Path testLocation;
 
 	@BeforeAll
-	private static void setupPaths() {
+	public static void setupPaths() {
 		testLocation = new File(System.getProperty("user.dir")).toPath()//
 			.resolve("src")//
 			.resolve("test")//
@@ -101,6 +101,15 @@ final class ModResolvingTests {
 
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void lowBreaks() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "lowbreaks");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-optional", "1.19-1.0.6");
 		assertNoMoreMods(modSet);
 	}
 
@@ -209,6 +218,15 @@ final class ModResolvingTests {
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-better-library", "1.0.0");
 		assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void quiltIncludedOptional() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_included_optional");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertModPresent(modSet, "mod-resolving-tests-optional-library", "1.0.0");
 		assertNoMoreMods(modSet);
 	}
 

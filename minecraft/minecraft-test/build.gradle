@@ -19,17 +19,17 @@ dependencies {
 	implementation project(":minecraft")
 
 	// Required for mixin annotation processor
-	annotationProcessor "org.ow2.asm:asm:${project.asm_version}"
-	annotationProcessor "org.ow2.asm:asm-analysis:${project.asm_version}"
-	annotationProcessor "org.ow2.asm:asm-commons:${project.asm_version}"
-	annotationProcessor "org.ow2.asm:asm-tree:${project.asm_version}"
-	annotationProcessor "org.ow2.asm:asm-util:${project.asm_version}"
+	annotationProcessor "org.ow2.asm:asm:${project.asm}"
+	annotationProcessor "org.ow2.asm:asm-analysis:${project.asm}"
+	annotationProcessor "org.ow2.asm:asm-commons:${project.asm}"
+	annotationProcessor "org.ow2.asm:asm-tree:${project.asm}"
+	annotationProcessor "org.ow2.asm:asm-util:${project.asm}"
 
 	/**
 	 * Ensure we are using the mixin version loader is built against to test the AP.
 	 * Otherwise Loom will default to an older version (due to no mod loader on the mod* configs)
 	 */
-	annotationProcessor ("net.fabricmc:sponge-mixin:${project.mixin_version}") {
+	annotationProcessor ("net.fabricmc:sponge-mixin:${project.sponge_mixin}") {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}

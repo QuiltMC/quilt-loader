@@ -105,10 +105,16 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 	public void define(RuleDefiner definer) {
 
 		boolean optional = publicDep.optional();
-		List<ModLoadOption> options = optional ? invalidOptions : validOptions;
+		List<ModLoadOption> options = validOptions;
+		boolean negateOptions = false;
 
 		if (optional && options.isEmpty()) {
-			return;
+			options = invalidOptions;
+			negateOptions = true;
+
+			if (options.isEmpty()) {
+				return;
+			}
 		}
 
 		LoadOption[] array = new LoadOption[options.size() + (unless == null ? 1 : 2)];
@@ -116,7 +122,7 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 
 		for (; i < options.size(); i++) {
 			array[i] = options.get(i);
-			if (optional) {
+			if (negateOptions) {
 				array[i] = definer.negate(array[i]);
 			}
 		}

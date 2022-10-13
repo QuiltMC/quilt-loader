@@ -1,7 +1,7 @@
 buildscript {
 	dependencies {
-		classpath 'org.kohsuke:github-api:1.114'
-		classpath 'com.guardsquare:proguard-gradle:' + (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_11) ? '7.2.0-beta2' : '7.1.0')
+		classpath "org.kohsuke:github-api:${project.github_api}"
+		classpath "com.guardsquare:proguard-gradle:${project.proguard_gradle}"
 	}
 }
 
@@ -11,8 +11,8 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id 'org.quiltmc.gradle.licenser' version '1.1.+'
-	id 'org.quiltmc.loom' version '0.12.+' apply false
-	id 'com.github.johnrengelman.shadow' version '7.0.0'
+	id 'org.quiltmc.loom' version '1.0.+' apply false
+	id 'com.github.johnrengelman.shadow' version '7.1.2'
 }
 
 sourceCompatibility = JavaVersion.VERSION_1_8
@@ -20,7 +20,7 @@ targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
 // Don't forget to change this in the QuiltLoaderImpl class as well
-version = "0.18.0-beta.7"
+version = project.quilt_loader
 def ENV = System.getenv()
 
 allprojects {
@@ -68,34 +68,34 @@ configurations {
 
 dependencies {
 	// fabric-loader dependencies
-	api "org.ow2.asm:asm:${project.asm_version}"
-	api "org.ow2.asm:asm-analysis:${project.asm_version}"
-	api "org.ow2.asm:asm-commons:${project.asm_version}"
-	api "org.ow2.asm:asm-tree:${project.asm_version}"
-	api "org.ow2.asm:asm-util:${project.asm_version}"
+	api "org.ow2.asm:asm:${project.asm}"
+	api "org.ow2.asm:asm-analysis:${project.asm}"
+	api "org.ow2.asm:asm-commons:${project.asm}"
+	api "org.ow2.asm:asm-tree:${project.asm}"
+	api "org.ow2.asm:asm-util:${project.asm}"
 
-	api("net.fabricmc:sponge-mixin:${project.mixin_version}") {
+	api("net.fabricmc:sponge-mixin:${project.sponge_mixin}") {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}
-	api 'net.fabricmc:tiny-mappings-parser:0.3.0+build.17'
-	api 'net.fabricmc:tiny-remapper:0.8.6'
-	api 'net.fabricmc:access-widener:2.1.0'
+	api "net.fabricmc:tiny-mappings-parser:${project.tiny_mappings_parser}"
+	api "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
+	api "net.fabricmc:access-widener:${project.access_widener}"
 
-	/*include*/ api 'org.quiltmc:quilt-json5:1.0.1'
-	include 'org.quiltmc:quilt-loader-sat4j:2.3.5.1'
+	/*include*/ api "org.quiltmc:quilt-json5:${project.quilt_json5}"
+	include "org.quiltmc:quilt-loader-sat4j:${project.quilt_loader_sat4j}"
 
-	include 'com.electronwill.night-config:core:3.6.5'
-	include 'com.electronwill.night-config:toml:3.6.5'
-	api 'org.quiltmc:quilt-config:1.0.0-beta.6'
+	include "com.electronwill.night-config:core:${project.night_config}"
+	include "com.electronwill.night-config:toml:${project.night_config}"
+	api "org.quiltmc:quilt-config:${project.quilt_config}"
 
-	shadow 'com.electronwill.night-config:core:3.6.5'
-	shadow 'com.electronwill.night-config:toml:3.6.5'
+	shadow "com.electronwill.night-config:core:${project.night_config}"
+	shadow "com.electronwill.night-config:toml:${project.night_config}"
 
-	testCompileOnly 'org.jetbrains:annotations:23.0.0'
+	testCompileOnly "org.jetbrains:annotations:${project.annotations}"
 
 	// Unit testing
-	testImplementation(platform("org.junit:junit-bom:5.7.2"))
+	testImplementation(platform("org.junit:junit-bom:${project.junit_bom}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 }
 
@@ -105,9 +105,36 @@ test {
 
 processResources {
 	inputs.property "version", project.version
+	inputs.property "tiny_mappings_parser", project.tiny_mappings_parser
+	inputs.property "sponge_mixin", project.sponge_mixin
+	inputs.property "tiny_remapper", project.tiny_remapper
+	inputs.property "access_widener", project.access_widener
+	inputs.property "quilt_json5", project.quilt_json5
+	inputs.property "asm", project.asm
+	inputs.property "asm_analysis", project.asm
+	inputs.property "asm_commons", project.asm
+	inputs.property "asm_tree", project.asm
+	inputs.property "asm_util", project.asm
+	inputs.property "quilt_config", project.quilt_config
 
 	filesMatching("quilt.mod.json") {
 		expand "version": project.version
+	}
+
+	filesMatching(["quilt_installer.json", "fabric-installer.launchwrapper.json"]) {
+		expand(
+			"tiny_mappings_parser": project.tiny_mappings_parser,
+			"sponge_mixin": project.sponge_mixin,
+			"tiny_remapper": project.tiny_remapper,
+			"access_widener": project.access_widener,
+			"quilt_json5": project.quilt_json5,
+			"asm": project.asm,
+			"asm_analysis": project.asm,
+			"asm_commons": project.asm,
+			"asm_tree": project.asm,
+			"asm_util": project.asm,
+			"quilt_config": project.quilt_config,
+		)
 	}
 }
 
@@ -232,7 +259,7 @@ task testJar(type: Jar) {
 
 
 task copyJson() {
-	def inJson = file('src/main/resources/quilt_installer.json')
+	def inJson = file('build/resources/main/quilt_installer.json')
 	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 
 	def outJson = file("build/libs/${archivesBaseName}-${version}.json")
@@ -246,6 +273,7 @@ task copyJson() {
 		//outLwJson.text = inLwJson.text
 	}
 }
+tasks.copyJson.dependsOn "processResources"
 tasks.build.dependsOn "copyJson"
 
 tasks.withType(JavaCompile).configureEach {
@@ -309,7 +337,8 @@ publishing {
 			}
 			artifact(sourcesJar)
 			artifact javadocJar
-			artifact(file('src/main/resources/quilt_installer.json')) {
+			artifact(file('build/resources/main/quilt_installer.json')) {
+				builtBy processResources
 				builtBy copyJson
 			}
 //			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
