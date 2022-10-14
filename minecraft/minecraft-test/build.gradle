@@ -39,3 +39,8 @@ tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
 	it.options.release.set(17)
 }
+
+runClient {
+    classpath += project(':').sourceSets.main.output
+    classpath += project(':minecraft').sourceSets.main.output
+}
