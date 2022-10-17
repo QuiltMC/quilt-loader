@@ -54,7 +54,6 @@ public final class QuiltTransformer {
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			if (stripData.stripEntireClass()) {
-				// package-info classes are only loaded during calls to get their annotations, which is the wrong time to throw this
 				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
 			}
 
