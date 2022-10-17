@@ -37,9 +37,8 @@ import java.lang.annotation.Target;
  * When applied to an implemented interface (via {@link ElementType#TYPE_USE}) it will be removed on the dedicated server.
  * Overridden interface methods need to be annotated separately in order to be removed.
  *
- * @see DedicatedServerOnly
- * @see ClientOnlyInterface */
-@Retention(RetentionPolicy.RUNTIME)
+ * @see DedicatedServerOnly */
+@Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.TYPE, ElementType.TYPE_USE, ElementType.FIELD, ElementType.METHOD, ElementType.CONSTRUCTOR, ElementType.PACKAGE })
 @Documented
 public @interface ClientOnly {

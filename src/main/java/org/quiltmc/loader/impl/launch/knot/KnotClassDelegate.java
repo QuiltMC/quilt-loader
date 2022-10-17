@@ -18,10 +18,13 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.LoaderUtil;
+import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -71,6 +74,9 @@ class KnotClassDelegate {
 	private boolean transformInitialized = false;
 	private final Map<URL, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+	/** Map of package to whether we can load it in this environment. */
+	private final Map<String, Boolean> packageSideCache = new ConcurrentHashMap<>();
 
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
 		this.isDevelopment = isDevelopment;
@@ -159,6 +165,15 @@ class KnotClassDelegate {
 			// TODO: package definition stub
 			String pkgString = name.substring(0, pkgDelimiterPos);
 
+			final boolean allowFromParentFinal = allowFromParent;
+			Boolean permitted = packageSideCache.computeIfAbsent(pkgString, pkgName -> {
+				return computeCanLoadPackage(pkgName, allowFromParentFinal);
+			});
+
+			if (permitted != null && !permitted) {
+				throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
+			}
+
 			Package pkg = itf.getPackage(pkgString);
 
 			if (pkg == null) {
@@ -169,17 +184,25 @@ class KnotClassDelegate {
 					if (pkg == null) throw e; // still not defined?
 				}
 			}
-
-			if (!name.equals(pkgString + ".package-info")) {
-				if (envType == EnvType.CLIENT && pkg.getAnnotation(DedicatedServerOnly.class) != null) {
-					throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
-				} else if (envType == EnvType.SERVER && pkg.getAnnotation(ClientOnly.class) != null) {
-					throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
-				}
-			}
 		}
 
 		return itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
+	}
+
+	boolean computeCanLoadPackage(String pkgName, boolean allowFromParent) {
+		String fileName = pkgName + ".package-info";
+		try {
+			byte[] bytes = getRawClassByteArray(fileName, allowFromParent);
+			if (bytes == null) {
+				// No package-info class file
+				return true;
+			}
+			PackageEnvironmentStrippingData data = new PackageEnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType);
+			new ClassReader(bytes).accept(data, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+			return !data.stripEntirePackage;
+		} catch (IOException e) {
+			throw new RuntimeException("Unable to load " + fileName, e);
+		}
 	}
 
 	Metadata getMetadata(String name, URL resourceURL) {
