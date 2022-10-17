@@ -22,6 +22,9 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.quiltmc.loader.api.minecraft.ClientOnly;
+import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
+
 /**
  * Applied to declare that the annotated element is present only in the specified environment.
  *
@@ -36,10 +39,13 @@ import java.lang.annotation.Target;
  * the overridden class only in the specified environment.</p>
  *
  * @see EnvironmentInterface
+ * 
+ * @deprecated Please use one of quilt's annotations: either {@link ClientOnly} or {@link DedicatedServerOnly}.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR, ElementType.PACKAGE})
 @Documented
+@Deprecated
 public @interface Environment {
 	/**
 	 * Returns the environment type that the annotated element is only present in.

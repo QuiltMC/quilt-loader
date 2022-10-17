@@ -18,7 +18,8 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.LoaderUtil;
-
+import org.quiltmc.loader.api.minecraft.ClientOnly;
+import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
@@ -158,11 +159,22 @@ class KnotClassDelegate {
 			// TODO: package definition stub
 			String pkgString = name.substring(0, pkgDelimiterPos);
 
-			if (itf.getPackage(pkgString) == null) {
+			Package pkg = itf.getPackage(pkgString);
+
+			if (pkg == null) {
 				try {
-					itf.definePackage(pkgString, null, null, null, null, null, null, null);
+					pkg = itf.definePackage(pkgString, null, null, null, null, null, null, null);
 				} catch (IllegalArgumentException e) { // presumably concurrent package definition
-					if (itf.getPackage(pkgString) == null) throw e; // still not defined?
+					pkg = itf.getPackage(pkgString);
+					if (pkg == null) throw e; // still not defined?
+				}
+			}
+
+			if (!name.equals(pkgString + ".package-info")) {
+				if (envType == EnvType.CLIENT && pkg.getAnnotation(DedicatedServerOnly.class) != null) {
+					throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
+				} else if (envType == EnvType.SERVER && pkg.getAnnotation(ClientOnly.class) != null) {
+					throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
 				}
 			}
 		}
