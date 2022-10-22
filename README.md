@@ -20,6 +20,7 @@ When adding classes that contain code from fabric-loader they should use the mod
     * `org.quiltmc.loader.impl` contains quilt-loader internals - these can change at any time, and so mods should NOT use any of these.
 * `src/test/java` contains test sources - these aren't built into the main jar file.
 * `src/fabric/api/java` contains all fabric-loader apis (Non deprecated apis that any fabric mods can use)
+    * Some classes in this package aren't deprecated - this generally means quilt-loader doesn't have a replacement for it yet.
 * `src/fabric/impl/java` contains fabric-loader internal code, but is used by mods (even though this is discouraged).
 * `src/fabric/legacy/java` contains fabric-loader internal deprecated code, but is used by mods (even though this is discouraged). Unlike `fabric/impl` this is for classes and interfaces that fabric-loader itself has deprecated.
 
