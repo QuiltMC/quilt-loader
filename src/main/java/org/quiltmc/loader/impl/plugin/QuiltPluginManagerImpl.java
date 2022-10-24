@@ -17,8 +17,6 @@
 package org.quiltmc.loader.impl.plugin;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.ref.WeakReference;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -91,10 +89,7 @@ import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
-import org.quiltmc.loader.impl.plugin.gui.TextImpl;
-import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
-import org.quiltmc.loader.impl.plugin.quilt.ProvidedModOption;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
 import org.quiltmc.loader.impl.plugin.quilt.StandardQuiltPlugin;
@@ -1056,6 +1051,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					}
 				}
 				case POST_SOLVE_TENTATIVE: {
+					// TODO: Deal with tentative load options!
 					return null;
 				}
 				case SUCCESS: {
@@ -1279,8 +1275,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		for (LoadOption option : solution) {
 
 			boolean load = true;
-			if (solver.isNegated(option)) {
-				option = solver.negate(option);
+			if (Sat4jWrapper.isNegated(option)) {
+				option = Sat4jWrapper.negate(option);
 				load = false;
 			}
 
