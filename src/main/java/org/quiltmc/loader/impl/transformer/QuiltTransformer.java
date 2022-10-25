@@ -62,7 +62,7 @@ public final class QuiltTransformer {
 			boolean stripAnyLambdas = false;
 
 			if (!stripData.getStripMethodLambdas().isEmpty()) {
-				LambdaStripCalculator calc = new LambdaStripCalculator(visitorCount, stripData.getStripMethodLambdas());
+				LambdaStripCalculator calc = new LambdaStripCalculator(QuiltLoaderImpl.ASM_VERSION, stripData.getStripMethodLambdas());
 				classReader.accept(calc, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 				Collection<String> additionalStripMethods = calc.computeAdditionalMethodsToStrip();
 
