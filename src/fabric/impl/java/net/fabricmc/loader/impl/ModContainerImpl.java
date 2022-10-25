@@ -58,12 +58,14 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 
 	@Override
 	public Optional<net.fabricmc.loader.api.ModContainer> getContainingMod() {
-		throw new UnsupportedOperationException("not implemented");
+		// TODO (Loader plugins): Implement this method!
+		return Optional.empty();
 	}
 
 	@Override
 	public Collection<net.fabricmc.loader.api.ModContainer> getContainedMods() {
-		throw new UnsupportedOperationException("not implemented");
+		// TODO (Loader plugins): Implement this method!
+		return Collections.emptyList();
 	}
 
 	public ModContainer getQuiltModContainer() {

@@ -294,7 +294,7 @@ public class EntrypointPatch extends GamePatch {
 				// Cannot return a void or boolean
 				// Is only method that returns a class instance
 				// If we do not find this, then we are certain this is 20w22a.
-				MethodNode serverStartMethod = findMethod(mainClass, method -> {
+				List<MethodNode> serverStartMethods = findMethods(mainClass, method -> {
 					if (method.name.equals("main") && method.desc.equals("([Ljava/lang/String;)V")) {
 						return false;
 					}
@@ -304,7 +304,7 @@ public class EntrypointPatch extends GamePatch {
 					return methodReturnType.getSort() != Type.BOOLEAN && methodReturnType.getSort() != Type.VOID && methodReturnType.getSort() == Type.OBJECT;
 				});
 
-				if (serverStartMethod == null) {
+				if (serverStartMethods.isEmpty()) {
 					// We are running 20w22a, this requires a separate process for capturing game instance
 					Log.debug(LogCategory.GAME_PATCH, "Detected 20w22a");
 				} else {
@@ -369,11 +369,13 @@ public class EntrypointPatch extends GamePatch {
 				finishEntrypoint(type, it); // Inject the hook entrypoint.
 
 				// Time to find the dedicated server ctor to capture game instance
-				if (serverStartMethod == null) {
+				if (serverStartMethods.isEmpty()) {
 					// FIXME: For 20w22a, find the only constructor in the game method that takes a DataFixer.
 					// That is the guaranteed to be dedicated server constructor
 					Log.debug(LogCategory.GAME_PATCH, "Server game instance has not be implemented yet for 20w22a");
-				} else {
+				}
+
+				for (MethodNode serverStartMethod : serverStartMethods) {
 					final ListIterator<AbstractInsnNode> serverStartIt = serverStartMethod.instructions.iterator();
 
 					// 1.16-pre1+ Find the only constructor which takes a Thread as it's first parameter
@@ -392,7 +394,7 @@ public class EntrypointPatch extends GamePatch {
 					}, false);
 
 					if (dedicatedServerConstructor == null) {
-						throw new RuntimeException("Could not find dedicated server constructor");
+						continue;
 					}
 
 					// Jump after the <init> call
@@ -401,9 +403,15 @@ public class EntrypointPatch extends GamePatch {
 					// Duplicate dedicated server instance for loader
 					serverStartIt.add(new InsnNode(Opcodes.DUP));
 					serverStartIt.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, "setGameInstance", "(Ljava/lang/Object;)V", false));
+					patched = true;
+
+					break;
 				}
 
-				patched = true;
+				if (!patched) {
+					throw new RuntimeException("Could not find dedicated server constructor");
+				}
+
 			}
 		} else if (type == EnvType.CLIENT && isApplet) {
 			// Applet-side: field is private static File, run at end
