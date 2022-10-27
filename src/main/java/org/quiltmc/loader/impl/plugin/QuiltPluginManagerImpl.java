@@ -77,7 +77,6 @@ import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderConfig;
 import org.quiltmc.loader.impl.QuiltLoaderConfig.ZipLoadType;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
@@ -85,6 +84,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
@@ -844,9 +844,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 			sb.append(on.id().id());
 			sb.append("'");
-			if (!on.versions().isEmpty()) {
+			if (!on.versionRange().isEmpty()) {
 				sb.append(" ");
-				sb.append(on.versions().toString());
+				sb.append(on.versionRange().toString());
 			}
 			lines.add(sb.toString());
 		} else {

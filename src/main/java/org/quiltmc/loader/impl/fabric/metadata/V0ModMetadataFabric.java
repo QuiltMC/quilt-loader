@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,6 +31,10 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
+
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 

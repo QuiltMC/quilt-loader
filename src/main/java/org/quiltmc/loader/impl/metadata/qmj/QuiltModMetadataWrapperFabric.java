@@ -23,6 +23,9 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.impl.fabric.metadata.CustomValueImpl;
+import org.quiltmc.loader.impl.fabric.metadata.MapBackedContactInformation;
+import org.quiltmc.loader.impl.fabric.metadata.SimplePerson;
 import org.quiltmc.loader.impl.metadata.*;
 
 import net.fabricmc.loader.api.Version;

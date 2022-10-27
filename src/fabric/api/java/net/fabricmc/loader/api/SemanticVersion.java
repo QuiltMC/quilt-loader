@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,10 +19,11 @@ package net.fabricmc.loader.api;
 
 import java.util.Optional;
 
-import org.quiltmc.loader.impl.util.version.VersionParser;
+import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.impl.fabric.util.version.Quilt2FabricSemanticVersion;
 
 /**
- * Represents a <a href="https://semver.org/">Sematic Version</a>.
+ * Represents a <a href="https://semver.org/">Semantic Version</a>.
  *
  * <p>Compared to a regular {@link Version}, this type of version receives better support
  * for version comparisons in dependency notations, and is preferred.</p>
@@ -102,6 +104,13 @@ public interface SemanticVersion extends Version {
 	 * @throws VersionParsingException if a problem arises during version parsing
 	 */
 	static SemanticVersion parse(String s) throws VersionParsingException {
-		return VersionParser.parseSemantic(s);
+		if (s == null || s.isEmpty()) {
+			throw new VersionParsingException("Version must be a non-empty string!");
+		}
+		try {
+			return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(s));
+		} catch (VersionFormatException e) {
+			throw new VersionParsingException(e);
+		}
 	}
 }

@@ -15,28 +15,34 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
+import org.jetbrains.annotations.Nullable;
 
-import net.fabricmc.loader.api.metadata.ContactInformation;
+final class ParseWarning {
+	private final String location;
+	private final String key;
+	private final String reason;
 
-public class MapBackedContactInformation implements ContactInformation {
-	private final Map<String, String> map;
-
-	public MapBackedContactInformation(Map<String, String> map) {
-		this.map = Collections.unmodifiableMap(map);
+	ParseWarning(String location, String key) {
+		this(location, key, null);
 	}
 
-	@Override
-	public Optional<String> get(String key) {
-		return Optional.ofNullable(map.get(key));
+	ParseWarning(String location, String key, @Nullable String reason) {
+		this.location = location;
+		this.key = key;
+		this.reason = reason;
 	}
 
-	@Override
-	public Map<String, String> asMap() {
-		return map;
+	public String getLocation() {
+		return this.location;
+	}
+
+	public String getKey() {
+		return this.key;
+	}
+
+	public String getReason() {
+		return this.reason;
 	}
 }

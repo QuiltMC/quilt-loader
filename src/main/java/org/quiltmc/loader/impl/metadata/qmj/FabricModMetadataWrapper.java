@@ -16,27 +16,32 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.metadata.CustomValue;
-import net.fabricmc.loader.api.metadata.ModEnvironment;
-import net.fabricmc.loader.api.metadata.version.VersionComparisonOperator;
-import net.fabricmc.loader.api.metadata.version.VersionInterval;
-import net.fabricmc.loader.api.metadata.version.VersionPredicate;
-
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.*;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.StringVersion;
+import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
 
-import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.metadata.CustomValue;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
+import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
 import net.fabricmc.api.EnvType;
 
@@ -56,11 +61,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	public FabricModMetadataWrapper(FabricLoaderModMetadata fabricMeta) {
 		this.fabricMeta = fabricMeta;
 		net.fabricmc.loader.api.Version fabricVersion = fabricMeta.getVersion();
-		if (fabricVersion instanceof StringVersion) {
-			this.version = Version.of(fabricVersion.getFriendlyString());
-		} else {
-			this.version = (FabricSemanticVersionImpl) fabricVersion;
-		}
+		this.version = Version.of(fabricVersion.getFriendlyString());
 		this.depends = genDepends(fabricMeta.getDepends());
 		this.breaks = genDepends(fabricMeta.getBreaks());
 		this.licenses = Collections.unmodifiableCollection(fabricMeta.getLicense().stream().map(ModLicenseImpl::fromIdentifierOrDefault).collect(Collectors.toList()));
@@ -190,76 +191,28 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private static Collection<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from) {
 		List<ModDependency> out = new ArrayList<>();
 		for (net.fabricmc.loader.api.metadata.ModDependency f : from) {
-			Collection<VersionConstraint> constraints = new ArrayList<>();
-			for (VersionPredicate predicate : f.getVersionRequirements()) {
-				if (predicate.getInterval().equals(VersionInterval.INFINITE)) {
-					constraints.add(VersionConstraintImpl.ANY);
-				} else {
-					for (VersionPredicate.PredicateTerm term : predicate.getTerms()) {
-						VersionConstraint.Type type = convertOperator(term.getOperator());
-						constraints.add(new VersionConstraint() {
-							@Override
-							public String version() {
-								return term.getReferenceVersion().getFriendlyString();
-							}
-	
-							@Override
-							public Type type() {
-								return type;
-							}
-	
-							@Override
-							public boolean matches(Version version) {
-								if (type() == Type.ANY) {
-									return true;
-								}
-	
-								net.fabricmc.loader.api.Version fVersion;
-	
-								try {
-									// fabric's semantic versioning is not spec-compliant (it adds arbitrary amounts of dot-separated versions)
-									// so we can't use version.isSemantic for conversion
-									fVersion = new FabricSemanticVersionImpl(version.raw(), false);
-								} catch (VersionParsingException ignored) {
-									fVersion = new StringVersion(version.raw());
-								}
-								return ((VersionPredicate)term).test(fVersion) || // All PredicateTerms seem to be VersionPredicates in their own right
-										version.raw().equals("${version}") && FabricLoader.getInstance().isDevelopmentEnvironment();
-							}
-	
-							@Override
-							public String toString() {
-								return type.prefix() + version();
-							}
-						});
-					}
+			List<org.quiltmc.loader.api.VersionInterval> quiltIntervals = new ArrayList<>();
+			for (VersionInterval versionInterval : f.getVersionIntervals()) {
+				net.fabricmc.loader.api.Version min = versionInterval.getMin();
+				net.fabricmc.loader.api.Version max = versionInterval.getMax();
+
+				// This shouldn't ever be possible, because Fabric's predicate parsing removes wildcards.
+				if (min instanceof SemanticVersion && ((SemanticVersion) min).hasWildcard()) {
+					throw new IllegalStateException("Fabric version intervals should not have wildcards");
+				} else if (max instanceof SemanticVersion && ((SemanticVersion) max).hasWildcard()) {
+					throw new IllegalStateException("Fabric version intervals should not have wildcards");
 				}
+				// we have ?.let at home
+				Version newMin = min == null ? null : Version.of(min.getFriendlyString());
+				Version newMax = max == null ? null : Version.of(max.getFriendlyString());
+				quiltIntervals.add(new VersionIntervalImpl(newMin, versionInterval.isMinInclusive(), newMax, versionInterval.isMaxInclusive()));
 			}
-			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dep 1", new ModDependencyIdentifierImpl(f.getModId()), constraints, null, false, null));
+
+			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dependency", new ModDependencyIdentifierImpl(f.getModId()), VersionRange.ofIntervals(quiltIntervals), null, false, null));
 		}
 		return Collections.unmodifiableList(Arrays.asList(out.toArray(new ModDependency[0])));
 	}
 
-	private static VersionConstraint.Type convertOperator(VersionComparisonOperator operator) {
-		switch (operator) {
-			case GREATER_EQUAL:
-				return VersionConstraint.Type.GREATER_THAN_OR_EQUAL;
-			case LESS_EQUAL:
-				return VersionConstraint.Type.LESSER_THAN_OR_EQUAL;
-			case GREATER:
-				return VersionConstraint.Type.GREATER_THAN;
-			case LESS:
-				return VersionConstraint.Type.LESSER_THAN;
-			case EQUAL:
-				return VersionConstraint.Type.EQUALS;
-			case SAME_TO_NEXT_MINOR:
-				return VersionConstraint.Type.SAME_TO_NEXT_MINOR;
-			case SAME_TO_NEXT_MAJOR:
-				return VersionConstraint.Type.SAME_TO_NEXT_MAJOR;
-			default:
-				throw new IllegalArgumentException("Unsupported operator "  + operator);
-		}
-	}
 	private static Collection<ModContributor> convertContributors(FabricLoaderModMetadata metadata) {
 		List<ModContributor> contributors = new ArrayList<>();
 		for (Person author : metadata.getAuthors()) {

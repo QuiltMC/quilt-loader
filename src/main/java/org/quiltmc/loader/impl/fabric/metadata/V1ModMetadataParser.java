@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +26,12 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
+import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
+import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
@@ -34,9 +40,6 @@ import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonToken;
-import org.quiltmc.loader.impl.util.version.VersionParser;
 
 final class V1ModMetadataParser {
 	/**
@@ -116,7 +119,7 @@ final class V1ModMetadataParser {
 				}
 
 				try {
-					version = VersionParser.parse(reader.nextString(), false);
+					version = Version.parse(reader.nextString());
 					if (!(version instanceof SemanticVersion)) {
 						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " does not respect SemVer -- comparison support is limited."));
 					} else if (((SemanticVersion) version).getVersionComponentCount() >= 4) {

@@ -20,12 +20,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.Version;
+
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 import net.fabricmc.api.EnvType;
-
-import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.*;
 
 final class V1ModMetadataImpl implements InternalModMetadata {
 	private final JsonLoaderValue.ObjectImpl root;

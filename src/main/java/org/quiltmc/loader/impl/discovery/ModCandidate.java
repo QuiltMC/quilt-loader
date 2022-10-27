@@ -17,11 +17,11 @@
 
 package org.quiltmc.loader.impl.discovery;
 
+import java.nio.file.Path;
+
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
-
-import java.nio.file.Path;
 
 @Deprecated
 public class ModCandidate {

@@ -22,7 +22,7 @@ import java.util.function.Predicate;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 
-import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
+import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 
 public interface VersionPredicate extends Predicate<Version> {
 	/**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
+package org.quiltmc.loader.impl.fabric.util.version;
 
 
 import java.util.ArrayList;
@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import org.quiltmc.loader.api.VersionFormatException;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -56,7 +58,13 @@ public final class VersionPredicateParser {
 				}
 			}
 
-			Version version = VersionParser.parse(s, true);
+			org.quiltmc.loader.api.Version quiltVersion;
+			try {
+				quiltVersion = org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl.ofFabricPermittingWildcard(s);
+			} catch (VersionFormatException e) {
+				quiltVersion = org.quiltmc.loader.api.Version.of(s);
+			}
+			Version version = Quilt2FabricVersion.toFabric(quiltVersion);
 
 			if (version instanceof SemanticVersion) {
 				SemanticVersion semVer = (SemanticVersion) version;
@@ -79,7 +87,11 @@ public final class VersionPredicateParser {
 						newComponents[i] = semVer.getVersionComponent(i);
 					}
 
-					version = new FabricSemanticVersionImpl(newComponents, "", semVer.getBuildKey().orElse(null));
+					try {
+						version = Quilt2FabricVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(newComponents, "", semVer.getBuildKey().orElse("")));
+					} catch (VersionFormatException e) {
+						throw new IllegalStateException("Failed to reconstruct a version from " + version, e);
+					}
 				}
 			} else if (!operator.isMinInclusive() && !operator.isMaxInclusive()) { // non-semver without inclusive bound
 				throw new VersionParsingException("Invalid predicate: "+predicate+", version ranges need to be semantic version compatible to use operators that exclude the bound!");
@@ -130,7 +142,7 @@ public final class VersionPredicateParser {
 
 		@Override
 		public VersionInterval getInterval() {
-			return VersionIntervalImpl.INFINITE;
+			return Quilt2FabricVersionInterval.INFINITE;
 		}
 
 		@Override
@@ -150,10 +162,10 @@ public final class VersionPredicateParser {
 			if (refVersion instanceof SemanticVersion) {
 				SemanticVersion version = (SemanticVersion) refVersion;
 
-				this.interval = new VersionIntervalImpl(operator.minVersion(version), operator.isMinInclusive(),
+				this.interval = new Quilt2FabricVersionInterval(operator.minVersion(version), operator.isMinInclusive(),
 						operator.maxVersion(version), operator.isMaxInclusive());
 			} else {
-				this.interval = new VersionIntervalImpl(refVersion, true, refVersion, true);
+				this.interval = new Quilt2FabricVersionInterval(refVersion, true, refVersion, true);
 			}
 		}
 
@@ -218,7 +230,7 @@ public final class VersionPredicateParser {
 				VersionInterval ret = predicates.get(0).getInterval();
 
 				for (int i = 1; i < predicates.size(); i++) {
-					ret = VersionIntervalImpl.and(ret, predicates.get(i).getInterval());
+					ret = Quilt2FabricVersionInterval.and(ret, predicates.get(i).getInterval());
 				}
 
 				this.interval = ret;
