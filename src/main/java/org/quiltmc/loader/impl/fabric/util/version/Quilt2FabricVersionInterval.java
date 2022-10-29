@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
 
 import net.fabricmc.loader.api.SemanticVersion;
@@ -92,7 +93,22 @@ public final class Quilt2FabricVersionInterval implements VersionInterval {
 	}
 
 	public static List<VersionInterval> and(Collection<VersionInterval> a, Collection<VersionInterval> b) {
+		VersionRange rangeA = toRange(a);
+		VersionRange rangeB = toRange(b);
+		VersionRange combined = rangeA.combineMatchingBoth(rangeB);
+		List<VersionInterval> intervals = new ArrayList<>();
+		for (org.quiltmc.loader.api.VersionInterval quilt : combined) {
+			intervals.add(new Quilt2FabricVersionInterval(quilt));
+		}
+		return intervals;
+	}
 
+	private static VersionRange toRange(Collection<VersionInterval> a) {
+		List<org.quiltmc.loader.api.VersionInterval> quilt = new ArrayList<>();
+		for (VersionInterval fabric : a) {
+			quilt.add(((Quilt2FabricVersionInterval) fabric).quilt);
+		}
+		return VersionRange.ofIntervals(quilt);
 	}
 
 	public static List<VersionInterval> or(Collection<VersionInterval> a, VersionInterval b) {

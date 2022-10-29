@@ -63,6 +63,15 @@ public final class VersionConstraintImpl implements VersionConstraint {
 		this.versionObj = Version.of(version);
 	}
 
+	public VersionConstraintImpl(Version version, Type type) {
+		if (type == Type.ANY) {
+			throw new UnsupportedOperationException("Use the ANY field, not this constructor!");
+		}
+		this.versionString = version.raw();
+		this.type = type;
+		this.versionObj = version;
+	}
+
 	@Override
 	public String version() {
 		return this.versionString;

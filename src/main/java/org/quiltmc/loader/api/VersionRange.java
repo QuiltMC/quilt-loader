@@ -70,6 +70,9 @@ public interface VersionRange extends SortedSet<VersionInterval> {
 		return false;
 	}
 
+	/** @return A {@link VersionRange} that only matches versions which match both this range and the given range. */
+	VersionRange combineMatchingBoth(VersionRange other);
+
 	/** Converts this range into the deprecated {@link VersionConstraint} api. */
 	@Deprecated
 	Collection<VersionConstraint> convertToConstraints();
