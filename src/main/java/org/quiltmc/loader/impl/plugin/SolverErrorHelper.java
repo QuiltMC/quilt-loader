@@ -287,7 +287,7 @@ class SolverErrorHelper {
 				boolean missing = allInvalidOptions.isEmpty();
 
 				// Title:
-				// "BuildCraft" [transitively] requires [version 1.5.1] of "Quilt Standard Libraries", which is
+				// BuildCraft (buildcraft) [transitively] requires [version 1.5.1] of Quilt Standard Libraries (quilt_standard_libraries), which is
 				// missing!
 
 				// Description:
@@ -298,7 +298,7 @@ class SolverErrorHelper {
 					+ (anyVersion ? ".any" : ".versioned") //
 					+ ".title";
 				Object[] titleData = new Object[anyVersion ? 2 : 3];
-				String rootModName = mandatoryMod.metadata().name();
+				String rootModName = mandatoryMod.metadata().name() + " (" + mandatoryMod.metadata().id() + ")";
 				titleData[0] = rootModName;
 				if (!anyVersion) {
 					titleData[1] = "version [TODO:GET_VERSION]";
