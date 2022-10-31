@@ -16,15 +16,6 @@
 
 package org.quiltmc.loader.impl.metadata;
 
-import net.fabricmc.loader.api.VersionParsingException;
-
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonToken;
-import org.quiltmc.loader.impl.FormattedException;
-import net.fabricmc.loader.api.metadata.ModDependency;
-
-import org.quiltmc.loader.impl.discovery.ModCandidate;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +31,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonToken;
+import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.fabric.metadata.ModDependencyImpl;
+import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
+
+import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.api.metadata.ModDependency;
 
 public final class DependencyOverrides {
 	private final Map<String, List<Entry>> dependencyOverrides;
