@@ -18,9 +18,13 @@
 package org.quiltmc.loader.api;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
+import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 
+/**
+ * @deprecated Since {@link VersionInterval} and {@link VersionRange} expose the same information but in a more useful way.
+ */
 @ApiStatus.NonExtendable
+@Deprecated
 public interface VersionConstraint {
 	static VersionConstraint any() {
 		return VersionConstraintImpl.ANY;

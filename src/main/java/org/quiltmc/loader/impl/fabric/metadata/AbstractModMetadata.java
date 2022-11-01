@@ -15,28 +15,27 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
-import net.fabricmc.loader.api.metadata.ContactInformation;
-import net.fabricmc.loader.api.metadata.Person;
+import net.fabricmc.loader.api.metadata.CustomValue;
+import net.fabricmc.loader.api.metadata.ModMetadata;
 
-/**
- * Represents a simple implementation of person which is only identified by name.
- */
-public class SimplePerson implements Person {
-	private final String name;
+public abstract class AbstractModMetadata implements ModMetadata {
+	public static final String TYPE_BUILTIN = "builtin";
+	public static final String TYPE_FABRIC_MOD = "fabric";
 
-	public SimplePerson(String name) {
-		this.name = name;
+	@Override
+	public boolean containsCustomElement(String key) {
+		return containsCustomValue(key);
 	}
 
 	@Override
-	public String getName() {
-		return this.name;
+	public boolean containsCustomValue(String key) {
+		return getCustomValues().containsKey(key);
 	}
 
 	@Override
-	public ContactInformation getContact() {
-		return ContactInformation.EMPTY;
+	public CustomValue getCustomValue(String key) {
+		return getCustomValues().get(key);
 	}
 }

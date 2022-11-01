@@ -15,27 +15,28 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
-import net.fabricmc.loader.api.metadata.CustomValue;
-import net.fabricmc.loader.api.metadata.ModMetadata;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 
-public abstract class AbstractModMetadata implements ModMetadata {
-	public static final String TYPE_BUILTIN = "builtin";
-	public static final String TYPE_FABRIC_MOD = "fabric";
+import net.fabricmc.loader.api.metadata.ContactInformation;
 
-	@Override
-	public boolean containsCustomElement(String key) {
-		return containsCustomValue(key);
+public class MapBackedContactInformation implements ContactInformation {
+	private final Map<String, String> map;
+
+	public MapBackedContactInformation(Map<String, String> map) {
+		this.map = Collections.unmodifiableMap(map);
 	}
 
 	@Override
-	public boolean containsCustomValue(String key) {
-		return getCustomValues().containsKey(key);
+	public Optional<String> get(String key) {
+		return Optional.ofNullable(map.get(key));
 	}
 
 	@Override
-	public CustomValue getCustomValue(String key) {
-		return getCustomValues().get(key);
+	public Map<String, String> asMap() {
+		return map;
 	}
 }

@@ -42,10 +42,18 @@ public interface ModDependency {
 		 */
 		ModDependencyIdentifier id();
 
+		/** @return The {@link VersionRange} of this dependency, represented as a collection of the older
+		 *         {@link VersionConstraint} class.
+		 * @deprecated since {@link #versionRange()} exposes the same information correctly. */
+		@Deprecated
+		default Collection<VersionConstraint> versions() {
+			return versionRange().convertToConstraints();
+		}
+
 		/**
-		 * @return version constraints that this dependency has. This collection is never empty.
+		 * @return the VersionRange that this dependency requires.
 		 */
-		Collection<VersionConstraint> versions();
+		VersionRange versionRange();
 
 		/**
 		 * @return a reason to describe why this dependency exists. Empty if there is no reason.
@@ -72,13 +80,7 @@ public interface ModDependency {
 		 * @return true if the version matches or else false
 		 */
 		default boolean matches(Version version) {
-			for (VersionConstraint constraint : versions()) {
-				if (constraint.matches(version)) {
-					return true;
-				}
-			}
-
-			return false;
+			return versionRange().isSatisfiedBy(version);
 		}
 	}
 

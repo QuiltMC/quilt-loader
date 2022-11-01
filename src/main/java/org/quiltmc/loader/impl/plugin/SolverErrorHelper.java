@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import java.util.Set;
 import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -275,15 +277,17 @@ class SolverErrorHelper {
 				// This breaks down if "abstract_base" requires an additional library though.
 				// (Although we aren't handling that here)
 
+				VersionRange fullRange = VersionRange.NONE;
 				Set<ModLoadOption> allInvalidOptions = new HashSet<>();
 				for (OptionLink link : fullChain.get(fullChain.size() - 1)) {
 					// We validate all this earlier
 					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) link.to.get(0).rule;
+					fullRange = VersionRange.ofRanges(Arrays.asList(fullRange, dep.publicDep.versionRange()));
 					allInvalidOptions.addAll(dep.getWrongOptions());
 				}
 
 				boolean transitive = fullChain.size() > 1;
-				boolean anyVersion = false; // TODO: Capture versions!
+				boolean anyVersion = VersionRange.ANY.equals(fullRange);
 				boolean missing = allInvalidOptions.isEmpty();
 
 				// Title:
@@ -301,7 +305,8 @@ class SolverErrorHelper {
 				String rootModName = mandatoryMod.metadata().name();
 				titleData[0] = rootModName;
 				if (!anyVersion) {
-					titleData[1] = "version [TODO:GET_VERSION]";
+					// TODO: Turn this ugly range into a human-readable version specifier!
+					titleData[1] = "version " + fullRange;
 				}
 				titleData[anyVersion ? 1 : 2] = modOn;//getDepName(dep);
 				Text first = Text.translate(titleKey, titleData);

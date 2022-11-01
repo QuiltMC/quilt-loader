@@ -33,34 +33,32 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.loader.api.ObjectShare;
-import net.fabricmc.loader.api.VersionParsingException;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModDependency.Only;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.minecraft.LibClassifier.Lib;
 import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
 import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
-import org.quiltmc.loader.impl.metadata.BuiltinModMetadata;
-import org.quiltmc.loader.impl.metadata.ModDependencyImpl;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
+import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogHandler;
+
+import net.fabricmc.loader.api.ObjectShare;
+
+import net.fabricmc.api.EnvType;
 
 public class MinecraftGameProvider implements GameProvider {
 	private static final String[] ALLOWED_EARLY_CLASS_PREFIXES = { "org.apache.logging.log4j.", "com.mojang.util." };
@@ -124,7 +122,8 @@ public class MinecraftGameProvider implements GameProvider {
 		if (versionData.getClassVersion().isPresent()) {
 			int version = versionData.getClassVersion().getAsInt() - 44;
 
-			VersionConstraintImpl constraint = VersionConstraintImpl.parse(String.format(">=%d", version)); 
+			Version minJava = Version.of(Integer.toString(version));
+			VersionRange range = VersionRange.ofInterval(minJava, true, null, false);
 			metadata.depends.add(new ModDependency.Only() {
 				@Override
 				public boolean shouldIgnore() {
@@ -132,8 +131,8 @@ public class MinecraftGameProvider implements GameProvider {
 				}
 
 				@Override
-				public Collection<VersionConstraint> versions() {
-					return Collections.singleton(constraint);
+				public VersionRange versionRange() {
+					return range;
 				}
 
 				@Override

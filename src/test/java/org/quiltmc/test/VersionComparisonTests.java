@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.api.VersionFormatException;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
 
 public class VersionComparisonTests extends JsonTestBase {
@@ -85,69 +84,4 @@ public class VersionComparisonTests extends JsonTestBase {
 			}
 		}
 	}
-
-	@Test
-	public void testDepCompare() throws IOException, VersionFormatException {
-		try (JsonReader json = get("testing/version/dep_compare.json")) {
-			json.beginObject();
-			while (true) {
-				JsonToken token = json.peek();
-				if (token == JsonToken.END_OBJECT) {
-					json.endObject();
-					return;
-				}
-				if (token != JsonToken.NAME) {
-					throw new IOException("Expected the end of the root object or a name, but got " + token);
-				}
-				VersionConstraintImpl constraint = VersionConstraintImpl.parse(json.nextName());
-				json.beginObject();
-
-				String name = json.nextName();
-				if (!"valid".equals(name)) {
-					throw new IOException("Expected to find 'valid', but found '" + name + "'");
-				}
-				json.beginArray();
-				while (true) {
-					token = json.peek();
-					if (token == JsonToken.END_ARRAY) {
-						json.endArray();
-						break;
-					}
-
-					assertMatching(constraint, json.nextString());
-				}
-
-				name = json.nextName();
-				if (!"invalid".equals(name)) {
-					throw new IOException("Expected to find 'invalid', but found '" + name + "'");
-				}
-				json.beginArray();
-				while (true) {
-					token = json.peek();
-					if (token == JsonToken.END_ARRAY) {
-						json.endArray();
-						break;
-					}
-
-					assertNotMatching(constraint, json.nextString());
-				}
-				json.endObject();
-			}
-		}
-	}
-
-	private static void assertMatching(VersionConstraintImpl constraint, String versionString)
-		throws VersionFormatException {
-
-		SemanticVersionImpl version = SemanticVersionImpl.of(versionString);
-		Assertions.assertTrue(constraint.matches(version), constraint + " should match " + versionString);
-	}
-
-	private static void assertNotMatching(VersionConstraintImpl constraint, String versionString)
-		throws VersionFormatException {
-
-		SemanticVersionImpl version = SemanticVersionImpl.of(versionString);
-		Assertions.assertFalse(constraint.matches(version), constraint + " should not match " + versionString);
-	}
-
 }

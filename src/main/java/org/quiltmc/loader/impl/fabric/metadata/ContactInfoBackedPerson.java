@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
 import net.fabricmc.loader.api.metadata.ContactInformation;
 

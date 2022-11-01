@@ -15,34 +15,28 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata;
+package org.quiltmc.loader.impl.fabric.metadata;
 
-import org.jetbrains.annotations.Nullable;
+import net.fabricmc.loader.api.metadata.ContactInformation;
+import net.fabricmc.loader.api.metadata.Person;
 
-final class ParseWarning {
-	private final String location;
-	private final String key;
-	private final String reason;
+/**
+ * Represents a simple implementation of person which is only identified by name.
+ */
+public class SimplePerson implements Person {
+	private final String name;
 
-	ParseWarning(String location, String key) {
-		this(location, key, null);
+	public SimplePerson(String name) {
+		this.name = name;
 	}
 
-	ParseWarning(String location, String key, @Nullable String reason) {
-		this.location = location;
-		this.key = key;
-		this.reason = reason;
+	@Override
+	public String getName() {
+		return this.name;
 	}
 
-	public String getLocation() {
-		return this.location;
-	}
-
-	public String getKey() {
-		return this.key;
-	}
-
-	public String getReason() {
-		return this.reason;
+	@Override
+	public ContactInformation getContact() {
+		return ContactInformation.EMPTY;
 	}
 }

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.util.version;
+package org.quiltmc.loader.impl.fabric.util.version;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,201 +23,92 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
+
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
-public final class VersionIntervalImpl implements VersionInterval {
-	private final Version min;
-	private final boolean minInclusive;
-	private final Version max;
-	private final boolean maxInclusive;
+@Deprecated
+public final class Quilt2FabricVersionInterval implements VersionInterval {
+	private final org.quiltmc.loader.api.VersionInterval quilt;
 
-	public VersionIntervalImpl(Version min, boolean minInclusive,
+	public Quilt2FabricVersionInterval(Version min, boolean minInclusive,
 			Version max, boolean maxInclusive) {
-		this.min = min;
-		this.minInclusive = min != null && minInclusive;
-		this.max = max;
-		this.maxInclusive = max != null && maxInclusive;
+		this.quilt = org.quiltmc.loader.api.VersionInterval.of(Quilt2FabricVersion.fromFabric(min), minInclusive, 
+			Quilt2FabricVersion.fromFabric(max), maxInclusive);
+	}
 
-		assert min != null || !minInclusive;
-		assert max != null || !maxInclusive;
-		assert min == null || min instanceof SemanticVersion || minInclusive;
-		assert max == null || max instanceof SemanticVersion || maxInclusive;
-		assert min == null || max == null || min instanceof SemanticVersion && max instanceof SemanticVersion || min.equals(max);
+	public Quilt2FabricVersionInterval(org.quiltmc.loader.api.VersionInterval quilt) {
+		this.quilt = quilt;
 	}
 
 	@Override
 	public boolean isSemantic() {
-		return (min == null || min instanceof SemanticVersion)
-				&& (max == null || max instanceof SemanticVersion);
+		return quilt.isSemantic();
 	}
 
 	@Override
 	public Version getMin() {
-		return min;
+		return Quilt2FabricVersion.toFabric(quilt.getMin());
 	}
 
 	@Override
 	public boolean isMinInclusive() {
-		return minInclusive;
+		return quilt.isMinInclusive();
 	}
 
 	@Override
 	public Version getMax() {
-		return max;
+		return Quilt2FabricVersion.toFabric(quilt.getMax());
 	}
 
 	@Override
 	public boolean isMaxInclusive() {
-		return maxInclusive;
+		return quilt.isMaxInclusive();
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof VersionInterval) {
-			VersionInterval o = (VersionInterval) obj;
-
-			return Objects.equals(min, o.getMin()) && minInclusive == o.isMinInclusive()
-					&& Objects.equals(max, o.getMax()) && maxInclusive == o.isMaxInclusive();
-		} else {
-			return false;
-		}
+		return obj instanceof Quilt2FabricVersionInterval && quilt.equals(((Quilt2FabricVersionInterval) obj).quilt);
 	}
 
 	@Override
 	public int hashCode() {
-		return (Objects.hashCode(min) + (minInclusive ? 1 : 0)) * 31
-				+ (Objects.hashCode(max) + (maxInclusive ? 1 : 0)) * 31;
+		return quilt.hashCode();
 	}
 
 	@Override
 	public String toString() {
-		if (min == null) {
-			if (max == null) {
-				return "(-∞,∞)";
-			} else {
-				return String.format("(-∞,%s%c", max, maxInclusive ? ']' : ')');
-			}
-		} else if (max == null) {
-			return String.format("%c%s,∞)", minInclusive ? '[' : '(', min);
-		} else {
-			return String.format("%c%s,%s%c", minInclusive ? '[' : '(', min, max, maxInclusive ? ']' : ')');
-		}
+		return quilt.toString();
 	}
 
 	public static VersionInterval and(VersionInterval a, VersionInterval b) {
 		if (a == null || b == null) return null;
 
-		if (!a.isSemantic() || !b.isSemantic()) {
-			return andPlain(a, b);
-		} else {
-			return andSemantic(a, b);
-		}
-	}
-
-	private static VersionInterval andPlain(VersionInterval a, VersionInterval b) {
-		Version aMin = a.getMin();
-		Version aMax = a.getMax();
-		Version bMin = b.getMin();
-		Version bMax = b.getMax();
-
-		if (aMin != null) { // -> min must be aMin or invalid
-			if (bMin != null && !aMin.equals(bMin) || bMax != null && !aMin.equals(bMax)) {
-				return null;
-			}
-
-			if (aMax != null || bMax == null) {
-				assert Objects.equals(aMax, bMax) || bMax == null;
-				return a;
-			} else {
-				return new VersionIntervalImpl(aMin, true, bMax, b.isMaxInclusive());
-			}
-		} else if (aMax != null) { // -> min must be bMin, max must be aMax or invalid
-			if (bMin != null && !aMax.equals(bMin) || bMax != null && !aMax.equals(bMax)) {
-				return null;
-			}
-
-			if (bMin == null) {
-				return a;
-			} else if (bMax != null) {
-				return b;
-			} else {
-				return new VersionIntervalImpl(bMin, true, aMax, true);
-			}
-		} else {
-			return b;
-		}
-	}
-
-	private static VersionInterval andSemantic(VersionInterval a, VersionInterval b) {
-		int minCmp = compareMin(a, b);
-		int maxCmp = compareMax(a, b);
-
-		if (minCmp == 0) { // aMin == bMin
-			if (maxCmp == 0) { // aMax == bMax -> a == b -> a/b
-				return a;
-			} else { // aMax != bMax -> a/b..min(a,b)
-				return maxCmp < 0 ? a : b;
-			}
-		} else if (maxCmp == 0) { // aMax == bMax, aMin != bMin -> max(a,b)..a/b
-			return minCmp < 0 ? b : a;
-		} else if (minCmp < 0) { // aMin < bMin, aMax != bMax -> b..min(a,b)
-			if (maxCmp > 0) return b; // a > b -> b
-
-			SemanticVersion aMax = (SemanticVersion) a.getMax();
-			SemanticVersion bMin = (SemanticVersion) b.getMin();
-			int cmp = bMin.compareTo((Version) aMax);
-
-			if (cmp < 0 || cmp == 0 && b.isMinInclusive() && a.isMaxInclusive()) {
-				return new VersionIntervalImpl(bMin, b.isMinInclusive(), aMax, a.isMaxInclusive());
-			} else {
-				return null;
-			}
-		} else { // aMin > bMin, aMax != bMax -> a..min(a,b)
-			if (maxCmp < 0) return a; // a < b -> a
-
-			SemanticVersion aMin = (SemanticVersion) a.getMin();
-			SemanticVersion bMax = (SemanticVersion) b.getMax();
-			int cmp = aMin.compareTo((Version) bMax);
-
-			if (cmp < 0 || cmp == 0 && a.isMinInclusive() && b.isMaxInclusive()) {
-				return new VersionIntervalImpl(aMin, a.isMinInclusive(), bMax, b.isMaxInclusive());
-			} else {
-				return null;
-			}
-		}
+		return new Quilt2FabricVersionInterval(
+			VersionIntervalImpl.and(((Quilt2FabricVersionInterval) a).quilt, ((Quilt2FabricVersionInterval) b).quilt)
+		);
 	}
 
 	public static List<VersionInterval> and(Collection<VersionInterval> a, Collection<VersionInterval> b) {
-		if (a.isEmpty() || b.isEmpty()) return Collections.emptyList();
-
-		if (a.size() == 1 && b.size() == 1) {
-			VersionInterval merged = and(a.iterator().next(), b.iterator().next());
-			return merged != null ? Collections.singletonList(merged) : Collections.emptyList();
+		VersionRange rangeA = toRange(a);
+		VersionRange rangeB = toRange(b);
+		VersionRange combined = rangeA.combineMatchingBoth(rangeB);
+		List<VersionInterval> intervals = new ArrayList<>();
+		for (org.quiltmc.loader.api.VersionInterval quilt : combined) {
+			intervals.add(new Quilt2FabricVersionInterval(quilt));
 		}
+		return intervals;
+	}
 
-		// (a0 || a1 || a2) && (b0 || b1 || b2) == a0 && b0 && b1 && b2 || a1 && b0 && b1 && b2 || a2 && b0 && b1 && b2
-
-		List<VersionInterval> allMerged = new ArrayList<>();
-
-		for (VersionInterval intervalA : a) {
-			for (VersionInterval intervalB : b) {
-				VersionInterval merged = and(intervalA, intervalB);
-				if (merged != null) allMerged.add(merged);
-			}
+	private static VersionRange toRange(Collection<VersionInterval> a) {
+		List<org.quiltmc.loader.api.VersionInterval> quilt = new ArrayList<>();
+		for (VersionInterval fabric : a) {
+			quilt.add(((Quilt2FabricVersionInterval) fabric).quilt);
 		}
-
-		if (allMerged.isEmpty()) return Collections.emptyList();
-		if (allMerged.size() == 1) return allMerged;
-
-		List<VersionInterval> ret = new ArrayList<>(allMerged.size());
-
-		for (VersionInterval v : allMerged) {
-			merge(v, ret);
-		}
-
-		return ret;
+		return VersionRange.ofIntervals(quilt);
 	}
 
 	public static List<VersionInterval> or(Collection<VersionInterval> a, VersionInterval b) {
@@ -341,7 +233,7 @@ public final class VersionIntervalImpl implements VersionInterval {
 						if (cmp < 0 || cmp == 0 && !a.isMaxInclusive() && !c.isMinInclusive()) { // ..a..]..[..c..] or ..a..)(..c..]
 							out.add(i, a);
 						} else { // c extends a to the right
-							out.set(i, new VersionIntervalImpl(null, false, cMax, c.isMaxInclusive()));
+							out.set(i, new Quilt2FabricVersionInterval(null, false, cMax, c.isMaxInclusive()));
 						}
 
 						return;
@@ -361,7 +253,7 @@ public final class VersionIntervalImpl implements VersionInterval {
 					if (cmp < 0 || cmp == 0 && !a.isMaxInclusive() && !c.isMinInclusive()) { // [..a..]..[..c.. or [..a..)(..c..
 						out.add(i, a);
 					} else { // a extends c to the left
-						out.set(i, new VersionIntervalImpl(aMin, a.isMinInclusive(), null, false));
+						out.set(i, new Quilt2FabricVersionInterval(aMin, a.isMinInclusive(), null, false));
 					}
 				}
 
@@ -375,12 +267,12 @@ public final class VersionIntervalImpl implements VersionInterval {
 
 					if (cmpMax <= 0) { // aMax <= cMax
 						if (cmpMin < 0) { // aMin < cMin
-							out.set(i, new VersionIntervalImpl(aMin, a.isMinInclusive(), cMax, c.isMaxInclusive()));
+							out.set(i, new Quilt2FabricVersionInterval(aMin, a.isMinInclusive(), cMax, c.isMaxInclusive()));
 						}
 
 						return;
 					} else if (cmpMin > 0) { // aMin > cMin, aMax > cMax
-						a = new VersionIntervalImpl(cMin, c.isMinInclusive(), aMax, a.isMaxInclusive());
+						a = new Quilt2FabricVersionInterval(cMin, c.isMinInclusive(), aMax, a.isMaxInclusive());
 					}
 
 					out.remove(i);
@@ -442,16 +334,16 @@ public final class VersionIntervalImpl implements VersionInterval {
 			if (interval.getMax() == null) { // (-∞,∞) = infinite -> empty
 				return Collections.emptyList();
 			} else { // (-∞,x = left open towards min -> half open towards max
-				return Collections.singletonList(new VersionIntervalImpl(interval.getMax(), !interval.isMaxInclusive(), null, false));
+				return Collections.singletonList(new Quilt2FabricVersionInterval(interval.getMax(), !interval.isMaxInclusive(), null, false));
 			}
 		} else if (interval.getMax() == null) { // x,∞) = half open towards max -> half open towards min
-			return Collections.singletonList(new VersionIntervalImpl(null, false, interval.getMin(), !interval.isMinInclusive()));
+			return Collections.singletonList(new Quilt2FabricVersionInterval(null, false, interval.getMin(), !interval.isMinInclusive()));
 		} else if (interval.getMin().equals(interval.getMax()) && !interval.isMinInclusive() && !interval.isMaxInclusive()) { // (x,x) = effectively empty interval -> infinite
 			return Collections.singletonList(INFINITE);
 		} else { // closed interval -> 2 half open intervals on each side
 			List<VersionInterval> ret = new ArrayList<>(2);
-			ret.add(new VersionIntervalImpl(null, false, interval.getMin(), !interval.isMinInclusive()));
-			ret.add(new VersionIntervalImpl(interval.getMax(), !interval.isMaxInclusive(), null, false));
+			ret.add(new Quilt2FabricVersionInterval(null, false, interval.getMin(), !interval.isMinInclusive()));
+			ret.add(new Quilt2FabricVersionInterval(interval.getMax(), !interval.isMaxInclusive(), null, false));
 
 			return ret;
 		}
