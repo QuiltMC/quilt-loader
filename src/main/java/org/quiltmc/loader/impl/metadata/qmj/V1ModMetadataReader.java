@@ -702,7 +702,7 @@ final class V1ModMetadataReader {
 				if (string.charAt(1) == '=') {
 					return VersionRange.ofInterval(null, false, Version.of(string.substring(2)), true);
 				} else {
-					return VersionRange.ofInterval(null, false, Version.of(withoutPrefix), true);
+					return VersionRange.ofInterval(null, false, Version.of(withoutPrefix), false);
 				}
 		    // Semantic versions only
 			case '~': {
@@ -710,8 +710,10 @@ final class V1ModMetadataReader {
 				int[] components = min.semantic().versionComponents();
 				if (components.length < 2) {
 					components = new int[] { components[0], 1 };
-				} else {
+				} else if (components.length == 2) {
 					components[1]++;
+				} else {
+					components = new int[] { components[0], components[1] + 1 };
 				}
 
 				Version max = Version.Semantic.of(components, null, null);

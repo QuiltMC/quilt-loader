@@ -48,20 +48,25 @@ public class SemanticVersionImpl implements Version.Semantic {
 	private static SemanticVersionImpl ofInternal(String raw, boolean permitWildcard) throws VersionFormatException {
 		String build;
 		String prerelease;
-		int buildDelimPos = raw.indexOf('+');
+		String semantic = raw;
+		int buildDelimPos = semantic.indexOf('+');
 
 		if (buildDelimPos >= 0) {
-			build = raw.substring(buildDelimPos + 1);
-			raw = raw.substring(0, buildDelimPos);
+			build = semantic.substring(buildDelimPos + 1);
+			semantic = semantic.substring(0, buildDelimPos);
 		} else {
 			build = "";
 		}
 
-		int dashDelimPos = raw.indexOf('-');
+		int dashDelimPos = semantic.indexOf('-');
 
 		if (dashDelimPos >= 0) {
-			prerelease = raw.substring(dashDelimPos + 1);
-			raw = raw.substring(0, dashDelimPos);
+			prerelease = semantic.substring(dashDelimPos + 1);
+			semantic = semantic.substring(0, dashDelimPos);
+
+			if (prerelease.isEmpty()) {
+				prerelease = EMPTY_BUT_PRESENT_PRERELEASE;
+			}
 		} else {
 			prerelease = "";
 		}
@@ -70,13 +75,13 @@ public class SemanticVersionImpl implements Version.Semantic {
 			throw new VersionFormatException("Invalid prerelease string '" + prerelease + "'!");
 		}
 
-		if (raw.endsWith(".")) {
+		if (semantic.endsWith(".")) {
 			throw new VersionFormatException("Negative raw number component found!");
-		} else if (raw.startsWith(".")) {
+		} else if (semantic.startsWith(".")) {
 			throw new VersionFormatException("Missing raw component!");
 		}
 
-		String[] componentStrings = raw.split("\\.");
+		String[] componentStrings = semantic.split("\\.");
 
 		if (componentStrings.length < 1) {
 			throw new VersionFormatException("Did not provide raw numbers!");
@@ -173,13 +178,11 @@ public class SemanticVersionImpl implements Version.Semantic {
 			if (compare != 0) return compare;
 		}
 
-		String prereleaseA = preRelease();
-		String prereleaseB = o.preRelease();
 
-		if (!prereleaseA.isEmpty() || !prereleaseB.isEmpty()) {
-			if (!prereleaseA.isEmpty() && !prereleaseB.isEmpty()) {
-				StringTokenizer prereleaseATokenizer = new StringTokenizer(prereleaseA, ".");
-				StringTokenizer prereleaseBTokenizer = new StringTokenizer(prereleaseB, ".");
+		if (isPreReleasePresent() || o.isPreReleasePresent()) {
+			if (isPreReleasePresent() && o.isPreReleasePresent()) {
+				StringTokenizer prereleaseATokenizer = new StringTokenizer(preRelease(), ".");
+				StringTokenizer prereleaseBTokenizer = new StringTokenizer(o.preRelease(), ".");
 
 				while (prereleaseATokenizer.hasMoreElements()) {
 					if (prereleaseBTokenizer.hasMoreElements()) {
@@ -207,9 +210,9 @@ public class SemanticVersionImpl implements Version.Semantic {
 				}
 
 				return prereleaseBTokenizer.hasMoreElements() ? -1 : 0;
-			} else if (!prereleaseA.isEmpty()) {
+			} else if (isPreReleasePresent()) {
 				return -1;
-			} else { // !prereleaseB.isEmpty()
+			} else { // o.isPreReleasePresent()
 				return 1;
 			}
 		} else {

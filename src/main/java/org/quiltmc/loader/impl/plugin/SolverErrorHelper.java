@@ -369,7 +369,7 @@ class SolverErrorHelper {
 				if (anyVersion) {
 					report.append(" any version of ");
 				} else {
-					report.append(" version [TODO:GET_VERSION] of ");
+					report.append(" version " + fullRange + " of ");
 				}
 				report.append(modOn);// TODO
 				report.append(", which is missing!");

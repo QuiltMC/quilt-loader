@@ -65,8 +65,7 @@ public class Quilt2FabricSemanticVersion extends Quilt2FabricVersion implements 
 
 	@Override
 	public Optional<String> getPrereleaseKey() {
-		String pre = quilt.preRelease();
-		return pre.isEmpty() ? Optional.empty() : Optional.of(pre);
+		return quilt.isPreReleasePresent() ? Optional.of(quilt.preRelease()) : Optional.empty();
 	}
 
 	@Override

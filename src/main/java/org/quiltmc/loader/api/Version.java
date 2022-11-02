@@ -19,6 +19,7 @@ package org.quiltmc.loader.api;
 
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.ApiStatus;
@@ -76,6 +77,18 @@ public interface Version {
 	 */
 	@ApiStatus.NonExtendable
 	interface Semantic extends Version, Comparable<Semantic> {
+
+		/** A special value that represents a {@link #preRelease()} which is both empty but still present - for example
+		 * "1.18.0-" (as opposed to "1.18.0", which uses the normal empty string for it's prerelease, due to the missing
+		 * dash").
+		 * <p>
+		 * You can either compare this to {@link #preRelease()} using identity to check, or use
+		 * {@link #isPreReleasePresent()}.
+		 * <p>
+		 * This field exists solely to keep backwards compatibility, since we can't make {@link #preRelease()} return an
+		 * {@link Optional}. */
+		public static final String EMPTY_BUT_PRESENT_PRERELEASE = new String();
+
 		static Semantic of(String raw) throws VersionFormatException {
 			return SemanticVersionImpl.of(raw);
 		}
@@ -147,6 +160,14 @@ public interface Version {
 		 * Returns an empty string if not applicable
 		 */
 		String preRelease();
+
+		/** @return True if the {@link #preRelease()} field is present in this version. This is used to differentiate
+		 *         versions with a dash at the end of them (like "1.18.0-", which would return true here), from "1.18.0"
+		 *         (which would return false here.
+		 * @see #EMPTY_BUT_PRESENT_PRERELEASE */
+		default boolean isPreReleasePresent() {
+			return !preRelease().isEmpty() || preRelease() == EMPTY_BUT_PRESENT_PRERELEASE;
+		}
 
 		/**
 		 * Returns an empty string if not applicable
