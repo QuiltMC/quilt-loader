@@ -329,7 +329,7 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader", null);
+			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, null);
 			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Plugin Debugging");
 			plugins.guiFileRoot.toNode(tab.node, false);
@@ -372,7 +372,8 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, null);
+		String msg = "crash.during_setup." + provider.getGameId();
+		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, Text.translate(msg).toString());
 		plugins.guiManager.putIcons(tree);
 		tree.messagesTabName = Text.translate("tab.messages").toString();
 

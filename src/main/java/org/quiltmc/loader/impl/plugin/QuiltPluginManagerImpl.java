@@ -1480,7 +1480,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 						if (!dir.equals(path) && !config.loadSubFolders) {
 							node.subIcon(node.manager().iconDisabled());
-							node.addChild(Text.translate("gui.text.sub_folders_disabled"))//
+							node.addChild(Text.translate("warn.sub_folders_disabled"))//
 								.setDirectLevel(WarningLevel.WARN)//
 								.subIcon(node.manager().iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
