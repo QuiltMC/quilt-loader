@@ -71,8 +71,8 @@ public final class QuiltLoaderConfig {
 	public QuiltLoaderConfig() {
 		// FOR NOW
 
-		loadSubFolders = false;
-		restrictGameVersions = false;
+		loadSubFolders = true;
+		restrictGameVersions = true;
 		outerZipLoadType = ZipLoadType.READ_ZIP;
 		innerZipLoadType = ZipLoadType.COPY_TO_MEMORY;
 		singleThreadedLoading = true;

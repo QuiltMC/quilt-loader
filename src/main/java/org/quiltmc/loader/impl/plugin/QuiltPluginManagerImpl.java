@@ -1565,7 +1565,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		}
 
-		addModOption(map, guiNode);
+		addModOption(folder, map, guiNode);
 	}
 
 	void scanModFile(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) {
@@ -1712,7 +1712,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 			}
 
-			addModOption(map, guiNode);
+			addModOption(zipFile, map, guiNode);
 
 		} finally {
 			state.pop();
@@ -1748,16 +1748,22 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 			}
 
-			addModOption(map, guiNode);
+			addModOption(file, map, guiNode);
 		} finally {
 			state.pop();
 		}
 	}
 
-	private void addModOption(Map<ModLoadOption, BasePluginContext> map, PluginGuiTreeNode guiNode) {
+	private void addModOption(Path file, Map<ModLoadOption, BasePluginContext> map, PluginGuiTreeNode guiNode) {
 		if (map == null || map.isEmpty()) {
-			guiNode.addChild(Text.translate("gui.warn.no_plugin_could_load"))//TODO: translate
-				.setDirectLevel(WarningLevel.WARN);
+			Path containingFile = getRealContainingFile(file);
+			Text title = Text.translate("error.unhandled_mod_file.title", describePath(containingFile));
+			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			error.appendDescription(Text.translate("error.unhandled_mod_file.desc"));
+			error.addFileViewButton(Text.translate("button.view_file", containingFile.getFileName()), containingFile);
+			error.appendReportText("No plugin could load " + describePath(file));
+			guiNode.addChild(Text.translate("error.unhandled_mod_file"))
+				.setError(null, error);
 		} else if (map.size() == 1) {
 			ModLoadOption option = map.keySet().iterator().next();
 			BasePluginContext plugin = map.values().iterator().next();

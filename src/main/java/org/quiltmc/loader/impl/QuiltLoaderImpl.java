@@ -329,7 +329,7 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, null);
+			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, Text.translate("msg.load_state").toString());
 			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Plugin Debugging");
 			plugins.guiFileRoot.toNode(tab.node, false);
