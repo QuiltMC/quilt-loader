@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Constructor;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
@@ -27,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.ProviderNotFoundException;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -206,10 +208,44 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
 		try {
-			// Cast to ClassLoader since newer versions of java added a conflicting method
-			// Java 8 - just "newFileSystem(Path, ClassLoader)"
-			// Java 13 - added "newFileSystem(Path, Map)"
-			FileSystem fileSystem = FileSystems.newFileSystem(zip, (ClassLoader) null);
+			FileSystem fileSystem;
+
+			try {
+				// Cast to ClassLoader since newer versions of java added a conflicting method
+				// Java 8 - just "newFileSystem(Path, ClassLoader)"
+				// Java 13 - added "newFileSystem(Path, Map)"
+				fileSystem = FileSystems.newFileSystem(zip, (ClassLoader) null);
+			} catch (ProviderNotFoundException nfe) {
+				// JDK 10 and below only permit making a zip file system from files on the default FS
+				// However the code still works even if we're not on the default FS, so go around the provider.
+
+				// Since everything that works on 9 and 10 *hopefully* works on 11, we're going to ignore those
+				// versions and special-case a fix for java 8
+				try {
+					Class<?> zfsp = Class.forName("com.sun.nio.zipfs.ZipFileSystemProvider");
+
+					fileSystem = null;
+
+					for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
+						if (!provider.getClass().isAssignableFrom(zfsp)) {
+							continue;
+						}
+						Class<?> zfs = Class.forName("com.sun.nio.zipfs.ZipFileSystem");
+						Constructor<?> ctor = zfs.getDeclaredConstructor(zfsp, Path.class, Map.class);
+						ctor.setAccessible(true);
+						fileSystem = (FileSystem) ctor.newInstance(provider, zip, Collections.emptyMap());
+					}
+
+					if (fileSystem == null) {
+						nfe.addSuppressed(new Error("Failed to find the zip file system provider!"));
+						throw nfe;
+					}
+
+				} catch (ReflectiveOperationException e) {
+					nfe.addSuppressed(e);
+					throw nfe;
+				}
+			}
 
 			for (Path root : fileSystem.getRootDirectories()) {
 				// FIXME: find out if this is an inner or outer zip!
@@ -217,7 +253,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				switch (loadType) {
 					case COPY_TO_MEMORY: {
 						String name = allocateFileSystemName(zip);
-						Path qRoot = new QuiltMemoryFileSystem.ReadOnly(name, root).getRoot();
+						Path qRoot = new QuiltMemoryFileSystem.ReadOnly(name, true, root).getRoot();
 						pathParents.put(qRoot, zip);
 						return qRoot;
 					}
@@ -236,7 +272,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			throw new IOException("No root directories found in " + describePath(zip));
 
 		} catch (ProviderNotFoundException e) {
-			throw new NonZipException(e);
+			String name = zip.getFileName().toString();
+			if (name.endsWith(".zip") || name.endsWith(".jar")) {
+				// Something probably went wrong while trying to load them as zips
+				throw new IOException("Failed to read " + zip + " as a zip file!", e);
+			} else {
+				throw new NonZipException(e);
+			}
 		}
 	}
 
@@ -352,7 +394,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		if (copiedPaths.size() < 2) {
 			throw new IllegalArgumentException("Too few paths! Just don't join them!");
 		}
-		return new QuiltJoinedFileSystem(QuiltJoinedFileSystem.uniqueOf(name), copiedPaths).getRoot();
+		return new QuiltJoinedFileSystem(name, copiedPaths).getRoot();
 	}
 
 	// ###################
@@ -459,6 +501,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	public List<QuiltPluginErrorImpl> getErrors() {
+		Collections.sort(errors, Comparator.comparingInt(e -> e.ordering));
 		return Collections.unmodifiableList(errors);
 	}
 
@@ -481,7 +524,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		} catch (ModSolvingError e) {
 			e.printStackTrace();
 			report = new QuiltReport("Quilt Loader: Crash Report");
-			report.addStacktraceSection("ModSolvingError", -100, e);
+			reportError(theQuiltPluginContext, Text.translate("error.unhandled"))
+				.appendDescription(Text.translate("error.unhandled.desc"))
+				.appendReportText("Unhandled ModSolvingError!")
+				.setOrdering(-100)
+				.appendThrowable(e)
+				.addOpenLinkButton(Text.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
 
 			break outer;
 		} catch (TreeContainsModError e) {
@@ -489,17 +537,38 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			break outer;
 		} catch (TimeoutException e) {
 			e.printStackTrace();
-			report = new QuiltReport("Quilt Loader: Load Failed Report");
-			report.addStacktraceSection("TimeoutException", -100, e);
+			report = new QuiltReport("Quilt Loader: Load Timeout Report");
+			reportError(theQuiltPluginContext, Text.translate("error.unhandled"))
+				.appendDescription(Text.translate("error.unhandled.desc"))
+				.appendReportText("Load timeout!")
+				.appendThrowable(e)
+				.setOrdering(-100)
+				.addOpenLinkButton(Text.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
 			break outer;
 		} catch (QuiltReportedError e) {
 			report = e.report;
 			break outer;
 		} catch (Throwable t) {
 			t.printStackTrace();
-			report = new QuiltReport("Quilt Loader: Crash Report");
-			report.addStacktraceSection("Unhandled Exception", -100, t);
+			report = new QuiltReport("Quilt Loader: Critial Error Report");
+			reportError(theQuiltPluginContext, Text.translate("error.unhandled"))
+				.appendDescription(Text.translate("error.unhandled.desc"))
+				.appendReportText("Unhandled Throwable!")
+				.setOrdering(-100)
+				.appendThrowable(t)
+				.addOpenLinkButton(Text.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
 			break outer;
+		}
+
+		if (!errors.isEmpty()) {
+			int number = 1;
+
+			for (QuiltPluginErrorImpl error : errors) {
+				List<String> lines = error.toReportText();
+
+				report.addStringSection("Error " + number, error.ordering, lines.toArray(new String[0]));
+				number++;
+			}
 		}
 
 		QuiltStringSection pluginState = report.addStringSection("Plugin State", 0);
@@ -979,7 +1048,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		ClasspathModCandidateFinder.findCandidatesStatic((paths, ignored) -> {
 			final Path path;
 			if (paths.size() > 1) {
-				path = new QuiltJoinedFileSystem(QuiltJoinedFileSystem.uniqueOf("classpath"), paths).getRoot();
+				path = new QuiltJoinedFileSystem("classpath", paths).getRoot();
 			} else {
 				path = paths.get(0);
 			}
@@ -1168,18 +1237,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private void checkForErrors() throws TreeContainsModError, QuiltReportedError {
 
 		if (!errors.isEmpty()) {
-			QuiltReport report = new QuiltReport("Quilt Loader: Failed to load");
-
-			int number = 1;
-
-			for (QuiltPluginErrorImpl error : errors) {
-				List<String> lines = error.toReportText();
-
-				report.addStringSection("Error " + number, -100, lines.toArray(new String[0]));
-				number++;
-			}
-
-			throw new QuiltReportedError(report);
+			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load"));
 		}
 
 		WarningLevel maximumLevel = guiFileRoot.getMaximumLevel();
@@ -1512,6 +1570,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 								return FileVisitResult.SKIP_SUBTREE;
 							}
 						}
+
+						if (Files.exists(dir.resolve("quilt_loader_ignored"))) {
+							node.subIcon(node.manager().iconDisabled());
+							node.addChild(Text.translate("warn.sub_folder_ignored"))
+								.setDirectLevel(WarningLevel.WARN)//
+								.subIcon(node.manager().iconDisabled());
+							return FileVisitResult.SKIP_SUBTREE;
+						}
 					}
 					return FileVisitResult.CONTINUE;
 				}
@@ -1650,7 +1716,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(Text.translate("gui.error.zipexception.desc.0", describePath(file)));
 			error.appendDescription(Text.translate("gui.error.zipexception.desc.1"));
 			error.appendThrowable(e);
-			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file))
+			error.addFileViewButton(Text.translate("button.view_file"), getRealContainingFile(file))
 				.icon(guiManager.iconZipFile());
 
 			guiNode.addChild(Text.translate("gui.error.zipexception", e.getMessage()))//TODO: translate
@@ -1663,7 +1729,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendReportText("Failed to read " + describePath(file) + "!");
 			error.appendDescription(Text.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
-			error.addFileViewButton(Text.translate("gui.view_file"), getRealContainingFile(file))
+			error.addFileViewButton(Text.translate("button.view_file"), getRealContainingFile(file))
 				.icon(guiManager.iconZipFile());
 
 			guiNode.addChild(Text.translate("gui.error.ioexception", e.getMessage()))//TODO: translate

@@ -42,7 +42,9 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.impl.plugin.quilt.DisabledModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
+import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 
 class SolverErrorHelper {
@@ -84,7 +86,7 @@ class SolverErrorHelper {
 			Text.translate("error.unhandled_solver")
 		);
 		error.appendDescription(Text.of("error.unhandled_solver.desc"));
-		error.addOpenLinkButton(Text.of("error.unhandled_solver.button.quilt_loader_github"), "https://github.com/QuiltMC/quilt-loader/issues");
+		error.addOpenLinkButton(Text.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
 		error.appendReportText("Unhandled solver error involving the following rules:");
 
 		StringBuilder sb = new StringBuilder();
@@ -146,6 +148,12 @@ class SolverErrorHelper {
 			if (rootRule.rule instanceof MandatoryModIdDefinition) {
 				return reportSingleMandatoryError(manager, rootRule);
 			}
+
+			return false;
+		}
+
+		if (reportDuplicateMandatoryMods(manager, rootRules)) {
+			return true;
 		}
 
 		return false;
@@ -234,24 +242,25 @@ class SolverErrorHelper {
 						}
 					}
 
-					if (dep.getValidOptions().size() != rule.to.size()) {
+					if (dep.getAllOptions().size() != rule.to.size()) {
 						return false;
 					}
 
 					// Now check that they all match up
-					for (ModLoadOption option : dep.getValidOptions()) {
+					for (ModLoadOption option : dep.getAllOptions()) {
 						boolean found = false;
 						for (OptionLink link2 : rule.to) {
 							if (option == link2.option) {
 								found = true;
+								if (dep.getValidOptions().contains(option)) {
+									nextModLinks.add(link2);
+								}
 							}
 						}
 						if (!found) {
 							return false;
 						}
 					}
-
-					nextModLinks.addAll(rule.to);
 
 				} else {
 					// TODO: Handle other conditions!
@@ -324,25 +333,7 @@ class SolverErrorHelper {
 				Text title = Text.translate("error.dep.join.title", first, second);
 				QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
 
-				// TODO: Only upload a ModLoadOption's icon once!
-				Map<Integer, BufferedImage> modIcons = new HashMap<>();
-				for (int size : new int[] { 16, 32 }) {
-					String iconPath = mandatoryMod.metadata().icon(size);
-					if (iconPath != null) {
-						Path path = mandatoryMod.resourceRoot().resolve(iconPath);
-						try (InputStream stream = Files.newInputStream(path)) {
-							BufferedImage image = ImageIO.read(stream);
-							modIcons.put(image.getWidth(), image);
-						} catch (IOException io) {
-							// TODO: Warn about this somewhere!
-							io.printStackTrace();
-						}
-					}
-				}
-
-				if (!modIcons.isEmpty()) {
-					error.setIcon(manager.guiManager.allocateIcon(modIcons));
-				}
+				setIconFromMod(manager, mandatoryMod, error);
 
 				Path rootModPath = mandatoryMod.from();
 				Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
@@ -382,6 +373,29 @@ class SolverErrorHelper {
 		}
 	}
 
+	private static void setIconFromMod(QuiltPluginManagerImpl manager, ModLoadOption mandatoryMod,
+		QuiltPluginError error) {
+		// TODO: Only upload a ModLoadOption's icon once!
+		Map<Integer, BufferedImage> modIcons = new HashMap<>();
+		for (int size : new int[] { 16, 32 }) {
+			String iconPath = mandatoryMod.metadata().icon(size);
+			if (iconPath != null) {
+				Path path = mandatoryMod.resourceRoot().resolve(iconPath);
+				try (InputStream stream = Files.newInputStream(path)) {
+					BufferedImage image = ImageIO.read(stream);
+					modIcons.put(image.getWidth(), image);
+				} catch (IOException io) {
+					// TODO: Warn about this somewhere!
+					io.printStackTrace();
+				}
+			}
+		}
+
+		if (!modIcons.isEmpty()) {
+			error.setIcon(manager.guiManager.allocateIcon(modIcons));
+		}
+	}
+
 	private static String getDepName(QuiltRuleDepOnly dep) {
 		String id = dep.publicDep.id().id();
 		switch (id) {
@@ -390,5 +404,95 @@ class SolverErrorHelper {
 			default:
 				return "'" + id + "'";
 		}
+	}
+
+	private static boolean reportDuplicateMandatoryMods(QuiltPluginManagerImpl manager, List<RuleLink> rootRules) {
+		// N+1 root rules for N duplicated mods:
+		// 0 is the OptionalModIdDefintion
+		// 1..N is either MandatoryModIdDefinition or DisabledModIdDefinition (and the mod is mandatory)
+
+		if (rootRules.size() < 3) {
+			return false; 
+		}
+
+		// Step 1: Find the single OptionalModIdDefinition
+		OptionalModIdDefintion optionalDef = null;
+		for (RuleLink link : rootRules) {
+			if (link.rule instanceof OptionalModIdDefintion) {
+				if (optionalDef != null) {
+					return false;
+				}
+				optionalDef = (OptionalModIdDefintion) link.rule;
+			}
+		}
+
+		if (optionalDef == null) {
+			return false;
+		}
+
+		// Step 2: Check to see if the rest of the root rules are MandatoryModIdDefinition
+		// and they are for the same mod id
+		List<ModLoadOption> mandatories = new ArrayList<>();
+		for (RuleLink link : rootRules) {
+			if (link.rule == optionalDef) {
+				continue;
+			}
+
+			if (link.rule instanceof MandatoryModIdDefinition) {
+				MandatoryModIdDefinition mandatory = (MandatoryModIdDefinition) link.rule;
+				if (!mandatory.getModId().equals(optionalDef.getModId())) {
+					return false;
+				}
+				mandatories.add(mandatory.option);
+			} else if (link.rule instanceof DisabledModIdDefinition) {
+				DisabledModIdDefinition disabled = (DisabledModIdDefinition) link.rule;
+				if (!disabled.getModId().equals(optionalDef.getModId())) {
+					return false;
+				}
+				if (!disabled.option.isMandatory()) {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		}
+
+		if (mandatories.isEmpty()) {
+			// So this means there's an OptionalModIdDefintion with only
+			// DisabledModIdDefinitions as roots
+			// that means this isn't a duplicate mandatory mods error!
+			return false;
+		}
+		ModLoadOption firstMandatory = mandatories.get(0);
+
+		// Title:
+		// Duplicate mod: "BuildCraft"
+
+		// Description:
+		// - "buildcraft-all-9.0.0.jar"
+		// - "buildcraft-all-9.0.1.jar"
+		// Remove all but one.
+
+		// With buttons to view each mod individually
+
+		String name = firstMandatory.metadata().name();
+		Text title = Text.translate("error.duplicate_mandatory", name);
+		QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
+		error.appendReportText("Duplicate mandatory mod '" + firstMandatory.metadata().id() + "'");
+		setIconFromMod(manager, firstMandatory, error);
+
+		for (ModLoadOption option : mandatories) {
+			String path = manager.describePath(option.from());
+			// Just in case
+			Path container = manager.getRealContainingFile(option.from());
+			error.appendDescription(Text.translate("error.duplicate_mandatory.mod", path));
+			error.addFileViewButton(Text.translate("button.view_file", container.getFileName()), container)
+				.icon(option.modCompleteIcon());
+			error.appendReportText("- " + path);
+		}
+
+		error.appendDescription(Text.translate("error.duplicate_mandatory.desc"));
+
+		return true;
 	}
 }

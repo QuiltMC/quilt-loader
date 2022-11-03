@@ -41,6 +41,7 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 	final String reportingPlugin;
 	final Text title;
 	PluginGuiIcon icon = GuiManagerImpl.ICON_LEVEL_ERROR;
+	int ordering = 0;
 	final List<String> reportLines = new ArrayList<>();
 	final List<Text> description = new ArrayList<>();
 	final List<Text> additionalInfo = new ArrayList<>();
@@ -57,6 +58,12 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 	@Override
 	public QuiltPluginError appendReportText(String... lines) {
 		Collections.addAll(reportLines, lines);
+		return this;
+	}
+
+	@Override
+	public QuiltPluginError setOrdering(int priority) {
+		this.ordering = priority;
 		return this;
 	}
 

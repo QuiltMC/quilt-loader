@@ -32,7 +32,7 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 	}
 
 	@Override
-	String getModId() {
+	public String getModId() {
 		return option.id();
 	}
 

@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
@@ -162,6 +164,10 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 
 	public List<ModLoadOption> getWrongOptions() {
 		return Collections.unmodifiableList(invalidOptions);
+	}
+
+	public List<ModLoadOption> getAllOptions() {
+		return Collections.unmodifiableList(allOptions);
 	}
 
 	@Override

@@ -32,8 +32,6 @@ import org.jetbrains.annotations.Nullable;
 /** A {@link FileSystem} that exposes multiple {@link Path}s in a single {@link FileSystem}. */
 public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> {
 
-	private static final Map<String, Integer> uniqueNames = new HashMap<>();
-
 	final Path[] from;
 	final boolean[] shouldCloseFroms;
 	boolean isOpen = true;
@@ -43,7 +41,7 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 	}
 
 	public QuiltJoinedFileSystem(String name, List<Path> from, List<Boolean> shouldClose) {
-		super(QuiltJoinedFileSystem.class, QuiltJoinedPath.class, name);
+		super(QuiltJoinedFileSystem.class, QuiltJoinedPath.class, name, true);
 
 		this.from = from.toArray(new Path[0]);
 		this.shouldCloseFroms = new boolean[from.size()];
@@ -51,17 +49,6 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 			shouldCloseFroms[i] = shouldClose != null && shouldClose.get(i);
 		}
 		QuiltJoinedFileSystemProvider.register(this);
-	}
-
-	public static synchronized String uniqueOf(String name) {
-		Integer current = uniqueNames.get(name);
-		if (current != null) {
-			current++;
-		} else {
-			current = 0;
-		}
-		uniqueNames.put(name, current);
-		return name + ".i" + current;
 	}
 
 	@Override

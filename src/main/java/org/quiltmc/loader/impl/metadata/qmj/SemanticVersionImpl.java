@@ -104,11 +104,11 @@ public class SemanticVersionImpl implements Version.Semantic {
 					}
 				} else {
 					components[i] = Integer.parseInt(compStr);
+					if (components[i] < 0) {
+						throw new VersionFormatException("Negative raw number component '" + compStr + "'!");
+					}
 				}
 
-				if (components[i] < 0) {
-					throw new VersionFormatException("Negative raw number component '" + compStr + "'!");
-				}
 			} catch (NumberFormatException e) {
 				throw new VersionFormatException("Could not parse raw number component '" + compStr + "'!", e);
 			}

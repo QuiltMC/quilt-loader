@@ -103,7 +103,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.0-beta.10";
+	public static final String VERSION = "0.18.0-beta.29";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -300,8 +300,7 @@ public final class QuiltLoaderImpl {
 					// if (paths.size() == 1) {
 					// resourceRoot = paths.get(0);
 					// } else {
-					String fsName = QuiltJoinedFileSystem.uniqueOf("final-mod-" + modOption.id());
-					resourceRoot = new QuiltJoinedFileSystem(fsName, paths).getRoot();
+					resourceRoot = new QuiltJoinedFileSystem("final-mod-" + modOption.id(), paths).getRoot();
 					// }
 				}
 			}

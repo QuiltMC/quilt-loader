@@ -53,7 +53,7 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 	}
 
 	@Override
-	String getModId() {
+	public String getModId() {
 		return modid;
 	}
 

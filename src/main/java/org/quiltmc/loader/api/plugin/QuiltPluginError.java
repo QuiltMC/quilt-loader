@@ -36,6 +36,8 @@ public interface QuiltPluginError {
 	/** Adds more lines of description. */
 	QuiltPluginError appendDescription(Text... descriptions);
 
+	QuiltPluginError setOrdering(int priority);
+
 	/** Adds more lines of additional information, which is hidden from the user by default. */
 	QuiltPluginError appendAdditionalInformation(Text... information);
 

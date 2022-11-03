@@ -20,18 +20,16 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 
-/** A concrete definition that mandates that the modid must <strong>not</strong> be loaded by the given singular {@link ModCandidate}, and no
- * others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid by the time
- * this is used). */
+/** A concrete definition that mandates that the modid must <strong>not</strong> be loaded by the given {@link ModLoadOption}. */
 public final class DisabledModIdDefinition extends ModIdDefinition {
-	final ModLoadOption option;
+	public final ModLoadOption option;
 
 	public DisabledModIdDefinition(ModLoadOption candidate) {
 		this.option = candidate;
 	}
 
 	@Override
-	String getModId() {
+	public String getModId() {
 		return option.id();
 	}
 

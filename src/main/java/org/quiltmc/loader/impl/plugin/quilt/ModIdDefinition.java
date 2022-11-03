@@ -27,7 +27,7 @@ import org.quiltmc.loader.api.plugin.solver.Rule;
 /** A concrete definition of a modid. This also maps the modid to the {@link LoadOption} candidates, and so is used
  * instead of {@link LoadOption} in other links. */
 public abstract class ModIdDefinition extends Rule {
-	abstract String getModId();
+	public abstract String getModId();
 
 	/** @return An array of all the possible {@link LoadOption} instances that can define this modid. May be empty, but
 	 *         will never be null. */

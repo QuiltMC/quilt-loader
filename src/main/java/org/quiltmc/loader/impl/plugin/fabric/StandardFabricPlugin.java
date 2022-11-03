@@ -46,6 +46,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 		Path parent = context().manager().getParent(root);
 
 		if (!parent.getFileName().toString().endsWith(".jar")) {
+			System.out.println(parent + " (parent of '"+root+"') doesn't end with '.jar', so fabric-loader will skip this!");
 			return null;
 		}
 
@@ -60,6 +61,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
 		Path fmj = root.resolve("fabric.mod.json");
 		if (!Files.isRegularFile(fmj)) {
+			System.out.println("didn't find a fabric.mod.json file!");
 			return null;
 		}
 
@@ -111,7 +113,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			error.appendDescription(Text.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
-			error.addFileViewButton(Text.translate("gui.view_file"), context().manager().getRealContainingFile(root))
+			error.addFileViewButton(Text.translate("button.view_file"), context().manager().getRealContainingFile(root))
 				.icon(guiManager.iconJarFile().withDecoration(guiManager.iconFabric()));
 
 			guiNode.addChild(Text.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate

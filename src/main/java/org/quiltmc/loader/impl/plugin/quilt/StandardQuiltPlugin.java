@@ -160,7 +160,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			error.appendDescription(Text.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
-			error.addFileViewButton(Text.translate("gui.view_file"), context().manager().getRealContainingFile(root))
+			error.addFileViewButton(Text.translate("button.view_file"), context().manager().getRealContainingFile(root))
 				.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
 
 			guiNode.addChild(Text.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
@@ -186,19 +186,19 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			ModMetadataExt metadata = mod.metadata();
 			RuleContext ctx = context().ruleContext();
 
+			OptionalModIdDefintion def = modDefinitions.get(mod.id());
+			if (def == null) {
+				def = new OptionalModIdDefintion(ctx, mod.id());
+				modDefinitions.put(mod.id(), def);
+				ctx.addRule(def);
+			}
+
 			// TODO: this minecraft-specific extension should be moved to its own plugin
 			// If the mod's environment doesn't match the current one,
 			// then add a rule so that the mod is never loaded.
 			if (!metadata.environment().matches(MinecraftQuiltLoader.getEnvironmentType())) {
 				ctx.addRule(new DisabledModIdDefinition(mod));
 				return;
-			}
-
-			OptionalModIdDefintion def = modDefinitions.get(mod.id());
-			if (def == null) {
-				def = new OptionalModIdDefintion(ctx, mod.id());
-				modDefinitions.put(mod.id(), def);
-				ctx.addRule(def);
 			}
 
 			if (mod.isMandatory()) {
