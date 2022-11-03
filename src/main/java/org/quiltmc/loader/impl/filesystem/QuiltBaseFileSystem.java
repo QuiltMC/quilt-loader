@@ -86,7 +86,7 @@ extends FileSystem
 
 	// Shamelessly stolen from UnixUriUtils
 	private static final long LOW_MASK = 0x3ff600000000000L;
-	private static final long HIGH_MASK = 0x47fffffe07ffffffL;
+	private static final long HIGH_MASK = 0x47fffffe07fffffeL;
 	private static String sanitizeName(String str) {
 		byte[] path = str.getBytes();
 		StringBuilder sb = new StringBuilder();
