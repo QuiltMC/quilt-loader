@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.api;
+package net.fabricmc.loader.entrypoint.minecraft.hooks;
+
+import java.util.function.Consumer;
 
 @Deprecated
-public class VersionParsingException extends net.fabricmc.loader.util.version.VersionParsingException {
-	public VersionParsingException() {
-		super();
-	}
+public final class EntrypointUtils {
 
-	public VersionParsingException(Throwable t) {
-		super(t);
-	}
-
-	public VersionParsingException(String s) {
-		super(s);
-	}
-
-	public VersionParsingException(String s, Throwable t) {
-		super(s, t);
+	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
+		net.fabricmc.loader.impl.entrypoint.EntrypointUtils.invoke(name, type, invoker);
 	}
 }

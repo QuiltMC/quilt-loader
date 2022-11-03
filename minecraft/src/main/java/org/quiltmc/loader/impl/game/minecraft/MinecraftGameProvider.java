@@ -87,9 +87,7 @@ public class MinecraftGameProvider implements GameProvider {
 	private boolean useGameJarForLogging;
 	private boolean hasModLoader = false;
 
-	private static final GameTransformer TRANSFORMER = new GameTransformer(
-			new EntrypointPatch(),
-			new BrandingPatch());
+	private GameTransformer transformer;
 
 	@Override
 	public String getGameId() {
@@ -354,7 +352,11 @@ public class MinecraftGameProvider implements GameProvider {
 			setupLogHandler(launcher, true);
 		}
 
-		TRANSFORMER.locateEntrypoints(launcher, gameJar);
+		transformer = new GameTransformer(
+				new EntrypointPatch(Version.of(versionData.getNormalized())),
+				new BrandingPatch());
+
+		transformer.locateEntrypoints(launcher, gameJar);
 	}
 
 	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {
@@ -421,7 +423,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 	@Override
 	public GameTransformer getEntrypointTransformer() {
-		return TRANSFORMER;
+		return transformer;
 	}
 
 	@Override

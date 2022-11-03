@@ -311,12 +311,30 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) {
-		throw internalError();
+		List<EntrypointMetadata> list = new ArrayList<>();
+		Collection<AdapterLoadableClassEntry> quiltList = quiltMeta.getEntrypoints().get(type);
+		if (quiltList == null) {
+			return list;
+		}
+		for (AdapterLoadableClassEntry entrypoint : quiltList) {
+			list.add(new EntrypointMetadata() {
+				@Override
+				public String getValue() {
+					return entrypoint.getValue();
+				}
+
+				@Override
+				public String getAdapter() {
+					return entrypoint.getAdapter();
+				}
+			});
+		}
+		return list;
 	}
 
 	@Override
 	public Collection<String> getEntrypointKeys() {
-		throw internalError();
+		return quiltMeta.getEntrypoints().keySet();
 	}
 
 	@Override

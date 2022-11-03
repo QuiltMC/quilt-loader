@@ -105,12 +105,15 @@ public final class QuiltMixinBootstrap {
 
 		for (ModContainerExt mod : loader.getAllModsExt()) {
 			for (String config : mod.metadata().mixins(side)) {
-				ModContainerExt prev = configToModMap.putIfAbsent(config, mod);
+				// MixinServiceKnot decodes this to load the config from the right mod
+				String prefixedConfig = "#" + mod.metadata().id() + ":" + config;
+				ModContainerExt prev = configToModMap.putIfAbsent(prefixedConfig, mod);
+				// This will only happen if a mod declares a mixin config *twice*
 				if (prev != null) throw new RuntimeException(String.format("Non-unique Mixin config name %s used by the mods %s and %s",
 						config, prev.metadata().id(), mod.metadata().id()));
 
 				try {
-					Mixins.addConfiguration(config);
+					Mixins.addConfiguration(prefixedConfig);
 				} catch (Throwable t) {
 					throw new RuntimeException(String.format("Error creating Mixin config %s for mod %s", config, mod.metadata().id()), t);
 				}

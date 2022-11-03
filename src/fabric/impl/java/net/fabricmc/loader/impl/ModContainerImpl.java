@@ -17,6 +17,8 @@
 package net.fabricmc.loader.impl;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 
 import net.fabricmc.loader.impl.metadata.ModOriginImpl;
+import net.fabricmc.loader.metadata.LoaderModMetadata;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
@@ -43,6 +46,11 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 
 	@Override
 	public ModMetadata getMetadata() {
+		return getInfo();
+	}
+
+	@Override
+	public LoaderModMetadata getInfo() {
 		return ((ConvertibleModMetadata) quilt.metadata()).asFabricModMetadata();
 	}
 
@@ -54,6 +62,15 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 	@Override
 	public ModOrigin getOrigin() {
 		return new ModOriginImpl(quilt);
+	}
+
+	@Override
+	public URL getOriginUrl() {
+		try {
+			return quilt.getSourcePaths().get(0).get(0).toUri().toURL();
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@Override
