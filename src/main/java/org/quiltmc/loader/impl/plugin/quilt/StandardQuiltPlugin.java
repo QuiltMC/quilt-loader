@@ -50,12 +50,13 @@ import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 /** Quilt-loader's plugin. For simplicities sake this is a builtin plugin - and cannot be disabled, or reloaded (since
  * quilt-loader can't reload itself to a different version). */
 public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
-	public static final boolean DEBUG_PRINT_STATE = false;
+	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
 
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
 
