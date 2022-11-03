@@ -21,20 +21,20 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import net.fabricmc.loader.api.metadata.ModOrigin;
-
-import net.fabricmc.loader.impl.metadata.ModOriginImpl;
-import net.fabricmc.loader.metadata.LoaderModMetadata;
-
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import net.fabricmc.loader.api.metadata.ModOrigin;
+import net.fabricmc.loader.impl.metadata.ModOriginImpl;
+import net.fabricmc.loader.metadata.LoaderModMetadata;
 
 @Deprecated
 public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
@@ -75,12 +75,41 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 
 	@Override
 	public Optional<net.fabricmc.loader.api.ModContainer> getContainingMod() {
-		throw new UnsupportedOperationException("not implemented");
+		for (List<Path> paths : quilt.getSourcePaths()) {
+			if (paths.size() < 2) {
+				continue;
+			}
+			List<Path> subtracted = new ArrayList<>(paths);
+			subtracted.remove(subtracted.size() - 1);
+			for (ModContainer container : QuiltLoader.getAllMods()) {
+				if (container.getSourcePaths().contains(subtracted)) {
+					return Optional.of(new ModContainerImpl(quilt));
+				}
+			}
+		}
+		return Optional.empty();
 	}
 
 	@Override
 	public Collection<net.fabricmc.loader.api.ModContainer> getContainedMods() {
-		throw new UnsupportedOperationException("not implemented");
+		List<net.fabricmc.loader.api.ModContainer> contained = new ArrayList<>();
+		for (ModContainer other : QuiltLoader.getAllMods()) {
+			if (other == quilt) {
+				continue;
+			}
+			for (List<Path> paths : other.getSourcePaths()) {
+				if (paths.size() < 2) {
+					continue;
+				}
+				List<Path> subtracted = new ArrayList<>(paths);
+				subtracted.remove(subtracted.size() - 1);
+				if (quilt.getSourcePaths().contains(subtracted)) {
+					contained.add(new ModContainerImpl(other));
+					break;
+				}
+			}
+		}
+		return contained;
 	}
 
 	public ModContainer getQuiltModContainer() {
@@ -89,6 +118,7 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 
 	// copy + pasted from fabric
 	private boolean warnedMultiPath;
+
 	@Override
 	public Path getRootPath() {
 		return quilt.rootPath();

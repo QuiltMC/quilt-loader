@@ -36,6 +36,7 @@ import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.Text;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -431,8 +432,9 @@ class SolverErrorHelper {
 		}
 
 		// Step 2: Check to see if the rest of the root rules are MandatoryModIdDefinition
-		// and they are for the same mod id
+		// and they share some provided id (or real id)
 		List<ModLoadOption> mandatories = new ArrayList<>();
+		Set<String> commonIds = null;
 		for (RuleLink link : rootRules) {
 			if (link.rule == optionalDef) {
 				continue;
@@ -440,18 +442,34 @@ class SolverErrorHelper {
 
 			if (link.rule instanceof MandatoryModIdDefinition) {
 				MandatoryModIdDefinition mandatory = (MandatoryModIdDefinition) link.rule;
-				if (!mandatory.getModId().equals(optionalDef.getModId())) {
-					return false;
+				if (commonIds == null) {
+					commonIds = new HashSet<>();
+					commonIds.add(mandatory.getModId());
+					for (ProvidedMod provided : mandatory.option.metadata().provides()) {
+						commonIds.add(provided.id());
+					}
+				} else {
+					Set<String> fromThis = new HashSet<>();
+					fromThis.add(mandatory.getModId());
+					for (ProvidedMod provided : mandatory.option.metadata().provides()) {
+						fromThis.add(provided.id());
+					}
+					commonIds.retainAll(fromThis);
+					if (commonIds.isEmpty()) {
+						return false;
+					}
 				}
 				mandatories.add(mandatory.option);
 			} else if (link.rule instanceof DisabledModIdDefinition) {
 				DisabledModIdDefinition disabled = (DisabledModIdDefinition) link.rule;
-				if (!disabled.getModId().equals(optionalDef.getModId())) {
-					return false;
-				}
 				if (!disabled.option.isMandatory()) {
 					return false;
 				}
+				if (!commonIds.contains(disabled.getModId())) {
+					return false;
+				}
+				commonIds.clear();
+				commonIds.add(disabled.getModId());
 			} else {
 				return false;
 			}
@@ -464,6 +482,17 @@ class SolverErrorHelper {
 			return false;
 		}
 		ModLoadOption firstMandatory = mandatories.get(0);
+		String bestName = null;
+		for (ModLoadOption option : mandatories) {
+			if (commonIds.contains(option.id())) {
+				bestName = option.metadata().name();
+				break;
+			}
+		}
+
+		if (bestName == null) {
+			bestName = "id'" + commonIds.iterator().next() + "'";
+		}
 
 		// Title:
 		// Duplicate mod: "BuildCraft"
@@ -475,10 +504,9 @@ class SolverErrorHelper {
 
 		// With buttons to view each mod individually
 
-		String name = firstMandatory.metadata().name();
-		Text title = Text.translate("error.duplicate_mandatory", name);
+		Text title = Text.translate("error.duplicate_mandatory", bestName);
 		QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
-		error.appendReportText("Duplicate mandatory mod '" + firstMandatory.metadata().id() + "'");
+		error.appendReportText("Duplicate mandatory mod ids " + commonIds);
 		setIconFromMod(manager, firstMandatory, error);
 
 		for (ModLoadOption option : mandatories) {
