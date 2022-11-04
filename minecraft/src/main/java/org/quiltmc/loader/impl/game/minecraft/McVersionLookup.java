@@ -202,11 +202,15 @@ public final class McVersionLookup {
 				version = name;
 			}
 
-			if (version != null && release != null) {
+			if (version != null) {
 				builder.setId(id);
-				builder.setName(name);
+				if (release != null) {
+					builder.setName(name);
+					builder.setRelease(release);
+				} else {
+					builder.setNameAndRelease(name);
+				}
 				builder.setVersion(version);
-				builder.setRelease(release);
 
 				return true;
 			}
@@ -263,7 +267,10 @@ public final class McVersionLookup {
 			int year = Integer.parseInt(matcher.group(1));
 			int week = Integer.parseInt(matcher.group(2));
 
-			if (year == 20 && week >= 6) {
+			if (year == 22 && week >= 42) {
+				// 22w42a started not including a release_target again, hence the large gap
+				return "1.19.3";
+			} else if (year == 20 && week >= 6) {
 				return "1.16";
 			} else if (year == 19 && week >= 34) {
 				return "1.15";

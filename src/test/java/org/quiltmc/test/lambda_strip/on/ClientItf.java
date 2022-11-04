@@ -1,5 +1,4 @@
 /*
- * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,25 +14,11 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.util.version;
+package org.quiltmc.test.lambda_strip.on;
 
-/** @deprecated Replaced by {@link net.fabricmc.loader.api.VersionParsingException} */
-@SuppressWarnings("serial")
-@Deprecated
-public class VersionParsingException extends Exception {
-	public VersionParsingException() {
-		super();
-	}
+import org.quiltmc.loader.api.minecraft.ClientOnly;
 
-	public VersionParsingException(Throwable t) {
-		super(t);
-	}
-
-	public VersionParsingException(String s) {
-		super(s);
-	}
-
-	public VersionParsingException(String s, Throwable t) {
-		super(s, t);
-	}
+@ClientOnly
+public interface ClientItf {
+	void sayHi();
 }

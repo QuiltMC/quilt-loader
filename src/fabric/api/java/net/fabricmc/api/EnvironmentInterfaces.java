@@ -22,12 +22,19 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.quiltmc.loader.api.minecraft.ClientOnly;
+import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
+
 /**
  * A container of multiple {@link EnvironmentInterface} annotations on a class, often defined implicitly.
+ * 
+ * @deprecated Please use one of quilt's annotations: either {@link ClientOnly} or {@link DedicatedServerOnly}.
+ * Those annotations can be directly applied to the implemented interface.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target(ElementType.TYPE)
 @Documented
+@Deprecated
 public @interface EnvironmentInterfaces {
 	/**
 	 * Returns the {@link EnvironmentInterface} annotations it holds.
