@@ -70,17 +70,17 @@ public interface PluginGuiTreeNode {
 	PluginGuiTreeNode addChild(SortOrder sortOrder);
 
 	@Contract("_, _ -> new")
-	PluginGuiTreeNode addChild(Text text, SortOrder sortOrder);
+	PluginGuiTreeNode addChild(QuiltLoaderText text, SortOrder sortOrder);
 
 	@Contract("_ -> new")
-	default PluginGuiTreeNode addChild(Text text) {
+	default PluginGuiTreeNode addChild(QuiltLoaderText text) {
 		return addChild(text, SortOrder.ADDITION_ORDER);
 	}
 
-	Text text();
+	QuiltLoaderText text();
 
 	@Contract("_ -> this")
-	PluginGuiTreeNode text(Text text);
+	PluginGuiTreeNode text(QuiltLoaderText text);
 
 	String sortPrefix();
 

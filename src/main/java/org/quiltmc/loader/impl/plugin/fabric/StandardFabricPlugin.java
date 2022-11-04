@@ -28,7 +28,7 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.fabric.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
@@ -89,14 +89,14 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
 				if (!Files.exists(inner)) {
 					Log.warn(LogCategory.DISCOVERY, "Didn't find nested jar " + inner + " in " + context().manager().describePath(from));
-					PluginGuiTreeNode missingJij = guiNode.addChild(Text.of(inner.toString()), SortOrder.ALPHABETICAL_ORDER);
+					PluginGuiTreeNode missingJij = guiNode.addChild(QuiltLoaderText.of(inner.toString()), SortOrder.ALPHABETICAL_ORDER);
 					missingJij.mainIcon(missingJij.manager().iconJarFile());
-					missingJij.addChild(Text.translate("fabric.jar_in_jar.missing"))//
+					missingJij.addChild(QuiltLoaderText.translate("fabric.jar_in_jar.missing"))//
 						.setDirectLevel(WarningLevel.CONCERN);
 					continue;
 				}
 
-				PluginGuiTreeNode jarNode = guiNode.addChild(Text.of(jar), SortOrder.ALPHABETICAL_ORDER);
+				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
 				context().addFileToScan(inner, jarNode);
 			}
 
@@ -106,17 +106,17 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
-			Text title = Text.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());
+			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());
 			QuiltPluginError error = context().reportError(title);
 			String describedPath = context().manager().describePath(fmj);
 			error.appendReportText("Invalid 'fabric.mod.json' metadata file:" + describedPath);
-			error.appendDescription(Text.translate("gui.text.invalid_metadata.desc.0", describedPath));
+			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
-			error.addFileViewButton(Text.translate("button.view_file"), context().manager().getRealContainingFile(root))
+			error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), context().manager().getRealContainingFile(root))
 				.icon(guiManager.iconJarFile().withDecoration(guiManager.iconFabric()));
 
-			guiNode.addChild(Text.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
+			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
 				.setError(parse, error);
 			return null;
 		}

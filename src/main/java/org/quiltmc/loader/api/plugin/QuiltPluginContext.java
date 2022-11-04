@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -68,7 +68,7 @@ public interface QuiltPluginContext {
 	void lockZip(Path path);
 
 	/** Reports an error, which will be shown in the error gui screen and saved in the crash report file. */
-	QuiltPluginError reportError(Text title);
+	QuiltPluginError reportError(QuiltLoaderText title);
 
 	// ##############
 	// # Scheduling #

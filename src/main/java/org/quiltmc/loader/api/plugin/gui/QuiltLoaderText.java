@@ -16,16 +16,16 @@
 
 package org.quiltmc.loader.api.plugin.gui;
 
-import org.quiltmc.loader.impl.plugin.gui.TextImpl;
+import org.quiltmc.loader.impl.plugin.gui.QuiltLoaderTextImpl;
 
-public interface Text {
-	public static final Text EMPTY = new TextImpl("", false);
+public interface QuiltLoaderText {
+	public static final QuiltLoaderText EMPTY = new QuiltLoaderTextImpl("", false);
 
-	public static Text translate(String translationKey, Object... extra) {
-		return new TextImpl(translationKey, true, extra);
+	public static QuiltLoaderText translate(String translationKey, Object... extra) {
+		return new QuiltLoaderTextImpl(translationKey, true, extra);
 	}
 
-	public static Text of(String text) {
-		return new TextImpl(text, false);
+	public static QuiltLoaderText of(String text) {
+		return new QuiltLoaderTextImpl(text, false);
 	}
 }

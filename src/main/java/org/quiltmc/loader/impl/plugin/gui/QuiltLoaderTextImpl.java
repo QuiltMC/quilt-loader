@@ -16,17 +16,17 @@
 
 package org.quiltmc.loader.impl.plugin.gui;
 
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 
 import java.util.MissingFormatArgumentException;
 
-public final class TextImpl implements Text {
+public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 
 	private final String translationKey;
 	private final Object[] extra;
 	boolean translate;
 
-	public TextImpl(String key, boolean translate, Object... args) {
+	public QuiltLoaderTextImpl(String key, boolean translate, Object... args) {
 		this.translationKey = key;
 		this.extra = args;
 		this.translate = true;

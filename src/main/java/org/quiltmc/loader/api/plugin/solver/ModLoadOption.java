@@ -29,7 +29,7 @@ import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 
 /** A special type of {@link LoadOption} that represents a mod. */
 public abstract class ModLoadOption extends LoadOption {
@@ -97,7 +97,7 @@ public abstract class ModLoadOption extends LoadOption {
 	 * been set to the {@link #version()} before this method is called. */
 	public void populateModsTabInfo(PluginGuiTreeNode guiNode) {
 		guiNode.mainIcon(modTypeIcon());
-		guiNode.addChild(Text.of(loader().manager().describePath(from())))//
+		guiNode.addChild(QuiltLoaderText.of(loader().manager().describePath(from())))//
 			.mainIcon(guiNode.manager().iconFolder());
 	}
 

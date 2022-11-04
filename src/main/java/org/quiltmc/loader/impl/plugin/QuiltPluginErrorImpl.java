@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
@@ -39,17 +39,17 @@ import org.quiltmc.loader.impl.plugin.gui.PluginIconImpl;
 public class QuiltPluginErrorImpl implements QuiltPluginError {
 
 	final String reportingPlugin;
-	final Text title;
+	final QuiltLoaderText title;
 	PluginGuiIcon icon = GuiManagerImpl.ICON_LEVEL_ERROR;
 	int ordering = 0;
 	final List<String> reportLines = new ArrayList<>();
-	final List<Text> description = new ArrayList<>();
-	final List<Text> additionalInfo = new ArrayList<>();
+	final List<QuiltLoaderText> description = new ArrayList<>();
+	final List<QuiltLoaderText> additionalInfo = new ArrayList<>();
 	final List<Throwable> exceptions = new ArrayList<>();
 	final List<ErrorButton> buttons = new ArrayList<>();
 	final Throwable reportTrace;
 
-	public QuiltPluginErrorImpl(String reportingPlugin, Text title) {
+	public QuiltPluginErrorImpl(String reportingPlugin, QuiltLoaderText title) {
 		this.reportingPlugin = reportingPlugin;
 		this.title = title;
 		this.reportTrace = new Throwable();
@@ -68,13 +68,13 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 	}
 
 	@Override
-	public QuiltPluginError appendDescription(Text... descriptions) {
+	public QuiltPluginError appendDescription(QuiltLoaderText... descriptions) {
 		Collections.addAll(description, descriptions);
 		return this;
 	}
 
 	@Override
-	public QuiltPluginError appendAdditionalInformation(Text... information) {
+	public QuiltPluginError appendAdditionalInformation(QuiltLoaderText... information) {
 		Collections.addAll(additionalInfo, information);
 		return this;
 	}
@@ -91,19 +91,19 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		return this;
 	}
 
-	private ErrorButton button(Text name, QuiltBasicButtonAction action) {
+	private ErrorButton button(QuiltLoaderText name, QuiltBasicButtonAction action) {
 		ErrorButton button = new ErrorButton(name, action);
 		buttons.add(button);
 		return button;
 	}
 
 	@Override
-	public QuiltPluginButton addFileViewButton(Text name, Path openedPath) {
+	public QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath) {
 		return button(name, QuiltBasicButtonAction.VIEW_FILE).arg("file", openedPath.toString());
 	}
 
 	@Override
-	public QuiltPluginButton addFolderViewButton(Text name, Path openedFolder) {
+	public QuiltPluginButton addFolderViewButton(QuiltLoaderText name, Path openedFolder) {
 		if (Files.exists(openedFolder) && Files.isRegularFile(openedFolder)) {
 			return addFileViewButton(name, openedFolder);
 		} else {
@@ -112,17 +112,17 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 	}
 
 	@Override
-	public QuiltPluginButton addOpenLinkButton(Text name, String url) {
+	public QuiltPluginButton addOpenLinkButton(QuiltLoaderText name, String url) {
 		return button(name, QuiltBasicButtonAction.OPEN_WEB_URL).arg("url", url);
 	}
 
 	@Override
-	public QuiltPluginButton addCopyTextToClipboardButton(Text name, String fullText) {
+	public QuiltPluginButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText) {
 		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_TEXT).arg("text", fullText);
 	}
 
 	@Override
-	public QuiltPluginButton addCopyFileToClipboardButton(Text name, Path openedFile) {
+	public QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile) {
 		// TODO Auto-generated method stub
 		throw new AbstractMethodError("// TODO: Implement this!");
 	}
@@ -152,13 +152,13 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		// TODO: Change the gui json stuff to embed 'Text' rather than 'String'
 		msg.title = title.toString();
 		msg.iconType = PluginIconImpl.fromApi(icon).path;
-		for (Text t : description) {
+		for (QuiltLoaderText t : description) {
 			for (String line : t.toString().split("\\n")) {
 				msg.description.add(line);
 			}
 		}
 
-		for (Text t : additionalInfo) {
+		for (QuiltLoaderText t : additionalInfo) {
 			for (String line : t.toString().split("\\n")) {
 				msg.additionalInfo.add(line);
 			}
@@ -169,7 +169,7 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 			reportText.append(line);
 			reportText.append("\n");
 		}
-		addCopyTextToClipboardButton(Text.translate("button.copy_section"), reportText.toString());
+		addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_section"), reportText.toString());
 
 		for (ErrorButton btn : buttons) {
 			msg.buttons.add(btn.toGuiButton(json));
@@ -179,12 +179,12 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 	}
 
 	static class ErrorButton implements QuiltPluginButton {
-		final Text name;
+		final QuiltLoaderText name;
 		final QuiltBasicButtonAction action;
 		PluginGuiIcon icon;
 		final Map<String, String> arguments = new HashMap<>();
 
-		public ErrorButton(Text name, QuiltBasicButtonAction action) {
+		public ErrorButton(QuiltLoaderText name, QuiltBasicButtonAction action) {
 			this.name = name;
 			this.action = action;
 		}

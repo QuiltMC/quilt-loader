@@ -38,7 +38,7 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -144,7 +144,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 					continue;
 				}
 
-				PluginGuiTreeNode jarNode = guiNode.addChild(Text.of(jar), SortOrder.ALPHABETICAL_ORDER);
+				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
 				context().addFileToScan(inner, jarNode);
 			}
 
@@ -154,17 +154,17 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
 			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseException parse) {
-			Text title = Text.translate("gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage());
+			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage());
 			QuiltPluginError error = context().reportError(title);
 			String describedPath = context().manager().describePath(qmj);
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
-			error.appendDescription(Text.translate("gui.text.invalid_metadata.desc.0", describedPath));
+			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
-			error.addFileViewButton(Text.translate("button.view_file"), context().manager().getRealContainingFile(root))
+			error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), context().manager().getRealContainingFile(root))
 				.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
 
-			guiNode.addChild(Text.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
+			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
 				.setError(parse, error);
 			return null;
 		}
@@ -211,7 +211,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 				for (ProvidedMod provided : provides) {
 					PluginGuiTreeNode guiNode = context().manager().getGuiNode(mod)//
-						.addChild(Text.translate("gui.text.providing", provided.id()));
+						.addChild(QuiltLoaderText.translate("gui.text.providing", provided.id()));
 					guiNode.mainIcon(guiNode.manager().iconUnknownFile());
 					context().addModLoadOption(new ProvidedModOption(mod, provided), guiNode);
 				}

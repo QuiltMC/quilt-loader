@@ -38,7 +38,7 @@ import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -84,10 +84,10 @@ class SolverErrorHelper {
 		}
 
 		QuiltPluginError error = manager.theQuiltPluginContext.reportError(
-			Text.translate("error.unhandled_solver")
+			QuiltLoaderText.translate("error.unhandled_solver")
 		);
-		error.appendDescription(Text.of("error.unhandled_solver.desc"));
-		error.addOpenLinkButton(Text.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
+		error.appendDescription(QuiltLoaderText.of("error.unhandled_solver.desc"));
+		error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
 		error.appendReportText("Unhandled solver error involving the following rules:");
 
 		StringBuilder sb = new StringBuilder();
@@ -319,7 +319,7 @@ class SolverErrorHelper {
 					titleData[1] = "version " + fullRange;
 				}
 				titleData[anyVersion ? 1 : 2] = modOn;//getDepName(dep);
-				Text first = Text.translate(titleKey, titleData);
+				QuiltLoaderText first = QuiltLoaderText.translate(titleKey, titleData);
 				Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
 				String secondKey = "error.dep.";
 				if (missing) {
@@ -330,27 +330,27 @@ class SolverErrorHelper {
 					secondKey += "single_mismatch";
 					secondData[0] = allInvalidOptions.iterator().next().version().toString();
 				}
-				Text second = Text.translate(secondKey + ".title", secondData);
-				Text title = Text.translate("error.dep.join.title", first, second);
+				QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
+				QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
 				QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
 
 				setIconFromMod(manager, mandatoryMod, error);
 
 				Path rootModPath = mandatoryMod.from();
 				Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
-				error.appendDescription(Text.translate("info.root_mod_loaded_from", rootModDescArgs));
+				error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", rootModDescArgs));
 
 				for (List<OptionLink> list : fullChain.subList(1, fullChain.size())) {
 					OptionLink firstMod = list.get(0);
-					error.appendDescription(Text.of("via " + ((ModLoadOption) firstMod.option).id()));
+					error.appendDescription(QuiltLoaderText.of("via " + ((ModLoadOption) firstMod.option).id()));
 				}
 
-				error.addFileViewButton(Text.translate("button.view_file", rootModPath.getFileName()), rootModPath)
+				error.addFileViewButton(QuiltLoaderText.translate("button.view_file", rootModPath.getFileName()), rootModPath)
 					.icon(mandatoryMod.modCompleteIcon());
 
 				String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
 				if (issuesUrl != null) {
-					error.addOpenLinkButton(Text.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
+					error.addOpenLinkButton(QuiltLoaderText.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
 				}
 
 				StringBuilder report = new StringBuilder(rootModName);
@@ -504,7 +504,7 @@ class SolverErrorHelper {
 
 		// With buttons to view each mod individually
 
-		Text title = Text.translate("error.duplicate_mandatory", bestName);
+		QuiltLoaderText title = QuiltLoaderText.translate("error.duplicate_mandatory", bestName);
 		QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
 		error.appendReportText("Duplicate mandatory mod ids " + commonIds);
 		setIconFromMod(manager, firstMandatory, error);
@@ -513,13 +513,13 @@ class SolverErrorHelper {
 			String path = manager.describePath(option.from());
 			// Just in case
 			Path container = manager.getRealContainingFile(option.from());
-			error.appendDescription(Text.translate("error.duplicate_mandatory.mod", path));
-			error.addFileViewButton(Text.translate("button.view_file", container.getFileName()), container)
+			error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.mod", path));
+			error.addFileViewButton(QuiltLoaderText.translate("button.view_file", container.getFileName()), container)
 				.icon(option.modCompleteIcon());
 			error.appendReportText("- " + path);
 		}
 
-		error.appendDescription(Text.translate("error.duplicate_mandatory.desc"));
+		error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.desc"));
 
 		return true;
 	}

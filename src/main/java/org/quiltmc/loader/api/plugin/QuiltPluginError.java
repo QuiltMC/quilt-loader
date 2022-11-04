@@ -21,7 +21,7 @@ import java.nio.file.Path;
 import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 
 /** A reported error during plugin loading, which is shown in the error screen. This doesn't necessarily indicate an
  * error - however reporting any errors will cause the plugin loading to halt at the end of the current cycle. */
@@ -34,12 +34,12 @@ public interface QuiltPluginError {
 	QuiltPluginError appendReportText(String... lines);
 
 	/** Adds more lines of description. */
-	QuiltPluginError appendDescription(Text... descriptions);
+	QuiltPluginError appendDescription(QuiltLoaderText... descriptions);
 
 	QuiltPluginError setOrdering(int priority);
 
 	/** Adds more lines of additional information, which is hidden from the user by default. */
-	QuiltPluginError appendAdditionalInformation(Text... information);
+	QuiltPluginError appendAdditionalInformation(QuiltLoaderText... information);
 
 	/** Adds a {@link Throwable} to this error - which will be included in the crash-report file, but will not be shown
 	 * in the gui. */
@@ -49,17 +49,17 @@ public interface QuiltPluginError {
 	QuiltPluginError setIcon(PluginGuiIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
-	QuiltPluginButton addFileViewButton(Text name, Path openedPath);
+	QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath);
 
 	/** Adds a button to this error, which will open a file browser showing the selected folder. */
-	QuiltPluginButton addFolderViewButton(Text name, Path openedFolder);
+	QuiltPluginButton addFolderViewButton(QuiltLoaderText name, Path openedFolder);
 
 	/** Adds a button to this error, which will open the specified URL in a browser window. */
-	QuiltPluginButton addOpenLinkButton(Text name, String url);
+	QuiltPluginButton addOpenLinkButton(QuiltLoaderText name, String url);
 
-	QuiltPluginButton addCopyTextToClipboardButton(Text name, String fullText);
+	QuiltPluginButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText);
 
-	QuiltPluginButton addCopyFileToClipboardButton(Text name, Path openedFile);
+	QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile);
 
 	@ApiStatus.NonExtendable
 	public interface QuiltPluginButton {

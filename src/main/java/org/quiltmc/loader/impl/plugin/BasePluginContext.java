@@ -29,7 +29,7 @@ import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -80,7 +80,7 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
-	public QuiltPluginError reportError(Text title) {
+	public QuiltPluginError reportError(QuiltLoaderText title) {
 		return manager.reportError(this, title);
 	}
 
@@ -213,12 +213,12 @@ abstract class BasePluginContext implements QuiltPluginContext {
 			} else if (option instanceof ModLoadOption) {
 				ModLoadOption mod = (ModLoadOption) option;
 				if (extraModsRoot == null) {
-					extraModsRoot = manager.getModsFromPluginsGuiNode().addChild(Text.translate("gui.text.plugin", pluginId),
+					extraModsRoot = manager.getModsFromPluginsGuiNode().addChild(QuiltLoaderText.translate("gui.text.plugin", pluginId),
 							SortOrder.ALPHABETICAL_ORDER
 					);
 				}
 
-				PluginGuiTreeNode guiNode = extraModsRoot.addChild(Text.of(mod.id()));
+				PluginGuiTreeNode guiNode = extraModsRoot.addChild(QuiltLoaderText.of(mod.id()));
 				manager.addSingleModOption(mod, BasePluginContext.this, true, guiNode);
 			} else {
 				manager.addLoadOption(option, BasePluginContext.this);

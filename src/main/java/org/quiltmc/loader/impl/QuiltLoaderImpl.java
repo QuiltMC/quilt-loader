@@ -54,7 +54,7 @@ import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -328,7 +328,7 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, Text.translate("msg.load_state").toString());
+			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, QuiltLoaderText.translate("msg.load_state").toString());
 			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Plugin Debugging");
 			plugins.guiFileRoot.toNode(tab.node, false);
@@ -372,9 +372,9 @@ public final class QuiltLoaderImpl {
 		}
 
 		String msg = "crash.during_setup." + provider.getGameId();
-		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, Text.translate(msg).toString());
+		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, QuiltLoaderText.translate(msg).toString());
 		plugins.guiManager.putIcons(tree);
-		tree.messagesTabName = Text.translate("tab.messages").toString();
+		tree.messagesTabName = QuiltLoaderText.translate("tab.messages").toString();
 
 		String fullCrashText = null;
 
@@ -392,11 +392,11 @@ public final class QuiltLoaderImpl {
 			crashReport.write(new PrintWriter(writer));
 			fullCrashText = writer.toString();
 
-			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", Text.translate("error.failed_to_save_crash_report"));
+			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
 			error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
-			error.appendDescription(Text.translate("error.failed_to_save_crash_report.desc"));
-			error.appendAdditionalInformation(Text.translate("error.failed_to_save_crash_report.info"));
-			error.addCopyTextToClipboardButton(Text.translate("button.copy_crash_report"), fullCrashText);
+			error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
+			error.appendAdditionalInformation(QuiltLoaderText.translate("error.failed_to_save_crash_report.info"));
+			error.addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), fullCrashText);
 			tree.messages.add(error.toGuiMessage(tree));
 		}
 
@@ -408,21 +408,21 @@ public final class QuiltLoaderImpl {
 		// so that the plugin manager can have tabs of both the file list
 		// AND mod list!
 		QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
-		plugins.guiFileRoot.text(Text.translate("tab.file_list"));
+		plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
 		plugins.guiFileRoot.toNode(tab.node, false);
 
 		QuiltJsonGui.QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
-		plugins.guiModsRoot.text(Text.translate("tab.mod_list"));
+		plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
 		plugins.guiModsRoot.toNode(tab2.node, false);
 
 		if (crashReportFile != null) {
-			tree.addButton(Text.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//
+			tree.addButton(QuiltLoaderText.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//
 				.arg("file", crashReportFile.toString());
-			tree.addButton(Text.translate("button.copy_crash_report").toString(), QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE)//
+			tree.addButton(QuiltLoaderText.translate("button.copy_crash_report").toString(), QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE)//
 				.arg("file", crashReportFile.toString());
 		}
 
-		tree.addButton(Text.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
+		tree.addButton(QuiltLoaderText.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
 			.arg("folder", getModsDir().toString());
 
 		try {

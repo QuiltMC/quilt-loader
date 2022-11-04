@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.Text;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 
@@ -33,7 +33,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	final GuiManagerImpl guiManager;
 	final TempQuilt2OldStatusNode parent;
 
-	Text text = Text.EMPTY;
+	QuiltLoaderText text = QuiltLoaderText.EMPTY;
 	String sortPrefix = "";
 	Throwable exception;
 
@@ -105,11 +105,11 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	@Override
 	public PluginGuiTreeNode addChild(SortOrder sortOrder) {
-		return addChild(Text.EMPTY, sortOrder);
+		return addChild(QuiltLoaderText.EMPTY, sortOrder);
 	}
 
 	@Override
-	public PluginGuiTreeNode addChild(Text text, SortOrder sortOrder) {
+	public PluginGuiTreeNode addChild(QuiltLoaderText text, SortOrder sortOrder) {
 		TempQuilt2OldStatusNode child = new TempQuilt2OldStatusNode(this);
 		child.text = text;
 		switch (sortOrder) {
@@ -129,12 +129,12 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	}
 
 	@Override
-	public Text text() {
+	public QuiltLoaderText text() {
 		return text;
 	}
 
 	@Override
-	public PluginGuiTreeNode text(Text text) {
+	public PluginGuiTreeNode text(QuiltLoaderText text) {
 		this.text = text;
 		return this;
 	}
