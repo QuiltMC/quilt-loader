@@ -29,6 +29,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,9 +38,17 @@ import java.util.zip.GZIPOutputStream;
 
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
+import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
+import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
+import org.quiltmc.loader.impl.report.QuiltReport;
+import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -100,17 +109,52 @@ public final class QuiltGuiEntry {
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
 		if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
+
+			QuiltReport report = new QuiltReport("Crashed!");
+			report.addStacktraceSection("Crash", 0, exception);
+			try {
+				QuiltLoaderImpl.INSTANCE.appendModTable(report.addStringSection("Mods", 0)::lines);
+			} catch (Throwable t) {
+				report.addStacktraceSection("Exception while building the mods table", 0, t);
+			}
+
+			Path crashReportFile = null;
+			String crashReportText = null;
+			try {
+				crashReportFile = report.writeInDirectory(QuiltLoader.getGameDir());
+			} catch (CrashReportSaveFailed e) {
+				crashReportText = e.fullReportText;
+			}
+
 			String title = "Quilt Loader " + QuiltLoaderImpl.VERSION;
 			QuiltJsonGui tree = new QuiltJsonGui(title, mainText);
-			QuiltJsonGuiTreeTab crashTab = tree.addTab("Crash");
 
-			crashTab.node.addCleanedException(exception);
+			QuiltJsonGuiMessage crashMessage = new QuiltJsonGuiMessage();
+			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.unhandled"));
+			error.appendDescription(QuiltLoaderText.translate("error.unhandled_launch.desc"));
+			error.setOrdering(-100);
+			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");;
+			tree.messages.add(error.toGuiMessage(tree));
 
-			// Maybe add an "open mods folder" button?
-			// or should that be part of the main tree's right-click menu?
-			// TODO: Add crash report generation functionality?
-			// and then have a button to open a file explorer pointed to that file
-			// and a button to open that file directly
+			if (crashReportText != null) {
+				error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
+				error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
+				error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
+				error.appendAdditionalInformation(QuiltLoaderText.translate("error.failed_to_save_crash_report.info"));
+				error.addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportText);
+				tree.messages.add(error.toGuiMessage(tree));
+			}
+
+			if (crashReportFile != null) {
+				tree.addButton(QuiltLoaderText.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//
+					.arg("file", crashReportFile.toString());
+				tree.addButton(QuiltLoaderText.translate("button.copy_crash_report").toString(), QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE)//
+					.arg("file", crashReportFile.toString());
+			}
+
+			tree.addButton(QuiltLoaderText.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
+				.arg("folder", QuiltLoaderImpl.INSTANCE.getModsDir().toString());
+
 			tree.addButton("Exit", QuiltJsonGui.QuiltBasicButtonAction.CLOSE);
 
 			try {

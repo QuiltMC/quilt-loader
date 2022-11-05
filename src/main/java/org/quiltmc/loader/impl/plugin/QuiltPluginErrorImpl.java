@@ -164,13 +164,6 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 			}
 		}
 
-		StringBuilder reportText = new StringBuilder();
-		for (String line : toReportText()) {
-			reportText.append(line);
-			reportText.append("\n");
-		}
-		addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_section"), reportText.toString());
-
 		for (ErrorButton btn : buttons) {
 			msg.buttons.add(btn.toGuiButton(json));
 		}

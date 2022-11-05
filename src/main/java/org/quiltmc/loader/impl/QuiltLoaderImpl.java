@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
@@ -85,6 +86,7 @@ import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReport;
+import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportSection;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
@@ -322,8 +324,7 @@ public final class QuiltLoaderImpl {
 		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
 
 		Path crashReportFile = null;
-		QuiltReport crashReport = null;
-		IOException crashReportFileError = null;
+		String fullCrashText = null;
 
 		try {
 			ModSolveResultImpl result = plugins.run(true);
@@ -353,29 +354,10 @@ public final class QuiltLoaderImpl {
 
 			return result;
 		} catch (QuiltReportedError reported) {
-			crashReport = reported.report;
-			Path crashReportDir = gameDir.resolve("crash-reports");
 			try {
-				Files.createDirectories(crashReportDir);
-			} catch (IOException io) {
-				reported.report.addStacktraceSection("Suppressed", 100, io);
-			}
-
-			try {
-				StringBuilder sb = new StringBuilder("crash-");
-				sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS")))
-				.append("-quilt_loader.txt");
-				crashReportFile = crashReportDir.resolve(sb.toString());
-				reported.report.write(crashReportFile);
-				Log.error(LogCategory.GENERAL, "Crashed! The full crash report has been saved to " + crashReportFile);
-				reported.report.writeToLog();
-				Log.error(LogCategory.GENERAL, "For more details see the full crash report file: " + crashReportFile);
-			} catch (IOException e) {
-				// It probably didn't write at all - that's really bad.
-				e.printStackTrace();
-				reported.report.write(new PrintWriter(System.err));
-				crashReportFile = null; // Disable "open crash report" button
-				crashReportFileError = e;
+				crashReportFile = reported.report.writeInDirectory(gameDir);
+			} catch (CrashReportSaveFailed e) {
+				fullCrashText = e.fullReportText;
 			}
 		}
 
@@ -384,22 +366,7 @@ public final class QuiltLoaderImpl {
 		plugins.guiManager.putIcons(tree);
 		tree.messagesTabName = QuiltLoaderText.translate("tab.messages").toString();
 
-		String fullCrashText = null;
-
-		if (crashReportFileError != null) {
-
-			List<String> lines = new ArrayList<>();
-			lines.add("Failed to save the crash report!");
-			lines.add("");
-			StringWriter writer = new StringWriter();
-			crashReportFileError.printStackTrace(new PrintWriter(writer));
-			Collections.addAll(lines, writer.toString().split("\n"));
-			crashReport.addStringSection("Error 0", -200, lines.toArray(new String[0]));
-
-			writer = new StringWriter();
-			crashReport.write(new PrintWriter(writer));
-			fullCrashText = writer.toString();
-
+		if (fullCrashText != null) {
 			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
 			error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
 			error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
@@ -443,6 +410,16 @@ public final class QuiltLoaderImpl {
 	}
 
 	public String createModTable() {
+		StringBuilder sb = new StringBuilder();
+		appendModTable(line -> {
+			sb.append(line);
+			sb.append("\n");
+		});
+		return sb.toString();
+	}
+
+	/** Appends each line of {@link #createModTable()} to the given consumer. */
+	public void appendModTable(Consumer<String> to) {
 
 		// Columns:
 		// - Index
@@ -529,8 +506,9 @@ public final class QuiltLoaderImpl {
 			start = "Sub-Files";
 		}
 
-		sbTab.append("\n");
-		sbTab.append(sbSep);
+		to.accept(sbTab.toString());
+		sbTab.setLength(0);
+		to.accept(sbSep.toString());
 
 		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
 			// - Index
@@ -539,7 +517,7 @@ public final class QuiltLoaderImpl {
 			// - version
 			// - loader plugin
 			// - source path(s)
-			sbTab.append("\n| ");
+			sbTab.append("| ");
 			String index = Integer.toString(mods.indexOf(mod));
 			for (int i = index.length(); i < "Index".length(); i++) {
 				sbTab.append(" ");
@@ -599,12 +577,11 @@ public final class QuiltLoaderImpl {
 				}
 				sbTab.append(" |");
 			}
+			to.accept(sbTab.toString());
+			sbTab.setLength(0);
 		}
 
-		sbTab.append("\n");
-		sbTab.append(sbSep);
-		sbTab.append("\n");
-		return sbTab.toString();
+		to.accept(sbSep.toString());
 	}
 
 	private static void performMixinReordering(List<ModLoadOption> modList) {
@@ -646,99 +623,6 @@ public final class QuiltLoaderImpl {
 			modList.addAll(lateMods);
 		}
 	}
-
-//	private void oldSetup() throws ModResolutionException {
-//		ModResolver resolver = new ModResolver(this);
-//		resolver.addCandidateFinder(new ClasspathModCandidateFinder());
-//		resolver.addCandidateFinder(new ArgumentModCandidateFinder(isDevelopmentEnvironment()));
-//		resolver.addCandidateFinder(new DirectoryModCandidateFinder(getModsDir(), isDevelopmentEnvironment()));
-//		ModSolveResult result = resolver.resolve(this);
-//		Map<String, ModCandidate> candidateMap = (Map<String, ModCandidate>) (Object) "nope";//result.modMap;
-//		modCandidates = new ArrayList<>(candidateMap.values());
-//		// dump mod list
-//
-//		StringBuilder modListText = new StringBuilder();
-//
-//		for (ModCandidate mod : modCandidates.stream().sorted(Comparator.comparing(ModCandidate::getId)).collect(Collectors.toList())) {
-//			if (modListText.length() > 0) modListText.append('\n');
-//
-//			modListText.append("\t- ");
-//			modListText.append(mod.getId());
-//			modListText.append(' ');
-//			modListText.append(mod.getVersion().raw());
-//// TODO
-////			if (!mod.getParentMods().isEmpty()) {
-////				modListText.append(" via ");
-////				modListText.append(mod.getParentMods().iterator().next().getId());
-////			}
-//		}
-//
-//		int count = modCandidates.size();
-//		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", modListText);
-//
-//		// TODO
-////		if (DependencyOverrides.INSTANCE.getDependencyOverrides().size() > 0) {
-////			Log.info(LogCategory.GENERAL, "Dependencies overridden for \"%s\"", String.join(", ", DependencyOverrides.INSTANCE.getDependencyOverrides()));
-////		}
-//
-//		Path cacheDir = gameDir.resolve(CACHE_DIR_NAME);
-//		Path outputdir = cacheDir.resolve(PROCESSED_MODS_DIR_NAME);
-//
-//		// runtime mod remapping
-//
-//		if (isDevelopmentEnvironment()) {
-//			if (System.getProperty(SystemProperties.REMAP_CLASSPATH_FILE) == null) {
-//				Log.warn(LogCategory.MOD_REMAP, "Runtime mod remapping disabled due to no fabric.remapClasspathFile being specified. You may need to update loom.");
-//			} else {
-//				RuntimeModRemapper.remap(modCandidates, ModResolver.getInMemoryFs());
-//			}
-//		}
-//
-//		// Keep Mixin 0.9.2 compatible mods first in the load order, temporary fix for https://github.com/FabricMC/Mixin/issues/89
-//		List<ModCandidate> newMixinCompatMods = new ArrayList<>();
-//		for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext();) {
-//			ModCandidate mod = it.next();
-//			ModContainerImpl tempModContainer = new ModContainerImpl(mod);
-//			if (QuiltMixinBootstrap.MixinConfigDecorator.getMixinCompat(tempModContainer) != FabricUtil.COMPATIBILITY_0_9_2) {
-//				it.remove();
-//				newMixinCompatMods.add(mod);
-//			}
-//		}
-//
-//		modCandidates.addAll(newMixinCompatMods);
-//
-//		String modsToLoadLate = System.getProperty(SystemProperties.DEBUG_LOAD_LATE);
-//
-//		if (modsToLoadLate != null) {
-//			for (String modId : modsToLoadLate.split(",")) {
-//				for (Iterator<ModCandidate> it = modCandidates.iterator(); it.hasNext(); ) {
-//					ModCandidate mod = it.next();
-//
-//					if (mod.getId().equals(modId)) {
-//						it.remove();
-//						modCandidates.add(mod);
-//						break;
-//					}
-//				}
-//			}
-//		}
-//
-//		// add mods
-//
-//		for (ModCandidate mod : modCandidates) {
-////			if (!mod.hasPath() && !mod.isBuiltin()) {
-////				try {
-////					mod.setPaths(Collections.singletonList(mod.copyToDir(outputdir, false)));
-////				} catch (IOException e) {
-////					throw new RuntimeException("Error extracting mod "+mod, e);
-////				}
-////			}
-//
-//			addMod(mod);
-//		}
-//
-//		//modCandidates = null;
-//	}
 
 	protected void finishModLoading() {
 		// add mods to classpath
@@ -871,39 +755,6 @@ public final class QuiltLoaderImpl {
 			modMap.put(provided.id(), mod);
 		}
 	}
-
-//	@Deprecated
-//	protected void addMod(ModCandidate candidate) throws ModResolutionException {
-//		InternalModMetadata meta = candidate.getMetadata();
-//		if (modMap.containsKey(meta.id())) {
-//			throw new ModSolvingError("Duplicate mod ID: " + meta.id() + "!"/* + " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
-//		}
-//
-//		if (!meta.environment().matches(getEnvironmentType())) {
-//			if (candidate.getDepth() < 1) {
-//				Log.warn(LogCategory.DISCOVERY, "Not loading mod " + meta.id()
-//						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
-//			} else {
-//
-//				Log.debug(LogCategory.DISCOVERY, "Not loading mod " + meta.id() + "(from " + ModResolver.getReadablePath(this, candidate) + ") "
-//						+ " because its environment is " + meta.environment().name().toLowerCase() + "!");
-//
-//			}
-//			return;
-//		}
-//
-//		ModContainerImpl container = new ModContainerImpl(candidate);
-//		mods.add(container);
-//		modMap.put(meta.id(), container);
-//
-//		for (ProvidedMod provided : meta.provides()) {
-//			if (modMap.containsKey(provided.id())) {
-//				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
-//			}
-//
-//			modMap.put(provided.id(), container);
-//		}
-//	}
 
 	protected void postprocessModMetadata() {
 		// do nothing for now; most warnings have been moved to V1ModMetadataParser

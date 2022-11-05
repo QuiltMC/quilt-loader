@@ -17,10 +17,9 @@
 package org.quiltmc.loader.impl.report;
 
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -29,6 +28,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Helper class for writing a 'report' file to the game directory (either a crash report, a simulated load failed
  * report, or an informational mod state report). */
@@ -113,6 +115,54 @@ public class QuiltReport {
 			writeInternal(writer, true);
 		} finally {
 			writer.flush();
+		}
+	}
+
+	/** Makes a best-effort attempt to write the crash-report somewhere (either to a new crash-report file or System
+	 * out) and returns the crash report file, throwing an exception if it failed to write. If this fails to write the
+	 * report this this will add the exception to the report before writing it to sysout. */
+	public Path writeInDirectory(Path gameDirectory) throws CrashReportSaveFailed {
+
+		Path crashReportDir = gameDirectory.resolve("crash-reports");
+		try {
+			Files.createDirectories(crashReportDir);
+		} catch (IOException io) {
+			addStacktraceSection("Suppressed", 100, io);
+		}
+
+		try {
+			StringBuilder sb = new StringBuilder("crash-");
+			sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS")));
+			sb.append("-quilt_loader.txt");
+			Path crashReportFile = crashReportDir.resolve(sb.toString());
+			write(crashReportFile);
+			Log.error(LogCategory.GENERAL, "Crashed! The full crash report has been saved to " + crashReportFile);
+			writeToLog();
+			Log.error(LogCategory.GENERAL, "For more details see the full crash report file: " + crashReportFile);
+			return crashReportFile;
+		} catch (IOException e) {
+			// It probably didn't write at all - that's really bad.
+			e.printStackTrace();
+
+			List<String> lines = new ArrayList<>();
+			lines.add("Failed to save the crash report!");
+			lines.add("");
+			addStacktraceSection("Failed to save the crash report!", -200, e);
+
+			StringWriter writer = new StringWriter();
+			write(new PrintWriter(writer));
+			String fullCrashText = writer.toString();
+			write(new PrintWriter(System.err));
+
+			throw new CrashReportSaveFailed(fullCrashText);
+		}
+	}
+
+	public static final class CrashReportSaveFailed extends IOException {
+		public final String fullReportText;
+
+		public CrashReportSaveFailed(String fullReportText) {
+			this.fullReportText = fullReportText;
 		}
 	}
 }
