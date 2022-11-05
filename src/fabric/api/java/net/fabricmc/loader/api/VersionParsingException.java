@@ -17,7 +17,8 @@
 
 package net.fabricmc.loader.api;
 
-public class VersionParsingException extends Exception {
+@Deprecated
+public class VersionParsingException extends net.fabricmc.loader.util.version.VersionParsingException {
 	public VersionParsingException() {
 		super();
 	}

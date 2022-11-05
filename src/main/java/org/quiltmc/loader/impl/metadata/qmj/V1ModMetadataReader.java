@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,18 +17,33 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import java.util.*;
+import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
-import net.fabricmc.loader.api.metadata.ModEnvironment;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
-import org.quiltmc.loader.api.*;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LType;
-import org.quiltmc.loader.impl.VersionConstraintImpl;
+import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 
-import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 final class V1ModMetadataReader {
@@ -47,32 +63,7 @@ final class V1ModMetadataReader {
 	}
 
 	private static V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
-		/* Required fields */
-		String id;
-		String group;
-		Version version = null;
-		/* Optional fields */
-		String name = null;
-		String description = null;
-		List<ModLicense> licenses = new ArrayList<>();
-		List<ModContributor> contributors = new ArrayList<>();
-		Map<String, String> contactInformation = new LinkedHashMap<>();
-		List<ModDependency> depends = new ArrayList<>();
-		List<ModDependency> breaks = new ArrayList<>();
-		String intermediateMappings = null;
-		Icons icons = null;
-		/* Internal fields */
-		ModLoadType loadType = ModLoadType.IF_REQUIRED;
-		Collection<ModProvided> provides = new ArrayList<>();
-		Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
-		List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
-		List<String> jars = new ArrayList<>();
-		Map<String, String> languageAdapters = new LinkedHashMap<>();
-		List<String> repositories = new ArrayList<>();
-		/* TODO: Move to plugins */
-		List<String> mixins = new ArrayList<>();
-		List<String> accessWideners = new ArrayList<>();
-		ModEnvironment environment = ModEnvironment.UNIVERSAL;
+		V1ModMetadataBuilder builder = new V1ModMetadataBuilder();
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
 
@@ -83,18 +74,18 @@ final class V1ModMetadataReader {
 		// Loader metadata
 		{
 			// Check if our required fields are here
-			id = requiredString(quiltLoader, "id");
+			builder.id = requiredString(quiltLoader, "id");
 
-			if (!Patterns.VALID_MOD_ID.matcher(id).matches()) {
+			if (!Patterns.VALID_MOD_ID.matcher(builder.id).matches()) {
 				// id must be non-null
 				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod id, likely one of the following errors:\n" +
 						"- Mod id contains invalid characters, the allowed characters are a-z 0-9 _-\n" +
 						"- The mod id is too short or long, the mod id must be between 2 and 63 characters");
 			}
 
-			group = requiredString(quiltLoader, "group");
+			builder.group = requiredString(quiltLoader, "group");
 
-			if (!Patterns.VALID_MAVEN_GROUP.matcher(group).matches()) {
+			if (!Patterns.VALID_MAVEN_GROUP.matcher(builder.group).matches()) {
 				// group must be non-null
 				throw parseException(Objects.requireNonNull(quiltLoader.get("id")), "Invalid mod maven group; the allowed characters are a-z A-Z 0-9 - _ and .");
 			}
@@ -108,7 +99,7 @@ final class V1ModMetadataReader {
 
 			// TODO: Here we would check if the version is a placeholder in dev.
 
-			version = Version.of(versionValue.asString());
+			builder.version = Version.of(versionValue.asString());
 			// Now we reach optional fields
 			// TODO: provides
 
@@ -120,7 +111,7 @@ final class V1ModMetadataReader {
 					throw parseException(entrypointsValue, "entrypoints must be an object");
 				}
 
-				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", entrypoints);
+				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, "entrypoints", builder.entrypoints);
 			}
 
 			@Nullable
@@ -132,7 +123,7 @@ final class V1ModMetadataReader {
 				}
 
 				for (LoaderValue entry : pluginsValue.asArray()) {
-					plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
+					builder.plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, "plugins"));
 				}
 			}
 
@@ -144,7 +135,7 @@ final class V1ModMetadataReader {
 					throw parseException(jarsValue, "jars must be an array");
 				}
 
-				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", jars);
+				readStringList((JsonLoaderValue.ArrayImpl) jarsValue, "jars", builder.jars);
 			}
 
 			@Nullable
@@ -155,20 +146,20 @@ final class V1ModMetadataReader {
 					throw parseException(languageAdaptersValue, "language_adapters must be an object");
 				}
 
-				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", languageAdapters);
+				readStringMap((JsonLoaderValue.ObjectImpl) languageAdaptersValue, "language_adapters", builder.languageAdapters);
 			}
 
 			@Nullable JsonLoaderValue dependsValue = assertType(quiltLoader, "depends", LoaderValue.LType.ARRAY);
 			if (dependsValue != null) {
 				for (LoaderValue v : dependsValue.asArray()) {
-					depends.add(readDependencyObject(true, (JsonLoaderValue) v));
+					builder.depends.add(readDependencyObject(true, (JsonLoaderValue) v));
 				}
 			}
 
 			@Nullable JsonLoaderValue breaksValue = assertType(quiltLoader, "breaks", LoaderValue.LType.ARRAY);
 			if (breaksValue != null) {
 				for (LoaderValue v : breaksValue.asArray()) {
-					breaks.add(readDependencyObject(false, (JsonLoaderValue) v));
+					builder.breaks.add(readDependencyObject(false, (JsonLoaderValue) v));
 				}
 			}
 
@@ -180,7 +171,7 @@ final class V1ModMetadataReader {
 					throw parseException(repositoriesValue, "repositories must be an array");
 				}
 
-				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, "repositories", repositories);
+				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, "repositories", builder.repositories);
 			}
 
 			@Nullable
@@ -191,7 +182,7 @@ final class V1ModMetadataReader {
 					throw parseException(loadTypeValue, "load_type must be a string");
 				}
 
-				loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
+				builder.loadType = readLoadType((JsonLoaderValue.StringImpl) loadTypeValue);
 			}
 
 			@Nullable
@@ -205,31 +196,31 @@ final class V1ModMetadataReader {
 				for (LoaderValue provided : providesValue.asArray()) {
 					if (provided.type() == LoaderValue.LType.STRING) {
 						String providedId = provided.asString();
-						String providedGroup = group;
+						String providedGroup = builder.group;
 						int colon = providedId.indexOf(':');
 						if (colon > 0) {
 							providedGroup = providedId.substring(0, colon);
 							providedId = providedId.substring(colon + 1);
 						}
-						provides.add(new ModProvided(providedGroup, providedId, version));
+						builder.provides.add(new ProvidedModImpl(providedGroup, providedId, builder.version));
 					} else if (provided.type() == LType.OBJECT) {
 						JsonLoaderValue.ObjectImpl providedObj = (JsonLoaderValue.ObjectImpl) provided.asObject();
 
 						String providedId = requiredString(providedObj, "id");
-						String providedGroup = group;
+						String providedGroup = builder.group;
 						int colon = providedId.indexOf(':');
 						if (colon > 0) {
 							providedGroup = providedId.substring(0, colon);
 							providedId = providedId.substring(colon + 1);
 						}
 
-						Version providedVersion = version;
+						Version providedVersion = builder.version;
 
 						if (providedObj.containsKey("version")) {
 							providedVersion = Version.of(requiredString(providedObj, "version"));
 						}
 
-						provides.add(new ModProvided(providedGroup, providedId, providedVersion));
+						builder.provides.add(new ProvidedModImpl(providedGroup, providedId, providedVersion));
 					} else {
 						throw parseException((JsonLoaderValue) provided, "provides must be an array containing only objects and/or strings");
 					}
@@ -263,7 +254,7 @@ final class V1ModMetadataReader {
 				throw new ParseException("Oh no! This version of Quilt Loader doesn't support hashed mappings, please update Quilt Loader to use this mod.");
 			}
 
-			intermediateMappings = mappings;
+			builder.intermediateMappings = mappings;
 
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get("metadata");
@@ -275,8 +266,8 @@ final class V1ModMetadataReader {
 
 				JsonLoaderValue.ObjectImpl metadata = (JsonLoaderValue.ObjectImpl) metadataValue;
 
-				name = string(metadata, "name");
-				description = string(metadata, "description");
+				builder.name = string(metadata, "name");
+				builder.description = string(metadata, "description");
 
 				@Nullable
 				JsonLoaderValue contributorsValue = metadata.get("contributors");
@@ -286,7 +277,7 @@ final class V1ModMetadataReader {
 					}
 					Map<String, List<String>> intermediate = new HashMap<>();
 					readStringToStringOrListMap(contributorsValue.asObject(), "contributors", intermediate);
-					intermediate.forEach((k, v) -> contributors.add(new ModContributorImpl(k, v)));
+					intermediate.forEach((k, v) -> builder.contributors.add(new ModContributorImpl(k, v)));
 				}
 
 				@Nullable
@@ -297,20 +288,20 @@ final class V1ModMetadataReader {
 						throw parseException(contact, "contact must be an object");
 					}
 
-					readStringMap(contact.asObject(), "contact", contactInformation);
+					readStringMap(contact.asObject(), "contact", builder.contactInformation);
 				}
 
-				readLicenses(metadata, licenses);
+				readLicenses(metadata, builder.licenses);
 
 				@Nullable
 				JsonLoaderValue iconValue = metadata.get("icon");
 				if (iconValue != null) {
 					if (iconValue.type() == LType.STRING) {
-						icons = new Icons.Single(iconValue.asString());
+						builder.icons = new Icons.Single(iconValue.asString());
 					} else if (iconValue.type() == LType.OBJECT) {
 						SortedMap<Integer, String> map = new TreeMap<>();
 						readIntToStringMap(iconValue.asObject(), "icon", map);
-						icons = new Icons.Multiple(map);
+						builder.icons = new Icons.Multiple(map);
 					}
 				}
 			}
@@ -325,10 +316,10 @@ final class V1ModMetadataReader {
 			if (mixinValue != null) {
 				switch (mixinValue.type()) {
 				case ARRAY:
-					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", mixins);
+					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", builder.mixins);
 					break;
 				case STRING:
-					mixins.add(mixinValue.asString());
+					builder.mixins.add(mixinValue.asString());
 					break;
 				default:
 					throw parseException(mixinValue, "mixin value must be an array of strings or a string");
@@ -341,14 +332,14 @@ final class V1ModMetadataReader {
 				String env = string(object, "environment");
 				switch (env) {
 					case "client":
-						environment = ModEnvironment.CLIENT;
+						builder.env = ModEnvironment.CLIENT;
 						break;
 					case "dedicated_server":
-						environment = ModEnvironment.SERVER;
+						builder.env = ModEnvironment.SERVER;
 						break;
 					case "":
 					case "*":
-						environment = ModEnvironment.UNIVERSAL;
+						builder.env = ModEnvironment.UNIVERSAL;
 						break;
 					default:
 						throw parseException(object.get("environment"), env +
@@ -361,10 +352,10 @@ final class V1ModMetadataReader {
 			if (awValue != null) {
 				switch (awValue.type()) {
 					case ARRAY:
-						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", accessWideners);
+						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", builder.accessWideners);
 						break;
 					case STRING:
-						accessWideners.add(awValue.asString());
+						builder.accessWideners.add(awValue.asString());
 						break;
 					default:
 						throw parseException(awValue, "mixin value must be an array of strings or a string");
@@ -373,31 +364,7 @@ final class V1ModMetadataReader {
 
 		}
 
-		return new V1ModMetadataImpl(
-				root,
-				id,
-				group,
-				version,
-				name,
-				description,
-				licenses,
-				contributors,
-				contactInformation,
-				depends,
-				breaks,
-				intermediateMappings,
-				icons,
-				loadType,
-				provides,
-				entrypoints,
-				plugins,
-				jars,
-				languageAdapters,
-				repositories,
-				mixins,
-				accessWideners,
-				environment
-		);
+		return new V1ModMetadataImpl(builder);
 	}
 
 	private static String requiredString(JsonLoaderValue.ObjectImpl object, String field) {
@@ -660,7 +627,23 @@ final class V1ModMetadataReader {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
-			Collection<VersionConstraint> versions = readConstraints(obj.get("versions"));
+			List<VersionRange> versions = new ArrayList<>();
+			try {
+				JsonLoaderValue versionsValue = obj.get("versions");
+				if (versionsValue != null) {
+					if (versionsValue.type().equals(LType.ARRAY)) {
+						for (LoaderValue loaderValue : versionsValue.asArray()) {
+							versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
+						}
+					} else {
+						versions.add(readVersionSpecifier(versionsValue));
+					}
+				} else {
+					versions.add(VersionRange.ANY);
+				}
+			} catch (VersionFormatException e) {
+				throw parseException(obj.get("versions"), "Unable to parse version range", e);
+			}
 			String reason = string(obj, "reason");
 			boolean optional = bool(obj, "optional", false);
 			@Nullable JsonLoaderValue unlessObj = obj.get("unless");
@@ -670,7 +653,7 @@ final class V1ModMetadataReader {
 				unless = readDependencyObject(true, unlessObj);
 			}
 
-			return new ModDependencyImpl.OnlyImpl(value.location(), id, versions, reason, optional, unless);
+			return new ModDependencyImpl.OnlyImpl(value.location(), id, VersionRange.ofRanges(versions), reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
 			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
@@ -692,24 +675,98 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static Collection<VersionConstraint> readConstraints(@Nullable JsonLoaderValue value) {
+
+	private static VersionRange readVersionSpecifier(JsonLoaderValue value) throws VersionFormatException {
 		if (value == null) {
-			return Collections.singleton(VersionConstraintImpl.ANY);
+			return VersionRange.ANY;
 		}
 
-		if (value.type() == LoaderValue.LType.STRING) {
-			return Collections.singleton(VersionConstraintImpl.parse(value.asString()));
-		} else if (value.type() == LoaderValue.LType.ARRAY) {
-			Collection<VersionConstraint> ret = new ArrayList<>(value.asArray().size());
+		String string = value.asString();
 
-			for (LoaderValue s : value.asArray()) {
-				ret.add(VersionConstraintImpl.parse(s.asString()));
+		if (string.equals("*")) {
+			return VersionRange.ANY;
+		}
+
+		String withoutPrefix = string.substring(1);
+
+		switch (string.charAt(0)) {
+			case '=':
+				return VersionRange.ofExact(Version.of(withoutPrefix));
+			case '>':
+				if (string.charAt(1) == '=') {
+					return VersionRange.ofInterval(Version.of(string.substring(2)), true, null, false);
+				} else {
+					return VersionRange.ofInterval(Version.of(withoutPrefix), false, null, false);
+				}
+			case '<':
+				if (string.charAt(1) == '=') {
+					return VersionRange.ofInterval(null, false, Version.of(string.substring(2)), true);
+				} else {
+					return VersionRange.ofInterval(null, false, Version.of(withoutPrefix), false);
+				}
+		    // Semantic versions only
+			case '~': {
+				Version.Semantic min = Version.Semantic.of(withoutPrefix);
+				int[] components = min.semantic().versionComponents();
+				if (components.length < 2) {
+					components = new int[] { components[0], 1 };
+				} else if (components.length == 2) {
+					components[1]++;
+				} else {
+					components = new int[] { components[0], components[1] + 1 };
+				}
+
+				Version max = Version.Semantic.of(components, null, null);
+				return VersionRange.ofInterval(min, true, max, false);
 			}
+			case '^': {
+				Version.Semantic min = Version.Semantic.of(withoutPrefix);
+				int newMajor = min.versionComponent(0) + 1;
 
-			return ret;
+				Version max = Version.Semantic.of(new int[] {newMajor}, null, null);
+				return VersionRange.ofInterval(min, true, max, false);
+			}
+			default: {
+				// Get just the version part of the string
+				String stripped = string;
+				int preIndex = string.indexOf('-');
+
+				if (preIndex != -1) {
+					stripped = string.substring(0, preIndex);
+
+				}
+				int metadataIndex = string.indexOf('+');
+
+				if (metadataIndex != -1) {
+					stripped = string.substring(0, metadataIndex);
+				}
+
+				if (stripped.endsWith(".x")) {
+					if (string.indexOf(".x") != string.length() - 2) {
+						throw new VersionFormatException(String.format("Invalid version specifier \"%s\"", string));
+					}
+
+					Version.Semantic min = Version.Semantic.of(string.substring(0, string.length() -2));
+					Version.Semantic max = Version.Semantic.of(new int[] {min.versionComponent(0) + 1}, null, null);
+					return VersionRange.ofInterval(min, true, max, false);
+				} else {
+					Version v = Version.of(string);
+
+					// same as ^
+					// TODO code duplication
+					if (v.isSemantic()) {
+						Version.Semantic min = v.semantic();
+						int newMajor = min.versionComponent(0) + 1;
+
+						Version max = Version.Semantic.of(new int[]{newMajor}, null, null);
+						return VersionRange.ofInterval(min, true, max, false);
+					} else {
+						// same as =
+						return VersionRange.ofExact(v);
+					}
+				}
+			}
 		}
-
-		throw parseException(value, "Version constraint must be a string or array of strings");
 	}
 
 	private V1ModMetadataReader() {

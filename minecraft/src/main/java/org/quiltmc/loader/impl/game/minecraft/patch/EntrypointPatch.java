@@ -33,6 +33,7 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
+import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.entrypoint.GamePatch;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -44,8 +45,21 @@ import org.quiltmc.loader.impl.game.minecraft.Hooks;
 
 
 public class EntrypointPatch extends GamePatch {
+	private final Version minecraftVersion;
+
+	public EntrypointPatch(Version mcVersion) {
+		this.minecraftVersion = mcVersion;
+	}
+
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
-		String methodName = String.format("start%s", type == EnvType.CLIENT ? "Client" : "Server");
+		String sideName = type == EnvType.CLIENT ? "Client" : "Server";
+		// Compatibility for older fabric mods which redirect our start hook
+		if (minecraftVersion.compareTo(Version.of("1.17")) < 0) {
+			String internalName = "net/fabricmc/loader/entrypoint/minecraft/hooks/Entrypoint" + sideName;
+			it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, internalName, "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
+			return;
+		}
+		String methodName = String.format("start%s", sideName);
 		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, methodName, "(Ljava/io/File;Ljava/lang/Object;)V", false));
 	}
 

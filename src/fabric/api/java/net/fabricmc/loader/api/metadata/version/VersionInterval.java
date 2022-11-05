@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,7 +23,8 @@ import java.util.List;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 
-import org.quiltmc.loader.impl.util.version.VersionIntervalImpl;
+import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.impl.fabric.util.version.Quilt2FabricVersionInterval;
 
 /**
  * Representation of a version interval, closed or open.
@@ -31,8 +33,9 @@ import org.quiltmc.loader.impl.util.version.VersionIntervalImpl;
  * using collections of {@link VersionInterval}. Empty intervals may be represented by {@code null} or any interval
  * @code (x,x)} with x being a non-{@code null} version and both endpoints being exclusive.
  */
+@Deprecated
 public interface VersionInterval {
-	VersionInterval INFINITE = new VersionIntervalImpl(null, false, null, false);
+	VersionInterval INFINITE = new Quilt2FabricVersionInterval(null, false, null, false);
 
 	/**
 	 * Get whether the interval uses {@link SemanticVersion} compatible bounds.
@@ -85,28 +88,28 @@ public interface VersionInterval {
 	 * Compute the intersection between two version intervals.
 	 */
 	static VersionInterval and(VersionInterval a, VersionInterval b) {
-		return VersionIntervalImpl.and(a, b);
+		return Quilt2FabricVersionInterval.and(a, b);
 	}
 
 	/**
 	 * Compute the intersection between two potentially disjoint of version intervals.
 	 */
 	static List<VersionInterval> and(Collection<VersionInterval> a, Collection<VersionInterval> b) {
-		return VersionIntervalImpl.and(a, b);
+		return Quilt2FabricVersionInterval.and(a, b);
 	}
 
 	/**
 	 * Compute the union between multiple version intervals.
 	 */
 	static List<VersionInterval> or(Collection<VersionInterval> a, VersionInterval b) {
-		return VersionIntervalImpl.or(a, b);
+		return Quilt2FabricVersionInterval.or(a, b);
 	}
 
 	static List<VersionInterval> not(VersionInterval interval) {
-		return VersionIntervalImpl.not(interval);
+		return Quilt2FabricVersionInterval.not(interval);
 	}
 
 	static List<VersionInterval> not(Collection<VersionInterval> intervals) {
-		return VersionIntervalImpl.not(intervals);
+		return Quilt2FabricVersionInterval.not(intervals);
 	}
 }

@@ -21,7 +21,7 @@ import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
-import org.quiltmc.loader.impl.ModContainerImpl;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -34,7 +34,7 @@ public final class EntrypointStorage {
 		<T> T getOrCreate(Class<T> type) throws Exception;
 		boolean isOptional();
 
-		ModContainerImpl getModContainer();
+		ModContainerExt getModContainer();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -43,12 +43,12 @@ public final class EntrypointStorage {
 			.missingSuperclassBehaviour(net.fabricmc.loader.language.LanguageAdapter.MissingSuperclassBehavior.RETURN_NULL)
 			.build();
 
-		private final ModContainerImpl mod;
+		private final ModContainerExt mod;
 		private final String languageAdapter;
 		private final String value;
 		private Object object;
 
-		private OldEntry(ModContainerImpl mod, String languageAdapter, String value) {
+		private OldEntry(ModContainerExt mod, String languageAdapter, String value) {
 			this.mod = mod;
 			this.languageAdapter = languageAdapter;
 			this.value = value;
@@ -80,18 +80,18 @@ public final class EntrypointStorage {
 		}
 
 		@Override
-		public ModContainerImpl getModContainer() {
+		public ModContainerExt getModContainer() {
 			return mod;
 		}
 	}
 
 	private static final class NewEntry implements Entry {
-		private final ModContainerImpl mod;
+		private final ModContainerExt mod;
 		private final LanguageAdapter adapter;
 		private final String value;
 		private final Map<Class<?>, Object> instanceMap = new HashMap<>(1);
 
-		NewEntry(ModContainerImpl mod, LanguageAdapter adapter, String value) {
+		NewEntry(ModContainerExt mod, LanguageAdapter adapter, String value) {
 			this.mod = mod;
 			this.adapter = adapter;
 			this.value = value;
@@ -124,7 +124,7 @@ public final class EntrypointStorage {
 		}
 
 		@Override
-		public ModContainerImpl getModContainer() {
+		public ModContainerExt getModContainer() {
 			return mod;
 		}
 	}
@@ -135,7 +135,7 @@ public final class EntrypointStorage {
 		return entryMap.computeIfAbsent(key, (z) -> new ArrayList<>());
 	}
 
-	public void addDeprecated(ModContainerImpl modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
+	public void addDeprecated(ModContainerExt modContainer, String adapter, String value) throws ClassNotFoundException, LanguageAdapterException {
 		Log.debug(LogCategory.ENTRYPOINT, "Registering 0.3.x old-style initializer %s for mod %s", value, modContainer.metadata().id());
 		OldEntry oe = new OldEntry(modContainer, adapter, value);
 		getOrCreateEntries("main").add(oe);
@@ -143,7 +143,7 @@ public final class EntrypointStorage {
 		getOrCreateEntries("server").add(oe);
 	}
 
-	public void add(ModContainerImpl modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
+	public void add(ModContainerExt modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
 		if (!adapterMap.containsKey(metadata.getAdapter())) {
 			throw new Exception("Could not find adapter '" + metadata.getAdapter() + "' (mod " + modContainer.metadata().id() + "!)");
 		}

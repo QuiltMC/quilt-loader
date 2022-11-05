@@ -18,6 +18,10 @@ package org.quiltmc.loader.impl.solver;
 
 import java.util.Arrays;
 
+import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.util.sat4j.pb.IPBSolver;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 import org.quiltmc.loader.util.sat4j.specs.IConstr;

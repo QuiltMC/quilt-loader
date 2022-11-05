@@ -16,6 +16,9 @@
 
 package org.quiltmc.loader.impl.solver;
 
+import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+
 /** Used for the "inverse load" condition - if this is required by a {@link Rule} then it means the
  * {@link LoadOption} must not be loaded. */
 final class NegatedLoadOption extends LoadOption {

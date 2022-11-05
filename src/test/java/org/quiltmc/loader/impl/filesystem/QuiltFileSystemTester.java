@@ -31,7 +31,7 @@ public class QuiltFileSystemTester {
 
 	@Test
 	public void testPathTraversal() {
-		try (QuiltMemoryFileSystem fs = new QuiltMemoryFileSystem.ReadWrite("test_basics")) {
+		try (QuiltMemoryFileSystem fs = new QuiltMemoryFileSystem.ReadWrite("test_basics", true)) {
 			testUnixLikeFileSystem(fs);
 		}
 	}

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,107 +17,130 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.StringTokenizer;
+import java.util.regex.Pattern;
+
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionFormatException;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.VersionParsingException;
 
-// TODO: investigate regex and StringTokenizer once we're able to actually test this code
 public class SemanticVersionImpl implements Version.Semantic {
 	private final String raw;
-	private final int major;
-	private final int minor;
-	private final int patch;
+	private final int[] components;
 	private final String preRelease;
 	private final String buildMeta;
 
-	/**
-	 * Capture groups 1, 2, 3: Major, minor, patch. Must be between 0 and 9 and of any length.
-	 * Non-capturing group 1: Matches the start of build metadata
-	 * Capture group 4:
-	 */
-	private static final Pattern SEMVER_MATCHER = Pattern.compile("^(?<major>[0-9]+)\\.(?<minor>[0-9]+)\\.(?<patch>[0-9]+)(?:-(?<pre>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?(?:\\+(?<meta>[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?$");
+	private static final Pattern UNSIGNED_INTEGER = Pattern.compile("0|[1-9][0-9]*");
+	private static final Pattern DOT_SEPARATED_ID = Pattern.compile("|[-0-9A-Za-z]+(\\.[-0-9A-Za-z]+)*");
 
 	public static SemanticVersionImpl of(String raw) throws VersionFormatException {
-		int major;
-		int minor;
-		int patch;
-		String preRelease;
-		String buildMeta;
-		Matcher matcher = SEMVER_MATCHER.matcher(raw);
-		if (!matcher.matches()) {
-			throw new VersionFormatException("Invalid SemVer string " + raw);
-		}
-		try {
-			major = Integer.parseInt(matcher.group("major"));
-			minor = Integer.parseInt(matcher.group("minor"));
-			patch = Integer.parseInt(matcher.group("patch"));
-		} catch (NumberFormatException ex) {
-			// The regex doesn't catch having a number greater than Integer.MAX_INT
-			throw new VersionFormatException("Invalid SemVer string " + raw);
-		}
-		preRelease = matcher.group("pre");
-		buildMeta = matcher.group("meta");
-		if (buildMeta == null) {
-			buildMeta = "";
-		}
-		if (preRelease == null) {
-			preRelease = "";
-		}
-		return new SemanticVersionImpl(raw, major, minor, patch, preRelease, buildMeta);
+		return ofInternal(raw, false);
 	}
 
-
-	public static SemanticVersionImpl of(int major, int minor, int patch, String preRelease, String buildMeta) throws VersionFormatException {
-		StringBuilder sb = new StringBuilder();
-		sb.append(major).append('.').append(major).append('.').append(patch);
-		if (!preRelease.isEmpty()) {
-			sb.append('-').append(preRelease);
-		}
-		if (!buildMeta.isEmpty()) {
-			sb.append('+').append(buildMeta);
-		}
-		return new SemanticVersionImpl(sb.toString(), major, minor, patch, preRelease, buildMeta);
+	public static SemanticVersionImpl ofFabricPermittingWildcard(String raw) throws VersionFormatException {
+		return ofInternal(raw, true);
 	}
 
-	private SemanticVersionImpl(String raw, int major, int minor, int patch, String preRelease, String buildMeta) throws VersionFormatException {
-		if (!SEMVER_MATCHER.matcher(raw).matches()) {
-			throw new VersionFormatException("SemVer string " + raw + " is invalid!");
+	private static SemanticVersionImpl ofInternal(String raw, boolean permitWildcard) throws VersionFormatException {
+		String build;
+		String prerelease;
+		String semantic = raw;
+		int buildDelimPos = semantic.indexOf('+');
+
+		if (buildDelimPos >= 0) {
+			build = semantic.substring(buildDelimPos + 1);
+			semantic = semantic.substring(0, buildDelimPos);
+		} else {
+			build = "";
 		}
 
-		// Since this is a private constructor it's safe to assume if the raw is valid the split up parts are valid
-		this.raw = raw;
-		this.major = major;
-		this.minor = minor;
-		this.patch = patch;
-		this.preRelease = preRelease;
-		this.buildMeta = buildMeta;
+		int dashDelimPos = semantic.indexOf('-');
+
+		if (dashDelimPos >= 0) {
+			prerelease = semantic.substring(dashDelimPos + 1);
+			semantic = semantic.substring(0, dashDelimPos);
+
+			if (prerelease.isEmpty()) {
+				prerelease = EMPTY_BUT_PRESENT_PRERELEASE;
+			}
+		} else {
+			prerelease = "";
+		}
+
+		if (!prerelease.isEmpty() && !DOT_SEPARATED_ID.matcher(prerelease).matches()) {
+			throw new VersionFormatException("Invalid prerelease string '" + prerelease + "'!");
+		}
+
+		if (semantic.endsWith(".")) {
+			throw new VersionFormatException("Negative raw number component found!");
+		} else if (semantic.startsWith(".")) {
+			throw new VersionFormatException("Missing raw component!");
+		}
+
+		String[] componentStrings = semantic.split("\\.");
+
+		if (componentStrings.length < 1) {
+			throw new VersionFormatException("Did not provide raw numbers!");
+		}
+
+		int[] components = new int[componentStrings.length];
+
+		for (int i = 0; i < componentStrings.length; i++) {
+			String compStr = componentStrings[i];
+
+			if (compStr.trim().isEmpty()) {
+				throw new VersionFormatException("Missing raw number component!");
+			}
+
+			try {
+				if (permitWildcard && ("x".equalsIgnoreCase(compStr) || "*".equals(compStr))) {
+					components[i] = SemanticVersion.COMPONENT_WILDCARD;
+					if (i != components.length - 1) {
+						throw new VersionFormatException("Interjacent wildcard (1.x.2) are disallowed!");
+					}
+				} else {
+					components[i] = Integer.parseInt(compStr);
+					if (components[i] < 0) {
+						throw new VersionFormatException("Negative raw number component '" + compStr + "'!");
+					}
+				}
+
+			} catch (NumberFormatException e) {
+				throw new VersionFormatException("Could not parse raw number component '" + compStr + "'!", e);
+			}
+		}
+		return new SemanticVersionImpl(raw, components, prerelease, build);
+	}
+
+	@Override
+	public int versionComponentCount() {
+		return components.length;
+	}
+
+	@Override
+	public int versionComponent(int pos) {
+		return pos >= components.length ? 0 : components[pos];
+	}
+
+	@Override
+	public int[] versionComponents() {
+		return Arrays.copyOf(components, components.length);
+	}
+
+	private SemanticVersionImpl(String raw, int[] components, String preRelease, String buildMeta) {
+		this.raw = Objects.requireNonNull(raw, "raw");
+		this.components = Objects.requireNonNull(components, "components");
+		this.preRelease = Objects.requireNonNull(preRelease, "preRelease");
+		this.buildMeta = Objects.requireNonNull(buildMeta, "buildMeta");
 	}
 
 	@Override
 	public String raw() {
 		return raw;
-	}
-
-	@Override
-	public int major() {
-		return major;
-	}
-
-	@Override
-	public int minor() {
-		return minor;
-	}
-
-	@Override
-	public int patch() {
-		return patch;
 	}
 
 	@Override
@@ -130,77 +154,88 @@ public class SemanticVersionImpl implements Version.Semantic {
 	}
 
 	@Override
-	public int compareTo(@NotNull Semantic o) {
-		if (this.major() != o.major()) {
-			return this.major() - o.major();
-		} else if (this.minor() != o.minor()) {
-			return this.minor() - o.minor();
-		} else if (this.patch() != o.patch()) {
-			return this.patch() - o.patch();
+	public int compareTo(Version other) {
+		Objects.requireNonNull(other, "other");
+		if (other.isSemantic()) {
+			return compareSemantic(other.semantic());
 		} else {
-			// TODO: if this code gets hot we can reduce allocations and use a fancy for loop with more guards
-			Iterator<String> leftIter = Arrays.stream(this.preRelease().split("\\.")).iterator();
-			Iterator<String> rightIter = Arrays.stream(o.preRelease().split("\\.")).iterator();
-			while (true) {
-				if (!leftIter.hasNext() && !rightIter.hasNext()) {
-					return 0;
-				}
-				// Longer takes precedence over smaller
-				else if (leftIter.hasNext() && !rightIter.hasNext()) {
-					return -1;
-				} else if (!leftIter.hasNext()) {
-					return 1;
-				}
-				String left = leftIter.next();
-				String right = rightIter.next();
-				Integer lInt = parsePositiveIntNullable(left);
-				Integer rInt = parsePositiveIntNullable(right);
-				if (lInt != null && rInt != null) {
-					if (!left.equals(right)) {
-						return lInt - rInt;
-					}
-				}
-				// Numeric always has lower precedence
-				else if (lInt != null) {
-					return -1;
-				} else if (rInt == null) {
-					return 1;
-				} else {
-					int comp = left.compareTo(right);
-					if (comp != 0) {
-						return comp;
-					}
-				}
-			}
+			return GenericVersionImpl.compareRaw(raw, other.raw());
 		}
+	}
+
+	@Override
+	public int compareTo(Semantic other) {
+		Objects.requireNonNull(other, "other");
+		return compareSemantic(other);
+	}
+
+	private int compareSemantic(Version.Semantic o) {
+		for (int i = 0; i < Math.max(this.versionComponentCount(), o.versionComponentCount()); i++) {
+			int first = versionComponent(i);
+			int second = o.versionComponent(i);
+
+			int compare = Integer.compare(first, second);
+			if (compare != 0) return compare;
+		}
+
+
+		if (isPreReleasePresent() || o.isPreReleasePresent()) {
+			if (isPreReleasePresent() && o.isPreReleasePresent()) {
+				StringTokenizer prereleaseATokenizer = new StringTokenizer(preRelease(), ".");
+				StringTokenizer prereleaseBTokenizer = new StringTokenizer(o.preRelease(), ".");
+
+				while (prereleaseATokenizer.hasMoreElements()) {
+					if (prereleaseBTokenizer.hasMoreElements()) {
+						String partA = prereleaseATokenizer.nextToken();
+						String partB = prereleaseBTokenizer.nextToken();
+
+						if (UNSIGNED_INTEGER.matcher(partA).matches()) {
+							if (UNSIGNED_INTEGER.matcher(partB).matches()) {
+								int compare = Integer.compare(partA.length(), partB.length());
+								if (compare != 0) return compare;
+							} else {
+								return -1;
+							}
+						} else {
+							if (UNSIGNED_INTEGER.matcher(partB).matches()) {
+								return 1;
+							}
+						}
+
+						int compare = partA.compareTo(partB);
+						if (compare != 0) return compare;
+					} else {
+						return 1;
+					}
+				}
+
+				return prereleaseBTokenizer.hasMoreElements() ? -1 : 0;
+			} else if (isPreReleasePresent()) {
+				return -1;
+			} else { // o.isPreReleasePresent()
+				return 1;
+			}
+		} else {
+			return 0;
+		}
+
 	}
 
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (!(o instanceof SemanticVersionImpl)) return false;
 		SemanticVersionImpl that = (SemanticVersionImpl) o;
-		return major == that.major && minor == that.minor && patch == that.patch && raw.equals(that.raw) && preRelease.equals(that.preRelease) && buildMeta.equals(that.buildMeta);
+		return Objects.equals(raw, that.raw) && Arrays.equals(components, that.components) && Objects.equals(preRelease, that.preRelease) && Objects.equals(buildMeta, that.buildMeta);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(raw, major, minor, patch, preRelease, buildMeta);
+		return Arrays.deepHashCode(new Object[] { raw, components, preRelease, buildMeta });
 	}
 
 	@Override
 	public String toString() {
 		return raw;
-	}
-
-	private static @Nullable Integer parsePositiveIntNullable(String bit) {
-		if (bit.startsWith("+")) {
-			return null;
-		}
-		try {
-			return Integer.parseUnsignedInt(bit);
-		} catch (NumberFormatException ex) {
-			return null;
-		}
 	}
 }

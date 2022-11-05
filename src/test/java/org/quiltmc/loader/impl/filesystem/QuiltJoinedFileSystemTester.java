@@ -33,8 +33,8 @@ public class QuiltJoinedFileSystemTester {
 
 	@Test
 	public void testMemoryJoined() throws IOException {
-		try (QuiltMemoryFileSystem.ReadWrite rw1 = new QuiltMemoryFileSystem.ReadWrite("rw1"); //
-			QuiltMemoryFileSystem.ReadWrite rw2 = new QuiltMemoryFileSystem.ReadWrite("rw2"); //
+		try (QuiltMemoryFileSystem.ReadWrite rw1 = new QuiltMemoryFileSystem.ReadWrite("rw1", true); //
+			QuiltMemoryFileSystem.ReadWrite rw2 = new QuiltMemoryFileSystem.ReadWrite("rw2", true); //
 			QuiltJoinedFileSystem jfs = new QuiltJoinedFileSystem(
 				"jfs1", Arrays.asList(rw1.root, rw2.root.resolve("sub"))
 			)//

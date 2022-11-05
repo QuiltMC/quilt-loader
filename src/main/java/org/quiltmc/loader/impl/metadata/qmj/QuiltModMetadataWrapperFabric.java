@@ -22,6 +22,10 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.impl.fabric.metadata.CustomValueImpl;
+import org.quiltmc.loader.impl.fabric.metadata.MapBackedContactInformation;
+import org.quiltmc.loader.impl.fabric.metadata.SimplePerson;
 import org.quiltmc.loader.impl.metadata.*;
 
 import net.fabricmc.loader.api.Version;
@@ -52,8 +56,8 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	public QuiltModMetadataWrapperFabric(InternalModMetadata quiltMeta) {
 		this.quiltMeta = quiltMeta;
 		ArrayList<String> provides = new ArrayList<>();
-		for (ModProvided provided : quiltMeta.provides()) {
-			provides.add(provided.id);
+		for (ProvidedMod provided : quiltMeta.provides()) {
+			provides.add(provided.id());
 		}
 		this.provides = Collections.unmodifiableCollection(provides);
 		ArrayList<ModDependency> depsAndBreaks = new ArrayList<>();
@@ -307,12 +311,30 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) {
-		throw internalError();
+		List<EntrypointMetadata> list = new ArrayList<>();
+		Collection<AdapterLoadableClassEntry> quiltList = quiltMeta.getEntrypoints().get(type);
+		if (quiltList == null) {
+			return list;
+		}
+		for (AdapterLoadableClassEntry entrypoint : quiltList) {
+			list.add(new EntrypointMetadata() {
+				@Override
+				public String getValue() {
+					return entrypoint.getValue();
+				}
+
+				@Override
+				public String getAdapter() {
+					return entrypoint.getAdapter();
+				}
+			});
+		}
+		return list;
 	}
 
 	@Override
 	public Collection<String> getEntrypointKeys() {
-		throw internalError();
+		return quiltMeta.getEntrypoints().keySet();
 	}
 
 	@Override

@@ -16,10 +16,12 @@
 
 package net.fabricmc.loader.api.metadata.version;
 
+import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.impl.fabric.util.version.Quilt2FabricSemanticVersion;
+
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
 public enum VersionComparisonOperator {
 	// order is important to match the longest substring (e.g. try >= before >)
@@ -98,7 +100,12 @@ public enum VersionComparisonOperator {
 
 		@Override
 		public SemanticVersion maxVersion(SemanticVersion version) {
-			return new FabricSemanticVersionImpl(new int[] { version.getVersionComponent(0), version.getVersionComponent(1) + 1 }, "", null);
+			int[] components = { version.getVersionComponent(0), version.getVersionComponent(1) + 1 };
+			try {
+				return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(components, "", ""));
+			} catch (VersionFormatException e) {
+				throw new IllegalStateException(e);
+			}
 		}
 	},
 	SAME_TO_NEXT_MAJOR("^", true, false) {
@@ -115,7 +122,12 @@ public enum VersionComparisonOperator {
 
 		@Override
 		public SemanticVersion maxVersion(SemanticVersion version) {
-			return new FabricSemanticVersionImpl(new int[] { version.getVersionComponent(0) + 1 }, "", null);
+			int[] components = { version.getVersionComponent(0) + 1 };
+			try {
+				return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(components, "", ""));
+			} catch (VersionFormatException e) {
+				throw new IllegalStateException(e);
+			}
 		}
 	};
 

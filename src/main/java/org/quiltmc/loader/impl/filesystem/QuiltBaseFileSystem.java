@@ -25,6 +25,8 @@ import java.nio.file.PathMatcher;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
@@ -40,41 +42,67 @@ extends FileSystem
 		DelegatingUrlStreamHandlerFactory.load();
 	}
 
+	private static final Map<String, Integer> uniqueNames = new HashMap<>();
+
 	final Class<FS> filesystemClass;
 	final Class<P> pathClass;
 
 	final String name;
 	final P root;
 
-	QuiltBaseFileSystem(Class<FS> filesystemClass, Class<P> pathClass, String name) {
+	QuiltBaseFileSystem(Class<FS> filesystemClass, Class<P> pathClass, String name, boolean uniqueify) {
 		this.filesystemClass = filesystemClass;
 		this.pathClass = pathClass;
-		this.name = sanitizeName(name);
+		this.name = uniqueOf(uniqueify, sanitizeName(name));
 		this.root = createPath(null, QuiltBasePath.NAME_ROOT);
 
 		// Validate that our sanitising passes this.name through to
 		// both the host and authority
 		URI uri = root.toUri();
 		if (!this.name.equals(uri.getHost())) {
-			throw new RuntimeException(this.name + " wasn't found as the host of " + uri);
+			throw new RuntimeException(this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "')");
 		}
 		if (uri.getAuthority() == null || !uri.getAuthority().contains(this.name)) {
-			throw new RuntimeException(this.name + " wasn't found in the authority of " + uri);
+			throw new RuntimeException(this.name + " wasn't found in the authority of " + uri + " (authority = " + uri.getAuthority() +"')");
+		}
+	}
+
+	private static String uniqueOf(boolean uniqueify, String name) {
+		if (!uniqueify) {
+			return name;
+		}
+
+		synchronized (QuiltBaseFileSystem.class) {
+			Integer current = uniqueNames.get(name);
+			if (current != null) {
+				current++;
+			} else {
+				current = 0;
+			}
+			uniqueNames.put(name, current);
+			return name + ".i" + current;
 		}
 	}
 
 	// Shamelessly stolen from UnixUriUtils
 	private static final long LOW_MASK = 0x3ff600000000000L;
-	private static final long HIGH_MASK = 0x47fffffe07ffffffL;
+	private static final long HIGH_MASK = 0x47fffffe07fffffeL;
 	private static String sanitizeName(String str) {
 		byte[] path = str.getBytes();
 		StringBuilder sb = new StringBuilder();
 
-		for(int i = 0; i < path.length; ++i) {
-			char c = (char)(path[i] & 255);
+		boolean first = true;
+
+		for (byte b : path) {
+			char c = (char) (b & 255);
+
+			if (first && (c == '-' || c == '_')) {
+				continue;
+			}
 
 			if (matchesMagic(c)) {
 				sb.append(c);
+				first = false;
 			} else if (c == '_') {
 				sb.append('-');
 			}

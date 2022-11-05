@@ -67,8 +67,8 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 	volatile OpenState openState = OpenState.OPEN;
 
-	private QuiltMemoryFileSystem(String name, Map<QuiltMemoryPath, QuiltMemoryEntry> fileMap) {
-		super(QuiltMemoryFileSystem.class, QuiltMemoryPath.class, name);
+	private QuiltMemoryFileSystem(String name, boolean uniquify, Map<QuiltMemoryPath, QuiltMemoryEntry> fileMap) {
+		super(QuiltMemoryFileSystem.class, QuiltMemoryPath.class, name, uniquify);
 		this.files = fileMap;
 		QuiltMemoryFileSystemProvider.register(this);
 	}
@@ -185,8 +185,8 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		/** Creates a new read-only {@link FileSystem} that copies every file in the given directory.
 		 *
 		 * @throws IOException if any of the files in the given path could not be read. */
-		public ReadOnly(String name, Path from) throws IOException {
-			super(name, new HashMap<>());
+		public ReadOnly(String name, boolean uniquify, Path from) throws IOException {
+			super(name, uniquify, new HashMap<>());
 
 			int[] stats = new int[3];
 			stats[STAT_MEMORY] = 60;
@@ -208,6 +208,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 					} else {
 						String pathName = relative.getFileName().toString();
 						QuiltMemoryPath path = stack.peek().folder.resolve(pathName);
+						stack.peek().children.add(path);
 						stats[STAT_MEMORY] += pathName.length() + 28;
 						stack.push(new DirBuildState(path));
 					}
@@ -310,7 +311,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		}
 
 		public QuiltMemoryFileSystem.ReadWrite copyToWriteable(String newName) {
-			QuiltMemoryFileSystem.ReadWrite fs = new QuiltMemoryFileSystem.ReadWrite(newName);
+			QuiltMemoryFileSystem.ReadWrite fs = new QuiltMemoryFileSystem.ReadWrite(newName, true);
 			copyPath(root, fs.root);
 			return fs;
 		}
@@ -320,7 +321,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		 * modified. (In other words, this should only be called by the owner of this filesystem). */
 		public QuiltMemoryFileSystem.ReadWrite replaceWithWritable() {
 			close();
-			QuiltMemoryFileSystem.ReadWrite fs = new QuiltMemoryFileSystem.ReadWrite(name);
+			QuiltMemoryFileSystem.ReadWrite fs = new QuiltMemoryFileSystem.ReadWrite(name, false);
 			copyPath(root, fs.root);
 			return fs;
 		}
@@ -351,15 +352,15 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		private QuiltMemoryFileStore.ReadWrite fileStore;
 		private Iterable<FileStore> fileStoreItr;
 
-		public ReadWrite(String name) {
-			super(name, new ConcurrentHashMap<>());
+		public ReadWrite(String name, boolean uniquify) {
+			super(name, uniquify, new ConcurrentHashMap<>());
 			fileStore = new QuiltMemoryFileStore.ReadWrite(name, this);
 			fileStoreItr = Collections.singleton(fileStore);
 			files.put(root, new QuiltMemoryFolder.ReadWrite(root));
 		}
 
-		public ReadWrite(String name, Path from) throws IOException {
-			this(name);
+		public ReadWrite(String name, boolean uniquify, Path from) throws IOException {
+			this(name, uniquify);
 
 			if (!Files.isDirectory(from)) {
 				throw new IOException(from + " is not a directory!");
@@ -415,7 +416,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		 * files down to the minimum required length. */
 		public QuiltMemoryFileSystem.ReadOnly optimizeToReadOnly(String newName) {
 			try {
-				return new ReadOnly(newName, root);
+				return new ReadOnly(newName, true, root);
 			} catch (IOException e) {
 				throw new RuntimeException(
 						"For some reason the in-memory file system threw an IOException while reading!", e
@@ -429,7 +430,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		public QuiltMemoryFileSystem.ReadOnly replaceWithReadOnly() {
 			beginMove();
 			try {
-				return new ReadOnly(name, root);
+				return new ReadOnly(name, false, root);
 			} catch (IOException e) {
 				throw new RuntimeException(
 						"For some reason the in-memory file system threw an IOException while reading!", e

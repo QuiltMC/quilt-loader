@@ -16,15 +16,17 @@
 
 package org.quiltmc.test;
 
-import net.fabricmc.loader.api.VersionParsingException;
+import java.io.IOException;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
 
-import java.io.IOException;
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.VersionParsingException;
 
 public class VersionParsingTests extends JsonTestBase {
 	static void quilt(String raw) {
@@ -50,7 +52,7 @@ public class VersionParsingTests extends JsonTestBase {
 	static void fabric(String raw) {
 		System.out.println("Checking pass: " + raw);
 		try {
-			new FabricSemanticVersionImpl(raw, false);
+			SemanticVersion.parse(raw);
 		} catch (VersionParsingException e) {
 			Assertions.fail(e);
 		}
@@ -59,7 +61,7 @@ public class VersionParsingTests extends JsonTestBase {
 	static void fabricFails(String raw) {
 		System.out.println("Checking fails: " + raw);
 		try {
-			new FabricSemanticVersionImpl(raw, false);
+			SemanticVersion.parse(raw);
 			Assertions.fail("Invalid version " + raw + " was parsed successfully?");
 		} catch (VersionParsingException e) {
 			//
@@ -80,13 +82,6 @@ public class VersionParsingTests extends JsonTestBase {
 			quiltFails(fail.nextString());
 		}
 		fail.close();
-
-		JsonReader fabricOnly = get("testing/version/fabric-passing-only.json");
-		fabricOnly.beginArray();
-		while (fabricOnly.hasNext()) {
-			quiltFails(fabricOnly.nextString());
-		}
-		fabricOnly.close();
 	}
 
 	@Test
@@ -104,13 +99,6 @@ public class VersionParsingTests extends JsonTestBase {
 			fabricFails(fail.nextString());
 		}
 		fail.close();
-
-		JsonReader fabricOnly = get("testing/version/fabric-passing-only.json");
-		fabricOnly.beginArray();
-		while (fabricOnly.hasNext()) {
-			fabric(fabricOnly.nextString());
-		}
-		fabricOnly.close();
 	}
 
 }

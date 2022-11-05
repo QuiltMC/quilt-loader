@@ -17,6 +17,9 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
@@ -40,8 +43,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 
 public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBytecodeProvider, ITransformerProvider, IClassTracker {
 	static IMixinTransformer transformer;
@@ -187,6 +193,26 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public InputStream getResourceAsStream(String name) {
+		if (name.startsWith("#")) {
+			// Probably a mod specific resource
+			int colon = name.indexOf(':');
+			if (colon > 0) {
+				String mod = name.substring(1, colon);
+				String resource = name.substring(colon + 1);
+				Optional<ModContainer> modContainer = QuiltLoader.getModContainer(mod);
+				if (modContainer.isPresent()) {
+					Path modResource = modContainer.get().rootPath().resolve(resource);
+					if (!Files.exists(modResource)) {
+						return null;
+					}
+					try {
+						return Files.newInputStream(modResource);
+					} catch (IOException e) {
+						throw new RuntimeException("Failed to read file '" + resource + "' from mod '" + mod + "'!", e);
+					}
+				}
+			}
+		}
 		return QuiltLauncherBase.getLauncher().getResourceAsStream(name);
 	}
 

@@ -34,17 +34,13 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-
-import net.fabricmc.loader.api.VersionParsingException;
-
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
+import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
-import org.quiltmc.loader.impl.util.version.FabricSemanticVersionImpl;
-import org.quiltmc.loader.impl.util.version.VersionPredicateParser;
 
 public final class McVersionLookup {
 	private static final Pattern VERSION_PATTERN = Pattern.compile(
@@ -377,11 +373,7 @@ public final class McVersionLookup {
 				if (matcher.matches()) {
 					boolean legacyVersion;
 
-					try {
-						legacyVersion = VersionPredicateParser.parse("<=1.16").test(new FabricSemanticVersionImpl(release, false));
-					} catch (VersionParsingException e) {
-						throw new RuntimeException("Failed to parse version: " + release);
-					}
+					legacyVersion = Version.of("1.16").compareTo(Version.of(release)) <= 0;
 
 					// Mark pre-releases as 'beta' versions, except for version 1.16 and before, where they are 'rc'
 					if (legacyVersion) {

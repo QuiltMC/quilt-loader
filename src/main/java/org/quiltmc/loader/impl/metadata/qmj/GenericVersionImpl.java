@@ -18,7 +18,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import org.quiltmc.loader.api.Version;
 
-public class GenericVersionImpl implements Version {
+public class GenericVersionImpl implements Version.Raw {
 	private final String raw;
 
 	public GenericVersionImpl(String raw) {
@@ -33,5 +33,30 @@ public class GenericVersionImpl implements Version {
 	@Override
 	public String toString() {
 		return raw;
+	}
+
+	@Override
+	public int hashCode() {
+		return raw.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Version.Raw) {
+			return raw.equals(((Version.Raw) obj).raw());
+		} else {
+			return false;
+		}
+	}
+
+	@Override
+	public int compareTo(Version other) {
+		return compareRaw(raw(), other.raw());
+	}
+
+	public static int compareRaw(String a, String b) {
+		// Ideally this would use number-aware comparison
+		// Oh well
+		return a.compareTo(b);
 	}
 }
