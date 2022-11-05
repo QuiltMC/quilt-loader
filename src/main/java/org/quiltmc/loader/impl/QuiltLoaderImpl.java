@@ -103,7 +103,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.1";
+	public static final String VERSION = "0.18.1-beta.2";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -337,6 +337,9 @@ public final class QuiltLoaderImpl {
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
 			plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
 			plugins.guiModsRoot.toNode(tab2.node, false);
+
+			String btnText = QuiltLoaderText.translate("button.continue_to", getGameProvider().getGameName()).toString();
+			tree.addButton(btnText, QuiltBasicButtonAction.CONTINUE);
 
 			// TODO: Look into writing a report!
 

@@ -136,7 +136,7 @@ public final class QuiltJsonGui {
 
 	public enum QuiltBasicButtonAction {
 		CLOSE(ICON_TYPE_DEFAULT),
-		CONTINUE(ICON_TYPE_DEFAULT),
+		CONTINUE(ICON_TYPE_CONTINUE),
 		VIEW_FILE(ICON_TYPE_GENERIC_FILE, "file"),
 		VIEW_FOLDER(ICON_TYPE_FOLDER, "folder"),
 		OPEN_FILE(ICON_TYPE_GENERIC_FILE, "file"),
@@ -170,6 +170,9 @@ public final class QuiltJsonGui {
 
 	/** No icon is displayed. */
 	public static final String ICON_TYPE_DEFAULT = "";
+
+	/** Move forward button */
+	public static final String ICON_TYPE_CONTINUE = "continue";
 
 	/** Generic folder. */
 	public static final String ICON_TYPE_FOLDER = "folder";

@@ -1580,11 +1580,16 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 							}
 						}
 
+						if (name.endsWith(".disabled")) {
+							node.subIcon(node.manager().iconDisabled());
+							return FileVisitResult.SKIP_SUBTREE;
+						}
+
 						if (Files.exists(dir.resolve("quilt_loader_ignored"))) {
 							node.subIcon(node.manager().iconDisabled());
 							node.addChild(QuiltLoaderText.translate("warn.sub_folder_ignored"))
 								.setDirectLevel(WarningLevel.WARN)//
-								.subIcon(node.manager().iconDisabled());
+								.mainIcon(node.manager().iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 					}

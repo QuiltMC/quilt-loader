@@ -210,6 +210,7 @@ class QuiltMainWindow {
 			switch (button.action) {
 				case CONTINUE: {
 					onCloseLatch.countDown();
+					window.dispose();
 					return;
 				}
 				case CLOSE: {
@@ -503,6 +504,7 @@ class QuiltMainWindow {
 		DefaultTreeModel model = new DefaultTreeModel(treeNode);
 		JTree tree = new JTree(model);
 		tree.setRootVisible(false);
+		tree.setShowsRootHandles(true);
 		tree.setRowHeight(0); // Allow rows to be multiple lines tall
 
 		for (int row = 0; row < tree.getRowCount(); row++) {
