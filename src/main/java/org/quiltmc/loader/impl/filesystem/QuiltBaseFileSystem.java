@@ -96,14 +96,14 @@ extends FileSystem
 		for (byte b : path) {
 			char c = (char) (b & 255);
 
-			if (first && (c == '-' || c == '_')) {
+			if (first && (c == '-' || c == '_' || c == '~')) {
 				continue;
 			}
 
 			if (matchesMagic(c)) {
 				sb.append(c);
 				first = false;
-			} else if (c == '_') {
+			} else if (c == '_' || c == '~') {
 				sb.append('-');
 			}
 			// Since we don't need to decode anything,
