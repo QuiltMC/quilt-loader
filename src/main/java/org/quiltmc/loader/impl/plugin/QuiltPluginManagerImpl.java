@@ -1585,6 +1585,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
+						if (name.startsWith(".")) {  // ignore dot-folders
+							node.subIcon(node.manager().iconDisabled());
+							return FileVisitResult.SKIP_SUBTREE;
+						}
+
 						if (Files.exists(dir.resolve("quilt_loader_ignored"))) {
 							node.subIcon(node.manager().iconDisabled());
 							node.addChild(QuiltLoaderText.translate("warn.sub_folder_ignored"))
