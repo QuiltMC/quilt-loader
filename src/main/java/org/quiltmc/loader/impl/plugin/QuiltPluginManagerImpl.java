@@ -601,6 +601,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		appendModDetails(modDetails::lines);
 		modDetails.setShowInLogs(false);
 
+		populateModsGuiTab(null);
+
+		throw new QuiltReportedError(report);
+	}
+
+	private void populateModsGuiTab(ModSolveResultImpl result) {
 		// WARNING Temporary mod list
 		// (This will be moved to on mod load option addition)
 		for (Entry<String, PotentialModSet> entry : modIds.entrySet()) {
@@ -614,11 +620,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			for (ModLoadOption option : set.all) {
-				option.populateModsTabInfo(gui.addChild(QuiltLoaderText.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER));
+				PluginGuiTreeNode modNode = gui.addChild(QuiltLoaderText.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER);
+				option.populateModsTabInfo(modNode);
+				if (result != null && result.directMods().containsValue(option)) {
+					modNode.subIcon(modNode.manager().iconTick());
+				}
 			}
 		}
-
-		throw new QuiltReportedError(report);
 	}
 
 	public String createModTable() {
@@ -1033,6 +1041,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			ModSolveResultImpl result = runSingleCycle();
 			checkForErrors();
 			if (result != null) {
+				populateModsGuiTab(result);
 				return result;
 			}
 		}

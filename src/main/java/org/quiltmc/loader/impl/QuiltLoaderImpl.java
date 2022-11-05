@@ -330,18 +330,23 @@ public final class QuiltLoaderImpl {
 
 			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, QuiltLoaderText.translate("msg.load_state").toString());
 			plugins.guiManager.putIcons(tree);
-			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Plugin Debugging");
+			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
+			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
 			plugins.guiFileRoot.toNode(tab.node, false);
+
+			QuiltJsonGui.QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
+			plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
+			plugins.guiModsRoot.toNode(tab2.node, false);
 
 			// TODO: Look into writing a report!
 
-			if (tree.getMaximumWarningLevel().isAtLeast(QuiltJsonGui.QuiltTreeWarningLevel.WARN)) {
+//			if (tree.getMaximumWarningLevel().isAtLeast(QuiltJsonGui.QuiltTreeWarningLevel.WARN)) {
 				try {
 					QuiltGuiEntry.open(tree, null, true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
-			}
+//			}
 
 			return result;
 		} catch (QuiltReportedError reported) {
