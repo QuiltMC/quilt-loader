@@ -93,7 +93,41 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 		@Override
 		InputStream createInputStream() throws IOException {
 			InputStream direct = new ByteArrayInputStream(byteArray(), bytesOffset(), bytesLength());
-			return isCompressed ? new GZIPInputStream(direct) : direct;
+			if (!isCompressed) {
+				return direct;
+			}
+
+			return new InputStream() {
+				final InputStream from = new GZIPInputStream(direct);
+
+				int countRead = 0;
+
+				@Override
+				public int available() throws IOException {
+					return uncompressedSize - countRead;
+				}
+
+				@Override
+				public int read() throws IOException {
+					int read = from.read();
+					countRead++;
+					return read;
+				}
+
+				@Override
+				public int read(byte[] b, int off, int len) throws IOException {
+					int read = from.read(b, off, len);
+					if (read > 0) {
+						countRead += read;
+					}
+					return read;
+				}
+
+				@Override
+				public void close() throws IOException {
+					from.close();
+				}
+			};
 		}
 
 		private static IOException readOnly() throws IOException {
