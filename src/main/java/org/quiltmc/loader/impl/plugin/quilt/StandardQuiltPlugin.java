@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.quiltmc.json5.exception.ParseException;
@@ -86,18 +88,47 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	private void addInternalMod(BuiltinMod mod, String name, boolean system) {
-		Path path;
-		if (mod.paths.size() == 1) {
-			path = mod.paths.get(0);
-		} else {
-			path = new QuiltJoinedFileSystem(name, mod.paths).getRoot();
+
+		boolean changed = false;
+		List<Path> openedPaths = new ArrayList<>();
+
+		for (Path from : mod.paths) {
+
+			Path inside = null;
+
+			if (from.getFileName().toString().endsWith(".jar")) {
+				try {
+					inside = FileSystems.newFileSystem(from, (ClassLoader) null).getPath("/");
+				} catch (IOException e) {
+					// A bit odd, but not necessarily a crash-worthy issue
+					e.printStackTrace();
+				}
+			}
+
+			if (inside == null) {
+				openedPaths.add(from);
+			} else {
+				changed = true;
+				openedPaths.add(inside);
+			}
 		}
+
+		Path from = join(mod.paths, name);
+		Path inside = changed ? join(openedPaths, name) : from;
 
 		// We don't go via context().addModOption since we don't really have a good gui node to base it off
 		context().ruleContext().addOption(system
-				? new SystemModOption(context(), mod.metadata, path, path)
-				: new BuiltinModOption(context(), mod.metadata, path, path)
+				? new SystemModOption(context(), mod.metadata, from, inside)
+				: new BuiltinModOption(context(), mod.metadata, from, inside)
 		);
+	}
+
+	private static Path join(List<Path> paths, String name) {
+		if (paths.size() == 1) {
+			return paths.get(0);
+		} else {
+			return new QuiltJoinedFileSystem(name, paths).getRoot();
+		}
 	}
 
 	@Override

@@ -47,6 +47,8 @@ import org.objectweb.asm.Opcodes;
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
+
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ObjectShare;
 
 import org.quiltmc.loader.api.LanguageAdapter;
@@ -106,7 +108,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.6";
+	public static final String VERSION = "0.18.1-beta.7";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
