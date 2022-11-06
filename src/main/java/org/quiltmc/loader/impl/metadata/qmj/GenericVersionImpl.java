@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import org.quiltmc.loader.api.Version;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class GenericVersionImpl implements Version.Raw {
@@ -97,14 +98,16 @@ public class GenericVersionImpl implements Version.Raw {
 	 * of characters changes from numeric to non-numeric.
 	 */
 	private static List<Comparable<?>> decompose(String str) {
-		if (str.isEmpty()) return List.of();
+		if (str.isEmpty()) return Collections.emptyList();
 		boolean lastWasNumber = Character.isDigit(str.codePointAt(0));
 		StringBuilder accum = new StringBuilder();
 		List<Comparable<?>> out = new ArrayList<>();
 		// remove appendices
 		int plus = str.lastIndexOf('+');
 		if (plus != -1) str = str.substring(0, plus);
-		for (int cp : str.codePoints().toArray()) {
+		for (int i = 0; i < str.length(); i++) {
+			if (Character.isLowSurrogate(str.charAt(i))) continue;
+			int cp = str.codePointAt(i);
 			boolean number = Character.isDigit(cp);
 			if (number != lastWasNumber) {
 				complete(lastWasNumber, accum, out);
