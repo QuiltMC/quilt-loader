@@ -103,7 +103,7 @@ public class GenericVersionImpl implements Version.Raw {
 		StringBuilder accum = new StringBuilder();
 		List<Comparable<?>> out = new ArrayList<>();
 		// remove appendices
-		int plus = str.lastIndexOf('+');
+		int plus = str.indexOf('+');
 		if (plus != -1) str = str.substring(0, plus);
 		for (int i = 0; i < str.length(); i++) {
 			if (Character.isLowSurrogate(str.charAt(i))) continue;
