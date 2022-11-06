@@ -345,6 +345,13 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				private int position;
 
 				@Override
+				public int available() throws IOException {
+					synchronized (sync()) {
+						return length - position;
+					}
+				}
+
+				@Override
 				public int read() throws IOException {
 					synchronized (sync()) {
 						int result = read(tempReader);
