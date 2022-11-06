@@ -17,6 +17,7 @@
 
 package org.quiltmc.loader.impl;
 
+import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -105,7 +106,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.5";
+	public static final String VERSION = "0.18.1-beta.6";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -329,6 +330,10 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
+			if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
+				return result;
+			}
+
 			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, QuiltLoaderText.translate("msg.load_state").toString());
 			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
@@ -359,6 +364,18 @@ public final class QuiltLoaderImpl {
 			} catch (CrashReportSaveFailed e) {
 				fullCrashText = e.fullReportText;
 			}
+		}
+
+		if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
+			if (crashReportFile != null) {
+				System.err.println("Game crashed! Saved the crash report to " + crashReportFile);
+			}
+			if (fullCrashText != null) {
+				System.err.println("Game crashed, and also failed to save the crash report!");
+				System.err.println(fullCrashText);
+			}
+			System.exit(1);
+			throw new Error("System.exit(1) failed!");
 		}
 
 		String msg = "crash.during_setup." + provider.getGameId();
