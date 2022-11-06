@@ -18,6 +18,9 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import org.quiltmc.loader.api.Version;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GenericVersionImpl implements Version.Raw {
 	private final String raw;
 
