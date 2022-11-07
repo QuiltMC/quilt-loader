@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import com.unascribed.flexver.FlexVerComparator;
+
 import org.quiltmc.loader.api.Version;
 
 public class GenericVersionImpl implements Version.Raw {
@@ -55,8 +57,6 @@ public class GenericVersionImpl implements Version.Raw {
 	}
 
 	public static int compareRaw(String a, String b) {
-		// Ideally this would use number-aware comparison
-		// Oh well
-		return a.compareTo(b);
+		return FlexVerComparator.compare(a, b);
 	}
 }

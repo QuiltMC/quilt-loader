@@ -57,11 +57,10 @@ public interface Version {
 		return (Semantic) this;
 	}
 
-	/**
-	 * If both this and the given version are semantic versions then this compares with the behaviour of {@link Semantic#compareTo(Semantic)}.
-	 *
-	 * Otherwise both versions are compared with their {@link #raw()} strings, using {@link String#compareTo(String)}.
-	 */
+	/** If both this and the given version are semantic versions then this compares with the behaviour of
+	 * {@link Semantic#compareTo(Semantic)}. <br>
+	 * Otherwise both versions are compared with their {@link #raw()} strings, using the
+	 * <a href="https://github.com/unascribed/FlexVer/blob/trunk/SPEC.md">FlexVer comparison scheme</a> */
 	int compareTo(Version other);
 
 	/**
