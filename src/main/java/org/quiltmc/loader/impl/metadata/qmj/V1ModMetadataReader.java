@@ -64,6 +64,7 @@ final class V1ModMetadataReader {
 
 	private static V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
 		V1ModMetadataBuilder builder = new V1ModMetadataBuilder();
+		builder.setRoot(root);
 
 		JsonLoaderValue.ObjectImpl quiltLoader = (JsonLoaderValue.ObjectImpl) root.get("quilt_loader");
 
