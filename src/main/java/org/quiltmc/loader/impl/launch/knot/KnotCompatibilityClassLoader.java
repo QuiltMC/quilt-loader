@@ -19,11 +19,14 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
 import java.security.CodeSource;
 
 class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
@@ -94,6 +97,17 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 	@Override
 	public void addURL(URL url) {
 		super.addURL(url);
+	}
+
+	@Override
+	public void addPath(Path root, URL origin) {
+		// TODO: Implement this properly!
+		// (Or at least look into how possible that would be)
+		try {
+			addURL(UrlUtil.asUrl(root));
+		} catch (MalformedURLException e) {
+			throw new Error(e);
+		}
 	}
 
 	@Override

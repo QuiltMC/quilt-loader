@@ -276,7 +276,7 @@ public final class Knot extends QuiltLauncherBase {
 		try {
 			URL url = UrlUtil.asUrl(path);
 			classLoader.getDelegate().setAllowedPrefixes(url, allowedPrefixes);
-			classLoader.addURL(url);
+			classLoader.addPath(path, url); // TODO: Create a method which passes the actual origin!
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}

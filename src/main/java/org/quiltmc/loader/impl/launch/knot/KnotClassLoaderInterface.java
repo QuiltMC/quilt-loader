@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.launch.knot;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 import java.security.CodeSource;
 
 interface KnotClassLoaderInterface {
@@ -26,6 +27,7 @@ interface KnotClassLoaderInterface {
 	boolean isClassLoaded(String name);
 	Class<?> loadIntoTarget(String name) throws ClassNotFoundException;
 	void addURL(URL url);
+	void addPath(Path root, URL origin);
 	URL getResource(String name);
 	InputStream getResourceAsStream(String filename, boolean skipOriginalLoader) throws IOException;
 

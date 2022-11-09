@@ -72,7 +72,7 @@ class KnotClassDelegate {
 	private final EnvType envType;
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
-	private final Map<URL, String[]> allowedPrefixes = new ConcurrentHashMap<>();
+	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	/** Map of package to whether we can load it in this environment. */
@@ -122,7 +122,7 @@ class KnotClassDelegate {
 			String[] prefixes;
 
 			if (url != null
-					&& (prefixes = allowedPrefixes.get(url)) != null) {
+					&& (prefixes = allowedPrefixes.get(url.toString())) != null) {
 				assert prefixes.length > 0;
 				boolean found = false;
 
@@ -341,9 +341,9 @@ class KnotClassDelegate {
 
 	void setAllowedPrefixes(URL url, String... prefixes) {
 		if (prefixes.length == 0) {
-			allowedPrefixes.remove(url);
+			allowedPrefixes.remove(url.toString());
 		} else {
-			allowedPrefixes.put(url, prefixes);
+			allowedPrefixes.put(url.toString(), prefixes);
 		}
 	}
 }

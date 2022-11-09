@@ -18,12 +18,18 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
+
+import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.SecureClassLoader;
 import java.util.Enumeration;
@@ -45,14 +51,19 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		}
 	}
 
-	private final DynamicURLClassLoader urlLoader;
+	private final QuiltClassPath paths = new QuiltClassPath();
+	private final DynamicURLClassLoader fakeLoader;
+	private final DynamicURLClassLoader minimalLoader;
 	private final ClassLoader originalLoader;
 	private final KnotClassDelegate delegate;
 
 	KnotClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
 		super(new DynamicURLClassLoader(new URL[0]));
 		this.originalLoader = getClass().getClassLoader();
-		this.urlLoader = (DynamicURLClassLoader) getParent();
+		// For compatibility we send all URLs to the fake loader
+		// but never ask it for resources
+		this.fakeLoader = (DynamicURLClassLoader) getParent();
+		this.minimalLoader = new DynamicURLClassLoader(new URL[0]);
 		this.delegate = new KnotClassDelegate(isDevelopment, envType, this, provider);
 	}
 
@@ -72,7 +83,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public URL getResource(String name) {
 		Objects.requireNonNull(name);
 
-		URL url = urlLoader.getResource(name);
+		URL url = findResource(name);
 
 		if (url == null) {
 			url = originalLoader.getResource(name);
@@ -85,14 +96,33 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public URL findResource(String name) {
 		Objects.requireNonNull(name);
 
-		return urlLoader.findResource(name);
+		Path path = paths.findResource(name);
+		if (path != null) {
+			try {
+				return UrlUtil.asUrl(path);
+			} catch (MalformedURLException e) {
+				throw new Error(e);
+			}
+		}
+
+		return minimalLoader.getResource(name);
 	}
 
 	@Override
 	public InputStream getResourceAsStream(String name) {
 		Objects.requireNonNull(name);
 
-		InputStream inputStream = urlLoader.getResourceAsStream(name);
+		Path path = paths.findResource(name);
+		if (path != null) {
+			try {
+				return Files.newInputStream(path);
+			} catch (IOException e) {
+				// Okay so that's *really* not good
+				e.printStackTrace();
+			}
+		}
+
+		InputStream inputStream = minimalLoader.getResourceAsStream(name);
 
 		if (inputStream == null) {
 			inputStream = originalLoader.getResourceAsStream(name);
@@ -105,7 +135,9 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public Enumeration<URL> getResources(String name) throws IOException {
 		Objects.requireNonNull(name);
 
-		Enumeration<URL> first = urlLoader.getResources(name);
+		// Since we want to get *all* the resources, and QuiltClassPath only caches one per name
+		// we need to skip it anyway
+		Enumeration<URL> first = fakeLoader.getResources(name);
 		Enumeration<URL> second = originalLoader.getResources(name);
 		return new Enumeration<URL>() {
 			Enumeration<URL> current = first;
@@ -194,12 +226,34 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	@Override
 	public void addURL(URL url) {
-		urlLoader.addURL(url);
+		fakeLoader.addURL(url);
+		minimalLoader.addURL(url);
+	}
+
+	@Override
+	public void addPath(Path root, URL origin) {
+		URL asUrl;
+		try {
+			asUrl = UrlUtil.asUrl(root);
+		} catch (MalformedURLException e) {
+			throw new Error(e);
+		}
+		fakeLoader.addURL(asUrl);
+		if (root.getFileName().toString().endsWith(".jar")) {
+			// TODO: Perhaps open it in a more efficient manor?
+			minimalLoader.addURL(asUrl);
+		} else {
+			paths.addRoot(root);
+		}
 	}
 
 	@Override
 	public InputStream getResourceAsStream(String classFile, boolean allowFromParent) throws IOException {
-		InputStream inputStream = urlLoader.getResourceAsStream(classFile);
+		Path path = paths.findResource(classFile);
+		if (path != null) {
+			return Files.newInputStream(path);
+		}
+		InputStream inputStream = minimalLoader.getResourceAsStream(classFile);
 
 		if (inputStream == null && allowFromParent) {
 			inputStream = originalLoader.getResourceAsStream(classFile);
