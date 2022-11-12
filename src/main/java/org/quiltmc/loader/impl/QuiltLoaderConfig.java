@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
+import org.jetbrains.annotations.VisibleForTesting;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -85,6 +86,14 @@ public final class QuiltLoaderConfig {
 				Log.warn(LogCategory.CONFIG, "Failed to write quilt-loader.txt!", io);
 			}
 		}
+	}
+
+	@VisibleForTesting
+	QuiltLoaderConfig() {
+		this.singleThreadedLoading = true;
+		this.alwaysShowModStateWindow = false;
+		this.loadSubFolders = true;
+		this.restrictGameVersions = true;
 	}
 
 	private static boolean getBool(Properties props, String key, boolean _default) {
