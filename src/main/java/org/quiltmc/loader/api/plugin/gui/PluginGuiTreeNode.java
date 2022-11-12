@@ -134,6 +134,9 @@ public interface PluginGuiTreeNode {
 	/** @return The maximum level of all children and this node. */
 	WarningLevel getMaximumLevel();
 
+	/** @return The number of nodes (or sub-nodes) which have a {@link #getDirectLevel()} equal to the given level. */
+	int countOf(WarningLevel level);
+
 	PluginGuiIcon mainIcon();
 
 	@Contract("_ -> this")

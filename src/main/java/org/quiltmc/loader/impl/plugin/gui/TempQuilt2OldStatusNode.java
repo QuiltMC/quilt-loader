@@ -190,6 +190,21 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	}
 
 	@Override
+	public int countOf(WarningLevel level) {
+		int count = 0;
+		if (getDirectLevel() == level) {
+			count++;
+		}
+		for (TempQuilt2OldStatusNode child : childrenByAddition) {
+			count += child.countOf(level);
+		}
+		for (TempQuilt2OldStatusNode child : childrenByAlphabetical) {
+			count += child.countOf(level);
+		}
+		return count;
+	}
+
+	@Override
 	public TempQuilt2OldStatusNode setException(Throwable exception) {
 		this.exception = exception;
 		return this;

@@ -55,10 +55,11 @@ public class QuiltClassPath {
 	}
 
 	public Path findResource(String path) {
+		String absolutePath = path;
 		if (!path.startsWith("/")) {
-			path = "/" + path;
+			absolutePath = "/" + path;
 		}
-		Path quick = files.get(path);
+		Path quick = files.get(absolutePath);
 		if (quick != null) {
 			return quick;
 		}

@@ -16,7 +16,15 @@
 
 package org.quiltmc.loader.impl;
 
-import java.nio.file.FileSystems;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** User-configurable options. Normally loaded from "CURRENT_DIR/config/quilt-loader.txt". */
 public final class QuiltLoaderConfig {
@@ -32,34 +40,13 @@ public final class QuiltLoaderConfig {
 	 * version, and only loaded if they match the game version. */
 	public final boolean restrictGameVersions;
 
-	// ###########
-	// Performance
-	// ###########
-
-	/** What method to use when loading zip/jar archives that are directly in the filesystem. The default is
-	 * {@link ZipLoadType#READ_ZIP}. */
-	public final ZipLoadType outerZipLoadType;
-
-	/** What method to use when loading zip/jar archives that are inside an existing zip/jar file. The default is
-	 * {@link ZipLoadType#COPY_TO_MEMORY}. */
-	public final ZipLoadType innerZipLoadType;
-
-	public enum ZipLoadType {
-
-		/** Directly reads zip files using {@link FileSystems#newFileSystem(java.nio.file.Path, ClassLoader)}. */
-		READ_ZIP,
-
-		/** Copies inner zips out from their containing zips to a separate directory (I.E. not any mods folder), and
-		 * then reads those like {@link #READ_ZIP}. */
-		COPY_ZIP,
-
-		/** Copies the contents of a zip into a memory-based filesystem. */
-		COPY_TO_MEMORY;
-	}
-
 	// #####
 	// Debug
 	// #####
+
+	/** If true then the mod state window will always be shown, even if there aren't any warnings. If false then the mod
+	 * state window will only be shown in a development environment when there are warnings. */
+	public final boolean alwaysShowModStateWindow;
 
 	/** If true then quilt-loader will only use the main thread when scanning, copying, etc. Very useful for debugging,
 	 * since everything happens whenever plugins request it. Doesn't apply to the gui.
@@ -68,13 +55,54 @@ public final class QuiltLoaderConfig {
 	 * quilt-loader, or tasks submitted by plugins. */
 	public final boolean singleThreadedLoading;
 
-	public QuiltLoaderConfig() {
-		// FOR NOW
-
-		loadSubFolders = true;
-		restrictGameVersions = true;
-		outerZipLoadType = ZipLoadType.READ_ZIP;
-		innerZipLoadType = ZipLoadType.COPY_TO_MEMORY;
+	public QuiltLoaderConfig(Path from) {
+		// Multi-threaded doesn't work yet, so hardcode this
 		singleThreadedLoading = true;
+
+		// Unfortunately this loads too early to use QuiltConfig
+		// so instead just load from a properties file.
+		Properties props = new Properties();
+
+		if (Files.isRegularFile(from)) {
+			try (InputStream stream = Files.newInputStream(from)) {
+				props.load(stream);
+			} catch (IOException io) {
+				Log.warn(LogCategory.CONFIG, "Failed to read quilt-loader.txt!", io);
+			}
+		}
+
+		Properties original = new Properties();
+		original.putAll(props);
+
+		loadSubFolders = getBool(props, "load_sub_folders", true);
+		restrictGameVersions = getBool(props, "restrict_game_versions", true);
+		alwaysShowModStateWindow = getBool(props, "always_show_mod_state_window", false);
+
+		if (!original.equals(props)) {
+			try (OutputStream out = Files.newOutputStream(from)) {
+				props.store(out, "Quilt-loader configuration - not documented yet sorry!");
+			} catch (IOException io) {
+				Log.warn(LogCategory.CONFIG, "Failed to write quilt-loader.txt!", io);
+			}
+		}
+	}
+
+	private static boolean getBool(Properties props, String key, boolean _default) {
+		String value = props.getProperty(key);
+		if (value == null) {
+			props.setProperty(key, Boolean.toString(_default));
+			return _default;
+		}
+
+		// Require that exactly "true" or "false" are used to *change* from the default.
+		boolean f = "false".equals(value);
+		boolean t = "true".equals(value);
+		if (t | f) {
+			return t;
+		}
+
+		Log.warn(LogCategory.CONFIG, "Unknown / invalid config value for '" + key + "': " + value);
+
+		return _default;
 	}
 }

@@ -58,6 +58,7 @@ import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -108,7 +109,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.10";
+	public static final String VERSION = "0.18.1-beta.11";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -324,7 +325,8 @@ public final class QuiltLoaderImpl {
 	}
 
 	private ModSolveResult runPlugins() {
-		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, new QuiltLoaderConfig());
+		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, config);
 
 		Path crashReportFile = null;
 		String fullCrashText = null;
@@ -336,7 +338,37 @@ public final class QuiltLoaderImpl {
 				return result;
 			}
 
-			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, QuiltLoaderText.translate("msg.load_state").toString());
+			boolean dev = isDevelopmentEnvironment();
+			boolean show = config.alwaysShowModStateWindow;
+
+			if (!dev && !show) {
+				return result;
+			}
+
+			boolean anyWarnings = true;
+
+			if (plugins.guiFileRoot.getMaximumLevel().ordinal() <= WarningLevel.WARN.ordinal()) {
+				anyWarnings = true;
+			}
+
+			if (plugins.guiModsRoot.getMaximumLevel().ordinal() <= WarningLevel.WARN.ordinal()) {
+				anyWarnings = true;
+			}
+
+			if (!show && dev && !anyWarnings) {
+				return result;
+			}
+
+			final String msg;
+			if (anyWarnings) {
+				int count = plugins.guiModsRoot.countOf(WarningLevel.WARN)//
+					+ plugins.guiFileRoot.countOf(WarningLevel.WARN);
+				msg = QuiltLoaderText.translate("msg.load_state.warns", count).toString();
+			} else {
+				msg = QuiltLoaderText.translate("msg.load_state").toString();
+			}
+
+			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, msg);
 			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
 			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
@@ -351,13 +383,11 @@ public final class QuiltLoaderImpl {
 
 			// TODO: Look into writing a report!
 
-//			if (tree.getMaximumWarningLevel().isAtLeast(QuiltJsonGui.QuiltTreeWarningLevel.WARN)) {
-				try {
-					QuiltGuiEntry.open(tree, null, true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-//			}
+			try {
+				QuiltGuiEntry.open(tree, null, true);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 
 			return result;
 		} catch (QuiltReportedError reported) {

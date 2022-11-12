@@ -78,7 +78,6 @@ import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionRes
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderConfig;
-import org.quiltmc.loader.impl.QuiltLoaderConfig.ZipLoadType;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
@@ -248,25 +247,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			for (Path root : fileSystem.getRootDirectories()) {
-				// FIXME: find out if this is an inner or outer zip!
-				ZipLoadType loadType = config.innerZipLoadType;
-				switch (loadType) {
-					case COPY_TO_MEMORY: {
-						String name = allocateFileSystemName(zip);
-						Path qRoot = new QuiltMemoryFileSystem.ReadOnly(name, true, root).getRoot();
-						pathParents.put(qRoot, zip);
-						return qRoot;
-					}
-					case COPY_ZIP:
-						throw new UnsupportedOperationException();
-					case READ_ZIP: {
-						pathParents.put(root, zip);
-						return root;
-					}
-					default: {
-						throw new IllegalStateException("Unknown ZipLoadType " + loadType);
-					}
-				}
+				String name = allocateFileSystemName(zip);
+				Path qRoot = new QuiltMemoryFileSystem.ReadOnly(name, true, root).getRoot();
+				pathParents.put(qRoot, zip);
+				return qRoot;
 			}
 
 			throw new IOException("No root directories found in " + describePath(zip));
