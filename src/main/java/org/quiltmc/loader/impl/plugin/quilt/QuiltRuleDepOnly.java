@@ -24,12 +24,15 @@ import java.util.Set;
 
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.VersionInterval;
+import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 public class QuiltRuleDepOnly extends QuiltRuleDep {
 
@@ -117,6 +120,19 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 			if (options.isEmpty()) {
 				return;
 			}
+		}
+
+		boolean allWrongEnvironment = true;
+
+		for (ModLoadOption option : options) {
+			if (option.metadata().environment().matches(MinecraftQuiltLoader.getEnvironmentType())) {
+				allWrongEnvironment = false;
+				break;
+			}
+		}
+
+		if (allWrongEnvironment) {
+			return;
 		}
 
 		LoadOption[] array = new LoadOption[options.size() + (unless == null ? 1 : 2)];

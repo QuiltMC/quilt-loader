@@ -46,7 +46,6 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 		Path parent = context().manager().getParent(root);
 
 		if (!parent.getFileName().toString().endsWith(".jar")) {
-			System.out.println(parent + " (parent of '"+root+"') doesn't end with '.jar', so fabric-loader will skip this!");
 			return null;
 		}
 
@@ -61,7 +60,6 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
 		Path fmj = root.resolve("fabric.mod.json");
 		if (!Files.isRegularFile(fmj)) {
-			System.out.println("didn't find a fabric.mod.json file!");
 			return null;
 		}
 

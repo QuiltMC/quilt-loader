@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
@@ -84,7 +85,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 				okayOptions.add(mod);
 
 				if (StandardQuiltPlugin.DEBUG_PRINT_STATE) {
-					String reason = groupMatches ? "different group" : "different version";
+					String reason = !groupMatches ? "different group" : "different version";
 					Log.info(LogCategory.SOLVING, "  +  okay option: " + mod.fullString() + " because " + reason);
 				}
 			}
