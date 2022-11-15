@@ -251,11 +251,15 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			if (metadata.shouldQuiltDefineDependencies()) {
 
 				for (ModDependency dep : metadata.depends()) {
-					ctx.addRule(createModDepLink(ctx, mod, dep));
+					if (!dep.shouldIgnore()) {
+						ctx.addRule(createModDepLink(ctx, mod, dep));
+					}
 				}
 
 				for (ModDependency dep : metadata.breaks()) {
-					ctx.addRule(createModBreaks(ctx, mod, dep));
+					if (!dep.shouldIgnore()) {
+						ctx.addRule(createModBreaks(ctx, mod, dep));
+					}
 				}
 			}
 		}
