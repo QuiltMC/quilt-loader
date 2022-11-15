@@ -55,7 +55,7 @@ class QuiltMappingResolver implements MappingResolver {
 	protected final NamespaceData getNamespaceData(String namespace) {
 		return namespaceDataMap.computeIfAbsent(namespace, (fromNamespace) -> {
 			if (!namespaces.contains(namespace)) {
-				throw new IllegalArgumentException("Unknown namespace: " + namespace);
+				throw new IllegalArgumentException("Unknown namespace: " + namespace + " (we know about " + namespaces + ")");
 			}
 
 			NamespaceData data = new NamespaceData();
