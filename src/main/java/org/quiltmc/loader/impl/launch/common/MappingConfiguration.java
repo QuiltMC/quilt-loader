@@ -104,10 +104,11 @@ public final class MappingConfiguration {
 
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
 					long time = System.currentTimeMillis();
-					mappings = TinyMappingFactory.loadWithDetection(reader);
+					TinyTree mappings = TinyMappingFactory.loadWithDetection(reader);
 					Log.debug(LogCategory.MAPPINGS, "Loading mappings took %d ms", System.currentTimeMillis() - time);
 
 					if (mappings.getMetadata().getNamespaces().contains(getTargetNamespace())) {
+						this.mappings = mappings;
 						break;
 					}
 
