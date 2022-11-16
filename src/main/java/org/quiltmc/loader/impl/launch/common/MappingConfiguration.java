@@ -19,9 +19,11 @@ package org.quiltmc.loader.impl.launch.common;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Enumeration;
 import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
 import java.util.zip.ZipError;
@@ -77,9 +79,17 @@ public final class MappingConfiguration {
 	private void initialize() {
 		if (initialized) return;
 
-		URL url = MappingConfiguration.class.getClassLoader().getResource("mappings/mappings.tiny");
+		Enumeration<URL> urls;
+		try {
+			urls = MappingConfiguration.class.getClassLoader().getResources("mappings/mappings.tiny");
+		} catch (IOException e) {
+			throw new UncheckedIOException("Error trying to locate mappings", e);
+		}
 
-		if (url != null) {
+		while (urls.hasMoreElements()) {
+			URL url = urls.nextElement();
+			Log.info(LogCategory.MAPPINGS, "Loading mappings: %s", url);
+
 			try {
 				URLConnection connection = url.openConnection();
 
@@ -96,6 +106,12 @@ public final class MappingConfiguration {
 					long time = System.currentTimeMillis();
 					mappings = TinyMappingFactory.loadWithDetection(reader);
 					Log.debug(LogCategory.MAPPINGS, "Loading mappings took %d ms", System.currentTimeMillis() - time);
+
+					if (mappings.getMetadata().getNamespaces().contains(getTargetNamespace())) {
+						break;
+					}
+
+					Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
 				}
 			} catch (IOException | ZipError e) {
 				throw new RuntimeException("Error reading "+url, e);
