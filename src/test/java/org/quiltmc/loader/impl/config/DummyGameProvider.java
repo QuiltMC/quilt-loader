@@ -108,7 +108,7 @@ public class DummyGameProvider implements GameProvider {
 
 	@Override
 	public Arguments getArguments() {
-		return null;
+		return new Arguments();
 	}
 
 	@Override
