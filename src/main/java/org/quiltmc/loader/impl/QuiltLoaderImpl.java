@@ -21,13 +21,9 @@ import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -43,14 +39,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.Opcodes;
-
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.api.EnvType;
-
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ObjectShare;
-
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
@@ -65,7 +53,6 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionResult;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
@@ -76,12 +63,10 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.launch.knot.Knot;
-
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
@@ -89,9 +74,7 @@ import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
-import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
-import org.quiltmc.loader.impl.report.QuiltReportSection;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
@@ -102,15 +85,20 @@ import org.quiltmc.loader.impl.util.ModLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
-import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 import org.spongepowered.asm.mixin.FabricUtil;
+
+import net.fabricmc.loader.api.ObjectShare;
+
+import net.fabricmc.accesswidener.AccessWidener;
+import net.fabricmc.accesswidener.AccessWidenerReader;
+import net.fabricmc.api.EnvType;
 
 public final class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.13";
+	public static final String VERSION = "0.18.1-beta.14";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";

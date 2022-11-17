@@ -81,7 +81,7 @@ public final class QuiltLoaderConfig {
 
 		if (!original.equals(props)) {
 			try (OutputStream out = Files.newOutputStream(from)) {
-				props.store(out, "Quilt-loader configuration - not documented yet sorry!");
+				props.store(out, "Quilt-loader configuration: https://github.com/QuiltMC/quilt-loader/wiki/Configuration-options");
 			} catch (IOException io) {
 				Log.warn(LogCategory.CONFIG, "Failed to write quilt-loader.txt!", io);
 			}
