@@ -60,6 +60,11 @@ public interface QuiltPluginContext {
 	 * @param guiNode TODO */
 	void addFileToScan(Path file, PluginGuiTreeNode guiNode);
 
+	/** Adds an additional folder to scan for mods, which will be treated in the same way as the regular mods folder.
+	 *
+	 * @return true if the given folder is a new folder, or false if it has already been added and scanned before. */
+	boolean addFolderToScan(Path folder);
+
 	/** "Locks" a zip file that has been opened by {@link QuiltPluginManager#loadZip(Path)} so that it won't be unloaded
 	 * if no loaded mod is using it.
 	 * 

@@ -17,10 +17,7 @@
 package org.quiltmc.loader.impl.plugin;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
@@ -40,7 +37,6 @@ abstract class BasePluginContext implements QuiltPluginContext {
 
 	final QuiltPluginManagerImpl manager;
 	final String pluginId;
-	final Set<Path> modFolderSet = new ModFolderSet();
 	final RuleContext ruleContext = new ModRuleContext();
 
 	PluginGuiTreeNode extraModsRoot;
@@ -71,6 +67,11 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	public void addFileToScan(Path file, PluginGuiTreeNode guiNode) {
 		// TODO: Log / store / do something to store the plugin
 		manager.scanModFile(file, false, guiNode);
+	}
+
+	@Override
+	public boolean addFolderToScan(Path folder) {
+		return manager.addModFolder(folder, this);
 	}
 
 	@Override
@@ -130,78 +131,6 @@ abstract class BasePluginContext implements QuiltPluginContext {
 		}
 
 		blamedRule = rule;
-	}
-
-	class ModFolderSet implements Set<Path> {
-
-		@Override
-		public boolean isEmpty() {
-			return manager.modFolders.isEmpty();
-		}
-
-		@Override
-		public int size() {
-			return manager.modFolders.size();
-		}
-
-		@Override
-		public boolean contains(Object o) {
-			return manager.modFolders.containsKey(o);
-		}
-
-		@Override
-		public boolean containsAll(Collection<?> c) {
-			return manager.modFolders.keySet().containsAll(c);
-		}
-
-		@Override
-		public Iterator<Path> iterator() {
-			return Arrays.asList(toArray(new Path[0])).iterator();
-		}
-
-		@Override
-		public Object[] toArray() {
-			return manager.modFolders.keySet().toArray();
-		}
-
-		@Override
-		public <T> T[] toArray(T[] a) {
-			return manager.modFolders.keySet().toArray(a);
-		}
-
-		@Override
-		public boolean add(Path e) {
-			return manager.addModFolder(e, BasePluginContext.this);
-		}
-
-		@Override
-		public boolean addAll(Collection<? extends Path> c) {
-			boolean changed = false;
-			for (Path p : c) {
-				changed |= add(p);
-			}
-			return changed;
-		}
-
-		@Override
-		public boolean remove(Object o) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public boolean retainAll(Collection<?> c) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public boolean removeAll(Collection<?> c) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public void clear() {
-			throw new UnsupportedOperationException();
-		}
 	}
 
 	class ModRuleContext implements RuleContext {

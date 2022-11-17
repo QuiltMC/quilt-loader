@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.plugin;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
@@ -78,6 +79,8 @@ import org.quiltmc.loader.api.plugin.solver.ModSolveResult.SpecificLoadOptionRes
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderConfig;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
@@ -99,6 +102,7 @@ import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
@@ -192,7 +196,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		BuiltinPluginContext ctx = new BuiltinPluginContext(this, id, plugin);
 		plugin.load(ctx, Collections.emptyMap());
 		plugins.put(plugin, ctx);
-		plugin.addModFolders(ctx.modFolderSet);
 		return ctx;
 	}
 
@@ -247,8 +250,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			for (Path root : fileSystem.getRootDirectories()) {
-				String name = allocateFileSystemName(zip);
-				Path qRoot = new QuiltMemoryFileSystem.ReadOnly(name, true, root).getRoot();
+				Path qRoot = copyToReadOnlyFileSystem(zip.getFileName().toString(), root);
 				pathParents.put(qRoot, zip);
 				return qRoot;
 			}
@@ -266,17 +268,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	private synchronized String allocateFileSystemName(Path from) {
-		String rawName = from.getFileName().toString();
-		Integer current = allocatedFileSystemIndices.get(rawName);
-		if (current == null) {
-			current = 1;
-		} else {
-			current++;
-		}
-		allocatedFileSystemIndices.put(rawName, current);
-		return rawName + ".i" + current;
+	@Override
+	public Path createMemoryFileSystem(String name) {
+		return new QuiltMemoryFileSystem.ReadWrite(name, true).getRoot();
+	}
 
+	@Override
+	public Path copyToReadOnlyFileSystem(String name, Path folderRoot) throws IOException {
+		return new QuiltMemoryFileSystem.ReadOnly(name, true, folderRoot).getRoot();
 	}
 
 	// #################
@@ -460,6 +459,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	@Override
 	public PluginGuiTreeNode getGuiNode(ModLoadOption mod) {
 		return modGuiNodes.get(mod);
+	}
+
+	@Override
+	public PluginGuiTreeNode getRootGuiNode() {
+		return guiFileRoot;
 	}
 
 	@Override
@@ -1020,6 +1024,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			scanClasspath();
 		}
 
+		scanAdditionalMods(System.getProperty(SystemProperties.ADD_MODS), "system property");
+		scanAdditionalMods(QuiltLoaderImpl.InitHelper.get().getAdditionalModsArgument(), "argument");
+
 		for (int cycle = 0; cycle < 1000; cycle++) {
 			this.cycleNumber = cycle + 1;
 			ModSolveResultImpl result = runSingleCycle();
@@ -1038,7 +1045,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private void scanClasspath() {
 		PluginGuiTreeNode classpathRoot = guiFileRoot.addChild(QuiltLoaderText.translate("gui.text.classpath"));
 
-		ClasspathModCandidateFinder.findCandidatesStatic((paths, ignored) -> {
+		ClasspathModCandidateFinder.findCandidatesStatic((paths) -> {
 			final Path path;
 			if (paths.size() > 1) {
 				path = new QuiltJoinedFileSystem("classpath", paths).getRoot();
@@ -1057,6 +1064,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 			}
 		});
+	}
+
+	private void scanAdditionalMods(String value, String source) {
+		if (value == null) {
+			return;
+		}
+
+		ArgumentModCandidateFinder.addMods(theQuiltPluginContext, value, source);
 	}
 
 	private ModSolveResultImpl runSingleCycle() throws ModResolutionException, TimeoutException {
@@ -1437,8 +1452,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				pluginsByPackage.put(pkg, pluginCtx.classLoader);
 			}
 
-			pluginCtx.plugin.addModFolders(pluginCtx.modFolderSet);
-
 		} catch (ReflectiveOperationException e) {
 			throw new ModSolvingError(
 				"Failed to load the plugin '" + metadata.id() + "' from " + describePath(from.from()), e
@@ -1484,6 +1497,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		PluginGuiTreeNode folderRoot = guiFileRoot.addChild(QuiltLoaderText.of(describePath(path)));
 		folderRoot.mainIcon(guiFileRoot.manager().iconFolder());
 		folderRoot.addChild(QuiltLoaderText.translate("gui.text.loaded_by_plugin", pluginSrc)).debug();
+
+		for (QuiltLoaderPlugin plugin : plugins.keySet()) {
+			plugin.onModFolderAdded(path);
+		}
 
 		if (config.singleThreadedLoading) {
 			scanModFolder0(path, folderRoot);

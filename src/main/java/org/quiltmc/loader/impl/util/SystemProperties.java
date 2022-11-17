@@ -35,6 +35,7 @@ public final class SystemProperties {
 	public static final String LOG_LEVEL = "loader.log.level";
 	public static final String SKIP_MC_PROVIDER = "loader.skipMcProvider";
 	// additional mods to load (path separator separated paths, @ prefix for meta-file with each line referencing an actual file)
+	// names that end with "\*" (windows) or "/*" (any) will make loader scan the folder, otherwise it will be loaded as a mod.
 	public static final String ADD_MODS = "loader.addMods";
 	// class path groups to map multiple class path entries to a mod (paths separated by path separator, groups by double path separator)
 	public static final String PATH_GROUPS = "loader.classPathGroups";

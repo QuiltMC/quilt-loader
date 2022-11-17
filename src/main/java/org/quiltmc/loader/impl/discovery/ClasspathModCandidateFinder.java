@@ -17,14 +17,6 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.util.SystemProperties;
-import org.quiltmc.loader.impl.util.UrlConversionException;
-import org.quiltmc.loader.impl.util.UrlUtil;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -40,14 +32,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.UrlConversionException;
+import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
-public class ClasspathModCandidateFinder implements ModCandidateFinder {
-	@Override
-	public void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out) {
-		findCandidatesStatic(out);
+public class ClasspathModCandidateFinder {
+
+	@FunctionalInterface
+	public interface ModAdder {
+		void addMod(List<Path> paths);
 	}
 
-	public static void findCandidatesStatic(ModCandidateConsumer out) {
+	public static void findCandidatesStatic(ModAdder out) {
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
 
@@ -63,9 +62,9 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.accept(path, false);
+							out.addMod(Collections.singletonList(path));
 						} else {
-							out.accept(paths, false);
+							out.addMod(paths);
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json from %s", url, e);
@@ -79,9 +78,9 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.accept(path, false);
+							out.addMod(Collections.singletonList(path));
 						} else {
-							out.accept(paths, false);
+							out.addMod(paths);
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for fabric.mod.json from %s", url, e);
@@ -92,7 +91,7 @@ public class ClasspathModCandidateFinder implements ModCandidateFinder {
 			}
 		} else { // production, add loader as a mod
 			try {
-				out.accept(getLoaderPath(), false);
+				out.addMod(Collections.singletonList(getLoaderPath()));
 			} catch (Throwable t) {
 				Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			}

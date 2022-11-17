@@ -57,6 +57,16 @@ public interface QuiltPluginManager {
 	 */
 	QuiltPluginTask<Path> loadZip(Path zip);
 
+	/** Creates a new in-memory read-write file system. This can be used for mods that aren't loaded from zips.
+	 *
+	 * @return The root {@link Path} of the newly allocated {@link FileSystem} */
+	Path createMemoryFileSystem(String name);
+
+	/** Creates a new in-memory file system, then copies the contents of the given folder into it.
+	 *
+	 * @return The root {@link Path} of the newly allocated {@link FileSystem} */
+	Path copyToReadOnlyFileSystem(String name, Path folderRoot) throws IOException;
+
 	// #################
 	// Identifying Paths
 	// #################
@@ -162,6 +172,8 @@ public interface QuiltPluginManager {
 	// #######
 
 	PluginGuiTreeNode getGuiNode(ModLoadOption mod);
+
+	PluginGuiTreeNode getRootGuiNode();
 
 	PluginGuiManager getGuiManager();
 }

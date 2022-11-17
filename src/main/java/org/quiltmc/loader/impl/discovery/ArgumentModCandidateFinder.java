@@ -20,41 +20,19 @@ package org.quiltmc.loader.impl.discovery;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.List;
 
-
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
-import org.quiltmc.loader.impl.discovery.ModCandidateFinder;
-import org.quiltmc.loader.impl.util.Arguments;
-import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
-public class ArgumentModCandidateFinder implements ModCandidateFinder {
-	private final boolean requiresRemap;
+public class ArgumentModCandidateFinder {
 
-	public ArgumentModCandidateFinder(boolean requiresRemap) {
-		this.requiresRemap = requiresRemap;
-	}
-
-	@Override
-	public void findCandidates(QuiltLoaderImpl loader, ModCandidateConsumer out) {
-		String list = System.getProperty(SystemProperties.ADD_MODS);
-		if (list != null) addMods(list, "system property", out);
-
-		list = QuiltLoaderImpl.INSTANCE.getGameProvider().getArguments().remove(Arguments.ADD_MODS);
-		if (list != null) addMods(list, "argument", out);
-	}
-
-	private void addMods(String list, String source, ModCandidateConsumer out) {
+	public static void addMods(QuiltPluginContext ctx, String list, String source) {
 		for (String pathStr : list.split(File.pathSeparator)) {
 			if (pathStr.isEmpty()) continue;
 
@@ -62,7 +40,9 @@ public class ArgumentModCandidateFinder implements ModCandidateFinder {
 				Path path = Paths.get(pathStr.substring(1));
 
 				if (!Files.isRegularFile(path)) {
-					Log.warn(LogCategory.DISCOVERY, "Skipping missing/invalid %s provided mod list file %s", source, path);
+					Log.warn(
+						LogCategory.DISCOVERY, "Skipping missing/invalid %s provided mod list file %s", source, path
+					);
 					continue;
 				}
 
@@ -74,78 +54,70 @@ public class ArgumentModCandidateFinder implements ModCandidateFinder {
 						line = line.trim();
 						if (line.isEmpty()) continue;
 
-						addMod(line, fileSource, out);
+						addMod(ctx, line, source, fileSource);
 					}
 				} catch (IOException e) {
-					throw new RuntimeException(String.format("Error reading %s provided mod list file %s", source, path), e);
+					throw new RuntimeException(
+						String.format("Error reading %s provided mod list file %s", source, path), e
+					);
 				}
 			} else {
-				addMod(pathStr, source, out);
+				addMod(ctx, pathStr, source, null);
 			}
 		}
 	}
 
-	private void addMod(String pathStr, String source, ModCandidateConsumer out) {
+	private static void addMod(QuiltPluginContext ctx, String pathStr, String original, String source) {
+
+		final boolean folder = pathStr.endsWith(File.separator + "*") || pathStr.endsWith("/*");
+
+		if (folder) {
+			pathStr = pathStr.substring(0, pathStr.length() - 2);
+		}
+
 		Path path = Paths.get(pathStr).toAbsolutePath().normalize();
 
 		if (!Files.exists(path)) { // missing
-			Log.warn(LogCategory.DISCOVERY, "Skipping missing %s provided mod path %s", source, path);
-		} else if (Files.isDirectory(path)) { // directory for extracted mod (in-dev usually) or jars (like mods, but recursive)
-			if (isHidden(path)) {
-				Log.warn(LogCategory.DISCOVERY, "Ignoring hidden %s provided mod path %s", source, path);
+			QuiltPluginError error = ctx.reportError(
+				QuiltLoaderText.translate("error.arg_mods.missing.title", path.getFileName())
+			);
+			if (source == null) {
+				error.appendDescription(QuiltLoaderText.translate("error.arg_mods.missing.desc", original, path));
+			} else {
+				error.appendDescription(
+					QuiltLoaderText.translate("error.arg_mods.missing.by.desc", original, source, path)
+				);
+			}
+			error.appendReportText("The file " + path + " is missing!");
+			error.appendReportText(" (It is specified by " + original + ")");
+			if (source != null) {
+				error.appendReportText(" (Inside the file " + source + ")");
+			}
+			return;
+		}
+
+		if (folder) {
+			if (Files.isDirectory(path)) {
+				ctx.addFolderToScan(path);
 				return;
 			}
-
-			if (Files.exists(path.resolve("quilt.mod.json")) || Files.exists(path.resolve("fabric.mod.json"))) { // extracted mod
-				out.accept(path, requiresRemap);
-			} else { // dir containing jars
-				try {
-					List<String> skipped = new ArrayList<>();
-
-					Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-						@Override
-						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-							if (DirectoryModCandidateFinder.isValidFile(file)) {
-								out.accept(file, requiresRemap);
-							} else {
-								skipped.add(path.relativize(file).toString());
-							}
-
-							return FileVisitResult.CONTINUE;
-						}
-
-						@Override
-						public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-							if (isHidden(dir)) {
-								return FileVisitResult.SKIP_SUBTREE;
-							} else {
-								return FileVisitResult.CONTINUE;
-							}
-						}
-					});
-
-					if (!skipped.isEmpty()) {
-						Log.warn(LogCategory.DISCOVERY, "Incompatible files in %s provided mod directory %s (non-jar or hidden): %s", source, path, String.join(", ", skipped));
-					}
-				} catch (IOException e) {
-					Log.warn(LogCategory.DISCOVERY, "Error processing %s provided mod path %s: %s", source, path, e);
-				}
-			}
-		} else { // single file
-			if (!DirectoryModCandidateFinder.isValidFile(path)) {
-				Log.warn(LogCategory.DISCOVERY, "Incompatible file in %s provided mod path %s (non-jar or hidden)", source, path);
+			QuiltPluginError error = ctx.reportError(
+				QuiltLoaderText.translate("error.arg_mods.not_folder.title", path.getFileName())
+			);
+			if (source == null) {
+				error.appendDescription(QuiltLoaderText.translate("error.arg_mods.not_folder.desc", original, path));
 			} else {
-				out.accept(path, requiresRemap);
+				error.appendDescription(
+					QuiltLoaderText.translate("error.arg_mods.not_folder.by.desc", original, source, path)
+				);
 			}
-		}
-	}
-
-	private static boolean isHidden(Path path) {
-		try {
-			return path.getFileName().toString().startsWith(".") || Files.isHidden(path);
-		} catch (IOException e) {
-			Log.warn(LogCategory.DISCOVERY, "Error determining whether %s is hidden: %s", path, e);
-			return true;
+			error.appendReportText("The file " + path + " is missing!");
+			error.appendReportText(" (It is specified by " + original + ")");
+			if (source != null) {
+				error.appendReportText(" (Inside the file " + source + ")");
+			}
+		} else {
+			ctx.addFileToScan(path, ctx.manager().getRootGuiNode().addChild(QuiltLoaderText.translate("")));
 		}
 	}
 }

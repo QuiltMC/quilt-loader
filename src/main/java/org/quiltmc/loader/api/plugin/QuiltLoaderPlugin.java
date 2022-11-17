@@ -39,8 +39,7 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * <p>
  * Plugins are applied the following steps:
  * <ol>
- * <li>{@link #load(QuiltPluginContext)} is called to set the {@link QuiltPluginContext}.</li>
- * <li>{@link #addModFolders(Set)} is called to add folders that will be scanned by quilt and other plugins for mods.
+ * <li>{@link #load(QuiltPluginContext, Map)} is called to set the {@link QuiltPluginContext}.</li>
  * </li>
  * <li>Quilt Loader will scan all files in those folders, and follow these steps:
  * <ol>
@@ -75,18 +74,12 @@ public interface QuiltLoaderPlugin {
 	 * to keep some data from previous runs into the next run, you should put them into the given map. */
 	void unload(Map<String, LoaderValue> data);
 
-	/** Adds mod folders which will be scanned by quilt and plugins for mods. Only {@link Path}s which are provided by
-	 * {@link FileSystems#getDefault()}, and {@link Files#isDirectory(Path, java.nio.file.LinkOption...) is a directory}
-	 * are permitted. (In other words this only accepts folders which are natively accessible, and not folders inside of
-	 * jar files).
-	 * 
-	 * @param folders The {@link Set} of {@link Path}s that have been added before. This starts with the default mod
-	 *            folder. Only the {@link Set#add(Object)} and {@link Set#addAll(java.util.Collection)} modification
-	 *            methods are supported. */
-	default void addModFolders(Set<Path> folders) {}
+	/** Called once per mod folder that is added - either directly by quilt, or by any plugin calling
+	 * {@link QuiltPluginContext#addFolderToScan(Path)} */
+	default void onModFolderAdded(Path folder) {}
 
 	/** Called once per archival file found in any of the folders added by {@link #addModFolders(Set)} or
-	 * {@link #onModFolderAdded(Path, Set)}. This is only called for zips that aren't identified as quilt mods, and
+	 * {@link #onModFolderAdded(Path)}. This is only called for zips that aren't identified as quilt mods, and
 	 * aren't system files.
 	 * <p>
 	 * You can retrieve the file name of the original zip by using {@link QuiltPluginManager#getParent(Path)}.

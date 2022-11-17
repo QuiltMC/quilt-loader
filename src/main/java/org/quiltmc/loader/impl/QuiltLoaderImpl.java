@@ -95,6 +95,7 @@ import org.quiltmc.loader.impl.report.QuiltReportSection;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
+import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.ModLanguageAdapter;
@@ -109,7 +110,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.12";
+	public static final String VERSION = "0.18.1-beta.13";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -121,8 +122,6 @@ public final class QuiltLoaderImpl {
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
-	@Deprecated
-	private List<ModCandidate> modCandidates;
 	protected List<ModContainerExt> mods = new ArrayList<>();
 
 	private final Map<String, LanguageAdapter> adapterMap = new HashMap<>();
@@ -137,6 +136,8 @@ public final class QuiltLoaderImpl {
 
 	private MappingResolver mappingResolver;
 	private GameProvider provider;
+	/** The value of {@link Arguments#ADD_MODS}. This must be stored since we remove it before launching the game. */
+	private String argumentModsList;
 	private Path gameDir;
 	private Path configDir;
 	private Path modsDir;
@@ -170,6 +171,7 @@ public final class QuiltLoaderImpl {
 		this.provider = provider;
 
 		setGameDir(provider.getLaunchDirectory());
+		argumentModsList = provider.getArguments().remove(Arguments.ADD_MODS);
 	}
 
 	private void setGameDir(Path gameDir) {
@@ -182,6 +184,10 @@ public final class QuiltLoaderImpl {
 	private void initializeModsDir(Path gameDir) {
 		String modsDir = System.getProperty(SystemProperties.MODS_DIRECTORY);
 		this.modsDir = gameDir.resolve((modsDir == null || modsDir.isEmpty()) ? DEFAULT_MODS_DIR : modsDir);
+	}
+
+	public String getAdditionalModsArgument() {
+		return argumentModsList;
 	}
 
 	public Object getGameInstance() {
@@ -753,16 +759,6 @@ public final class QuiltLoaderImpl {
 	// TODO: add to QuiltLoader api
 	public ObjectShare getObjectShare() {
 		return objectShare;
-	}
-
-	public ModCandidate getModCandidate(String id) {
-		if (modCandidates == null) return null;
-
-		for (ModCandidate mod : modCandidates) {
-			if (mod.getId().equals(id)) return mod;
-		}
-
-		return null;
 	}
 
 	public Collection<org.quiltmc.loader.api.ModContainer> getAllMods() {
