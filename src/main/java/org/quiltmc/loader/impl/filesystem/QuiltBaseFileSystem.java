@@ -31,13 +31,8 @@ import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
 
-public abstract class QuiltBaseFileSystem
-<
-	FS extends QuiltBaseFileSystem<FS, P>,
-	P extends QuiltBasePath<FS, P>
->
-extends FileSystem
-{
+public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
+	extends FileSystem {
 	static {
 		DelegatingUrlStreamHandlerFactory.load();
 	}
@@ -60,10 +55,14 @@ extends FileSystem
 		// both the host and authority
 		URI uri = root.toUri();
 		if (!this.name.equals(uri.getHost())) {
-			throw new RuntimeException(this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "')");
+			throw new RuntimeException(
+				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "')"
+			);
 		}
 		if (uri.getAuthority() == null || !uri.getAuthority().contains(this.name)) {
-			throw new RuntimeException(this.name + " wasn't found in the authority of " + uri + " (authority = " + uri.getAuthority() +"')");
+			throw new RuntimeException(
+				this.name + " wasn't found in the authority of " + uri + " (authority = " + uri.getAuthority() + "')"
+			);
 		}
 	}
 
@@ -87,6 +86,7 @@ extends FileSystem
 	// Shamelessly stolen from UnixUriUtils
 	private static final long LOW_MASK = 0x3ff600000000000L;
 	private static final long HIGH_MASK = 0x47fffffe07fffffeL;
+
 	private static String sanitizeName(String str) {
 		byte[] path = str.getBytes();
 		StringBuilder sb = new StringBuilder();
@@ -101,6 +101,11 @@ extends FileSystem
 			}
 
 			if (matchesMagic(c)) {
+				if (c == '.') {
+					while (sb.length() > 0 && sb.charAt(sb.length() - 1) == '-') {
+						sb.deleteCharAt(sb.length() - 1);
+					}
+				}
 				sb.append(c);
 				first = false;
 			} else if (c == '_' || c == '~') {
@@ -108,6 +113,14 @@ extends FileSystem
 			}
 			// Since we don't need to decode anything,
 			// we just delete characters we don't like!
+		}
+
+		while (sb.length() > 0 && sb.charAt(sb.length() - 1) == '-') {
+			sb.deleteCharAt(sb.length() - 1);
+		}
+
+		if (sb.length() == 0) {
+			return "empty.file";
 		}
 
 		return sb.toString();
