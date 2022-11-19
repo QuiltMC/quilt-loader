@@ -32,6 +32,8 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 
+import net.fabricmc.api.EnvType;
+
 public interface QuiltPluginManager {
 
 	// #######
@@ -166,6 +168,14 @@ public interface QuiltPluginManager {
 	 *         {@link Map#values()} from {@link #getVersionedMods(String)} and the collection from
 	 *         {@link #getExtraMods(String)}. */
 	Collection<ModLoadOption> getAllMods(String modId);
+
+	// #########
+	// # State #
+	// #########
+
+	// TODO: Replace this with a game-agnostic quilt version!
+	@Deprecated
+	EnvType getEnvironment();
 
 	// #######
 	// # Gui #

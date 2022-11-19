@@ -25,11 +25,11 @@ abstract class MainThreadTask {
 
 	abstract void execute(QuiltPluginManagerImpl manager);
 
-	static final class ScanFolderTask extends MainThreadTask {
+	static final class ScanModFolderTask extends MainThreadTask {
 		final Path folder;
 		final String pluginSrc;
 
-		public ScanFolderTask(Path folder, String pluginSrc) {
+		public ScanModFolderTask(Path folder, String pluginSrc) {
 			this.folder = folder;
 			this.pluginSrc = pluginSrc;
 		}
@@ -40,39 +40,56 @@ abstract class MainThreadTask {
 		}
 	}
 
-	static final class ScanZipTask extends MainThreadTask {
-		final Path zipFile;
-		final Path zipRoot;
-		final boolean fromClasspath;
+	static final class ScanFolderAsModTask extends MainThreadTask {
+		final Path folder;
+		final ModLocationImpl location;
 		final PluginGuiTreeNode guiNode;
 
-		public ScanZipTask(Path zipFile, Path zipRoot, boolean fromClasspath, PluginGuiTreeNode guiNode) {
-			this.zipFile = zipFile;
-			this.zipRoot = zipRoot;
-			this.fromClasspath = fromClasspath;
+		public ScanFolderAsModTask(Path folder, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+			this.folder = folder;
+			this.location = location;
 			this.guiNode = guiNode;
 		}
 
 		@Override
 		void execute(QuiltPluginManagerImpl manager) {
-			manager.scanZip(zipFile, zipRoot, fromClasspath, guiNode);
+			manager.scanFolderAsMod(folder, location, guiNode);
+		}
+	}
+
+	static final class ScanZipTask extends MainThreadTask {
+		final Path zipFile;
+		final Path zipRoot;
+		final ModLocationImpl location;
+		final PluginGuiTreeNode guiNode;
+
+		public ScanZipTask(Path zipFile, Path zipRoot, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+			this.zipFile = zipFile;
+			this.zipRoot = zipRoot;
+			this.location = location;
+			this.guiNode = guiNode;
+		}
+
+		@Override
+		void execute(QuiltPluginManagerImpl manager) {
+			manager.scanZip(zipFile, zipRoot, location, guiNode);
 		}
 	}
 
 	static final class ScanUnknownFileTask extends MainThreadTask {
 		final Path file;
-		final boolean fromClasspath;
+		final ModLocationImpl location;
 		final PluginGuiTreeNode guiNode;
 
-		public ScanUnknownFileTask(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) {
+		public ScanUnknownFileTask(Path file, ModLocationImpl location, PluginGuiTreeNode guiNode) {
 			this.file = file;
-			this.fromClasspath = fromClasspath;
+			this.location = location;
 			this.guiNode = guiNode;
 		}
 
 		@Override
 		void execute(QuiltPluginManagerImpl manager) {
-			manager.scanUnknownFile(file, fromClasspath, guiNode);
+			manager.scanUnknownFile(file, location, guiNode);
 		}
 	}
 }

@@ -17,6 +17,8 @@
 package net.fabricmc.test;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -26,14 +28,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
-import org.quiltmc.loader.impl.QuiltLoaderConfig;
 import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
-import org.quiltmc.loader.impl.discovery.DirectoryModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
-import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 final class ModResolvingTests {
 
@@ -267,6 +267,11 @@ final class ModResolvingTests {
 	}
 
 	@Test
+	public void dependsError() {
+		resolveErrorSet("depends");
+	}
+
+	@Test
 	public void dependsArrayError() {
 		resolveErrorSet("depends_array");
 	}
@@ -287,39 +292,31 @@ final class ModResolvingTests {
 			}
 
 			Assertions.fail(sb.toString());
-		} catch (ModSolvingException ignored) {
+		} catch (ModResolutionException ignored) {
 			// Correct
-		} catch (ModResolutionException setupError) {
-			Assertions.fail("Failed to read the mod set!", setupError);
 		}
 	}
 
 	private static ModSolveResult resolveModSet(String type, String subpath) throws ModResolutionException {
 
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
-		final boolean USE_PLUGINS = true;
 		final ModSolveResultImpl result;
 
-		if (USE_PLUGINS) {
-			QuiltLoaderConfig config = new QuiltLoaderConfig();
+		QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(modRoot);
 
-			QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(modRoot);
-			try {
-				result = pluginManager.run(false);
-			} catch (TimeoutException e) {
-				throw new ModResolutionException(e);
-			}
-		} else {
-			ModResolver resolver = new ModResolver(true, modRoot);
-			resolver.addCandidateFinder(new DirectoryModCandidateFinder(modRoot, false));
-			result = resolver.resolve(null);
+		try {
+			result = pluginManager.run(false);
+
+			return new ModSolveResultImpl(
+				new HashMap<>(result.directModMap), //
+				new HashMap<>(result.providedModMap), //
+				new HashMap<>(result.extraResults)//
+			);
+		} catch (QuiltReportedError error) {
+			StringWriter writer = new StringWriter();
+			error.report.write(new PrintWriter(writer));
+			throw new ModResolutionException(writer.toString());
 		}
-
-		return new ModSolveResultImpl(
-			new HashMap<>(result.directModMap), //
-			new HashMap<>(result.providedModMap), //
-			new HashMap<>(result.extraResults)//
-		);
 	}
 
 	/** Asserts that the mod with the given ID is both present and is loaded with the specified version. This also

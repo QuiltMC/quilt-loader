@@ -25,6 +25,7 @@ import java.util.Set;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
@@ -36,6 +37,7 @@ import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 public class QuiltRuleDepOnly extends QuiltRuleDep {
 
+	private final QuiltPluginManager manager;
 	public final ModDependency.Only publicDep;
 	private final List<ModLoadOption> validOptions;
 	private final List<ModLoadOption> invalidOptions;
@@ -43,8 +45,9 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 
 	public final QuiltRuleDep unless;
 
-	public QuiltRuleDepOnly(RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleDepOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
+		this.manager = manager;
 		this.publicDep = publicDep;
 		validOptions = new ArrayList<>();
 		invalidOptions = new ArrayList<>();
@@ -58,7 +61,7 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 		if (except != null && !except.shouldIgnore()) {
 			QuiltModDepOption option = new QuiltModDepOption(except);
 			ctx.addOption(option);
-			this.unless = StandardQuiltPlugin.createModDepLink(ctx, option, except);
+			this.unless = StandardQuiltPlugin.createModDepLink(manager, ctx, option, except);
 			ctx.addRule(unless);
 		} else {
 			this.unless = null;
@@ -122,10 +125,10 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 			}
 		}
 
-		boolean allWrongEnvironment = true;
+		boolean allWrongEnvironment = !options.isEmpty();
 
 		for (ModLoadOption option : options) {
-			if (option.metadata().environment().matches(MinecraftQuiltLoader.getEnvironmentType())) {
+			if (option.metadata().environment().matches(manager.getEnvironment())) {
 				allWrongEnvironment = false;
 				break;
 			}

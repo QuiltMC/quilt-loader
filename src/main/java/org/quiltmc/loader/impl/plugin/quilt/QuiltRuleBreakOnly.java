@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
@@ -38,7 +38,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 
 	final QuiltRuleDep unless;
 
-	public QuiltRuleBreakOnly(RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
+	public QuiltRuleBreakOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
 		this.publicDep = publicDep;
 		conflictingOptions = new ArrayList<>();
@@ -53,7 +53,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		if (except != null && !except.shouldIgnore()) {
 			QuiltModDepOption option = new QuiltModDepOption(except);
 			ctx.addOption(option);
-			this.unless = StandardQuiltPlugin.createModDepLink(ctx, option, except);
+			this.unless = StandardQuiltPlugin.createModDepLink(manager, ctx, option, except);
 			ctx.addRule(unless);
 		} else {
 			this.unless = null;

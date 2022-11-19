@@ -14,20 +14,26 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl;
+package org.quiltmc.loader.impl.plugin;
 
-import java.nio.file.Path;
+import org.quiltmc.loader.api.plugin.ModLocation;
 
-import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+public final class ModLocationImpl implements ModLocation {
 
-public class QuiltPluginManagerForTests extends QuiltPluginManagerImpl {
+	private final boolean classpath, direct;
 
-	public QuiltPluginManagerForTests(Path modsDir) {
-		super(modsDir, null, true, new QuiltLoaderConfig());
+	ModLocationImpl(boolean classpath, boolean direct) {
+		this.classpath = classpath;
+		this.direct = direct;
 	}
 
 	@Override
-	protected boolean isTest() {
-		return true;
+	public boolean onClasspath() {
+		return classpath;
+	}
+
+	@Override
+	public boolean isDirect() {
+		return direct;
 	}
 }

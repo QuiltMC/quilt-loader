@@ -32,10 +32,11 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
-import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
+import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -117,9 +118,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Path inside = changed ? join(openedPaths, name) : from;
 
 		// We don't go via context().addModOption since we don't really have a good gui node to base it off
-		context().ruleContext().addOption(system
-				? new SystemModOption(context(), mod.metadata, from, inside)
-				: new BuiltinModOption(context(), mod.metadata, from, inside)
+		context().ruleContext().addOption(
+			system ? new SystemModOption(context(), mod.metadata, from, inside) : new BuiltinModOption(
+				context(), mod.metadata, from, inside
+			)
 		);
 	}
 
@@ -132,7 +134,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	@Override
-	public ModLoadOption[] scanZip(Path root, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
 
 		Path parent = context().manager().getParent(root);
 
@@ -140,15 +142,20 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, guiNode.manager().iconJarFile(), fromClasspath, true, guiNode);
+		return scan0(root, guiNode.manager().iconJarFile(), location, true, guiNode);
 	}
 
 	@Override
-	public ModLoadOption[] scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, guiNode.manager().iconFolder(), true, false, guiNode);
+	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
+		if (!folder.getFileName().toString().endsWith(".jar")) {
+			return null;
+		}
+		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
+	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, ModLocation location, boolean isZip,
+		PluginGuiTreeNode guiNode) throws IOException {
+
 		Path qmj = root.resolve("quilt.mod.json");
 		if (!Files.isRegularFile(qmj)) {
 			return null;
@@ -179,23 +186,28 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				context().addFileToScan(inner, jarNode);
 			}
 
-			boolean mandatory = fromClasspath || from.getFileSystem() == FileSystems.getDefault();
 			// a mod needs to be remapped if we are in a development environment, and the mod
 			// did not come from the classpath
-			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
-			return new ModLoadOption[] { new QuiltModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
+			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
+			return new ModLoadOption[] { new QuiltModOption(
+				context(), meta, from, fileIcon, root, location.isDirect(), requiresRemap
+			) };
 		} catch (ParseException parse) {
-			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage());
+			QuiltLoaderText title = QuiltLoaderText.translate(
+				"gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage()
+			);
 			QuiltPluginError error = context().reportError(title);
 			String describedPath = context().manager().describePath(qmj);
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
-			error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), context().manager().getRealContainingFile(root))
-				.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
+			error.addFileViewButton(
+				QuiltLoaderText.translate("button.view_file"), context().manager().getRealContainingFile(root)
+			).icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
 
-			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate
+			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))// TODO:
+																										// translate
 				.setError(parse, error);
 			return null;
 		}
@@ -228,7 +240,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			// TODO: this minecraft-specific extension should be moved to its own plugin
 			// If the mod's environment doesn't match the current one,
 			// then add a rule so that the mod is never loaded.
-			if (!metadata.environment().matches(MinecraftQuiltLoader.getEnvironmentType())) {
+			if (!metadata.environment().matches(context().manager().getEnvironment())) {
 				ctx.addRule(new DisabledModIdDefinition(mod));
 				return;
 			}
@@ -252,41 +264,43 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 				for (ModDependency dep : metadata.depends()) {
 					if (!dep.shouldIgnore()) {
-						ctx.addRule(createModDepLink(ctx, mod, dep));
+						ctx.addRule(createModDepLink(context().manager(), ctx, mod, dep));
 					}
 				}
 
 				for (ModDependency dep : metadata.breaks()) {
 					if (!dep.shouldIgnore()) {
-						ctx.addRule(createModBreaks(ctx, mod, dep));
+						ctx.addRule(createModBreaks(context().manager(), ctx, mod, dep));
 					}
 				}
 			}
 		}
 	}
 
-	public static QuiltRuleDep createModDepLink(RuleContext ctx, LoadOption option, ModDependency dep) {
+	public static QuiltRuleDep createModDepLink(QuiltPluginManager manager, RuleContext ctx, LoadOption option,
+		ModDependency dep) {
 
 		if (dep instanceof ModDependency.Any) {
 			ModDependency.Any any = (ModDependency.Any) dep;
 
-			return new QuiltRuleDepAny(ctx, option, any);
+			return new QuiltRuleDepAny(manager, ctx, option, any);
 		} else {
 			ModDependency.Only only = (ModDependency.Only) dep;
 
-			return new QuiltRuleDepOnly(ctx, option, only);
+			return new QuiltRuleDepOnly(manager, ctx, option, only);
 		}
 	}
 
-	public static QuiltRuleBreak createModBreaks(RuleContext ctx, LoadOption option, ModDependency dep) {
+	public static QuiltRuleBreak createModBreaks(QuiltPluginManager manager, RuleContext ctx, LoadOption option,
+		ModDependency dep) {
 		if (dep instanceof ModDependency.All) {
 			ModDependency.All any = (ModDependency.All) dep;
 
-			return new QuiltRuleBreakAll(ctx, option, any);
+			return new QuiltRuleBreakAll(manager, ctx, option, any);
 		} else {
 			ModDependency.Only only = (ModDependency.Only) dep;
 
-			return new QuiltRuleBreakOnly(ctx, option, only);
+			return new QuiltRuleBreakOnly(manager, ctx, option, only);
 		}
 	}
 }

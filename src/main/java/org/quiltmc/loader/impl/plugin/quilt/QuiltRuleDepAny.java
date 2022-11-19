@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
@@ -31,7 +32,7 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 	final QuiltRuleDepOnly[] options;
 	final ModDependency.Any publicDep;
 
-	public QuiltRuleDepAny(RuleContext ctx, LoadOption option, ModDependency.Any any) {
+	public QuiltRuleDepAny(QuiltPluginManager manager, RuleContext ctx, LoadOption option, ModDependency.Any any) {
 
 		super(option);
 		this.publicDep = any;
@@ -41,7 +42,7 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 			if (!only.shouldIgnore()) {
 				QuiltModDepOption sub = new QuiltModDepOption(only);
 				ctx.addOption(sub);
-				QuiltRuleDepOnly dep = new QuiltRuleDepOnly(ctx, sub, only);
+				QuiltRuleDepOnly dep = new QuiltRuleDepOnly(manager, ctx, sub, only);
 				ctx.addRule(dep);
 				optionList.add(dep);
 			}

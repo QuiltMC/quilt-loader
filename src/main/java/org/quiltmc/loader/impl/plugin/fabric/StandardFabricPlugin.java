@@ -17,11 +17,11 @@
 package org.quiltmc.loader.impl.plugin.fabric;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
@@ -41,7 +41,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
 	@Override
-	public ModLoadOption[] scanZip(Path root, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
 
 		Path parent = context().manager().getParent(root);
 
@@ -49,15 +49,15 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, guiNode.manager().iconJarFile(), fromClasspath, true, guiNode);
+		return scan0(root, guiNode.manager().iconJarFile(), location, true, guiNode);
 	}
 
 	@Override
-	public ModLoadOption[] scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, guiNode.manager().iconFolder(), true, false, guiNode);
+	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
+		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, boolean fromClasspath, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
+	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, ModLocation location, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
 		Path fmj = root.resolve("fabric.mod.json");
 		if (!Files.isRegularFile(fmj)) {
 			return null;
@@ -98,10 +98,10 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 				context().addFileToScan(inner, jarNode);
 			}
 
-			boolean mandatory = fromClasspath || from.getFileSystem() == FileSystems.getDefault();
+			boolean mandatory = location.isDirect();
 			// a mod needs to be remapped if we are in a development environment, and the mod
 			// did not come from the classpath
-			boolean requiresRemap = !fromClasspath && QuiltLoader.isDevelopmentEnvironment();
+			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());

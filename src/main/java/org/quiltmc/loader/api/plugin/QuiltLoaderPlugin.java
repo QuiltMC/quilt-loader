@@ -18,13 +18,10 @@ package org.quiltmc.loader.api.plugin;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
 
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.QuiltLoader;
@@ -39,8 +36,7 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * <p>
  * Plugins are applied the following steps:
  * <ol>
- * <li>{@link #load(QuiltPluginContext, Map)} is called to set the {@link QuiltPluginContext}.</li>
- * </li>
+ * <li>{@link #load(QuiltPluginContext, Map)} is called to set the {@link QuiltPluginContext}.</li></li>
  * <li>Quilt Loader will scan all files in those folders, and follow these steps:
  * <ol>
  * <li>If it ends with ".disabled", or is a system or hidden file, then it is skipped.</li>
@@ -79,8 +75,8 @@ public interface QuiltLoaderPlugin {
 	default void onModFolderAdded(Path folder) {}
 
 	/** Called once per archival file found in any of the folders added by {@link #addModFolders(Set)} or
-	 * {@link #onModFolderAdded(Path)}. This is only called for zips that aren't identified as quilt mods, and
-	 * aren't system files.
+	 * {@link #onModFolderAdded(Path)}. This is only called for zips that aren't identified as quilt mods, and aren't
+	 * system files.
 	 * <p>
 	 * You can retrieve the file name of the original zip by using {@link QuiltPluginManager#getParent(Path)}.
 	 * <p>
@@ -92,7 +88,7 @@ public interface QuiltLoaderPlugin {
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
-	default ModLoadOption[] scanZip(Path root, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
+	default ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
@@ -105,23 +101,20 @@ public interface QuiltLoaderPlugin {
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
-	default ModLoadOption[] scanUnknownFile(Path file, boolean fromClasspath, PluginGuiTreeNode guiNode) throws IOException {
+	default ModLoadOption[] scanUnknownFile(Path file, ModLocation location, PluginGuiTreeNode guiNode)
+		throws IOException {
 		return null;
 	}
 
-	/** Called once per folder group found on the classpath. Both zips and other files found on the classpath are passed
-	 * to {@link #scanZip(Path, boolean, PluginGuiTreeNode)} and {@link #scanUnknownFile(Path, boolean, PluginGuiTreeNode)} as normal.
-	 * <p>
-	 * Folder groups are configured via the system property "loader.classPathGroups". You can check if the given path is
-	 * made up of multiple other paths by using {@link QuiltPluginManager}
+	/** Called once per folder group added as a mod. This is called for both classpath groups, and folders added with
+	 * -Dloader.addMods=folder
 	 * 
-	 * @param folder
-	 * @param guiNode TODO
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
-	 * @throws IOException if something went wrong while reading the contents of the folder and so an error message
-	 *             should be displayed. */
-	default ModLoadOption[] scanClasspathFolder(Path folder, PluginGuiTreeNode guiNode) throws IOException {
+	 * @throws IOException if something went wrong while reading a file in the folder and so an error message should be
+	 *             displayed. */
+	default ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode)
+		throws IOException {
 		return null;
 	}
 
