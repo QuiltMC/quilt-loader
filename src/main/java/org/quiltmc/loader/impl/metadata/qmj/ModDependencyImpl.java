@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
@@ -145,6 +146,24 @@ final class ModDependencyImpl {
 		@Override
 		public String toString() {
 			return location;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this) return true;
+			if (!(obj instanceof OnlyImpl)) {
+				return false;
+			}
+			OnlyImpl other = (OnlyImpl) obj;
+			return optional == other.optional//
+				&& Objects.equals(id, other.id)//
+				&& Objects.equals(range, other.range)//
+				&& Objects.equals(unless, other.unless);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(id, range, optional, unless);
 		}
 	}
 }

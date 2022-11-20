@@ -33,6 +33,8 @@ public interface LoaderValue {
 	 */
 	LType type();
 
+	String location();
+
 	/**
 	 * Coerces this custom value to an {@link LType#OBJECT}.
 	 *
@@ -72,6 +74,14 @@ public interface LoaderValue {
 	 * @throws ClassCastException if this value is not a boolean
 	 */
 	boolean asBoolean();
+
+	/** @return True if everything other than {@link #location()} equals the given {@link LoaderValue}. */
+	@Override
+	boolean equals(Object obj);
+
+	/** @return A hash code that's based on everything except {@link #location()}. */
+	@Override
+	int hashCode();
 
 	/**
 	 * Represents an {@link LType#OBJECT} value.

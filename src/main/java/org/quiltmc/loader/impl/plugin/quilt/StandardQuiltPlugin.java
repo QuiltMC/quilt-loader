@@ -25,16 +25,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
@@ -51,9 +55,13 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
+import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides;
+import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Quilt-loader's plugin. For simplicities sake this is a builtin plugin - and cannot be disabled, or reloaded (since
  * quilt-loader can't reload itself to a different version). */
@@ -61,7 +69,24 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
 
+	private QuiltOverrides overrides;
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
+	
+	@Override
+	public void load(QuiltPluginContext context, Map<String, LoaderValue> previousData) {
+		super.load(context, previousData);
+		loadOverrides();
+	}
+
+	private void loadOverrides() {
+		try {
+			overrides = new QuiltOverrides(context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json"));
+		} catch (ParseException | IOException e) {
+			QuiltPluginError error = context().reportError(QuiltLoaderText.translate("error.quilt_overrides.io_parse.title"));
+			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
+			error.appendThrowable(e);
+		}
+	}
 
 	public void addBuiltinMods(GameProvider game) {
 		int gameIndex = 1;
@@ -147,9 +172,6 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	@Override
 	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
-		if (!folder.getFileName().toString().endsWith(".jar")) {
-			return null;
-		}
 		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
 	}
 
@@ -262,13 +284,51 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 			if (metadata.shouldQuiltDefineDependencies()) {
 
-				for (ModDependency dep : metadata.depends()) {
+				Path path = mod.from();
+				String described = context().manager().describePath(path);
+				if (Boolean.getBoolean(SystemProperties.DEBUG_DUMP_OVERRIDE_PATHS)) {
+					Log.info(LogCategory.DISCOVERY, "Override path: '" + described + "'");
+				}
+
+				Collection<ModDependency> depends = metadata.depends();
+				Collection<ModDependency> breaks = metadata.breaks();
+
+				ModOverrides override = overrides.overrides.get(described);
+
+				if (override != null) {
+					depends = new HashSet<>(depends);
+					breaks = new HashSet<>(breaks);
+
+					for (Map.Entry<ModDependency, ModDependency> entry : override.dependsOverrides.entrySet()) {
+						if (!depends.remove(entry.getKey())) {
+							Log.warn(
+								LogCategory.DISCOVERY, "Failed to find the dependency " + entry.getKey()
+									+ " to override in " + metadata.depends()
+							);
+							continue;
+						}
+						depends.add(entry.getValue());
+					}
+
+					for (Map.Entry<ModDependency, ModDependency> entry : override.breakOverrides.entrySet()) {
+						if (!breaks.remove(entry.getKey())) {
+							Log.warn(
+								LogCategory.DISCOVERY, "Failed to find the breaks " + entry.getKey()
+									+ " to override in " + metadata.breaks()
+							);
+							continue;
+						}
+						breaks.add(entry.getValue());
+					}
+				}
+
+				for (ModDependency dep : depends) {
 					if (!dep.shouldIgnore()) {
 						ctx.addRule(createModDepLink(context().manager(), ctx, mod, dep));
 					}
 				}
 
-				for (ModDependency dep : metadata.breaks()) {
+				for (ModDependency dep : breaks) {
 					if (!dep.shouldIgnore()) {
 						ctx.addRule(createModBreaks(context().manager(), ctx, mod, dep));
 					}

@@ -299,10 +299,12 @@ final class ModResolvingTests {
 
 	private static ModSolveResult resolveModSet(String type, String subpath) throws ModResolutionException {
 
+		Path game = testLocation.resolve("game_dir");
+		Path config = testLocation.resolve("config_dir");
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 		final ModSolveResultImpl result;
 
-		QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(modRoot);
+		QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(game, config, modRoot);
 
 		try {
 			result = pluginManager.run(false);

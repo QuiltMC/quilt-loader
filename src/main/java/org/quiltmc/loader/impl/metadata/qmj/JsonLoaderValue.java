@@ -101,6 +101,7 @@ interface JsonLoaderValue extends LoaderValue {
 	/**
 	 * @return the location of this loader value in the originating json file.
 	 */
+	@Override
 	String location();
 
 	@Override
@@ -166,6 +167,16 @@ interface JsonLoaderValue extends LoaderValue {
 		public String location() {
 			return this.location;
 		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof StringImpl && value.equals(((StringImpl) obj).value);
+		}
+
+		@Override
+		public int hashCode() {
+			return value.hashCode();
+		}
 	}
 
 	final class NumberImpl implements JsonLoaderValue {
@@ -186,6 +197,16 @@ interface JsonLoaderValue extends LoaderValue {
 		public String location() {
 			return this.location;
 		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof NumberImpl && value.equals(((NumberImpl) obj).value);
+		}
+
+		@Override
+		public int hashCode() {
+			return value.hashCode();
+		}
 	}
 
 	final class BooleanImpl implements JsonLoaderValue {
@@ -205,6 +226,16 @@ interface JsonLoaderValue extends LoaderValue {
 		@Override
 		public String location() {
 			return this.location;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof BooleanImpl && value == ((BooleanImpl) obj).value;
+		}
+
+		@Override
+		public int hashCode() {
+			return Boolean.hashCode(value);
 		}
 	}
 
@@ -320,6 +351,16 @@ interface JsonLoaderValue extends LoaderValue {
 		@Override
 		public String location() {
 			return this.location;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return obj instanceof NullImpl;
+		}
+
+		@Override
+		public int hashCode() {
+			return 0;
 		}
 	}
 }

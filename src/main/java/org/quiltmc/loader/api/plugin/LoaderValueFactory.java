@@ -16,6 +16,9 @@
 
 package org.quiltmc.loader.api.plugin;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.quiltmc.loader.api.LoaderValue;
@@ -27,6 +30,10 @@ public interface LoaderValueFactory {
 	public static LoaderValueFactory getFactory() {
 		return JsonLoaderFactoryImpl.INSTANCE;
 	}
+
+	LoaderValue read(Path file) throws IOException;
+
+	LoaderValue read(InputStream from) throws IOException;
 
 	LoaderValue nul();
 

@@ -121,7 +121,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final GameProvider game;
 	final Version gameVersion;
 
-	private final Path modsDir;
+	private final Path gameDir, configDir, modsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
 	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
@@ -170,20 +170,23 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// TEMP
 	final Deque<PluginGuiTreeNode> state = new ArrayDeque<>();
 
-	public QuiltPluginManagerImpl(Path modsDir, GameProvider game, QuiltLoaderConfig options) {
-		this(modsDir, game, false, options);
+	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, GameProvider game, QuiltLoaderConfig options) {
+		this(gameDir, configDir, modsDir, game, false, options);
 	}
 
-	public QuiltPluginManagerImpl(Path modsDir, GameProvider game, boolean simulationOnly, QuiltLoaderConfig config) {
+	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, GameProvider game, boolean simulationOnly, QuiltLoaderConfig config) {
 		this.simulationOnly = simulationOnly;
 		this.game = game;
 		gameVersion = game == null ? null : Version.of(game.getNormalizedGameVersion());
 		this.config = config;
+		this.gameDir = gameDir;
+		this.configDir = configDir;
 		this.modsDir = modsDir;
 
 		this.executor = config.singleThreadedLoading ? null : Executors.newCachedThreadPool();
 		this.mainThreadTasks = config.singleThreadedLoading ? new ArrayDeque<>() : new ConcurrentLinkedQueue<>();
 
+		customPathNames.put(gameDir, "<game>");
 		customPathNames.put(modsDir, "<mods>");
 
 		mainThreadTasks.add(new MainThreadTask.ScanModFolderTask(modsDir, QUILT_ID));
@@ -457,6 +460,16 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// #########
 	// # State #
 	// #########
+
+	@Override
+	public Path getGameDirectory() {
+		return gameDir;
+	}
+
+	@Override
+	public Path getConfigDirectory() {
+		return configDir;
+	}
 
 	@Override
 	@Deprecated
@@ -1916,8 +1929,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		guiNode.addChild(QuiltLoaderText.translate("gui.text.id", id));
 		guiNode.addChild(QuiltLoaderText.translate("gui.text.version", version.raw()));
-
-		System.out.println("added " + describePath(from) + " as " + mod);
 
 		PotentialModSet set = modIds.computeIfAbsent(id, k -> new PotentialModSet());
 		List<ModLoadOption> already = set.byVersionAll.computeIfAbsent(version, v -> new ArrayList<>());

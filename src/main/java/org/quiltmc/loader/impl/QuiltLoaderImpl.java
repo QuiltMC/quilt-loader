@@ -320,7 +320,7 @@ public final class QuiltLoaderImpl {
 
 	private ModSolveResult runPlugins() {
 		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
-		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getModsDir(), provider, config);
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), provider, config);
 
 		Path crashReportFile = null;
 		String fullCrashText = null;

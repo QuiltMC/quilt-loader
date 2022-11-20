@@ -623,7 +623,7 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
+	public static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();

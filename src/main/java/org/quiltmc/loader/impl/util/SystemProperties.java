@@ -52,6 +52,7 @@ public final class SystemProperties {
 	public static final String DEBUG_REPLACE_VERSION = "loader.debug.replaceVersion";
 	// defaults to 60 seconds; can be changed by setting the system property
 	public static final String DEBUG_RESOLUTION_TIME_LIMIT = "loader.debug.resolutionTimeLimit";
+	public static final String DEBUG_DUMP_OVERRIDE_PATHS = "loader.debug.dump_override_paths";
 	private SystemProperties() {
 	}
 }

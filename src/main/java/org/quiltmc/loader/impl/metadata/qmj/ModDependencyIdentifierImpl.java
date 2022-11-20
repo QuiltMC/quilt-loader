@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.Objects;
+
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 
 public final class ModDependencyIdentifierImpl implements ModDependencyIdentifier {
@@ -55,5 +57,19 @@ public final class ModDependencyIdentifierImpl implements ModDependencyIdentifie
 		}
 
 		return this.id;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, mavenGroup);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) return true;
+		if (obj == null) return false;
+		if (getClass() != obj.getClass()) return false;
+		ModDependencyIdentifierImpl other = (ModDependencyIdentifierImpl) obj;
+		return Objects.equals(id, other.id) && Objects.equals(mavenGroup, other.mavenGroup);
 	}
 }

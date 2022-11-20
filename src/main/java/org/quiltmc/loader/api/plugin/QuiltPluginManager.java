@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -176,6 +177,13 @@ public interface QuiltPluginManager {
 	// TODO: Replace this with a game-agnostic quilt version!
 	@Deprecated
 	EnvType getEnvironment();
+
+	/** @return The current folder which will become {@link QuiltLoader#getGameDir()}. Modifying this via [todo] changes
+	 *         this value after the VM has been restarted. */
+	Path getGameDirectory();
+
+	/** @return The current folder which will become {@link QuiltLoader#getConfigDir()}. */
+	Path getConfigDirectory();
 
 	// #######
 	// # Gui #
