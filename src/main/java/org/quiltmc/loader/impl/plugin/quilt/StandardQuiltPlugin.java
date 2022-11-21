@@ -71,7 +71,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	private QuiltOverrides overrides;
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
-	
+
 	@Override
 	public void load(QuiltPluginContext context, Map<String, LoaderValue> previousData) {
 		super.load(context, previousData);
@@ -80,9 +80,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	private void loadOverrides() {
 		try {
-			overrides = new QuiltOverrides(context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json"));
+			Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
+			overrides = new QuiltOverrides(overrideFile);
 		} catch (ParseException | IOException e) {
-			QuiltPluginError error = context().reportError(QuiltLoaderText.translate("error.quilt_overrides.io_parse.title"));
+			QuiltPluginError error = context().reportError(
+				QuiltLoaderText.translate("error.quilt_overrides.io_parse.title")
+			);
 			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
 			error.appendThrowable(e);
 		}
@@ -144,9 +147,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 		// We don't go via context().addModOption since we don't really have a good gui node to base it off
 		context().ruleContext().addOption(
-			system ? new SystemModOption(context(), mod.metadata, from, inside) : new BuiltinModOption(
-				context(), mod.metadata, from, inside
-			)
+			system //
+				? new SystemModOption(context(), mod.metadata, from, inside) //
+				: new BuiltinModOption(context(), mod.metadata, from, inside)
 		);
 	}
 
@@ -225,11 +228,11 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
 			error.addFileViewButton(
-				QuiltLoaderText.translate("button.view_file"), context().manager().getRealContainingFile(root)
+				QuiltLoaderText.translate("button.view_file"), //
+				context().manager().getRealContainingFile(root)
 			).icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
 
-			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))// TODO:
-																										// translate
+			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//
 				.setError(parse, error);
 			return null;
 		}
