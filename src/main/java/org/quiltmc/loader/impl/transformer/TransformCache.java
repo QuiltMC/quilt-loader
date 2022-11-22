@@ -37,6 +37,7 @@ import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 public class TransformCache {
 
@@ -159,8 +160,10 @@ public class TransformCache {
 		}
 	}
 
-	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result) {
+	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
 		RuntimeModRemapper.remap(root, modList);
-		// TODO: Invoke chasm
+//		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
+			ChasmInvoker.applyChasm(root, modList, result);
+//		}
 	}
 }
