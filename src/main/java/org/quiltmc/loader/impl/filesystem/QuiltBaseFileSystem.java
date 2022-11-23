@@ -163,7 +163,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 	}
 
 	@Override
-	public Path getPath(String first, String... more) {
+	public P getPath(String first, String... more) {
 		if (first.isEmpty()) {
 			return createPath(null, "");
 		}

@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 
 public class QuiltFileSystemTester {
 
@@ -81,6 +80,9 @@ public class QuiltFileSystemTester {
 		eq("../hi", relHello.relativize(relHi));
 		eq("../hello", relHi.relativize(relHello));
 
+		Path longBase = fs.getPath("this", "is", "a", "very", "long", "path");
+		eq(fs.getPath("this", "is", "short"), longBase.resolve("../../../../short").normalize());
+
 		eq("greeting", absHello.subpath(0, 1));
 		eq("greeting/hello", absHello.subpath(0, 2));
 		eq("hello", absHello.subpath(1, 2));
@@ -100,5 +102,9 @@ public class QuiltFileSystemTester {
 
 	private static void eq(String expected, Object obj) {
 		Assertions.assertEquals(expected, obj.toString());
+	}
+
+	private static void eq(Object expected, Object obj) {
+		Assertions.assertEquals(expected, obj);
 	}
 }

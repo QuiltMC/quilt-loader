@@ -37,13 +37,8 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class QuiltBasePath
-<
-	FS extends QuiltBaseFileSystem<FS, P>,
-	P extends QuiltBasePath<FS, P>
->
-implements Path
-{
+public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
+	implements Path {
 	static final String NAME_ROOT = "/";
 	static final String NAME_SELF = ".";
 	static final String NAME_PARENT = "..";
@@ -123,7 +118,7 @@ implements Path
 		if (obj.getClass() != getClass()) {
 			return false;
 		}
-		QuiltBasePath<?,?> o = (QuiltBasePath<?, ?>) obj;
+		QuiltBasePath<?, ?> o = (QuiltBasePath<?, ?>) obj;
 		return fs == o.fs && nameCount == o.nameCount && name.equals(o.name) && Objects.equals(parent, o.parent);
 	}
 
@@ -327,10 +322,21 @@ implements Path
 			return getThisPath();
 		}
 		if (NAME_PARENT.equals(name)) {
-			if (parent != null && parent.parent != null) {
-				return parent.parent.normalize();
+			P path = getThisPath();
+			if (parent == null) {
+				return path;
 			}
-			return getThisPath();
+			P p = parent.normalize();
+			if (NAME_PARENT.equals(p.name)) {
+				// ../..
+				// Since the parent is also ".." then it must be .. all the way to the root
+				// so we can't normalise any further
+				return p.resolve(name);
+			} else if (p.parent != null) {
+				return p.parent;
+			} else {
+				return fs.createPath(null, NAME_SELF);
+			}
 		}
 
 		if (parent == null) {
@@ -404,7 +410,7 @@ implements Path
 
 		if (absolute != o.absolute) {
 			throw new IllegalArgumentException(
-					"You can only relativize paths if they are both absolute, OR both relative - not one and the other!"
+				"You can only relativize paths if they are both absolute, OR both relative - not one and the other!"
 			);
 		}
 
