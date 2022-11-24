@@ -137,6 +137,15 @@ public final class QuiltLoader {
 	}
 
 	/**
+	 * Gets the mod container that provides the given class.
+	 * <p>
+	 * This only works for classes loaded by the system classloader and quilt-loader itself.
+	 */
+	public static Optional<ModContainer> getModContainer(Class<?> clazz) {
+		return impl().getModContainer(clazz);
+	}
+
+	/**
 	 * Checks if Fabric Loader is currently running in a "development"
 	 * environment. Can be used for enabling debug mode or additional checks.
 	 *

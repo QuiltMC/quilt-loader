@@ -31,10 +31,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
 import org.quiltmc.loader.api.VersionRange;
@@ -447,7 +450,8 @@ public class MinecraftGameProvider implements GameProvider {
 		if (useGameJarForLogging) {
 			launcher.setAllowedPrefixes(gameJar);
 		} else {
-			launcher.addToClassPath(gameJar);
+			Optional<ModContainer> container = QuiltLoader.getModContainer("minecraft");
+			launcher.addToClassPath(gameJar, container.orElse(null), null);
 		}
 
 		if (realmsJar != null) launcher.addToClassPath(realmsJar);

@@ -21,9 +21,12 @@ import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -41,6 +44,7 @@ import java.util.stream.Collectors;
 import org.objectweb.asm.Opcodes;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
@@ -63,6 +67,7 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
+import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -98,7 +103,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.17";
+	public static final String VERSION = "0.18.1-beta.18";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -672,7 +677,8 @@ public final class QuiltLoaderImpl {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerExt mod : mods) {
 			if (!mod.metadata().id().equals(MOD_ID) && mod.getSourceType() != BasicSourceType.BUILTIN) {
-				QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath());
+				URL origin = null;//mod.getSourcePaths();
+				QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath(), mod, origin);
 			}
 		}
 
@@ -739,9 +745,18 @@ public final class QuiltLoaderImpl {
 	}
 
 	public Optional<org.quiltmc.loader.api.ModContainer> getModContainer(String id) {
-
-
 		return Optional.ofNullable(modMap.get(id));
+	}
+
+	public Optional<org.quiltmc.loader.api.ModContainer> getModContainer(Class<?> clazz) {
+		ProtectionDomain pd = clazz.getProtectionDomain();
+		if (pd != null) {
+			CodeSource codeSource = pd.getCodeSource();
+			if (codeSource instanceof QuiltCodeSource) {
+				return ((QuiltCodeSource) codeSource).getQuiltMod();
+			}
+		}
+		return Optional.empty();
 	}
 
 	// TODO: add to QuiltLoader api

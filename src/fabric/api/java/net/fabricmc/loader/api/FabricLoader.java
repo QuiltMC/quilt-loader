@@ -139,6 +139,11 @@ public interface FabricLoader {
 	Optional<ModContainer> getModContainer(String id);
 
 	/**
+	 * Provided to make it easier to call {@link QuiltLoader#getModContainer(Class)} via reflection for fabric-only mods.
+	 */
+	Optional<ModContainer> quilt_getModContainer(Class<?> clazz);
+
+	/**
 	 * Gets all mod containers.
 	 *
 	 * @return a collection of all loaded mod containers

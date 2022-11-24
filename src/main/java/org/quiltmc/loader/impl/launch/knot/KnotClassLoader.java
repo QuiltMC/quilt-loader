@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
 
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.UrlUtil;
@@ -34,6 +36,7 @@ import java.security.CodeSource;
 import java.security.SecureClassLoader;
 import java.util.Enumeration;
 import java.util.Objects;
+import java.util.Optional;
 
 class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterface {
 	private static class DynamicURLClassLoader extends URLClassLoader {
@@ -231,13 +234,14 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	}
 
 	@Override
-	public void addPath(Path root, URL origin) {
+	public void addPath(Path root, ModContainer mod, URL origin) {
 		URL asUrl;
 		try {
 			asUrl = UrlUtil.asUrl(root);
 		} catch (MalformedURLException e) {
 			throw new Error(e);
 		}
+		delegate.setMod(root, asUrl, mod);
 		fakeLoader.addURL(asUrl);
 		if (root.getFileName().toString().endsWith(".jar")) {
 			// TODO: Perhaps open it in a more efficient manor?
@@ -275,7 +279,20 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	@Override
 	public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
-		return super.defineClass(name, b, off, len, cs);
+		Class<?> clazz = super.defineClass(name, b, off, len, cs);
+		if (Boolean.getBoolean("temp.alexiil.debug_class_to_mod_container")) {
+			Optional<ModContainer> modContainer = QuiltLoader.getModContainer(clazz);
+
+			StringBuilder text = new StringBuilder(clazz.toString());
+			while (text.length() < 100) {
+				text.append(" ");
+			}
+			text.append(modContainer.isPresent() ? modContainer.get().metadata().id() : "?");
+			text.append("\n");
+			System.out.print(text.toString());
+		}
+
+		return clazz;
 	}
 
 	static {

@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
 
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.config.QuiltConfigImpl;
@@ -271,12 +272,17 @@ public final class Knot extends QuiltLauncherBase {
 
 	@Override
 	public void addToClassPath(Path path, String... allowedPrefixes) {
+		addToClassPath(path, null, null, allowedPrefixes);
+	}
+
+	@Override
+	public void addToClassPath(Path path, ModContainer mod, URL origin, String... allowedPrefixes) {
 		Log.debug(LogCategory.KNOT, "Adding " + path + " to classpath.");
 
 		try {
 			URL url = UrlUtil.asUrl(path);
 			classLoader.getDelegate().setAllowedPrefixes(url, allowedPrefixes);
-			classLoader.addPath(path, url); // TODO: Create a method which passes the actual origin!
+			classLoader.addPath(path, mod, origin); // TODO: Create a method which passes the actual origin!
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}

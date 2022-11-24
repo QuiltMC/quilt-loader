@@ -19,10 +19,12 @@ package org.quiltmc.loader.impl.launch.knot;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
@@ -48,6 +50,7 @@ import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.Manifest;
@@ -57,11 +60,25 @@ class KnotClassDelegate {
 		static final Metadata EMPTY = new Metadata(null, null);
 
 		final Manifest manifest;
-		final CodeSource codeSource;
+		final CodeSourceImpl codeSource;
 
-		Metadata(Manifest manifest, CodeSource codeSource) {
+		Metadata(Manifest manifest, CodeSourceImpl codeSource) {
 			this.manifest = manifest;
 			this.codeSource = codeSource;
+		}
+	}
+
+	static class CodeSourceImpl extends CodeSource implements QuiltCodeSource {
+		final ModContainer mod;
+
+		public CodeSourceImpl(URL url, Certificate[] certs, ModContainer mod) {
+			super(url, certs);
+			this.mod = mod;
+		}
+
+		@Override
+		public Optional<ModContainer> getQuiltMod() {
+			return Optional.ofNullable(mod);
 		}
 	}
 
@@ -221,10 +238,26 @@ class KnotClassDelegate {
 		return getMetadata(codeSourceUrl);
 	}
 
+	public void setMod(Path loadFrom, URL codeSourceUrl, ModContainer mod) {
+		metadataCache.computeIfAbsent(codeSourceUrl.toString(), str -> {
+			Manifest manifest = null;
+
+			try {
+				manifest = ManifestUtil.readManifest(loadFrom);
+			} catch (IOException io) {
+				if (QuiltLauncherBase.getLauncher().isDevelopment()) {
+					Log.warn(LogCategory.KNOT, "Failed to load manifest", io);
+				}
+			}
+
+			return new Metadata(manifest, new CodeSourceImpl(codeSourceUrl, null, mod));
+		});
+	}
+
 	Metadata getMetadata(URL codeSourceUrl) {
 		return metadataCache.computeIfAbsent(codeSourceUrl.toString(), (codeSourceStr) -> {
 			Manifest manifest = null;
-			CodeSource codeSource = null;
+			CodeSourceImpl codeSource = null;
 			Certificate[] certificates = null;
 
 			try {
@@ -260,7 +293,7 @@ class KnotClassDelegate {
 			}
 
 			if (codeSource == null) {
-				codeSource = new CodeSource(codeSourceUrl, certificates);
+				codeSource = new CodeSourceImpl(codeSourceUrl, certificates, null);
 			}
 
 			return new Metadata(manifest, codeSource);
