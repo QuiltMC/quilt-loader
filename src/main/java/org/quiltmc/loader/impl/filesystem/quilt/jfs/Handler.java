@@ -28,12 +28,13 @@ import java.nio.file.Path;
 
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystemProvider;
+import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 
 /** {@link URLStreamHandler} for {@link QuiltJoinedFileSystem}. */
 public class Handler extends URLStreamHandler {
 	@Override
 	protected URLConnection openConnection(URL u) throws IOException {
-		Path path;
+		QuiltJoinedPath path;
 		try {
 			path = QuiltJoinedFileSystemProvider.instance().getPath(u.toURI());
 		} catch (URISyntaxException e) {
@@ -48,7 +49,7 @@ public class Handler extends URLStreamHandler {
 
 			@Override
 			public InputStream getInputStream() throws IOException {
-				return Files.newInputStream(path);
+				return path.openUrlInputStream();
 			}
 		};
 	}

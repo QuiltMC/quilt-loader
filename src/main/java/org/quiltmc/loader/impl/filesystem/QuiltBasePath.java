@@ -16,10 +16,14 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.WatchEvent.Kind;
@@ -533,5 +537,16 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	@Override
 	public int compareTo(Path other) {
 		return toString().compareTo(other.toString());
+	}
+
+	/** Support for opening directories as an input stream - basically
+	 * {@link org.quiltmc.loader.impl.filesystem.quilt.mfs.Handler} and
+	 * {@link org.quiltmc.loader.impl.filesystem.quilt.jfs.Handler} */
+	public InputStream openUrlInputStream() throws IOException {
+		if (Files.isDirectory(this)) {
+			return new ByteArrayInputStream("folder".getBytes(StandardCharsets.UTF_8));
+		} else {
+			return Files.newInputStream(this);
+		}
 	}
 }

@@ -133,7 +133,7 @@ public final class QuiltGuiEntry {
 			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.unhandled"));
 			error.appendDescription(QuiltLoaderText.translate("error.unhandled_launch.desc"));
 			error.setOrdering(-100);
-			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");;
+			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_forum.user_support"), "https://forum.quiltmc.org/c/support/9");
 			tree.messages.add(error.toGuiMessage(tree));
 
 			if (crashReportText != null) {

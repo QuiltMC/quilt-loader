@@ -243,7 +243,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		}
 		delegate.setMod(root, asUrl, mod);
 		fakeLoader.addURL(asUrl);
-		if (root.getFileName().toString().endsWith(".jar")) {
+		if (root.getFileName() != null && root.getFileName().toString().endsWith(".jar")) {
 			// TODO: Perhaps open it in a more efficient manor?
 			minimalLoader.addURL(asUrl);
 		} else {

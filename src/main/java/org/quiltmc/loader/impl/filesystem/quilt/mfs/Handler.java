@@ -26,14 +26,16 @@ import java.net.URLStreamHandler;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.quiltmc.loader.impl.filesystem.QuiltBasePath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystemProvider;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 
 /** {@link URLStreamHandler} for {@link QuiltMemoryFileSystem}. */
 public class Handler extends URLStreamHandler {
 	@Override
 	protected URLConnection openConnection(URL u) throws IOException {
-		Path path;
+		QuiltMemoryPath path;
 		try {
 			path = QuiltMemoryFileSystemProvider.instance().getPath(u.toURI());
 		} catch (URISyntaxException e) {
@@ -48,7 +50,7 @@ public class Handler extends URLStreamHandler {
 
 			@Override
 			public InputStream getInputStream() throws IOException {
-				return Files.newInputStream(path);
+				return path.openUrlInputStream();
 			}
 		};
 	}

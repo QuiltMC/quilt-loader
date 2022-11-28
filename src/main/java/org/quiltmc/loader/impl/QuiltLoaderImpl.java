@@ -20,8 +20,11 @@ package org.quiltmc.loader.impl;
 import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -40,12 +43,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.objectweb.asm.Opcodes;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
+import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -86,6 +91,7 @@ import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.FileSystemUtil.FileSystemDelegate;
 import org.quiltmc.loader.impl.util.ModLanguageAdapter;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -103,7 +109,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.18";
+	public static final String VERSION = "0.18.1-beta.19";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -134,6 +140,13 @@ public final class QuiltLoaderImpl {
 	private Path gameDir;
 	private Path configDir;
 	private Path modsDir;
+
+	/** Destination folder for {@link #copiedToJarMods}. */
+	private File temporaryCopiedJarFolder;
+
+	/** Stores every mod which has been copied into a temporary jar file: see {@link #shouldCopyToJar(ModLoadOption)}
+	 * and {@link #copyToJar(ModLoadOption, Path)}. */
+	private final Map<String, File> copiedToJarMods = new HashMap<>();
 
 	protected QuiltLoaderImpl() {
 	}
@@ -253,15 +266,17 @@ public final class QuiltLoaderImpl {
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
 		// Debugging
-		for (LoadOption op : spec.getOptions()) {
-			if (spec.isPresent(op)) {
-				Log.info(LogCategory.GENERAL, " + " + op);
+		if (Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING)) {
+			for (LoadOption op : spec.getOptions()) {
+				if (spec.isPresent(op)) {
+					Log.info(LogCategory.GENERAL, " + " + op);
+				}
 			}
-		}
 
-		for (LoadOption op : spec.getOptions()) {
-			if (!spec.isPresent(op)) {
-				Log.info(LogCategory.GENERAL, " - " + op);
+			for (LoadOption op : spec.getOptions()) {
+				if (!spec.isPresent(op)) {
+					Log.info(LogCategory.GENERAL, " - " + op);
+				}
 			}
 		}
 
@@ -278,9 +293,17 @@ public final class QuiltLoaderImpl {
 		} catch (IOException e) {
 			throw new RuntimeException(e); // TODO
 		}
-		for (ModLoadOption modOption : modList) {
 
-			final Path resourceRoot;
+		Set<String> modsToCopy = new HashSet<>();
+		String jarCopiedMods = System.getProperty(SystemProperties.JAR_COPIED_MODS);
+		if (jarCopiedMods != null) {
+			for (String id : jarCopiedMods.split(",")) {
+				modsToCopy.add(id);
+			}
+		}
+
+		for (ModLoadOption modOption : modList) {
+			Path resourceRoot;
 
 			if (!modOption.needsChasmTransforming() && modOption.namespaceMappingFrom() == null) {
 				resourceRoot = modOption.resourceRoot();
@@ -310,17 +333,68 @@ public final class QuiltLoaderImpl {
 				}
 			}
 
+			if (modsToCopy.contains(modOption.id()) || shouldCopyToJar(modOption)) {
+				resourceRoot = copyToJar(modOption, resourceRoot);
+			}
+
 			addMod(modOption.convertToMod(resourceRoot));
 		}
-		// TODO (in no particular order):
-		// - turn ModLoadOptions into real mods, and pass them into addMod()
-		// - - which does:
-		// - - Double-checks for duplicates
-		// - - Rejects non-environment-matching mods (I'm less sure about this now)
-		// - - Creates the container
 
 		int count = mods.size();
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
+	}
+
+	private boolean shouldCopyToJar(ModLoadOption mod) {
+		String id = mod.id();
+		if (id.contains("yung")) {
+			// YUNGs mods use reflections
+			// which *require* the class files are loaded directly from .jar files :|
+			return true;
+		}
+		for (ModDependency dep : mod.metadata().depends()) {
+			if (dep instanceof ModDependency.Only) {
+				String depId = ((ModDependency.Only) dep).id().id();
+				if (depId.contains("yung")) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	private Path copyToJar(ModLoadOption modOption, final Path resourceRoot) throws Error {
+		try {
+			if (temporaryCopiedJarFolder == null) {
+				temporaryCopiedJarFolder = Files.createTempDirectory("quilt-loader").toFile();
+				temporaryCopiedJarFolder.deleteOnExit();
+			}
+			File file = File.createTempFile(modOption.id(), ".jar", temporaryCopiedJarFolder);
+			Log.info(LogCategory.GENERAL, "Copying " + modOption.id() + " to a temporary jar file " + file);
+			file.deleteOnExit();
+			try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(file))) {
+				List<Path> list = Files.walk(resourceRoot).collect(Collectors.toList());
+				for (Path path : list) {
+					String pathStr = path.toString();
+					if (pathStr.startsWith("/")) {
+						pathStr = pathStr.substring(1);
+					}
+					if (Files.isDirectory(path)) {
+						zip.putNextEntry(new ZipEntry(pathStr + "/"));
+					} else {
+						zip.putNextEntry(new ZipEntry(pathStr));
+						zip.write(Files.readAllBytes(path));
+					}
+					zip.closeEntry();
+				}
+			}
+
+			copiedToJarMods.put(modOption.id(), file);
+
+			FileSystem fs = FileSystems.newFileSystem(file.toPath(), (ClassLoader) null);
+			return fs.getPath("/");
+		} catch (IOException e) {
+			throw new Error("// TODO: Failed to copy to jar!");
+		}
 	}
 
 	private ModSolveResult runPlugins() {
@@ -677,8 +751,13 @@ public final class QuiltLoaderImpl {
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerExt mod : mods) {
 			if (!mod.metadata().id().equals(MOD_ID) && mod.getSourceType() != BasicSourceType.BUILTIN) {
-				URL origin = null;//mod.getSourcePaths();
-				QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath(), mod, origin);
+				File jarFile = copiedToJarMods.get(mod.metadata().id());
+				if (jarFile == null) {
+					URL origin = null;//mod.getSourcePaths();
+					QuiltLauncherBase.getLauncher().addToClassPath(mod.rootPath(), mod, origin);
+				} else {
+					QuiltLauncherBase.getLauncher().addToClassPath(jarFile.toPath(), mod, null);
+				}
 			}
 		}
 
