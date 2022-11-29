@@ -19,11 +19,14 @@ package org.quiltmc.loader.impl.fabric.metadata;
 
 
 import org.quiltmc.json5.JsonReader;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings("serial")
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ParseMetadataException extends Exception {
 	private List<String> modPaths;
 

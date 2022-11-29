@@ -25,6 +25,7 @@ import java.net.URLConnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class UrlUtil {
 	private UrlUtil() { }
 

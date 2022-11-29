@@ -59,12 +59,15 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Quilt-loader's plugin. For simplicities sake this is a builtin plugin - and cannot be disabled, or reloaded (since
  * quilt-loader can't reload itself to a different version). */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);

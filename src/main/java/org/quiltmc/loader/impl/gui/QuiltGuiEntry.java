@@ -49,10 +49,13 @@ import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** The main entry point for all quilt-based stuff. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltGuiEntry {
 	/** Opens the given {@link QuiltJsonGui} in a new swing window.
 	 * 

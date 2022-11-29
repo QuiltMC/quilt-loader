@@ -25,12 +25,15 @@ import java.util.Objects;
 
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class Quilt2FabricVersionInterval implements VersionInterval {
 	private final org.quiltmc.loader.api.VersionInterval quilt;
 

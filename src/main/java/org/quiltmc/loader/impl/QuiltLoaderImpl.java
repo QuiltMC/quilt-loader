@@ -93,6 +93,8 @@ import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.FileSystemUtil.FileSystemDelegate;
 import org.quiltmc.loader.impl.util.ModLanguageAdapter;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -104,6 +106,7 @@ import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
 

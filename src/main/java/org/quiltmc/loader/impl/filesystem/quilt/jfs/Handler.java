@@ -29,8 +29,11 @@ import java.nio.file.Path;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystemProvider;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** {@link URLStreamHandler} for {@link QuiltJoinedFileSystem}. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Handler extends URLStreamHandler {
 	@Override
 	protected URLConnection openConnection(URL u) throws IOException {

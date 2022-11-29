@@ -21,7 +21,10 @@ import java.util.function.Supplier;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class EntrypointContainerImpl<T> implements EntrypointContainer<T> {
 	private final ModContainer container;
 	private final Supplier<T> entrypointSupplier;

@@ -26,7 +26,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class QuiltPluginClassLoader extends ClassLoader {
 
 	final QuiltPluginManagerImpl manager;

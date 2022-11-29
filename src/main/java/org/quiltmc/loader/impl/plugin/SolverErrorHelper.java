@@ -47,7 +47,10 @@ import org.quiltmc.loader.impl.plugin.quilt.DisabledModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class SolverErrorHelper {
 
 	static void reportSolverError(QuiltPluginManagerImpl manager, Collection<Rule> rules) {

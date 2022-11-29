@@ -52,8 +52,11 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @SuppressWarnings("unchecked") // TODO make more specific
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 	public QuiltMemoryFileSystemProvider() {}
 

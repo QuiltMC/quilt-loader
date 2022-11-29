@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.util;
 
 @SuppressWarnings("serial")
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class UrlConversionException extends Exception {
 	public UrlConversionException() {
 		super();

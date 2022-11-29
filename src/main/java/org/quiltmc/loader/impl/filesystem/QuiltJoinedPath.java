@@ -16,6 +16,10 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltJoinedPath extends QuiltBasePath<QuiltJoinedFileSystem, QuiltJoinedPath> {
 
 	QuiltJoinedPath(QuiltJoinedFileSystem fs, QuiltJoinedPath parent, String name) {

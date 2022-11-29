@@ -18,7 +18,10 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface ConvertibleModMetadata {
 
 	/** Please use {@link #asFabricModMetadata(ModContainer)} instead. */

@@ -20,11 +20,15 @@ import java.net.URL;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** Holds the {@link URLStreamHandlerFactory} for all quilt filesystems. This is set to
  * {@link URL#setURLStreamHandlerFactory(URLStreamHandlerFactory)}.
  * <p>
  * Game providers for games other than minecraft are expected to append their games' factories to
  * {@link #appendFactory(URLStreamHandlerFactory)}, if their game actually needs this. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class DelegatingUrlStreamHandlerFactory implements URLStreamHandlerFactory {
 
 	public static final DelegatingUrlStreamHandlerFactory INSTANCE = new DelegatingUrlStreamHandlerFactory();

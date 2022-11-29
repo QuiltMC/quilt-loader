@@ -35,7 +35,10 @@ import org.quiltmc.loader.api.VersionConstraint.Type;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class VersionRangeImpl extends AbstractSet<VersionInterval> implements VersionRange {
 	public static final VersionRangeImpl ANY = new VersionRangeImpl(Collections.singleton(VersionIntervalImpl.ALL));
 	public static final VersionRangeImpl NONE = new VersionRangeImpl(Collections.emptyList());

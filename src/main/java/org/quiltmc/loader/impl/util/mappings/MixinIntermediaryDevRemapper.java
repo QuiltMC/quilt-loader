@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.spongepowered.asm.mixin.transformer.ClassInfo;
 
 import net.fabricmc.mapping.tree.ClassDef;
@@ -32,6 +34,7 @@ import net.fabricmc.mapping.tree.Descriptored;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.mapping.util.MixinRemapper;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class MixinIntermediaryDevRemapper extends MixinRemapper {
 	private static final String ambiguousName = "<ambiguous>"; // dummy value for ambiguous mappings - needs querying with additional owner and/or desc info
 

@@ -23,7 +23,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.metadata.qmj.GenericVersionImpl;
 import org.quiltmc.loader.impl.metadata.qmj.SemanticVersionImpl;

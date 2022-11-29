@@ -18,7 +18,10 @@
 package org.quiltmc.loader.impl.fabric.metadata;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class ParseWarning {
 	private final String location;
 	private final String key;

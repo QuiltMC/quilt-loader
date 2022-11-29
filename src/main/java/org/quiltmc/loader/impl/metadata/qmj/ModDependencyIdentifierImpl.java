@@ -19,7 +19,10 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.Objects;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ModDependencyIdentifierImpl implements ModDependencyIdentifier {
 	private final String mavenGroup;
 	private final String id;

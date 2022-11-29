@@ -18,6 +18,8 @@
 package org.quiltmc.loader.impl.game;
 
 import org.quiltmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.mapping.tree.TinyTree;
 
@@ -54,6 +56,7 @@ import java.util.Set;
 import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_NO_WARN)
 public final class GameProviderHelper {
 	private GameProviderHelper() { }
 

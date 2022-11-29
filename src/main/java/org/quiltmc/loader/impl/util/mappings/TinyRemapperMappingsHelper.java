@@ -16,12 +16,16 @@
 
 package org.quiltmc.loader.impl.util.mappings;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.FieldDef;
 import net.fabricmc.mapping.tree.MethodDef;
 import net.fabricmc.mapping.tree.TinyTree;
 import net.fabricmc.tinyremapper.IMappingProvider;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class TinyRemapperMappingsHelper {
 	private TinyRemapperMappingsHelper() { }
 

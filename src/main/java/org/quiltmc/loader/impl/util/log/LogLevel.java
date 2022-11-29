@@ -17,11 +17,13 @@
 
 package org.quiltmc.loader.impl.util.log;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 import java.util.Locale;
 
-
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public enum LogLevel {
 	ERROR, WARN, INFO, DEBUG, TRACE;
 

@@ -32,7 +32,10 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 abstract class BasePluginContext implements QuiltPluginContext {
 
 	final QuiltPluginManagerImpl manager;

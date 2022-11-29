@@ -28,9 +28,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.api.CachedFileSystem;
 
 /** A {@link FileSystem} that exposes multiple {@link Path}s in a single {@link FileSystem}. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> implements CachedFileSystem {
 
 	final Path[] from;

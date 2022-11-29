@@ -20,6 +20,10 @@ package org.quiltmc.loader.impl.util.log;
 import java.util.Arrays;
 import java.util.IllegalFormatException;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class Log {
 	public static final String NAME = "Quilt Loader";
 	private static final boolean CHECK_FOR_BRACKETS = true;

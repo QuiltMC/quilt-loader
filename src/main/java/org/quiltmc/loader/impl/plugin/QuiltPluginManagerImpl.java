@@ -103,6 +103,8 @@ import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
@@ -112,6 +114,7 @@ import net.fabricmc.api.EnvType;
  * <p>
  * Unlike {@link QuiltLoader} itself, it does make sense to have multiple of these at once: one for loading plugins that
  * will be used, and many more for "simulating" mod loading. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private static final String QUILT_ID = "quilt_loader";

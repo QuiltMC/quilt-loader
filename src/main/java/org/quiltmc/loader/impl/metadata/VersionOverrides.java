@@ -22,11 +22,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class VersionOverrides {
 	private final Map<String, Version> replacements = new HashMap<>();
 

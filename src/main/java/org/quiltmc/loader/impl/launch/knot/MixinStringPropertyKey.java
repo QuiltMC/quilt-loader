@@ -19,8 +19,11 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import java.util.Objects;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.spongepowered.asm.service.IPropertyKey;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class MixinStringPropertyKey implements IPropertyKey {
 	public final String key;
 

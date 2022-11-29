@@ -21,8 +21,11 @@ import java.util.Optional;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** For {@link CodeSource}s. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface QuiltCodeSource {
 	/** @return The mod that contains this class. (This is used to implement
 	 *         {@link QuiltLoader#getModContainer(Class)}). */

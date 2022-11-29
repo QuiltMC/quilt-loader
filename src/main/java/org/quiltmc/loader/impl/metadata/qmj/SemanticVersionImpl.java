@@ -24,10 +24,13 @@ import java.util.regex.Pattern;
 
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.VersionParsingException;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class SemanticVersionImpl implements Version.Semantic {
 	private final String raw;
 	private final int[] components;

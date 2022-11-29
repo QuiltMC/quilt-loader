@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.zip.ZipError;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class FileSystemUtil {
 	public static class FileSystemDelegate implements AutoCloseable {
 		private final FileSystem fileSystem;

@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl.entrypoint;
 
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
@@ -29,6 +31,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class GamePatch {
 	protected static ClassNode readClass(ClassReader reader) {
 		if (reader == null) return null;

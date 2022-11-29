@@ -17,6 +17,10 @@
 
 package org.quiltmc.loader.impl.metadata;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface NestedJarEntry {
 	String getFile();
 }

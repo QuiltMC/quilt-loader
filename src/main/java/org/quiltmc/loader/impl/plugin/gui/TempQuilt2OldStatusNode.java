@@ -27,7 +27,10 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	final GuiManagerImpl guiManager;

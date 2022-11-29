@@ -16,9 +16,13 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /**
  * Represents a class entry inside of that specifies a language adapter to use to load the class.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class AdapterLoadableClassEntry {
 	private final String adapter;
 	private final String value;

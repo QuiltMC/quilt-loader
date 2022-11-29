@@ -21,9 +21,12 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class PackageEnvironmentStrippingData extends ClassVisitor {
 
 	private static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);

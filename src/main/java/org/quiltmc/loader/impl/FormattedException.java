@@ -17,7 +17,11 @@
 
 package org.quiltmc.loader.impl;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 @SuppressWarnings("serial")
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class FormattedException extends RuntimeException {
 	private final String mainText;
 

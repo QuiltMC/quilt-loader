@@ -29,7 +29,10 @@ import java.util.Objects;
 
 import net.fabricmc.loader.api.metadata.CustomValue;
 import org.quiltmc.json5.JsonReader;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class CustomValueImpl implements CustomValue {
 	static final CustomValue BOOLEAN_TRUE = new BooleanImpl(true);
 	static final CustomValue BOOLEAN_FALSE = new BooleanImpl(false);

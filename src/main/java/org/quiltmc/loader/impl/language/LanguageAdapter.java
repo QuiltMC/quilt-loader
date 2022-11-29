@@ -19,7 +19,11 @@ package org.quiltmc.loader.impl.language;
 
 import java.io.IOException;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface LanguageAdapter {
 	enum MissingSuperclassBehavior {
 		RETURN_NULL,

@@ -28,6 +28,8 @@ import org.quiltmc.loader.impl.fabric.metadata.CustomValueImpl;
 import org.quiltmc.loader.impl.fabric.metadata.MapBackedContactInformation;
 import org.quiltmc.loader.impl.fabric.metadata.SimplePerson;
 import org.quiltmc.loader.impl.metadata.*;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
@@ -41,6 +43,7 @@ import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	private final InternalModMetadata quiltMeta;
 	private final ModContainer quiltContainer;

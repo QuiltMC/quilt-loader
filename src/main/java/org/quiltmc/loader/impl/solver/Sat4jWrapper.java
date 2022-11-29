@@ -33,6 +33,8 @@ import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -61,6 +63,7 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
  * <li>Perform optimisation of the rules.</li>
  * </ol>
  * This is (mostly) separated from any more specific rules */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Sat4jWrapper implements RuleContext {
 
 	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);

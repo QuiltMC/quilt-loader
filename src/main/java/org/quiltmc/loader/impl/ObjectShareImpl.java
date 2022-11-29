@@ -24,8 +24,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.loader.api.ObjectShare;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ObjectShareImpl implements ObjectShare {
 	private final Map<String, Object> values = new HashMap<>();
 	private final Map<String, List<BiConsumer<String, Object>>> pendingMap = new HashMap<>();

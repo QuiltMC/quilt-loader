@@ -24,7 +24,10 @@ import java.util.Map;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class GuiManagerImpl implements PluginGuiManager {
 
 	public static final PluginIconImpl ICON_NULL = new PluginIconImpl("null");

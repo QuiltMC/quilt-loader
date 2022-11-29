@@ -20,7 +20,10 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.quiltmc.loader.api.ModContributor;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class ModContributorImpl implements ModContributor {
 	private final String name;
 	private final Collection<String> roles;

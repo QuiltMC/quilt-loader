@@ -21,6 +21,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltStringSection extends QuiltReportSection {
 
 	private final List<String> lines = new ArrayList<>();

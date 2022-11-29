@@ -29,6 +29,7 @@ import java.security.CodeSource;
 import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ManifestUtil {
 	public static Manifest readManifest(Class<?> cls) throws IOException, URISyntaxException {
 		CodeSource cs = cls.getProtectionDomain().getCodeSource();

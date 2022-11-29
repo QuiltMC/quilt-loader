@@ -19,7 +19,10 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import com.unascribed.flexver.FlexVerComparator;
 
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class GenericVersionImpl implements Version.Raw {
 	private final String raw;
 

@@ -40,7 +40,10 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
 	implements Path {
 	static final String NAME_ROOT = "/";

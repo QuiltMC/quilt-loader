@@ -30,8 +30,11 @@ import org.quiltmc.loader.impl.filesystem.QuiltBasePath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystemProvider;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** {@link URLStreamHandler} for {@link QuiltMemoryFileSystem}. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Handler extends URLStreamHandler {
 	@Override
 	protected URLConnection openConnection(URL u) throws IOException {

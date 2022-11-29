@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.util;
 
 import java.util.Locale;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class LoaderUtil {
 	public static String getClassFileName(String className) {
 		return className.replace('.', '/').concat(".class");

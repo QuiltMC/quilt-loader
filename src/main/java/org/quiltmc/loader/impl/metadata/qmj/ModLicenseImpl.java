@@ -20,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -28,6 +30,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ModLicenseImpl implements ModLicense {
 	private final String name;
 	private final String id;

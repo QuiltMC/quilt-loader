@@ -22,8 +22,11 @@ import java.nio.file.Path;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ModCandidate {
 	private final FabricLoaderModMetadata info;
 	private final Path originPath, innerPath;

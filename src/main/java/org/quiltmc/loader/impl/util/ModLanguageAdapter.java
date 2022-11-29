@@ -22,6 +22,7 @@ import org.quiltmc.loader.api.ModContainer;
 
 import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ModLanguageAdapter implements LanguageAdapter {
 
 	private final ModContainer from;

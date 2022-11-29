@@ -17,8 +17,12 @@
 
 package org.quiltmc.loader.impl.discovery;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** Thrown to indicate something went wrong while loading mods, in a way that can be displayed to the user. */
 @SuppressWarnings("serial")
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ModResolutionException extends Exception {
 	public ModResolutionException() {
 		super();

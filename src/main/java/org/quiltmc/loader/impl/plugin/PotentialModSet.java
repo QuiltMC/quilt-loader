@@ -26,7 +26,10 @@ import java.util.TreeMap;
 
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class PotentialModSet {
 
 	static final Comparator<Version> VERSION_COMPARATOR = (a, b) -> {

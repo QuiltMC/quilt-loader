@@ -31,8 +31,11 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A mod that is provided from the jar of a different mod. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class ProvidedModOption extends ModLoadOption implements AliasedLoadOption {
 	final ModLoadOption provider;
 	final ProvidedMod provided;

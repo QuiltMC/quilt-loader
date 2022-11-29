@@ -17,8 +17,11 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.spongepowered.asm.service.IMixinServiceBootstrap;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class MixinServiceKnotBootstrap implements IMixinServiceBootstrap {
 	@Override
 	public String getName() {

@@ -22,8 +22,11 @@ import java.util.Objects;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionConstraint;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class VersionConstraintImpl implements VersionConstraint {
 	public static final VersionConstraintImpl ANY = new VersionConstraintImpl();
 	private final String versionString;

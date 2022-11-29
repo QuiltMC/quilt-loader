@@ -22,6 +22,10 @@ import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.List;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class InjectingURLClassLoader extends URLClassLoader {
 	private final List<String> exclusions;
 

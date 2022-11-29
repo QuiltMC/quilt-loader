@@ -24,11 +24,14 @@ import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.util.*;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class EntrypointStorage {
 	interface Entry {
 		<T> T getOrCreate(Class<T> type) throws Exception;

@@ -18,7 +18,8 @@
 package org.quiltmc.loader.impl.entrypoint;
 
 import org.quiltmc.loader.impl.util.LoaderUtil;
-
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -38,6 +39,7 @@ import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class GameTransformer {
 	public static String appletMainClass;
 

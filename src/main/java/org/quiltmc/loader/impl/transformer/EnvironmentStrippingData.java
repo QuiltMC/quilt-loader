@@ -28,6 +28,8 @@ import org.objectweb.asm.TypePath;
 import org.objectweb.asm.TypeReference;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -35,6 +37,7 @@ import net.fabricmc.api.EnvironmentInterface;
 import net.fabricmc.api.EnvironmentInterfaces;
 
 /** Scans a class for Environment and EnvironmentInterface annotations to figure out what needs to be stripped. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class EnvironmentStrippingData extends ClassVisitor {
 	// Fabric annotations
 	private static final String ENVIRONMENT_DESCRIPTOR = Type.getDescriptor(Environment.class);
