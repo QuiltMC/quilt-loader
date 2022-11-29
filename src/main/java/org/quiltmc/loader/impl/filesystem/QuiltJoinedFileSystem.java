@@ -28,9 +28,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.CachedFileSystem;
 
 /** A {@link FileSystem} that exposes multiple {@link Path}s in a single {@link FileSystem}. */
-public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> {
+public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> implements CachedFileSystem {
 
 	final Path[] from;
 	final boolean[] shouldCloseFroms;
@@ -81,6 +82,21 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 
 	@Override
 	public boolean isReadOnly() {
+		return true;
+	}
+
+	@Override
+	public boolean isPermanentlyReadOnly() {
+		for (Path p : from) {
+			FileSystem fs = p.getFileSystem();
+			if (fs instanceof CachedFileSystem) {
+				if (!((CachedFileSystem) fs).isPermanentlyReadOnly()) {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		}
 		return true;
 	}
 
