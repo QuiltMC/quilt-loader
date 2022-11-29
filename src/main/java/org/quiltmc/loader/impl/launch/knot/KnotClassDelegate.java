@@ -181,7 +181,7 @@ class KnotClassDelegate {
 			switch (type) {
 				case LEGACY_EXPOSED: {
 					// TODO: Log a warning
-//						break;
+					break;
 				}
 				case NEW_INTERNAL:
 				default: {
