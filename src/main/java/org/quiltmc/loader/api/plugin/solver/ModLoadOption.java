@@ -30,8 +30,11 @@ import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A special type of {@link LoadOption} that represents a mod. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class ModLoadOption extends LoadOption {
 
 	/** @return The plugin context for the plugin that loaded this mod. */

@@ -35,8 +35,8 @@ import java.util.Set;
 import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.VersionRange;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;

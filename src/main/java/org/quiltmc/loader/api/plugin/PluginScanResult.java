@@ -17,9 +17,12 @@
 package org.quiltmc.loader.api.plugin;
 
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Used as a result from {@link QuiltLoaderPlugin#scanZip(java.nio.file.Path, boolean, PluginGuiTreeNode)} and
  * {@link QuiltLoaderPlugin#scanUnknownFile(java.nio.file.Path, boolean, PluginGuiTreeNode)}. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public enum PluginScanResult {
 	/** Indicates that the plugin didn't find anything useful. */
 	IGNORED,

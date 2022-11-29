@@ -17,7 +17,10 @@
 package org.quiltmc.loader.api.plugin.solver;
 
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface RuleContext {
 
 	/** Adds a new {@link LoadOption}, without any weight. */

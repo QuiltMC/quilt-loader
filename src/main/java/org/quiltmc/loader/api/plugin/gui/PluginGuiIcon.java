@@ -16,6 +16,10 @@
 
 package org.quiltmc.loader.api.plugin.gui;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface PluginGuiIcon {
 
 	/** Adds a sub-icon to this main icon. The given sub-icon must not already have sub-icons. If the given sub-icon is

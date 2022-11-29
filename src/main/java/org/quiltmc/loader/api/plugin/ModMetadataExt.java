@@ -27,9 +27,12 @@ import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Additional metadata that should be implemented by plugin-provided mods that wish to rely on quilt's solver to
  * implement provides or dependency handling. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugins {
 
 	// Dependency handling
@@ -50,10 +53,6 @@ public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugi
 		return ModLoadType.ALWAYS;
 	}
 
-	default Collection<? extends ProvidedMod> provides() {
-		return Collections.emptyList();
-	}
-
 	@Nullable
 	default ModPlugin plugin() {
 		return null;
@@ -63,14 +62,6 @@ public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugi
 		ALWAYS,
 		IF_POSSIBLE,
 		IF_REQUIRED;
-	}
-
-	public interface ProvidedMod {
-		String group();
-
-		String id();
-
-		Version version();
 	}
 
 	public interface ModPlugin {

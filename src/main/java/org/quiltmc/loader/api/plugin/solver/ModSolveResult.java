@@ -19,6 +19,10 @@ package org.quiltmc.loader.api.plugin.solver;
 import java.util.Collection;
 import java.util.Map;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface ModSolveResult {
 
 	/** @return Every mod, not including mods provided by other mods. */

@@ -17,7 +17,6 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,9 +26,9 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

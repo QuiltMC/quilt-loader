@@ -18,6 +18,7 @@
 package org.quiltmc.loader.api;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import org.jetbrains.annotations.ApiStatus;
@@ -95,6 +96,21 @@ public interface ModMetadata {
 	 * @return all mod dependencies this mod conflicts with
 	 */
 	Collection<ModDependency> breaks();
+
+	/**
+	 * @return all mods that this mod provides.
+	 */
+	default Collection<? extends ProvidedMod> provides() {
+		return Collections.emptyList();
+	}
+
+	public interface ProvidedMod {
+		String group();
+
+		String id();
+
+		Version version();
+	}
 
 	/**
 	 * Gets the path to an icon.
