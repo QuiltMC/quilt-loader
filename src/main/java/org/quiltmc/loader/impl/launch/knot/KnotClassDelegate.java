@@ -183,7 +183,7 @@ class KnotClassDelegate {
 					// TODO: Disable this when we can generate a report with this information!
 					Log.warn(
 						LogCategory.GENERAL, "Found access to quilt-loader internal api " + name
-							+ " - please ask the quilt-loader project to add an ampi for this, to ensure this functionality won't break in a future update!",
+							+ " - please ask the quilt-loader project to add an api for this, to ensure this functionality won't break in a future update!",
 						new Throwable()
 					);
 					break;
