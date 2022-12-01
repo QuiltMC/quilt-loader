@@ -109,7 +109,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.19";
+	public static final String VERSION = "0.18.1-beta.20";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -349,6 +349,10 @@ public final class QuiltLoaderImpl {
 		if (id.contains("yung")) {
 			// YUNGs mods use reflections
 			// which *require* the class files are loaded directly from .jar files :|
+			return true;
+		}
+		if ("charm".equals(id) /* Add version check here for if/when charm doesn't need this */) {
+			// Charm also (currently) requires the mod files are in .jars directly.
 			return true;
 		}
 		for (ModDependency dep : mod.metadata().depends()) {
