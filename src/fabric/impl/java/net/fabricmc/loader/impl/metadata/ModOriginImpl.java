@@ -17,25 +17,41 @@
 package net.fabricmc.loader.impl.metadata;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.quiltmc.loader.api.ModContainer;
 
 @Deprecated
 public final class ModOriginImpl implements net.fabricmc.loader.api.metadata.ModOrigin {
-	private final ModContainer mod;
+	private final List<Path> originPaths;
 
 	public ModOriginImpl(ModContainer quilt) {
-		this.mod = quilt;
+		List<Path> origins = new ArrayList<>();
+		List<List<Path>> sourcePaths = quilt.getSourcePaths();
+		for (List<Path> list : sourcePaths) {
+			if (list.size() == 1) {
+				origins.add(list.get(0));
+			} else {
+				origins = null;
+				break;
+			}
+		}
+
+		this.originPaths = origins == null ? null : Collections.unmodifiableList(origins);
 	}
 
 	@Override
 	public Kind getKind() {
-		return Kind.UNKNOWN;
+		return originPaths == null ? Kind.UNKNOWN : Kind.PATH;
 	}
 
 	@Override
 	public List<Path> getPaths() {
+		if (originPaths != null) {
+			return originPaths;
+		}
 		throw new UnsupportedOperationException("getPaths() Not supported for Kind.UNKNOWN");
 	}
 
