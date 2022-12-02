@@ -1,0 +1,7 @@
+{
+    "schemaVersion": 1,
+    "id": "mod-resolving-tests-better-library",
+    "provides": ["mod-resolving-tests-library"],
+    "environment": "server",
+    "version": "1.0.0"
+}

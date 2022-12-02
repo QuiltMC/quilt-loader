@@ -267,10 +267,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			// then add a rule so that the mod is never loaded.
 			if (!metadata.environment().matches(context().manager().getEnvironment())) {
 				ctx.addRule(new DisabledModIdDefinition(mod));
-				return;
-			}
-
-			if (mod.isMandatory()) {
+			} else if (mod.isMandatory()) {
 				ctx.addRule(new MandatoryModIdDefinition(mod));
 			}
 
