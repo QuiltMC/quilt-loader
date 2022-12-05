@@ -97,11 +97,6 @@ final class V0ModMetadataParser {
 
 				try {
 					version = Version.parse(rawVersion);
-					if (!(version instanceof SemanticVersion)) {
-						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " does not respect SemVer -- comparison support is limited."));
-					} else if (((SemanticVersion) version).getVersionComponentCount() >= 4) {
-						warnings.add(new ParseWarning(reader.locationString(), "version", "Version " + version + " has more than 3 version components, which may not be fully supported."));
-					}
 				} catch (VersionParsingException e) {
 					throw new ParseMetadataException(String.format("Failed to parse version: %s", rawVersion), e);
 				}
