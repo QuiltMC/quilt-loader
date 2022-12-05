@@ -109,7 +109,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.21";
+	public static final String VERSION = "0.18.1-beta.22";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -914,7 +914,7 @@ public final class QuiltLoaderImpl {
 		for (ModContainerExt mod : mods) {
 			try {
 				if (mod.getSourceType() == BasicSourceType.NORMAL_FABRIC) {
-					FabricLoaderModMetadata fabricMeta = ((InternalModMetadata) mod.metadata()).asFabricModMetadata();
+					FabricLoaderModMetadata fabricMeta = ((InternalModMetadata) mod.metadata()).asFabricModMetadata(mod);
 					for (String in : fabricMeta.getOldInitializers()) {
 						String adapter = fabricMeta.getOldStyleLanguageAdapter();
 						entrypointStorage.addDeprecated(mod, adapter, in);
