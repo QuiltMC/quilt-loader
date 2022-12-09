@@ -14,6 +14,7 @@ import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.Opcodes;
 import org.quiltmc.chasm.api.ChasmProcessor;
 import org.quiltmc.chasm.api.ClassData;
 import org.quiltmc.chasm.api.Transformer;
@@ -25,6 +26,7 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 
 class ChasmInvoker {
 
@@ -87,21 +89,56 @@ class ChasmInvoker {
 
 			@Override
 			public boolean isInterface(String className) {
-				// TODO: Read both the class bytes, and somehow get classes from jdk libraries?
-				// TODO Auto-generated method stub
-				throw new AbstractMethodError("// TODO: Implement this!");
+				ClassReader cr = new ClassReader(readFile(LoaderUtil.getClassFileName(className)));
+				ClassInfoGrabber namer = new ClassInfoGrabber();
+				cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+				return (Opcodes.ACC_INTERFACE & namer.access) != 0;
 			}
 
 			@Override
 			public boolean isAssignable(String leftClass, String rightClass) {
-				// TODO Auto-generated method stub
-				throw new AbstractMethodError("// TODO: Implement this!");
+				if ("java/lang/Object".equals(leftClass)) {
+					return true;
+				}
+
+				byte[] file = readFile(LoaderUtil.getClassFileName(rightClass));
+				if (file == null) {
+					return false;
+				}
+
+				ClassReader cr = new ClassReader(file);
+				ClassInfoGrabber namer = new ClassInfoGrabber();
+				cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+
+				if (namer.superName.equals(leftClass)) {
+					return true;
+				}
+
+				for (String itf : namer.interfaces) {
+					if (itf.equals(leftClass)) {
+						return true;
+					}
+				}
+
+				if (isAssignable(leftClass, namer.superName)) {
+					return true;
+				}
+
+				for (String itf : namer.interfaces) {
+					if (isAssignable(leftClass, itf)) {
+						return true;
+					}
+				}
+
+				return false;
 			}
 
 			@Override
 			public String getSuperClass(String className) {
-				// TODO Auto-generated method stub
-				throw new AbstractMethodError("// TODO: Implement this!");
+				ClassReader cr = new ClassReader(readFile(LoaderUtil.getClassFileName(className)));
+				ClassInfoGrabber namer = new ClassInfoGrabber();
+				cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+				return namer.superName;
 			}
 		});
 
@@ -134,7 +171,7 @@ class ChasmInvoker {
 		for (ClassData changedTo : changed) {
 
 			ClassReader cr = new ClassReader(changedTo.getClassBytes());
-			ClassNameGetter namer = new ClassNameGetter();
+			ClassInfoGrabber namer = new ClassInfoGrabber();
 			cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
 			QuiltMetadata qm = changedTo.getMetadata().get(QuiltMetadata.class);
@@ -161,11 +198,14 @@ class ChasmInvoker {
 		}
 	}
 
-	static class ClassNameGetter extends ClassVisitor {
+	static class ClassInfoGrabber extends ClassVisitor {
 
+		int access;
 		String name;
+		String superName;
+		String[] interfaces;
 
-		protected ClassNameGetter() {
+		protected ClassInfoGrabber() {
 			super(QuiltLoaderImpl.ASM_VERSION);
 		}
 
@@ -173,7 +213,10 @@ class ChasmInvoker {
 		public void visit(int version, int access, String name, String signature, String superName,
 			String[] interfaces) {
 
+			this.access = access;
 			this.name = name;
+			this.superName = superName;
+			this.interfaces = interfaces;
 		}
 
 	}
