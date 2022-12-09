@@ -96,7 +96,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		for (byte b : path) {
 			char c = (char) (b & 255);
 
-			if (first && (c == '-' || c == '_' || c == '~')) {
+			if (first && (c == '-' || c == '_' || c == '~' || c == '.')) {
 				continue;
 			}
 

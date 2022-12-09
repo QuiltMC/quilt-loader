@@ -422,7 +422,7 @@ public final class QuiltLoaderImpl {
 				return result;
 			}
 
-			boolean anyWarnings = true;
+			boolean anyWarnings = false;
 
 			if (plugins.guiFileRoot.getMaximumLevel().ordinal() <= WarningLevel.WARN.ordinal()) {
 				anyWarnings = true;
