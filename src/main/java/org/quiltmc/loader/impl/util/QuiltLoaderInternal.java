@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
  * By default this marks the class as "legacy_exposed", which doesn't throw an exception when trying to access it. */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public @interface QuiltLoaderInternal {
 
 	/** Controls how "internal" the class is. */
