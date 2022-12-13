@@ -501,8 +501,17 @@ public final class QuiltLoaderImpl {
 			tree.messages.add(error.toGuiMessage(tree));
 		}
 
-		for (QuiltPluginErrorImpl error : plugins.getErrors()) {
+		int number = 1;
+		List<QuiltPluginErrorImpl> pluginErrors = plugins.getErrors();
+		for (QuiltPluginErrorImpl error : pluginErrors) {
+			if (number > 200) {
+				error = new QuiltPluginErrorImpl(MOD_ID, QuiltLoaderText.translate("error.too_many_errors"));
+				error.appendDescription(QuiltLoaderText.translate("error.too_many_errors.desc", pluginErrors.size() - 200));
+				tree.messages.add(0, error.toGuiMessage(tree));
+				break;
+			}
 			tree.messages.add(error.toGuiMessage(tree));
+			number++;
 		}
 
 		// TODO: Move tab creation to the plugin manager
