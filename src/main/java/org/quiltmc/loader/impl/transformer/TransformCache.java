@@ -162,8 +162,8 @@ public class TransformCache {
 
 	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
 		RuntimeModRemapper.remap(root, modList);
-//		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
+		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
 			ChasmInvoker.applyChasm(root, modList, result);
-//		}
+		}
 	}
 }

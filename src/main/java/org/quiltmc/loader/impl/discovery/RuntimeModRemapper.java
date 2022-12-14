@@ -62,6 +62,15 @@ public final class RuntimeModRemapper {
 				.collect(Collectors.toList());
 
 		if (modsToRemap.isEmpty()) {
+			// Nothing to remap, but still copy over:
+			// - class files for all
+			// - resources for everything not loaded from a folder on the default FS (since that can change at any time)
+			for (ModLoadOption mod : modList) {
+				if (!mod.needsChasmTransforming()) {
+					continue;
+				}
+				Path resourceRoot = mod.resourceRoot();
+			}
 			return;
 		}
 
