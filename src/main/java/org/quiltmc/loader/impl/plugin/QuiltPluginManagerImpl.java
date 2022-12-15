@@ -1894,6 +1894,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			if (true) {
 				// Disable unhandled mod error until mods can actually declare loader plugins
 				Log.warn(LogCategory.DISCOVERY, "Unknown file in mods folder: " + describePath(file));
+				guiNode.addChild(QuiltLoaderText.translate("warn.unhandled_mod")).setDirectLevel(WarningLevel.WARN);
 				return;
 			}
 
