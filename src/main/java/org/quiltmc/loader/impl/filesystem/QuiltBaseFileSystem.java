@@ -102,8 +102,13 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 
 			if (matchesMagic(c)) {
 				if (c == '.') {
-					while (sb.length() > 0 && sb.charAt(sb.length() - 1) == '-') {
-						sb.deleteCharAt(sb.length() - 1);
+					while (sb.length() > 0) {
+						char previous = sb.charAt(sb.length() - 1);
+						if (previous == '-' || previous == '.') {
+							sb.deleteCharAt(sb.length() - 1);
+						} else {
+							break;
+						}
 					}
 				}
 				sb.append(c);
