@@ -38,10 +38,13 @@ import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 public class TransformCache {
 
-	public static void populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
+	public static void populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList,
+		ModSolveResult result) throws ModResolutionException {
 		Map<String, String> map = new TreeMap<>();
 		// Mod order is important? For now, assume it is
 		int index = 0;
@@ -62,6 +65,21 @@ public class TransformCache {
 			}
 		}
 
+		try {
+			Files.createDirectories(transformCacheFile.getParent());
+		} catch (IOException e) {
+			throw new ModResolutionException("Failed to create parent directories of the transform cache file!", e);
+		}
+
+		Path existing = checkTransformCache(transformCacheFile, map);
+		if (existing != null) {
+			return;
+		}
+
+		createTransformCache(transformCacheFile, toString(map), modList, result);
+	}
+
+	private static String toString(Map<String, String> map) {
 		StringBuilder optionList = new StringBuilder();
 		for (Entry<String, String> entry : map.entrySet()) {
 			optionList.append(entry.getKey());
@@ -71,23 +89,12 @@ public class TransformCache {
 		}
 		String options = optionList.toString();
 		optionList = null;
-
-		try {
-			Files.createDirectories(transformCacheFile.getParent());
-		} catch (IOException e) {
-			throw new ModResolutionException("Failed to create parent directories of the transform cache file!", e);
-		}
-
-		Path existing = checkTransformCache(transformCacheFile, options);
-		if (existing != null) {
-			return;
-		}
-
-		createTransformCache(transformCacheFile, options, modList, result);
+		return options;
 	}
 
-	private static Path checkTransformCache(Path transformCacheFile, String options) throws ModResolutionException {
+	private static Path checkTransformCache(Path transformCacheFile, Map<String, String> options) throws ModResolutionException {
 		if (!Files.exists(transformCacheFile)) {
+			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's missing");
 			return null;
 		}
 		FileSystem fileSystem = null;
@@ -97,16 +104,44 @@ public class TransformCache {
 			Path optionFile = inner.resolve("options.txt");
 
 			try (BufferedReader br = Files.newBufferedReader(optionFile, StandardCharsets.UTF_8)) {
-				for (int i = 0; i < options.length(); i++) {
-					int expected = options.charAt(i);
-					int found = br.read();
-					if (expected != found) {
-						fileSystem.close();
-						return null;
+				String line;
+				Map<String, String> oldOptions = new TreeMap<>(options);
+				Map<String, String> newOptions = new TreeMap<>();
+				Map<String, String> differingOptions = new TreeMap<>();
+				while ((line = br.readLine()) != null) {
+					if (line.isEmpty()) {
+						continue;
+					}
+					int eq = line.indexOf('=');
+					String key = line.substring(0, eq);
+					String value = line.substring(eq + 1);
+					String oldValue = oldOptions.remove(key);
+					if (oldValue != null) {
+						if (!value.equals(oldValue)) {
+							differingOptions.put(key, value);
+						}
+					} else {
+						newOptions.put(key, value);
 					}
 				}
-				if (br.read() != -1) {
-					fileSystem.close();
+
+				if (!oldOptions.isEmpty() || !newOptions.isEmpty() || !differingOptions.isEmpty()) {
+					Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it has different keys:");
+
+					for (Map.Entry<String, String> old : oldOptions.entrySet()) {
+						Log.info(LogCategory.CACHE, "  Missing: '" + old.getKey() + "': '" + old.getValue() + "'");
+					}
+
+					for (Map.Entry<String, String> added : newOptions.entrySet()) {
+						Log.info(LogCategory.CACHE, "  Included: '" + added.getKey() + "': '" + added.getValue() + "'");
+					}
+
+					for (Map.Entry<String, String> diff : differingOptions.entrySet()) {
+						String key = diff.getKey();
+						String oldValue = diff.getValue();
+						String newValue = options.get(key);
+						Log.info(LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'");
+					}
 					return null;
 				}
 			}
@@ -124,7 +159,9 @@ public class TransformCache {
 			try {
 				Files.delete(transformCacheFile);
 			} catch (IOException e) {
-				ModResolutionException ex = new ModResolutionException("Failed to read an older transform cache file " + transformCacheFile + " and then delete it!", e);
+				ModResolutionException ex = new ModResolutionException(
+					"Failed to read an older transform cache file " + transformCacheFile + " and then delete it!", e
+				);
 				ex.addSuppressed(io);
 				throw ex;
 			}
@@ -160,7 +197,8 @@ public class TransformCache {
 		}
 	}
 
-	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
+	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result)
+		throws ModResolutionException {
 		RuntimeModRemapper.remap(root, modList);
 		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
 			ChasmInvoker.applyChasm(root, modList, result);
