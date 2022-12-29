@@ -80,6 +80,11 @@ public class FabricLoaderImpl extends FabricLoader {
 	}
 
 	@Override
+	public Optional<ModContainer> quilt_getModContainer(Class<?> clazz) {
+		return QuiltLoader.getModContainer(clazz).map(ModContainerImpl::new);
+	}
+
+	@Override
 	public Collection<ModContainer> getAllMods() {
 		Collection<ModContainer> out = new ArrayList<>();
 		for (org.quiltmc.loader.api.ModContainer mc : QuiltLoader.getAllMods()) {

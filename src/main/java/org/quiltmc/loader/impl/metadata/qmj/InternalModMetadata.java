@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.Collection;
 import java.util.Map;
 
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -46,7 +47,12 @@ public interface InternalModMetadata
 
 	@Override
 	default FabricLoaderModMetadata asFabricModMetadata() {
-		return new QuiltModMetadataWrapperFabric(this);
+		return new QuiltModMetadataWrapperFabric(this, null);
+	}
+
+	@Override
+	default FabricLoaderModMetadata asFabricModMetadata(ModContainer quiltContainer) {
+		return new QuiltModMetadataWrapperFabric(this, quiltContainer);
 	}
 
 	@Override

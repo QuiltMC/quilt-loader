@@ -224,12 +224,12 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 				for (int i = 0; i < qmp.fs.getBackingPathCount(); i++) {
 					Path backing = qmp.fs.getBackingPath(i, qmp);
 					backingPaths.add(backing);
-					try {
+					if (Files.isDirectory(backing)) {
 						streams.add(Files.newDirectoryStream(backing, path -> {
 							return filter.accept(toJoinedPath(backing, path));
 						}));
 						anyReal = true;
-					} catch (NotDirectoryException e) {
+					} else {
 						streams.add(null);
 					}
 				}
@@ -259,6 +259,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 					closed = true;
 					IOException exception = null;
 					for (DirectoryStream<Path> sub : streams) {
+						if (sub == null) continue;
 						try {
 							sub.close();
 						} catch (IOException e) {
@@ -345,7 +346,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 							}
 
 							DirectoryStream<Path> stream = streams.get(index);
-							if (stream  != null) {
+							if (stream != null) {
 								subIterator = stream.iterator();
 							}
 						}

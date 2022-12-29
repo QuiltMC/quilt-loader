@@ -96,14 +96,19 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		for (byte b : path) {
 			char c = (char) (b & 255);
 
-			if (first && (c == '-' || c == '_' || c == '~')) {
+			if (first && (c == '-' || c == '_' || c == '~' || c == '.')) {
 				continue;
 			}
 
 			if (matchesMagic(c)) {
 				if (c == '.') {
-					while (sb.length() > 0 && sb.charAt(sb.length() - 1) == '-') {
-						sb.deleteCharAt(sb.length() - 1);
+					while (sb.length() > 0) {
+						char previous = sb.charAt(sb.length() - 1);
+						if (previous == '-' || previous == '.') {
+							sb.deleteCharAt(sb.length() - 1);
+						} else {
+							break;
+						}
 					}
 				}
 				sb.append(c);
@@ -163,7 +168,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 	}
 
 	@Override
-	public Path getPath(String first, String... more) {
+	public P getPath(String first, String... more) {
 		if (first.isEmpty()) {
 			return createPath(null, "");
 		}

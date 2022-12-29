@@ -50,8 +50,9 @@ import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.CachedFileSystem;
 
-public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> {
+public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> implements CachedFileSystem {
 
 	private static final Set<String> FILE_ATTRS = Collections.singleton("basic");
 
@@ -288,6 +289,11 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 			return true;
 		}
 
+		@Override
+		public boolean isPermanentlyReadOnly() {
+			return false;
+		}
+
 		/** @return The uncompressed size of all files stored in this file system. Since we store file data compressed
 		 *         this doesn't reflect actual byte usage. */
 		public int getUncompressedSize() {
@@ -447,6 +453,11 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 		@Override
 		public boolean isReadOnly() {
+			return false;
+		}
+
+		@Override
+		public boolean isPermanentlyReadOnly() {
 			return false;
 		}
 	}

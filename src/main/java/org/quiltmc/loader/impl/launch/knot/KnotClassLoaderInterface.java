@@ -22,12 +22,14 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.security.CodeSource;
 
+import org.quiltmc.loader.api.ModContainer;
+
 interface KnotClassLoaderInterface {
 	KnotClassDelegate getDelegate();
 	boolean isClassLoaded(String name);
 	Class<?> loadIntoTarget(String name) throws ClassNotFoundException;
 	void addURL(URL url);
-	void addPath(Path root, URL origin);
+	void addPath(Path root, ModContainer mod, URL origin);
 	URL getResource(String name);
 	InputStream getResourceAsStream(String filename, boolean skipOriginalLoader) throws IOException;
 

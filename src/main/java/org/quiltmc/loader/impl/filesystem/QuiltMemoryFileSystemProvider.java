@@ -32,6 +32,7 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
@@ -47,6 +48,7 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
@@ -227,6 +229,18 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 	@Override
 	public DirectoryStream<Path> newDirectoryStream(Path dir, Filter<? super Path> filter) throws IOException {
 		QuiltMemoryPath qmp = (QuiltMemoryPath) dir;
+
+		final QuiltMemoryPath[] entries;
+		QuiltMemoryEntry entry = qmp.fs.files.get(qmp);
+		if (entry instanceof QuiltMemoryFolder.ReadOnly) {
+			entries = ((QuiltMemoryFolder.ReadOnly) entry).children;
+		} else if (entry instanceof QuiltMemoryFolder.ReadWrite) {
+			entries = ((QuiltMemoryFolder.ReadWrite) entry).children
+					.toArray(new QuiltMemoryPath[0]);
+		} else {
+			throw new NotDirectoryException("Not a directory: " + dir);
+		}
+
 		return new DirectoryStream<Path>() {
 
 			boolean opened = false;
@@ -245,14 +259,21 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 				opened = true;
 
 				return new Iterator<Path>() {
-
-					QuiltMemoryPath[] entries;
 					int index = 0;
 					Path next;
 
 					@Override
 					public Path next() {
-						return next;
+						if (next == null) {
+							if (hasNext()) {
+								return next;
+							} else {
+								throw new NoSuchElementException();
+							}
+						}
+						Path path = next;
+						next = null;
+						return path;
 					}
 
 					@Override
@@ -261,19 +282,9 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 							return false;
 						}
 
-						if (entries == null) {
-							QuiltMemoryEntry entry = qmp.fs.files.get(qmp);
-							if (entry instanceof QuiltMemoryFolder.ReadOnly) {
-								entries = ((QuiltMemoryFolder.ReadOnly) entry).children;
-							} else if (entry instanceof QuiltMemoryFolder.ReadWrite) {
-								entries = ((QuiltMemoryFolder.ReadWrite) entry).children
-										.toArray(new QuiltMemoryPath[0]);
-							} else {
-								throw new DirectoryIteratorException(new NotDirectoryException("Not a directory: " + dir));
-							}
+						if (next != null) {
+							return true;
 						}
-
-						next = null;
 
 						for (; index < entries.length; index++) {
 							Path at = entries[index];

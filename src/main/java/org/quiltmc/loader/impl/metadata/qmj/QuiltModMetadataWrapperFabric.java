@@ -20,6 +20,7 @@ import java.util.*;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
@@ -42,6 +43,7 @@ import net.fabricmc.api.EnvType;
 
 public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	private final InternalModMetadata quiltMeta;
+	private final ModContainer quiltContainer;
 	private Version version;
 	private final Collection<String> provides;
 	private final Collection<ModDependency> depsAndBreaks;
@@ -53,8 +55,9 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	private final Collection<String> licenses;
 	private final Map<String, CustomValue> customValues;
 
-	public QuiltModMetadataWrapperFabric(InternalModMetadata quiltMeta) {
+	public QuiltModMetadataWrapperFabric(InternalModMetadata quiltMeta, ModContainer quiltContainer) {
 		this.quiltMeta = quiltMeta;
+		this.quiltContainer = quiltContainer;
 		ArrayList<String> provides = new ArrayList<>();
 		for (ProvidedMod provided : quiltMeta.provides()) {
 			provides.add(provided.id());
@@ -139,7 +142,20 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public String getType() {
-		return "quilt";
+		if (quiltContainer == null) {
+			return "quilt";
+		}
+		switch (quiltContainer.getSourceType()) {
+			case BUILTIN:
+				return "builtin";
+			case NORMAL_FABRIC:
+				return "fabric";
+			case NORMAL_QUILT:
+				return "quilt";
+			case OTHER:
+			default:
+				return "unknown";
+		}
 	}
 
 	@Override

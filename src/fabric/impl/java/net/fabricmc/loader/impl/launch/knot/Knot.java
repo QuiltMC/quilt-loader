@@ -1,4 +1,5 @@
 /*
+ * Copyright 2016 FabricMC
  * Copyright 2022 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,19 +15,11 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.metadata.qmj;
+package net.fabricmc.loader.impl.launch.knot;
 
-import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import net.fabricmc.loader.impl.launch.FabricLauncherBase;
 
-public interface ConvertibleModMetadata {
+@Deprecated
+public final class Knot extends FabricLauncherBase {
 
-	/** Please use {@link #asFabricModMetadata(ModContainer)} instead. */
-	FabricLoaderModMetadata asFabricModMetadata();
-
-	default FabricLoaderModMetadata asFabricModMetadata(ModContainer quiltContainer) {
-		return asFabricModMetadata();
-	}
-
-	InternalModMetadata asQuiltModMetadata();
 }

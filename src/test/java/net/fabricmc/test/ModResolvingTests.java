@@ -76,6 +76,22 @@ final class ModResolvingTests {
 	}
 
 	@Test
+	public void sidedDepends() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "sided_depends");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void sidedProvidedDepends() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "sided_provided_depends");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void mavenGroups() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "groups");
 		assertModPresent(modSet, "dep", "1.0.0");
