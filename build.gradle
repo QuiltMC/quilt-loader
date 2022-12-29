@@ -97,8 +97,8 @@ dependencies {
 	include "com.electronwill.night-config:toml:${project.night_config}"
 	api "org.quiltmc:quilt-config:${project.quilt_config}"
 
-    api "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
-    api "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
+	api "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
+	api "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
 
 	shadow "com.electronwill.night-config:core:${project.night_config}"
 	shadow "com.electronwill.night-config:toml:${project.night_config}"
