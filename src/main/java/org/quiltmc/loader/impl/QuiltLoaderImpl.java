@@ -763,7 +763,10 @@ public final class QuiltLoaderImpl {
 		// add mods to classpath
 		// TODO: This can probably be made safer, but that's a long-term goal
 		for (ModContainerExt mod : mods) {
-			if (!mod.metadata().id().equals(MOD_ID) && mod.getSourceType() != BasicSourceType.BUILTIN) {
+			if (mod.metadata().id().equals(MOD_ID)) {
+				continue;
+			}
+			if (mod.shouldAddToQuiltClasspath()) {
 				File jarFile = copiedToJarMods.get(mod.metadata().id());
 				if (jarFile == null) {
 					URL origin = null;//mod.getSourcePaths();

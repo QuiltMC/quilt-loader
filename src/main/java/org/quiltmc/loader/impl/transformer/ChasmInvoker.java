@@ -27,6 +27,8 @@ import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.util.LoaderUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 class ChasmInvoker {
 
@@ -158,6 +160,7 @@ class ChasmInvoker {
 						chasm.addClass(new ClassData(bytes, meta));
 					} else if (file.startsWith(chasmRoot) && file.getFileName().toString().endsWith(".chasm")) {
 						String chasmId = mod.id() + ":" + chasmRoot.relativize(chasmRoot).toString();
+						Log.info(LogCategory.GENERAL, "Found chasm transformer: '" + chasmId + "'");
 						Node node = Node.parse(file);
 						Transformer transformer = new ChasmLangTransformer(chasmId, node, chasm.getContext());
 						chasm.addTransformer(transformer);
@@ -179,9 +182,12 @@ class ChasmInvoker {
 			if (qm != null) {
 				rootTo = root.resolve(qm.from.id());
 			} else {
-				// TODO: Infer location from package structure!
-				// TODO: Classload from this place too!
-				rootTo = root.resolve("misc-classes");
+				String mod = package2mod.get(namer.name.substring(0, namer.name.lastIndexOf('/')));
+				if (mod == null) {
+					// TODO: Classload from this place!
+					mod = "misc-classes";
+				}
+				rootTo = root.resolve(mod);
 			}
 			Path to = rootTo.resolve(namer.name + ".class");
 			Files.createDirectories(to.getParent());

@@ -24,12 +24,20 @@ import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 
 public class BuiltinModContainer extends InternalModContainerBase {
 
-	public BuiltinModContainer(QuiltPluginContext pluginContext, ModMetadataExt metadata, Path from, Path resourceRoot) {
+	final boolean addToClasspath;
+
+	public BuiltinModContainer(QuiltPluginContext pluginContext, ModMetadataExt metadata, Path from, Path resourceRoot, boolean addToClasspath) {
 		super(pluginContext, metadata, from, resourceRoot);
+		this.addToClasspath = addToClasspath;
 	}
 
 	@Override
 	public BasicSourceType getSourceType() {
 		return BasicSourceType.BUILTIN;
+	}
+
+	@Override
+	public boolean shouldAddToQuiltClasspath() {
+		return addToClasspath;
 	}
 }
