@@ -218,6 +218,5 @@ class ChasmInvoker {
 			this.superName = superName;
 			this.interfaces = interfaces;
 		}
-
 	}
 }

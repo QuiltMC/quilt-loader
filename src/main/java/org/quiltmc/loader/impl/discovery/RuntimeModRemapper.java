@@ -61,16 +61,32 @@ public final class RuntimeModRemapper {
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 
-		if (modsToRemap.isEmpty()) {
-			// Nothing to remap, but still copy over:
-			// - class files for all
-			// - resources for everything not loaded from a folder on the default FS (since that can change at any time)
-			for (ModLoadOption mod : modList) {
-				if (!mod.needsChasmTransforming()) {
-					continue;
+		// Copy everything that's not in the mods to remap list
+		for (ModLoadOption mod : modList) {
+			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !"quilt_loader".equals(mod.id())) {
+				Path modSrc = mod.resourceRoot();
+				Path modDst = cache.resolve(mod.id());
+				try {
+					Files.walk(modSrc).forEach(path -> {
+						if (!Files.isRegularFile(path)) {
+							return;
+						}
+						Path sub = modSrc.relativize(path);
+						Path dst = modDst.resolve(sub.toString());
+						try {
+							Files.createDirectories(dst.getParent());
+							Files.copy(path, dst);
+						} catch (IOException e) {
+							throw new Error(e);
+						}
+					});
+				} catch (IOException io) {
+					throw new Error(io);
 				}
-				Path resourceRoot = mod.resourceRoot();
 			}
+		}
+
+		if (modsToRemap.isEmpty()) {
 			return;
 		}
 
