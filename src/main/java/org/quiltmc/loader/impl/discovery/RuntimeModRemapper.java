@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -63,7 +64,7 @@ public final class RuntimeModRemapper {
 
 		// Copy everything that's not in the mods to remap list
 		for (ModLoadOption mod : modList) {
-			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !"quilt_loader".equals(mod.id())) {
+			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
 				Path modSrc = mod.resourceRoot();
 				Path modDst = cache.resolve(mod.id());
 				try {

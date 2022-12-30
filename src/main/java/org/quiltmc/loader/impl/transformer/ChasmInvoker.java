@@ -28,7 +28,6 @@ import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
 import org.quiltmc.chasm.api.ChasmProcessor;
 import org.quiltmc.chasm.api.ClassData;
@@ -39,7 +38,6 @@ import org.quiltmc.chasm.lang.api.ast.Node;
 import org.quiltmc.chasm.lang.api.metadata.Metadata;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.log.Log;
