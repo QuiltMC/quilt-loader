@@ -107,9 +107,7 @@ class ChasmInvoker {
 			@Override
 			public boolean isInterface(String className) {
 				ClassReader cr = new ClassReader(readFile(LoaderUtil.getClassFileName(className)));
-				ClassInfoGrabber namer = new ClassInfoGrabber();
-				cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-				return (Opcodes.ACC_INTERFACE & namer.access) != 0;
+				return (Opcodes.ACC_INTERFACE & cr.getAccess()) != 0;
 			}
 
 			@Override
@@ -124,24 +122,22 @@ class ChasmInvoker {
 				}
 
 				ClassReader cr = new ClassReader(file);
-				ClassInfoGrabber namer = new ClassInfoGrabber();
-				cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
-				if (namer.superName.equals(leftClass)) {
+				if (cr.getSuperName().equals(leftClass)) {
 					return true;
 				}
 
-				for (String itf : namer.interfaces) {
+				for (String itf : cr.getInterfaces()) {
 					if (itf.equals(leftClass)) {
 						return true;
 					}
 				}
 
-				if (isAssignable(leftClass, namer.superName)) {
+				if (isAssignable(leftClass, cr.getSuperName())) {
 					return true;
 				}
 
-				for (String itf : namer.interfaces) {
+				for (String itf : cr.getInterfaces()) {
 					if (isAssignable(leftClass, itf)) {
 						return true;
 					}
@@ -152,10 +148,7 @@ class ChasmInvoker {
 
 			@Override
 			public String getSuperClass(String className) {
-				ClassReader cr = new ClassReader(readFile(LoaderUtil.getClassFileName(className)));
-				ClassInfoGrabber namer = new ClassInfoGrabber();
-				cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-				return namer.superName;
+				return new ClassReader(readFile(LoaderUtil.getClassFileName(className))).getSuperName();
 			}
 		});
 
@@ -189,22 +182,20 @@ class ChasmInvoker {
 		for (ClassData changedTo : changed) {
 
 			ClassReader cr = new ClassReader(changedTo.getClassBytes());
-			ClassInfoGrabber namer = new ClassInfoGrabber();
-			cr.accept(namer, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 
 			QuiltMetadata qm = changedTo.getMetadata().get(QuiltMetadata.class);
 			final Path rootTo;
 			if (qm != null) {
 				rootTo = root.resolve(qm.from.id());
 			} else {
-				String mod = package2mod.get(namer.name.substring(0, namer.name.lastIndexOf('/')));
+				String mod = package2mod.get(cr.getClassName().substring(0, cr.getClassName().lastIndexOf('/')));
 				if (mod == null) {
 					// TODO: Classload from this place!
 					mod = "misc-classes";
 				}
 				rootTo = root.resolve(mod);
 			}
-			Path to = rootTo.resolve(namer.name + ".class");
+			Path to = rootTo.resolve(cr.getClassName() + ".class");
 			Files.createDirectories(to.getParent());
 			Files.write(to, changedTo.getClassBytes());
 		}
@@ -216,28 +207,6 @@ class ChasmInvoker {
 
 		public QuiltMetadata(ModLoadOption from) {
 			this.from = from;
-		}
-	}
-
-	static class ClassInfoGrabber extends ClassVisitor {
-
-		int access;
-		String name;
-		String superName;
-		String[] interfaces;
-
-		protected ClassInfoGrabber() {
-			super(QuiltLoaderImpl.ASM_VERSION);
-		}
-
-		@Override
-		public void visit(int version, int access, String name, String signature, String superName,
-			String[] interfaces) {
-
-			this.access = access;
-			this.name = name;
-			this.superName = superName;
-			this.interfaces = interfaces;
 		}
 	}
 }
