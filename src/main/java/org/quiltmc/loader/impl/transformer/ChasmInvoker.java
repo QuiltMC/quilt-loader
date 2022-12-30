@@ -155,7 +155,7 @@ class ChasmInvoker {
 			if (!Files.exists(modPath)) {
 				continue;
 			}
-			Path chasmRoot = modPath.resolve("chasm_transformers");
+			Path chasmRoot = modPath.resolve("org").resolve("quiltmc").resolve("chasm").resolve("transformers");
 			Files.walkFileTree(modPath, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
