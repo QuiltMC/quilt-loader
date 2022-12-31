@@ -121,18 +121,31 @@ public class QuiltOverrides {
 		if (sub == null) {
 			return;
 		}
-		if (sub.type() != LType.OBJECT) {
-			throw parseException(sub, name + " must be an object!");
+		if (sub.type() == LType.ARRAY) {
+			LArray array = sub.asArray();
+			for (int i = 0; i < array.size(); i++) {
+				readSingleDepends(array.get(i), isAny, dst);
+			}
+		} else if (sub.type() == LType.OBJECT) {
+			readSingleDepends(sub, isAny, dst);
+		} else {
+			throw parseException(sub, "Must be either an object or an array of objects!");
 		}
-		JsonLoaderValue.ObjectImpl subObj = (JsonLoaderValue.ObjectImpl) sub;
+	}
+
+	private static void readSingleDepends(LoaderValue value, boolean isAny, Map<ModDependency, ModDependency> dst) {
+		if (value.type() != LType.OBJECT) {
+			throw parseException(value, "Must be an object!");
+		}
+		JsonLoaderValue.ObjectImpl subObj = (JsonLoaderValue.ObjectImpl) value;
 		// TODO: Support add OR remove OR replace/with
 		JsonLoaderValue replace = subObj.get("replace");
 		if (replace == null) {
-			throw parseException(sub, "replace is required!");
+			throw parseException(value, "replace is required!");
 		}
 		JsonLoaderValue with = subObj.get("with");
 		if (with == null) {
-			throw parseException(sub, "with is required!");
+			throw parseException(value, "with is required!");
 		}
 		ModDependency fromDep = V1ModMetadataReader.readDependencyObject(isAny, replace);
 		dst.put(fromDep, V1ModMetadataReader.readDependencyObject(isAny, with));
