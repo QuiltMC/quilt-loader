@@ -26,13 +26,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 
+import org.omg.PortableServer.ID_ASSIGNMENT_POLICY_ID;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependency.All;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
@@ -299,27 +302,8 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 					depends = new HashSet<>(depends);
 					breaks = new HashSet<>(breaks);
 
-					for (Map.Entry<ModDependency, ModDependency> entry : override.dependsOverrides.entrySet()) {
-						if (!depends.remove(entry.getKey())) {
-							Log.warn(
-								LogCategory.DISCOVERY, "Failed to find the dependency " + entry.getKey()
-									+ " to override in " + metadata.depends()
-							);
-							continue;
-						}
-						depends.add(entry.getValue());
-					}
-
-					for (Map.Entry<ModDependency, ModDependency> entry : override.breakOverrides.entrySet()) {
-						if (!breaks.remove(entry.getKey())) {
-							Log.warn(
-								LogCategory.DISCOVERY, "Failed to find the breaks " + entry.getKey()
-									+ " to override in " + metadata.breaks()
-							);
-							continue;
-						}
-						breaks.add(entry.getValue());
-					}
+					replace(override.dependsOverrides, depends);
+					replace(override.breakOverrides, breaks);
 				}
 
 				for (ModDependency dep : depends) {
@@ -335,6 +319,113 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				}
 			}
 		}
+	}
+
+	private static void warn(String msg) {
+		Log.warn(LogCategory.DISCOVERY, "'" + msg);
+	}
+
+	private static void replace(Map<ModDependency, ModDependency> overrides, Collection<ModDependency> in) {
+		for (Map.Entry<ModDependency, ModDependency> entry : overrides.entrySet()) {
+			ModDependency from = entry.getKey();
+			if (!in.remove(from)) {
+				warn("Failed to find the ModDependency 'from' to override!");
+				logModDep("", "", from);
+				warn("Comparison:");
+				if (in.isEmpty()) {
+					warn("  (None left)");
+				}
+				int index = 0;
+				for (ModDependency with : in) {
+					logCompare(" ", "[" + index++ + "]: ", from, with);
+				}
+				continue;
+			}
+			in.add(entry.getValue());
+		}
+	}
+
+	private static void logModDep(String indent, String firstPrefix, ModDependency value) {
+		if (value instanceof ModDependency.Only) {
+			ModDependency.Only only = (ModDependency.Only) value;
+			warn(indent + firstPrefix + only.id() + " versions " + only.versionRange() + //
+				(only.optional() ? "(optional)" : "(mandatory)"));
+			if (only.unless() != null) {
+				logModDep(indent + "  ", "unless ", value);
+			}
+		} else if (value instanceof ModDependency.All) {
+			ModDependency.All all = (ModDependency.All) value;
+			warn(indent + firstPrefix + " all of: ");
+			for (ModDependency.Only on : all) {
+				logModDep(indent + "  ", "", on);
+			}
+		} else {
+			ModDependency.Any all = (ModDependency.Any) value;
+			warn(indent + firstPrefix + " any of: ");
+			for (ModDependency.Only on : all) {
+				logModDep(indent + "  ", "", on);
+			}
+		}
+	}
+
+	private static void logCompare(String indent, String firstPrefix, ModDependency from, ModDependency with) {
+		if (Objects.equals(from, with)) {
+			warn(indent + firstPrefix + "matches!");
+			return;
+		}
+		if (from instanceof ModDependency.Only) {
+			if (with instanceof ModDependency.Only) {
+				ModDependency.Only f = (ModDependency.Only) from;
+				ModDependency.Only t = (ModDependency.Only) with;
+				warn(indent + firstPrefix + "on:");
+				logCompareValue(indent + "  id ", f.id(), t.id());
+				logCompareValue(indent + "  versions ", f.versionRange(), t.versionRange());
+				logCompareValue(indent + "  optional? ", f.optional(), t.optional());
+				if (f.unless() == null && t.unless() == null) {
+					logCompare(indent + "  ", "unless ", f.unless(), t.unless());
+				}
+			} else {
+				warn(indent + firstPrefix + "'from' is a direct dependency, but 'with' is not.");
+				logModDep(indent + "  ", "from: ", from);
+			}
+		} else if (from instanceof ModDependency.All) {
+			if (with instanceof ModDependency.All) {
+				ModDependency.All f = (ModDependency.All) from;
+				ModDependency.All t = (ModDependency.All) with;
+				warn(indent + firstPrefix + "all of:");
+				logListCompare(indent, f, t);
+			} else {
+				warn(indent + firstPrefix + "'from' is an all-of dependency list, but 'with' is not.");
+				logModDep(indent + "  ", "from: ", from);
+			}
+		} else if (from != null) {
+			if (with instanceof ModDependency.Any) {
+				ModDependency.Any f = (ModDependency.Any) from;
+				ModDependency.Any t = (ModDependency.Any) with;
+				warn(indent + firstPrefix + "any of:");
+				logListCompare(indent, f, t);
+			} else {
+				warn(indent + firstPrefix + "'from' is an any-of dependency list, but 'with' is not.");
+				logModDep(indent + "  ", "from: ", from);
+			}
+		} else {
+			warn(indent + firstPrefix + "'from' is missing, but 'with' is not.");
+		}
+	}
+
+	private static void logListCompare(String indent, Collection<ModDependency.Only> f, Collection<ModDependency.Only> t) {
+		Iterator<ModDependency.Only> fromIter = f.iterator();
+		Iterator<ModDependency.Only> withIter = t.iterator();
+		int index = 0;
+		while (true) {
+			ModDependency.Only from = fromIter.hasNext() ? fromIter.next() : null;
+			ModDependency.Only with = withIter.hasNext() ? withIter.next() : null;
+			logCompare(indent + "  ", "[" + index++ + "]", from, with);
+		}
+	}
+
+	private static void logCompareValue(String start, Object a, Object b) {
+		warn(start + a + (a.equals(b) ? " == " : " != ") + b);
 	}
 
 	public static QuiltRuleDep createModDepLink(QuiltPluginManager manager, RuleContext ctx, LoadOption option,
