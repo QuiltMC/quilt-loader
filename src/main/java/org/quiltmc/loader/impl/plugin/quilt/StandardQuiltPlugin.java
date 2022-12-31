@@ -60,6 +60,7 @@ import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
+import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.SpecificOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -325,24 +326,35 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Log.warn(LogCategory.DISCOVERY, "'" + msg);
 	}
 
-	private static void replace(Map<ModDependency, ModDependency> overrides, Collection<ModDependency> in) {
-		for (Map.Entry<ModDependency, ModDependency> entry : overrides.entrySet()) {
-			ModDependency from = entry.getKey();
-			if (!in.remove(from)) {
-				warn("Failed to find the ModDependency 'from' to override!");
-				logModDep("", "", from);
-				warn("Comparison:");
-				if (in.isEmpty()) {
-					warn("  (None left)");
-				}
-				int index = 0;
-				for (ModDependency with : in) {
-					logCompare(" ", "[" + index++ + "]: ", from, with);
-				}
-				continue;
+	private static void replace(SpecificOverrides overrides, Collection<ModDependency> in) {
+		for (Map.Entry<ModDependency, ModDependency> entry : overrides.replacements.entrySet()) {
+			if (remove(in, entry.getKey(), "replace")) {
+				in.add(entry.getValue());
 			}
-			in.add(entry.getValue());
 		}
+
+		for (ModDependency removal : overrides.removals) {
+			remove(in, removal, "remove");
+		}
+
+		in.addAll(overrides.additions);
+	}
+
+	private static boolean remove(Collection<ModDependency> in, ModDependency removal, String name) {
+		if (in.remove(removal)) {
+			warn("Failed to find the ModDependency 'from' to " + name + "!");
+			logModDep("", "", removal);
+			warn("Comparison:");
+			if (in.isEmpty()) {
+				warn("  (None left)");
+			}
+			int index = 0;
+			for (ModDependency with : in) {
+				logCompare(" ", "[" + index++ + "]: ", removal, with);
+			}
+			return true;
+		}
+		return false;
 	}
 
 	private static void logModDep(String indent, String firstPrefix, ModDependency value) {
