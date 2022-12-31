@@ -17,6 +17,8 @@
 package net.fabricmc.loader.impl.launch;
 
 
+import net.fabricmc.loader.impl.launch.knot.Knot;
+
 import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -35,8 +37,6 @@ public class FabricLauncherBase implements FabricLauncher {
 	private final QuiltLauncher delegate = QuiltLauncherBase.getLauncher();
 
 	private final MappingConfiguration mappingConfiguration = new MappingConfiguration(delegate.getMappingConfiguration());
-
-	private FabricLauncherBase() {}
 
 	public static Class<?> getClass(String className) throws ClassNotFoundException {
 		return Class.forName(className, true, getLauncher().getTargetClassLoader());
@@ -118,7 +118,7 @@ public class FabricLauncherBase implements FabricLauncher {
 	}
 
 	public static FabricLauncher getLauncher() {
-		return new FabricLauncherBase();
+		return new Knot();
 	}
 
 	public static Map<String, Object> getProperties() {

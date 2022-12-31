@@ -176,11 +176,17 @@ class QuiltMainWindow {
 			contentPane.add(tabs, BorderLayout.CENTER);
 
 			if (!tree.messages.isEmpty()) {
-				tabs.addTab(tree.messagesTabName, createMessagesPanel(icons, tree.messages));
+				tabs.addTab(tree.messagesTabName, icons.get(new IconInfo("level_error")), createMessagesPanel(icons, tree.messages));
 			}
 
 			for (QuiltJsonGuiTreeTab tab : tree.tabs) {
-				tabs.addTab(tab.node.name, createTreePanel(tab.node, tab.filterLevel, icons));
+				JPanel panel = createTreePanel(tab.node, tab.filterLevel, icons);
+				QuiltTreeWarningLevel maxLevel = tab.node.getMaximumWarningLevel();
+				if (maxLevel != QuiltTreeWarningLevel.NONE) {
+					tabs.addTab(tab.node.name, icons.get(new IconInfo("level_" + maxLevel.lowerCaseName)), panel);
+				} else {
+					tabs.addTab(tab.node.name, panel);
+				}
 			}
 
 		}

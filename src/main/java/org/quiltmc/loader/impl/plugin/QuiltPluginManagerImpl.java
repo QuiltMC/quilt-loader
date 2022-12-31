@@ -106,6 +106,8 @@ import org.quiltmc.loader.impl.solver.Sat4jWrapper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 import net.fabricmc.api.EnvType;
@@ -1891,6 +1893,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private void addModOption(Path file, Map<ModLoadOption, BasePluginContext> map, PluginGuiTreeNode guiNode) {
 		if (map == null || map.isEmpty()) {
+
+			if (true) {
+				// Disable unhandled mod error until mods can actually declare loader plugins
+				Log.warn(LogCategory.DISCOVERY, "Unknown file in mods folder: " + describePath(file));
+				guiNode.addChild(QuiltLoaderText.translate("warn.unhandled_mod")).setDirectLevel(WarningLevel.WARN);
+				return;
+			}
+
 			Path containingFile = getRealContainingFile(file);
 			QuiltLoaderText title = QuiltLoaderText.translate("error.unhandled_mod_file.title", describePath(containingFile));
 			QuiltPluginError error = reportError(theQuiltPluginContext, title);
@@ -1899,6 +1909,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendReportText("No plugin could load " + describePath(file));
 			guiNode.addChild(QuiltLoaderText.translate("error.unhandled_mod_file"))
 				.setError(null, error);
+
 		} else if (map.size() == 1) {
 			ModLoadOption option = map.keySet().iterator().next();
 			BasePluginContext plugin = map.values().iterator().next();

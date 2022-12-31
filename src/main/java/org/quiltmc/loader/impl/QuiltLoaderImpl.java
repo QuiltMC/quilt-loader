@@ -111,7 +111,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.23";
+	public static final String VERSION = "0.18.1-beta.26";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -503,8 +503,17 @@ public final class QuiltLoaderImpl {
 			tree.messages.add(error.toGuiMessage(tree));
 		}
 
-		for (QuiltPluginErrorImpl error : plugins.getErrors()) {
+		int number = 1;
+		List<QuiltPluginErrorImpl> pluginErrors = plugins.getErrors();
+		for (QuiltPluginErrorImpl error : pluginErrors) {
+			if (number > 200) {
+				error = new QuiltPluginErrorImpl(MOD_ID, QuiltLoaderText.translate("error.too_many_errors"));
+				error.appendDescription(QuiltLoaderText.translate("error.too_many_errors.desc", pluginErrors.size() - 200));
+				tree.messages.add(0, error.toGuiMessage(tree));
+				break;
+			}
 			tree.messages.add(error.toGuiMessage(tree));
+			number++;
 		}
 
 		// TODO: Move tab creation to the plugin manager

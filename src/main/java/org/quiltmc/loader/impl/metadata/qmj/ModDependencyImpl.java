@@ -40,7 +40,7 @@ final class ModDependencyImpl {
 
 	static abstract class CollectionImpl extends AbstractCollection<ModDependency.Only> implements ModDependency {
 		private final String location;
-		private final Collection<ModDependency.Only> conditions;
+		private final List<ModDependency.Only> conditions;
 
 		CollectionImpl(String location, Collection<ModDependency> conditions) {
 			this.location = location;
@@ -73,6 +73,21 @@ final class ModDependencyImpl {
 		@Override
 		public String toString() {
 			return location;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) {
+				return false;
+			}
+			return conditions.equals(((CollectionImpl) obj).conditions);
+		}
+
+		@Override
+		public int hashCode() {
+			return conditions.hashCode();
 		}
 	}
 
