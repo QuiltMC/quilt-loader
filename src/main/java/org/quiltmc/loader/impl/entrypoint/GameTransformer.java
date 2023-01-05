@@ -62,14 +62,14 @@ public class GameTransformer {
 		patchedClasses.put(key, writer.toByteArray());
 	}
 
-	public void locateEntrypoints(QuiltLauncher launcher, Path gameJar) {
+	public void locateEntrypoints(QuiltLauncher launcher, Path gamePath) {
 		if (entrypointsLocated) {
 			return;
 		}
 
 		patchedClasses = new HashMap<>();
 
-		if (Files.isDirectory(gameJar)) {
+		if (Files.isDirectory(gamePath)) {
 			Function<String, ClassReader> classSource = name -> {
 				byte[] data = patchedClasses.get(name);
 
@@ -77,13 +77,13 @@ public class GameTransformer {
 					return new ClassReader(data);
 				}
 
-				Path path = gameJar.resolve(LoaderUtil.getClassFileName(name));
-				if(Files.notExists(path)) return null;
+				Path path = gamePath.resolve(LoaderUtil.getClassFileName(name));
+				if (Files.notExists(path)) return null;
 
 				try (InputStream is = Files.newInputStream(path)) {
 					return new ClassReader(is);
 				} catch (IOException e) {
-					throw new UncheckedIOException(String.format("error reading %s in %s: %s", path.toAbsolutePath(), gameJar.toAbsolutePath(), e), e);
+					throw new UncheckedIOException(String.format("error reading %s in %s: %s", path.toAbsolutePath(), gamePath.toAbsolutePath(), e), e);
 				}
 			};
 
@@ -92,7 +92,7 @@ public class GameTransformer {
 			}
 		} else {
 
-			try (ZipFile zf = new ZipFile(gameJar.toFile())) {
+			try (ZipFile zf = new ZipFile(gamePath.toFile())) {
 				Function<String, ClassReader> classSource = name -> {
 					byte[] data = patchedClasses.get(name);
 
@@ -106,7 +106,7 @@ public class GameTransformer {
 					try (InputStream is = zf.getInputStream(entry)) {
 						return new ClassReader(is);
 					} catch (IOException e) {
-						throw new UncheckedIOException(String.format("error reading %s in %s: %s", name, gameJar.toAbsolutePath(), e), e);
+						throw new UncheckedIOException(String.format("error reading %s in %s: %s", name, gamePath.toAbsolutePath(), e), e);
 					}
 				};
 
@@ -114,7 +114,7 @@ public class GameTransformer {
 					patch.process(launcher, classSource, this::addPatchedClass);
 				}
 			} catch (IOException e) {
-				throw new UncheckedIOException(String.format("error reading %s: %s", gameJar.toAbsolutePath(), e), e);
+				throw new UncheckedIOException(String.format("error reading %s: %s", gamePath.toAbsolutePath(), e), e);
 			}
 		}
 
