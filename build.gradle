@@ -353,6 +353,41 @@ publishing {
 //				builtBy copyJson
 //				classifier = "launchwrapper"
 //			}
+
+			// Manually inject the dependencies into the final POM.
+			// This allows for use without Loom in projects that don't need it.
+			//
+			// This is done this way to avoid including dependencies that are
+			// shaded in, as Gradle seems to provide no clean way of excluding
+			// dependencies from the final POM.
+			//
+			// Note: This only uses the `api` configuration to determine what is
+			// fine to include, and does not respect exclusions. A more advanced
+			// implementation that excludes the `include` configuration from
+			// runtime & compile classpaths would likely prove to be better if
+			// Quilt ever needs to have dependencies that aren't to be shaded nor
+			// passed through to the application.
+			pom.withXml {
+				final def dependenciesNode = asNode().appendNode("dependencies")
+
+				for (final def dep : configurations.api.allDependencies) {
+					// Tests for an external dependency.
+					// Provides a guarantee that the needed metadata is present.
+					if (dep instanceof ExternalDependency) {
+						// Inject the dependency metadata.
+						final def dependencyNode = dependenciesNode.appendNode("dependency")
+
+						dependencyNode.appendNode("groupId", dep.group)
+						dependencyNode.appendNode("artifactId", dep.name)
+						dependencyNode.appendNode("version", dep.version)
+
+						// Note: If ever retrofitted to include the runtime classpath,
+						// change this to use the runtime scope if the dependency is not
+						// present in the compile classpath.
+						dependencyNode.appendNode("scope", "compile")
+					}
+				}
+			}
 		}
 	}
 
