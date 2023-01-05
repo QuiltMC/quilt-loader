@@ -166,8 +166,10 @@ class KnotClassDelegate {
 		if (c != null) {
 			QuiltLoaderInternal internal = c.getAnnotation(QuiltLoaderInternal.class);
 			QuiltLoaderInternalType type;
+			Class<?>[] replacements = {};
 			if (internal != null) {
 				type = internal.value();
+				replacements = internal.replacements();
 			} else if (name.startsWith("org.quiltmc.loader.impl")) {
 				type = QuiltLoaderInternalType.LEGACY_EXPOSED;
 				Log.warn(LogCategory.GENERAL, c + " isn't annotated with @QuiltLoaderInternal!");
@@ -178,32 +180,62 @@ class KnotClassDelegate {
 				return c;
 			}
 
-			switch (type) {
-				case LEGACY_EXPOSED: {
-					// TODO: Disable this when we can generate a report with this information!
-					Log.warn(
-						LogCategory.GENERAL, "Found access to quilt-loader internal api " + name
-							+ " - please ask the quilt-loader project to add an api for this, to ensure this functionality won't break in a future update!",
-						new Throwable()
-					);
-					break;
-				}
-				case NEW_INTERNAL:
-				default: {
-					throw new IllegalQuiltInternalAccessError("! Quilt-loader internal " + c
-						+ "\nPlease don't use this, instead ask us to declare a new public API that we can guarantee backwards compatibility for!");
-				}
-				case PLUGIN_API: {
-					throw new IllegalQuiltInternalAccessError("! Quilt-loader plugin-only internal " + c
-						+ "\nPlease don't use this, instead ask us to declare a new public API that we can guarantee backwards compatibility for!");
-				}
-				case LEGACY_NO_WARN: {
-					break;
+			if (type != QuiltLoaderInternalType.LEGACY_NO_WARN) {
+				String msg = generateInternalClassWarning(c, type, replacements);
+
+				switch (type) {
+					case LEGACY_EXPOSED: {
+						// TODO: Disable this when we can generate a report with this information!
+						Log.warn(LogCategory.GENERAL, msg, new Throwable());
+						break;
+					}
+					case NEW_INTERNAL:
+					case PLUGIN_API:
+					default: {
+						throw new IllegalQuiltInternalAccessError(msg);
+					}
 				}
 			}
 		}
 
 		return c;
+	}
+
+	private static String generateInternalClassWarning(Class<?> target, QuiltLoaderInternalType type, Class<?>[] replacements) {
+		StringBuilder sb = new StringBuilder();
+		switch (type) {
+			case LEGACY_EXPOSED: {
+				sb.append("Found access to quilt-loader internal " + target + " - ");
+				break;
+			}
+			case NEW_INTERNAL: {
+				sb.append("! Quilt-loader internal " + target + "\n");
+				break;
+			}
+			case PLUGIN_API: {
+				sb.append("! Quilt-loader plugin-only internal api " + target + "\n");
+				break;
+			}
+			default: {
+				sb.append("! UNKNOWN TYPE " + type + "\n");
+				break;
+			}
+		}
+
+		if (replacements.length == 0) {
+			sb.append("Please don't use this, instead ask us to declare a new public API that we can guarantee backwards compatibility for!");
+
+			return sb.toString();
+		} else if (replacements.length == 1) {
+			sb.append("Please don't use this, instead try using the public api " + replacements[0] + " instead - that way we can guarantee backwards compatibility when using it!");
+		} else {
+			sb.append("Please don't use this, instead try one of the following public api classes since those have guaranteed backwards compatibility:");
+			for (Class<?> repl : replacements) {
+				sb.append("\n - " + repl);
+			}
+		}
+
+		return sb.toString();
 	}
 
 	Class<?> tryLoadClass(String name, boolean allowFromParent) throws ClassNotFoundException {

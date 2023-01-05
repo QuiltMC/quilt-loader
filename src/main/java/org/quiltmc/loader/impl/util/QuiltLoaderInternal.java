@@ -34,4 +34,7 @@ public @interface QuiltLoaderInternal {
 
 	/** Controls how "internal" the class is. */
 	QuiltLoaderInternalType value();
+
+	/** Indicates API classes which should be used instead of the annotated class. */
+	Class<?>[] replacements() default {};
 }
