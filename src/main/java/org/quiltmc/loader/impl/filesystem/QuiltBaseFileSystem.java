@@ -147,7 +147,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		return name;
 	}
 
-	public Path getRoot() {
+	public P getRoot() {
 		return root;
 	}
 

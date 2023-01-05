@@ -303,6 +303,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			sb.append(path.getFileName().toString());
 		}
 
+		if (path instanceof QuiltJoinedPath) {
+			Collection<Path> parents = getJoinedPaths(((QuiltJoinedPath) path).getFileSystem().getRoot());
+			sb.insert(0, "]/");
+			for (Path p : parents) {
+				sb.insert(0, describePath(p));
+				sb.insert(0, ";");
+			}
+			// Replace the first semicolon with a square bracket
+			sb.replace(0, 1, "[");
+			return sb.toString();
+		}
+
 		Path p = path;
 		Path upper;
 
