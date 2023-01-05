@@ -813,6 +813,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						sbTab.append(" ");
 					}
 					sbTab.append(" | ");
+					for (int i = 0; i < maxNameLength; i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
 					for (int i = 0; i < maxIdLength; i++) {
 						sbTab.append(" ");
 					}
