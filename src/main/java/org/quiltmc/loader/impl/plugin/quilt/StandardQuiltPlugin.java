@@ -31,11 +31,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import org.omg.PortableServer.ID_ASSIGNMENT_POLICY_ID;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.api.ModDependency.All;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
@@ -342,17 +340,18 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	private static boolean remove(Collection<ModDependency> in, ModDependency removal, String name) {
 		if (in.remove(removal)) {
-			warn("Failed to find the ModDependency 'from' to " + name + "!");
-			logModDep("", "", removal);
-			warn("Comparison:");
-			if (in.isEmpty()) {
-				warn("  (None left)");
-			}
-			int index = 0;
-			for (ModDependency with : in) {
-				logCompare(" ", "[" + index++ + "]: ", removal, with);
-			}
 			return true;
+		}
+
+		warn("Failed to find the ModDependency 'from' to " + name + "!");
+		logModDep("", "", removal);
+		warn("Comparison:");
+		if (in.isEmpty()) {
+			warn("  (None left)");
+		}
+		int index = 0;
+		for (ModDependency with : in) {
+			logCompare(" ", "[" + index++ + "]: ", removal, with);
 		}
 		return false;
 	}
