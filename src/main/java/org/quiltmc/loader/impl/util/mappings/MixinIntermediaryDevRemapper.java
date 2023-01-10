@@ -142,6 +142,11 @@ public class MixinIntermediaryDevRemapper extends MixinRemapper {
 			}
 		}
 
+		// Realistically, this can't be remapped.
+		if (owner.startsWith("java/")) {
+			return name;
+		}
+
 		ClassInfo classInfo = ClassInfo.forName(owner);
 
 		if (classInfo == null) { // unknown class?
