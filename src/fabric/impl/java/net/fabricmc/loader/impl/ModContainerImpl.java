@@ -51,7 +51,7 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 
 	@Override
 	public LoaderModMetadata getInfo() {
-		return ((ConvertibleModMetadata) quilt.metadata()).asFabricModMetadata(quilt);
+		return ((ConvertibleModMetadata) quilt.metadata()).asFabricModMetadata(quilt).asQuiltModMetadata().asFabricModMetadata();
 	}
 
 	@Override
