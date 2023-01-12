@@ -18,7 +18,11 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.nio.file.Path;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** We don't have a lot of events so instead of using a proper event system we just keep track of them internally. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 abstract class PluginEvent {
 
 	static final class AddFolderEvent extends PluginEvent {

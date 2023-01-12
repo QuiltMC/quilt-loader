@@ -18,6 +18,10 @@ package org.quiltmc.loader.impl.report;
 
 import java.io.PrintWriter;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltStacktraceSection extends QuiltReportSection {
 
 	private final Throwable throwable;

@@ -20,7 +20,8 @@ package org.quiltmc.loader.impl.language;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import org.quiltmc.loader.impl.util.LoaderUtil;
-
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.objectweb.asm.ClassReader;
 
@@ -30,6 +31,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class JavaLanguageAdapter implements LanguageAdapter {
 	private static boolean canApplyInterface(String itfString) throws IOException {
 		// TODO: Be a bit more involved

@@ -35,9 +35,12 @@ import net.fabricmc.loader.api.metadata.Person;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class V0ModMetadataFabric extends AbstractModMetadata implements FabricLoaderModMetadata {
 	private static final Mixins EMPTY_MIXINS = new Mixins(Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 	// Required

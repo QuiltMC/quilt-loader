@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.util;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class StringUtil {
 	public static String capitalize(String s) {
 		if (s.isEmpty()) return s;

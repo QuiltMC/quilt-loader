@@ -21,6 +21,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class DummyClassLoader extends ClassLoader {
 	private static final Enumeration<URL> NULL_ENUMERATION = new Enumeration<URL>() {
 		@Override

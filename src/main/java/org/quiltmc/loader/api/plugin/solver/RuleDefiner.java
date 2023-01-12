@@ -16,8 +16,12 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** Plugin interface to allow {@link Rule}s to define themselves. If multiple definition methods are called then all of
  * those definitions must be matched. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface RuleDefiner {
 
 	/** @return A {@link LoadOption} which is negated - that is instead of being equal to TRUE, it will be equal to

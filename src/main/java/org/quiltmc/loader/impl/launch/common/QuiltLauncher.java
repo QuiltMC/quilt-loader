@@ -26,7 +26,10 @@ import java.util.List;
 import java.util.jar.Manifest;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface QuiltLauncher {
 	MappingConfiguration getMappingConfiguration();
 

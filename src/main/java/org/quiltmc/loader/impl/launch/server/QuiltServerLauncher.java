@@ -17,6 +17,8 @@
 
 package org.quiltmc.loader.impl.launch.server;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 import java.io.*;
@@ -27,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltServerLauncher {
 	private static final ClassLoader parentLoader = QuiltServerLauncher.class.getClassLoader();
 	private static String mainClass = "net.fabricmc.loader.launch.knot.KnotServer";

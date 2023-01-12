@@ -22,6 +22,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.TreeMap;
@@ -36,6 +40,7 @@ import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.Person;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class BuiltinModMetadata extends AbstractModMetadata {
 	private final String id;
 	private final Version version;

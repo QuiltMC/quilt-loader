@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.fabric.util.version;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +25,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -35,6 +36,7 @@ import net.fabricmc.loader.api.metadata.version.VersionInterval;
 import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 import net.fabricmc.loader.api.metadata.version.VersionPredicate.PredicateTerm;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class VersionPredicateParser {
 	private static final VersionComparisonOperator[] OPERATORS = VersionComparisonOperator.values();
 

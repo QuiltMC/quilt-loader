@@ -24,10 +24,13 @@ import com.electronwill.nightconfig.toml.TomlWriter;
 import org.quiltmc.config.api.ConfigEnvironment;
 import org.quiltmc.config.api.Serializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltConfigImpl {
 	private static ConfigEnvironment ENV;
 

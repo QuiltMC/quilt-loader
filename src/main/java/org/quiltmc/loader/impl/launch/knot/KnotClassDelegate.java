@@ -30,6 +30,9 @@ import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -55,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.Manifest;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotClassDelegate {
 	static class Metadata {
 		static final Metadata EMPTY = new Metadata(null, null);
@@ -82,6 +86,8 @@ class KnotClassDelegate {
 		}
 	}
 
+	private static final boolean LOG_EARLY_CLASS_LOADS = Boolean.getBoolean(SystemProperties.LOG_EARLY_CLASS_LOADS);
+
 	private final Map<String, Metadata> metadataCache = new ConcurrentHashMap<>();
 	private final KnotClassLoaderInterface itf;
 	private final GameProvider provider;
@@ -89,6 +95,7 @@ class KnotClassDelegate {
 	private final EnvType envType;
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
+	private boolean transformFinishedLoading = false;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -127,6 +134,112 @@ class KnotClassDelegate {
 	private IMixinTransformer getMixinTransformer() {
 		assert mixinTransformer != null;
 		return mixinTransformer;
+	}
+
+	Class<?> loadClass(String name, ClassLoader parent, boolean resolve) throws ClassNotFoundException {
+		Class<?> c = loadClassOnly(name, parent);
+		if (resolve) {
+			itf.resolveClassFwd(c);
+		}
+		return c;
+	}
+
+	private Class<?> loadClassOnly(String name, ClassLoader parent) throws ClassNotFoundException {
+		Class<?> c = itf.findLoadedClassFwd(name);
+		if (c != null) {
+			return c;
+		}
+
+		try {
+			c = tryLoadClass(name, false);
+		} catch (IllegalQuiltInternalAccessError e) {
+			// This happens when loading a class that needs a quilt-loader class to load:
+			// for example if it extends or implements one,
+			// or if the verifier needs to load one to check up-casts.
+			IllegalQuiltInternalAccessError e2 = new IllegalQuiltInternalAccessError("Failed to load the class " + name + "!");
+			e2.initCause(e);
+			throw e2;
+		}
+
+		if (c != null) {
+			return c;
+		}
+
+		c = parent.loadClass(name);
+
+		if (c != null) {
+			QuiltLoaderInternal internal = c.getAnnotation(QuiltLoaderInternal.class);
+			QuiltLoaderInternalType type;
+			Class<?>[] replacements = {};
+			if (internal != null) {
+				type = internal.value();
+				replacements = internal.replacements();
+			} else if (name.startsWith("org.quiltmc.loader.impl")) {
+				type = QuiltLoaderInternalType.LEGACY_EXPOSED;
+				Log.warn(LogCategory.GENERAL, c + " isn't annotated with @QuiltLoaderInternal!");
+			} else if (name.startsWith("org.quiltmc.loader.api.plugin")) {
+				type = QuiltLoaderInternalType.PLUGIN_API;
+				Log.warn(LogCategory.GENERAL, c + " isn't annotated with @QuiltLoaderInternal!");
+			} else {
+				return c;
+			}
+
+			if (type != QuiltLoaderInternalType.LEGACY_NO_WARN) {
+				String msg = generateInternalClassWarning(c, type, replacements);
+
+				switch (type) {
+					case LEGACY_EXPOSED: {
+						// TODO: Disable this when we can generate a report with this information!
+						Log.warn(LogCategory.GENERAL, msg, new Throwable());
+						break;
+					}
+					case NEW_INTERNAL:
+					case PLUGIN_API:
+					default: {
+						throw new IllegalQuiltInternalAccessError(msg);
+					}
+				}
+			}
+		}
+
+		return c;
+	}
+
+	private static String generateInternalClassWarning(Class<?> target, QuiltLoaderInternalType type, Class<?>[] replacements) {
+		StringBuilder sb = new StringBuilder();
+		switch (type) {
+			case LEGACY_EXPOSED: {
+				sb.append("Found access to quilt-loader internal " + target + " - ");
+				break;
+			}
+			case NEW_INTERNAL: {
+				sb.append("! Quilt-loader internal " + target + "\n");
+				break;
+			}
+			case PLUGIN_API: {
+				sb.append("! Quilt-loader plugin-only internal api " + target + "\n");
+				break;
+			}
+			default: {
+				sb.append("! UNKNOWN TYPE " + type + "\n");
+				break;
+			}
+		}
+
+		if (replacements.length == 0) {
+			sb.append("Please don't use this, instead ask us to declare a new public API that we can guarantee backwards compatibility for!");
+
+			return sb.toString();
+		} else if (replacements.length == 1) {
+			sb.append("Please don't use this, instead try using the public api " + replacements[0] + " instead - that way we can guarantee backwards compatibility when using it!");
+		} else {
+			sb.append("Please don't use this, instead try one of the following public api classes since those have guaranteed backwards compatibility:");
+			for (Class<?> repl : replacements) {
+				sb.append("\n - " + repl);
+			}
+		}
+
+		return sb.toString();
 	}
 
 	Class<?> tryLoadClass(String name, boolean allowFromParent) throws ClassNotFoundException {
@@ -317,12 +430,20 @@ class KnotClassDelegate {
 		}
 	}
 
+	public void afterMixinIntiializeFinished() {
+		transformFinishedLoading = true;
+	}
+
 	/**
 	 * Runs all the class transformers except mixin.
 	 */
 	public byte[] getPreMixinClassByteArray(String name, boolean allowFromParent) {
 		// some of the transformers rely on dot notation
 		name = name.replace('/', '.');
+
+		if (!transformFinishedLoading && LOG_EARLY_CLASS_LOADS) {
+			Log.info(LogCategory.GENERAL, "Loading " + name + " early", new Throwable());
+		}
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			try {

@@ -42,7 +42,10 @@ import org.quiltmc.config.impl.tree.TrackedValueImpl;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class Json5Serializer implements Serializer {
 	public static final Json5Serializer INSTANCE = new Json5Serializer();
 

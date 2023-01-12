@@ -40,7 +40,10 @@ import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TransformCache {
 
 	public static void populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList,

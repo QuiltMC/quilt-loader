@@ -17,7 +17,11 @@
 
 package org.quiltmc.loader.impl;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 @SuppressWarnings("serial")
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class DependencyException extends RuntimeException {
 	public DependencyException() { }
 

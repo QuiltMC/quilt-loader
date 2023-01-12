@@ -19,7 +19,10 @@ package org.quiltmc.loader.impl.plugin;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class BuiltinPluginContext extends BasePluginContext {
 
 	final QuiltLoaderPlugin plugin;

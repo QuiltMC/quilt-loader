@@ -19,10 +19,13 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.util.SortedMap;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /**
  * Implementation of an icon lookup.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 interface Icons {
 	/**
 	 * @see org.quiltmc.loader.api.ModMetadata#icon(int)

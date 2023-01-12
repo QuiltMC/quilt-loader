@@ -22,6 +22,8 @@ import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.util.sat4j.pb.IPBSolver;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 import org.quiltmc.loader.util.sat4j.specs.IConstr;
@@ -29,6 +31,7 @@ import org.quiltmc.loader.util.sat4j.specs.IVecInt;
 
 /** Base rules that may be set by any of the rule defining methods in {@link RuleDefiner}. These are used to ensure we
  * don't have to double-call rules to make them define themselves in both of the sat4j passes. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 abstract class RuleDefinition {
 
 	final Rule rule;

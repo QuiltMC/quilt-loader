@@ -29,6 +29,8 @@ import java.util.regex.Pattern;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -38,6 +40,7 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class V0ModMetadataParser {
 	private static final Pattern WEBSITE_PATTERN = Pattern.compile("\\((.+)\\)");
 	private static final Pattern EMAIL_PATTERN = Pattern.compile("<(.+)>");

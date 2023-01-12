@@ -24,6 +24,8 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import java.util.Collection;
 import java.util.List;
@@ -35,6 +37,7 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 /**
  * Internal variant of the ModMetadata interface.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMetadata, net.fabricmc.loader.metadata.LoaderModMetadata {
 	int getSchemaVersion();
 

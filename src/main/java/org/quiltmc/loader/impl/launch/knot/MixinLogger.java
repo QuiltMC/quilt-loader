@@ -22,6 +22,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.log.LogLevel;
@@ -29,6 +31,7 @@ import org.spongepowered.asm.logging.ILogger;
 import org.spongepowered.asm.logging.Level;
 import org.spongepowered.asm.logging.LoggerAdapterAbstract;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class MixinLogger extends LoggerAdapterAbstract {
 	private static final Map<String, ILogger> LOGGER_MAP = new ConcurrentHashMap<>();
 	private static final Map<Level, LogLevel> LEVEL_MAP = createLevelMap();

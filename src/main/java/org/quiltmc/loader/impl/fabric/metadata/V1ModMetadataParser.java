@@ -31,6 +31,8 @@ import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
@@ -41,6 +43,7 @@ import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.api.metadata.Person;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class V1ModMetadataParser {
 	/**
 	 * Reads a {@code fabric.mod.json} file of schema version {@code 1}.

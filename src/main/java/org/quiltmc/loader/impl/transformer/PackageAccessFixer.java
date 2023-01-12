@@ -20,12 +20,15 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /**
  * Changes package-private and protected access flags to public.
  * In a development environment, Minecraft classes may be mapped into a package structure with invalid access across
  * packages. The class verifier will complain unless we simply change package-private and protected to public.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class PackageAccessFixer extends ClassVisitor {
 	private static int modAccess(int access) {
 		if ((access & 0x7) != Opcodes.ACC_PRIVATE) {

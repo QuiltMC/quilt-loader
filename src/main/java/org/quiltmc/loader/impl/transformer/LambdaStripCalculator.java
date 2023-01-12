@@ -26,7 +26,10 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class LambdaStripCalculator extends ClassVisitor {
 
 	private static final String LAMBDA_CLASS_NAME = Type.getInternalName(LambdaMetafactory.class);

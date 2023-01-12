@@ -38,10 +38,13 @@ import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.fabric.metadata.ModDependencyImpl;
 import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class DependencyOverrides {
 	private final Map<String, List<Entry>> dependencyOverrides;
 

@@ -23,8 +23,13 @@ import java.util.Map;
 
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderFactoryImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Location-less factories */
+// Unlike the rest of the plugin API this should probably be moved to the main API
+// since it could be useful?
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface LoaderValueFactory {
 
 	public static LoaderValueFactory getFactory() {

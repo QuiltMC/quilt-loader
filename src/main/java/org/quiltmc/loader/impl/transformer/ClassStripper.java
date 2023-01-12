@@ -23,10 +23,13 @@ import java.util.List;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /**
  * Strips the specified interfaces, fields and methods from a class.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ClassStripper extends ClassVisitor {
 	private final Collection<String> stripInterfaces;
 	private final Collection<String> stripFields;

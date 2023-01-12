@@ -21,6 +21,10 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 abstract class QuiltMemoryFolder extends QuiltMemoryEntry {
 
 	private QuiltMemoryFolder(QuiltMemoryPath path) {

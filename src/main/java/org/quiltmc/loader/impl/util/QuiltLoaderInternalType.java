@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.report;
-
-import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+package org.quiltmc.loader.impl.util;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltReportedError extends ModResolutionException {
+public enum QuiltLoaderInternalType {
 
-	public final QuiltReport report;
+	/** Indicates the class is both legacy, and was originally considered "api" - so no warnings should be printed on
+	 * callers. */
+	LEGACY_NO_WARN,
 
-	public QuiltReportedError(QuiltReport report) {
-		this.report = report;
-	}
+	/** Indicates the class is legacy, and not considered "api" at any point - so warnings should be printed when
+	 * callers try to access it. */
+	LEGACY_EXPOSED,
+
+	/** Permits loader plugins to access the class, but not mods. */
+	PLUGIN_API,
+
+	/** Indicates the class has been added since 0.18.0, and so both mods and plugins aren't allowed to use them. */
+	NEW_INTERNAL;
 }

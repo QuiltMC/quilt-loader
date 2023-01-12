@@ -33,6 +33,8 @@ import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
@@ -53,6 +55,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltMixinBootstrap {
 	private QuiltMixinBootstrap() { }
 

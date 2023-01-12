@@ -39,7 +39,10 @@ import org.quiltmc.config.api.values.TrackedValue;
 import org.quiltmc.config.api.values.ValueList;
 import org.quiltmc.config.api.values.ValueMap;
 import org.quiltmc.config.api.values.ValueTreeNode;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class NightConfigSerializer<C extends CommentedConfig> implements Serializer {
 	private final String fileExtension;
 	private final ConfigParser<C> parser;

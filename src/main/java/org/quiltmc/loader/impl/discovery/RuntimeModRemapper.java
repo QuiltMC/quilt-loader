@@ -43,6 +43,8 @@ import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
 
@@ -55,6 +57,7 @@ import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class RuntimeModRemapper {
 
 	public static void remap(Path cache, List<ModLoadOption> modList) {

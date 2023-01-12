@@ -18,7 +18,10 @@
 package org.quiltmc.loader.impl.entrypoint;
 
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltEntrypointException extends EntrypointException {
 
 	private final String key;

@@ -20,6 +20,10 @@ import java.awt.image.BufferedImage;
 import java.util.Collections;
 import java.util.Map;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface PluginGuiManager {
 
 	// Icons

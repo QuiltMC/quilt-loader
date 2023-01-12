@@ -56,11 +56,11 @@ import java.util.zip.ZipException;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
@@ -103,6 +103,8 @@ import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -114,6 +116,7 @@ import net.fabricmc.api.EnvType;
  * <p>
  * Unlike {@link QuiltLoader} itself, it does make sense to have multiple of these at once: one for loading plugins that
  * will be used, and many more for "simulating" mod loading. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private static final String QUILT_ID = "quilt_loader";
@@ -301,6 +304,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		if (path.getNameCount() > 0) {
 			sb.append(path.getFileName().toString());
+		}
+
+		if (path instanceof QuiltJoinedPath) {
+			Collection<Path> parents = getJoinedPaths(((QuiltJoinedPath) path).getFileSystem().getRoot());
+			sb.insert(0, "]/");
+			for (Path p : parents) {
+				sb.insert(0, describePath(p));
+				sb.insert(0, ";");
+			}
+			// Replace the first semicolon with a square bracket
+			sb.replace(0, 1, "[");
+			return sb.toString();
 		}
 
 		Path p = path;
@@ -611,13 +626,21 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		// TODO: What other loader state do we need?
 		pluginState.lines("");
 
-		QuiltStringSection modTable = report.addStringSection("Mod Table", 100);
-		appendModTable(modTable::lines);
-		modTable.setShowInLogs(false);
+		try {
+			QuiltStringSection modTable = report.addStringSection("Mod Table", 100);
+			modTable.setShowInLogs(false);
+			appendModTable(modTable::lines);
+		} catch (Throwable e) {
+			report.addStacktraceSection("Crash while gathering mod table", 100, e);
+		}
 
-		QuiltStringSection modDetails = report.addStringSection("Mod Details", 100);
-		appendModDetails(modDetails::lines);
-		modDetails.setShowInLogs(false);
+		try {
+			QuiltStringSection modDetails = report.addStringSection("Mod Details", 100);
+			modDetails.setShowInLogs(false);
+			appendModDetails(modDetails::lines);
+		} catch (Throwable e) {
+			report.addStacktraceSection("Crash while gathering mod details", 100, e);
+		}
 
 		populateModsGuiTab(null);
 
@@ -793,6 +816,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						sbTab.append(" ");
 					}
 					sbTab.append(" | ");
+					for (int i = 0; i < maxNameLength; i++) {
+						sbTab.append(" ");
+					}
+					sbTab.append(" | ");
 					for (int i = 0; i < maxIdLength; i++) {
 						sbTab.append(" ");
 					}
@@ -907,7 +934,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				while ((parentFile = parentFile.getParent()) != null) {
 					parent = parentFile;
 				}
-				Path realParent = getParent(parent);
+				Path realParent = parent == null ? null : getParent(parent);
 				if (realParent == null) {
 					rootFsPaths.add(file);
 					break;
@@ -919,7 +946,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 
 		for (Path root : rootFsPaths) {
-			to.accept(root.toString() + ": ");
+
+			if (isJoinedPath(root)) {
+				Collection<Path> roots = getJoinedPaths(root);
+				to.accept("Joined path [" + roots.size() + "]:");
+				for (Path in : roots) {
+					to.accept(" - '" + in.toString() + "'");
+				}
+				to.accept("mod:");
+			} else {
+				to.accept(root.toString() + ":");
+			}
+
 			for (String line : processDetail(pathMap, insideBox, root, 0)) {
 				to.accept(line);
 			}

@@ -18,6 +18,10 @@ package org.quiltmc.loader.impl.filesystem;
 
 import java.nio.file.attribute.BasicFileAttributes;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 abstract class QuiltMemoryEntry {
 
 	final QuiltMemoryPath path;

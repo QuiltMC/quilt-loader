@@ -25,7 +25,10 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class InternalModOptionBase extends ModLoadOption {
 
 	protected final QuiltPluginContext pluginContext;

@@ -19,7 +19,9 @@ package org.quiltmc.loader.impl.metadata.qmj;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.quiltmc.json5.JsonReader;
@@ -30,8 +32,11 @@ import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Parses various overrides. Currently only version and depends/breaks overrides are supported. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltOverrides {
 
 	public final Map<String, ModOverrides> overrides = new HashMap<>();
@@ -116,26 +121,64 @@ public class QuiltOverrides {
 		}
 	}
 
-	private static void readDepends(LObject obj, boolean isAny, String name, Map<ModDependency, ModDependency> dst) {
+	private static void readDepends(LObject obj, boolean isAny, String name, SpecificOverrides dst) {
 		LoaderValue sub = obj.get(name);
 		if (sub == null) {
 			return;
 		}
-		if (sub.type() != LType.OBJECT) {
-			throw parseException(sub, name + " must be an object!");
+		if (sub.type() == LType.ARRAY) {
+			LArray array = sub.asArray();
+			for (int i = 0; i < array.size(); i++) {
+				readSingleDepends(array.get(i), isAny, dst);
+			}
+		} else if (sub.type() == LType.OBJECT) {
+			readSingleDepends(sub, isAny, dst);
+		} else {
+			throw parseException(sub, "Must be either an object or an array of objects!");
 		}
-		JsonLoaderValue.ObjectImpl subObj = (JsonLoaderValue.ObjectImpl) sub;
-		// TODO: Support add OR remove OR replace/with
+	}
+
+	private static final int ADD = 1 << 0;
+	private static final int REMOVE = 1 << 1;
+	private static final int REPLACE = 1 << 2;
+	private static final int WITH = 1 << 3;
+
+	private static void readSingleDepends(LoaderValue value, boolean isAny, SpecificOverrides dst) {
+		if (value.type() != LType.OBJECT) {
+			throw parseException(value, "Must be an object!");
+		}
+		JsonLoaderValue.ObjectImpl subObj = (JsonLoaderValue.ObjectImpl) value;
+
+		JsonLoaderValue add = subObj.get("add");
+		JsonLoaderValue remove = subObj.get("remove");
 		JsonLoaderValue replace = subObj.get("replace");
-		if (replace == null) {
-			throw parseException(sub, "replace is required!");
-		}
 		JsonLoaderValue with = subObj.get("with");
-		if (with == null) {
-			throw parseException(sub, "with is required!");
+
+		int flags = (add != null ? ADD : 0) //
+			| (remove != null ? REMOVE : 0) //
+			| (replace != null ? REPLACE : 0) //
+			| (with != null ? WITH : 0);
+
+		if (flags == ADD) {
+
+			dst.additions.add(V1ModMetadataReader.readDependencyObject(isAny, add));
+
+		} else if (flags == REMOVE) {
+
+			dst.removals.add(V1ModMetadataReader.readDependencyObject(isAny, remove));
+
+		} else if (flags == (REPLACE | WITH)) {
+
+			ModDependency fromDep = V1ModMetadataReader.readDependencyObject(isAny, replace);
+			dst.replacements.put(fromDep, V1ModMetadataReader.readDependencyObject(isAny, with));
+
+		} else {
+			throw parseException(
+				value, "Expected either: 'add', or 'remove', or both 'replace' and 'with', but got "//
+					+ (add != null ? "'add', " : "") + (remove != null ? "'remove', " : "")//
+					+ (replace != null ? "'replace', " : "") + (with != null ? "'with', " : "")//
+			);
 		}
-		ModDependency fromDep = V1ModMetadataReader.readDependencyObject(isAny, replace);
-		dst.put(fromDep, V1ModMetadataReader.readDependencyObject(isAny, with));
 	}
 
 	static ParseException parseException(LoaderValue value, String message) {
@@ -144,7 +187,13 @@ public class QuiltOverrides {
 
 	public static class ModOverrides {
 		public String newVersion;
-		public final Map<ModDependency, ModDependency> dependsOverrides = new HashMap<>();
-		public final Map<ModDependency, ModDependency> breakOverrides = new HashMap<>();
+		public final SpecificOverrides dependsOverrides = new SpecificOverrides();
+		public final SpecificOverrides breakOverrides = new SpecificOverrides();
+	}
+
+	public static class SpecificOverrides {
+		public final Map<ModDependency, ModDependency> replacements = new HashMap<>();
+		public final List<ModDependency> additions = new ArrayList<>();
+		public final List<ModDependency> removals = new ArrayList<>();
 	}
 }

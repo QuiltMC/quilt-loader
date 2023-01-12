@@ -31,11 +31,14 @@ import org.jetbrains.annotations.Nullable;
 import net.fabricmc.loader.api.Version;
 
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /**
  * @deprecated Plugins don't use this.
  */
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ModCandidateSet {
 	private final String modId;
 	private final List<String> modProvides = new ArrayList<>();

@@ -24,10 +24,13 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import org.jetbrains.annotations.VisibleForTesting;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** User-configurable options. Normally loaded from "CURRENT_DIR/config/quilt-loader.txt". */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltLoaderConfig {
 
 	// #######

@@ -18,8 +18,11 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Used to indicate part of a {@link ModDependency} from quilt.mod.json. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltModDepOption extends LoadOption {
 	public final ModDependency dep;
 

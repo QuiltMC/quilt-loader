@@ -17,6 +17,10 @@
 
 package org.quiltmc.loader.impl.util.log;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class LogCategory {
 	public static final LogCategory DISCOVERY = new LogCategory("Discovery");
 	public static final LogCategory ENTRYPOINT = new LogCategory("Entrypoint");

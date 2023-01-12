@@ -35,7 +35,10 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.plugin.gui.PluginIconImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltPluginErrorImpl implements QuiltPluginError {
 
 	final String reportingPlugin;

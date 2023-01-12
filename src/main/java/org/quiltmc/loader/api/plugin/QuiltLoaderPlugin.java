@@ -31,6 +31,8 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** The base type for all plugins.
  * <p>
@@ -53,6 +55,7 @@ import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
  * </ol>
  * In particular, plugins must never call {@link QuiltLoader} directly - that's designed solely for mods to use after
  * mod loading is complete. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltLoaderPlugin {
 
 	/** Called at the very start to pass the {@link QuiltPluginContext} that this plugin should use for every call into

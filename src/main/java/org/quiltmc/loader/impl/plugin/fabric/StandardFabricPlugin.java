@@ -35,9 +35,12 @@ import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
 	@Override

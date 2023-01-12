@@ -19,8 +19,11 @@ package org.quiltmc.loader.impl.plugin;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A task that must be completed by the main quilt thread. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 abstract class MainThreadTask {
 
 	abstract void execute(QuiltPluginManagerImpl manager);

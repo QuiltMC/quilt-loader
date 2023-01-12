@@ -36,7 +36,10 @@ import org.quiltmc.loader.impl.fabric.metadata.AbstractModMetadata;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class BuiltinMetadataWrapperFabric extends AbstractModMetadata implements FabricLoaderModMetadata {
 	private final ModMetadata parent;
 	private Version version;

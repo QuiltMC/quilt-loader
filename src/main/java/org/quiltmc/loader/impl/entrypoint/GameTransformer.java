@@ -18,7 +18,8 @@
 package org.quiltmc.loader.impl.entrypoint;
 
 import org.quiltmc.loader.impl.util.LoaderUtil;
-
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
@@ -29,6 +30,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +40,7 @@ import java.util.function.Function;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class GameTransformer {
 	public static String appletMainClass;
 
@@ -61,14 +64,14 @@ public class GameTransformer {
 		patchedClasses.put(key, writer.toByteArray());
 	}
 
-	public void locateEntrypoints(QuiltLauncher launcher, Path gameJar) {
+	public void locateEntrypoints(QuiltLauncher launcher, Path gamePath) {
 		if (entrypointsLocated) {
 			return;
 		}
 
 		patchedClasses = new HashMap<>();
 
-		try (ZipFile zf = new ZipFile(gameJar.toFile())) {
+		if (Files.isDirectory(gamePath)) {
 			Function<String, ClassReader> classSource = name -> {
 				byte[] data = patchedClasses.get(name);
 
@@ -76,21 +79,45 @@ public class GameTransformer {
 					return new ClassReader(data);
 				}
 
-				ZipEntry entry = zf.getEntry(LoaderUtil.getClassFileName(name));
-				if (entry == null) return null;
+				Path path = gamePath.resolve(LoaderUtil.getClassFileName(name));
+				if (Files.notExists(path)) return null;
 
-				try (InputStream is = zf.getInputStream(entry)) {
+				try (InputStream is = Files.newInputStream(path)) {
 					return new ClassReader(is);
 				} catch (IOException e) {
-					throw new UncheckedIOException(String.format("error reading %s in %s: %s", name, gameJar.toAbsolutePath(), e), e);
+					throw new UncheckedIOException(String.format("error reading %s in %s: %s", path.toAbsolutePath(), gamePath.toAbsolutePath(), e), e);
 				}
 			};
 
 			for (GamePatch patch : patches) {
 				patch.process(launcher, classSource, this::addPatchedClass);
 			}
-		} catch (IOException e) {
-			throw new UncheckedIOException(String.format("error reading %s: %s", gameJar.toAbsolutePath(), e), e);
+		} else {
+
+			try (ZipFile zf = new ZipFile(gamePath.toFile())) {
+				Function<String, ClassReader> classSource = name -> {
+					byte[] data = patchedClasses.get(name);
+
+					if (data != null) {
+						return new ClassReader(data);
+					}
+
+					ZipEntry entry = zf.getEntry(LoaderUtil.getClassFileName(name));
+					if (entry == null) return null;
+
+					try (InputStream is = zf.getInputStream(entry)) {
+						return new ClassReader(is);
+					} catch (IOException e) {
+						throw new UncheckedIOException(String.format("error reading %s in %s: %s", name, gamePath.toAbsolutePath(), e), e);
+					}
+				};
+
+				for (GamePatch patch : patches) {
+					patch.process(launcher, classSource, this::addPatchedClass);
+				}
+			} catch (IOException e) {
+				throw new UncheckedIOException(String.format("error reading %s: %s", gamePath.toAbsolutePath(), e), e);
+			}
 		}
 
 		Log.debug(LogCategory.GAME_PATCH, "Patched %d class%s", patchedClasses.size(), patchedClasses.size() != 1 ? "s" : "");

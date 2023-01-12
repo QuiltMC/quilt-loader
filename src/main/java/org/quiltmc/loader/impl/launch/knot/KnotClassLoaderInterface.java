@@ -23,7 +23,10 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 interface KnotClassLoaderInterface {
 	KnotClassDelegate getDelegate();
 	boolean isClassLoaded(String name);
@@ -36,4 +39,6 @@ interface KnotClassLoaderInterface {
 	Package getPackage(String name);
 	Package definePackage(String name, String specTitle, String specVersion, String specVendor, String implTitle, String implVersion, String implVendor, URL sealBase) throws IllegalArgumentException;
 	Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs);
+	void resolveClassFwd(Class<?> c);
+	Class<?> findLoadedClassFwd(String name);
 }

@@ -19,7 +19,10 @@ package org.quiltmc.loader.api.plugin.gui;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface PluginGuiTreeNode {
 
 	public enum WarningLevel {

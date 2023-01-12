@@ -26,11 +26,14 @@ import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class V1ModMetadataImpl implements InternalModMetadata {
 	private final JsonLoaderValue.ObjectImpl root;
 	/* Required fields */

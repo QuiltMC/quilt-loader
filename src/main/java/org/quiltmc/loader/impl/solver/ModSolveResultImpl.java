@@ -22,7 +22,10 @@ import java.util.Map;
 
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ModSolveResultImpl implements ModSolveResult {
 
 	public final Map<String, ModLoadOption> directModMap;

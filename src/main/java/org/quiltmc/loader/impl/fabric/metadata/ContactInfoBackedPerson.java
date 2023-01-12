@@ -17,8 +17,12 @@
 
 package org.quiltmc.loader.impl.fabric.metadata;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.loader.api.metadata.ContactInformation;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class ContactInfoBackedPerson extends SimplePerson {
 	private final ContactInformation contact;
 

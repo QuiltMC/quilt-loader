@@ -51,10 +51,11 @@ import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -91,8 +92,9 @@ import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.FileSystemUtil.FileSystemDelegate;
 import org.quiltmc.loader.impl.util.ModLanguageAdapter;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -104,12 +106,13 @@ import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(value = QuiltLoaderInternalType.LEGACY_EXPOSED, replacements = QuiltLoader.class)
 public final class QuiltLoaderImpl {
 	public static final QuiltLoaderImpl INSTANCE = InitHelper.get();
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.25";
+	public static final String VERSION = "0.18.1-beta.28";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";

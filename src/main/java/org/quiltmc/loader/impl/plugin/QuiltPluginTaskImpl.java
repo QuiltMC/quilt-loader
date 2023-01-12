@@ -22,7 +22,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltPluginTaskImpl<V> implements QuiltPluginTask<V> {
 
 	final CompletableFuture<V> future;

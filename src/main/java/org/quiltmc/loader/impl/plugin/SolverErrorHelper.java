@@ -35,8 +35,8 @@ import java.util.Set;
 import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.VersionRange;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -47,7 +47,10 @@ import org.quiltmc.loader.impl.plugin.quilt.DisabledModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class SolverErrorHelper {
 
 	static void reportSolverError(QuiltPluginManagerImpl manager, Collection<Rule> rules) {

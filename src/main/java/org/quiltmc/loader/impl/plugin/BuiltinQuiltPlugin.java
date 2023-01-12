@@ -21,7 +21,10 @@ import java.util.Map;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class BuiltinQuiltPlugin implements QuiltLoaderPlugin {
 	private QuiltPluginContext context;
 
