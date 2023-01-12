@@ -21,11 +21,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.quiltmc.loader.impl.plugin.QuiltPluginTaskImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Quilt plugin version of a {@link Future}.
  * <p>
  * All implementations use {@link CompletableFuture} internally, since we only need to restrict the API surface of this,
  * rather than have a complete implementation of concurrent code. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltPluginTask<V> {
 
 	/** @return True if this task has already finished - either successfully or exceptionally. */

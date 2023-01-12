@@ -17,8 +17,12 @@
 
 package org.quiltmc.loader.impl.discovery;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** Thrown when something goes wrong internally during solving, rather than being the fault of mod files. In other words
  * it's caused by a bug in quilt loader, or one of it's plugins. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ModSolvingError extends ModResolutionException {
 	public ModSolvingError() {
 		super();

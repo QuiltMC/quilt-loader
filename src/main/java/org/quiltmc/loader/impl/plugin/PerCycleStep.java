@@ -18,8 +18,11 @@ package org.quiltmc.loader.impl.plugin;
 
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Indicates the current state in the current cycle. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 enum PerCycleStep {
 
 	/** Indicates that the cycle has only just started. */

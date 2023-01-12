@@ -51,7 +51,10 @@ import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> implements CachedFileSystem {
 
 	private static final Set<String> FILE_ATTRS = Collections.singleton("basic");

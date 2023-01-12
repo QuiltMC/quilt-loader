@@ -27,9 +27,12 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Passed to loader plugins as the singular way to access the rest of quilt. */
 @ApiStatus.NonExtendable
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltPluginContext {
 
 	// ###########

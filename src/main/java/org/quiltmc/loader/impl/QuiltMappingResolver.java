@@ -28,11 +28,14 @@ import java.util.function.Supplier;
 
 import net.fabricmc.mappings.EntryTriple;
 import org.quiltmc.loader.api.MappingResolver;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.mapping.tree.ClassDef;
 import net.fabricmc.mapping.tree.Descriptored;
 import net.fabricmc.mapping.tree.TinyTree;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class QuiltMappingResolver implements MappingResolver {
 	private final Supplier<TinyTree> mappingsSupplier;
 	private final Set<String> namespaces;

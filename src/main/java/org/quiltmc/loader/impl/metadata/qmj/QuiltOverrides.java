@@ -32,8 +32,11 @@ import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Parses various overrides. Currently only version and depends/breaks overrides are supported. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltOverrides {
 
 	public final Map<String, ModOverrides> overrides = new HashMap<>();

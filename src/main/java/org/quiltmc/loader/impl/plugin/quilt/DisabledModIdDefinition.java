@@ -19,8 +19,11 @@ package org.quiltmc.loader.impl.plugin.quilt;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A concrete definition that mandates that the modid must <strong>not</strong> be loaded by the given {@link ModLoadOption}. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class DisabledModIdDefinition extends ModIdDefinition {
 	public final ModLoadOption option;
 

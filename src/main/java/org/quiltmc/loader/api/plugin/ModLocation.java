@@ -17,9 +17,12 @@
 package org.quiltmc.loader.api.plugin;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Information about where a mod came from. Passed into the various {@link QuiltLoaderPlugin} scan methods. */
 @ApiStatus.NonExtendable
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface ModLocation {
 
 	/** @return True if the mod is directly on the classpath, otherwise false. */

@@ -21,6 +21,8 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.util.ExceptionUtil;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -28,6 +30,7 @@ import java.util.Collection;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class EntrypointUtils {
 	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
 		invokeContainer(name, type, container -> invoker.accept(container.getEntrypoint()));

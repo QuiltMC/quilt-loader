@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class Arguments {
 	// set the game version for the builtin game mod/dependencies, bypassing auto-detection
 	public static final String GAME_VERSION = SystemProperties.GAME_VERSION;

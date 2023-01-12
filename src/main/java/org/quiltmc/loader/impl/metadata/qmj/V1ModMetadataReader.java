@@ -42,10 +42,13 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
 		// Read loader category

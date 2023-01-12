@@ -36,6 +36,8 @@ import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.metadata.CustomValue;
@@ -45,6 +47,7 @@ import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class FabricModMetadataWrapper implements InternalModMetadata {
 	public static final String GROUP = "loader.fabric";
 	private static final String NO_LOCATION = "location not supported";

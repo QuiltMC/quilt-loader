@@ -33,12 +33,15 @@ import java.util.Map;
 import java.util.Set;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ClasspathModCandidateFinder {
 
 	@FunctionalInterface

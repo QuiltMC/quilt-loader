@@ -18,7 +18,10 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class QuiltRuleBreak extends Rule {
 	final LoadOption source;
 

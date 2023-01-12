@@ -20,8 +20,11 @@ package org.quiltmc.loader.impl.launch.knot;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.spongepowered.asm.launch.platform.container.IContainerHandle;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class MixinContainerHandleMod implements IContainerHandle {
 	@Override
 	public String getAttribute(String name) {

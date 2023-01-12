@@ -24,10 +24,14 @@ import java.util.Properties;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /**
  * Handles the translation of the plugin's status tree nodes.
  */
 // TODO: support plugins having their own language files for their own translation keys
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class I18n {
 	private static final ResourceBundle BUNDLE = ResourceBundle.getBundle("lang/quilt_loader", Locale.getDefault(), new LocaleFactory());
 

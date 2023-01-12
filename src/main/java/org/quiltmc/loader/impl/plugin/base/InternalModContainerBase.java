@@ -27,7 +27,10 @@ import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class InternalModContainerBase implements ModContainerExt {
 
 	private final String pluginId;

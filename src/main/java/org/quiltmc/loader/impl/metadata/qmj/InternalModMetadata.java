@@ -24,8 +24,11 @@ import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Internal mod metadata interface which stores implementation detail. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface InternalModMetadata
 	extends ModMetadata, ModMetadataExt, ConvertibleModMetadata {
 

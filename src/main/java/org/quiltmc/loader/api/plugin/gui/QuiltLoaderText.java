@@ -17,7 +17,10 @@
 package org.quiltmc.loader.api.plugin.gui;
 
 import org.quiltmc.loader.impl.plugin.gui.QuiltLoaderTextImpl;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltLoaderText {
 	public static final QuiltLoaderText EMPTY = new QuiltLoaderTextImpl("", false);
 

@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.report;
+package org.quiltmc.loader.impl.launch.knot;
 
-import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/** Thrown when a mod tries to access a {@link QuiltLoaderInternal} class that they aren't allowed to. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltReportedError extends ModResolutionException {
-
-	public final QuiltReport report;
-
-	public QuiltReportedError(QuiltReport report) {
-		this.report = report;
+public class IllegalQuiltInternalAccessError extends IllegalAccessError {
+	public IllegalQuiltInternalAccessError(String s) {
+		super(s);
 	}
 }

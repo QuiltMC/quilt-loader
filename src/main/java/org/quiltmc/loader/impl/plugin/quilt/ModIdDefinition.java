@@ -23,9 +23,12 @@ import java.util.Collections;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A concrete definition of a modid. This also maps the modid to the {@link LoadOption} candidates, and so is used
  * instead of {@link LoadOption} in other links. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class ModIdDefinition extends Rule {
 	public abstract String getModId();
 

@@ -32,9 +32,12 @@ import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltPluginManager {
 
 	// #######

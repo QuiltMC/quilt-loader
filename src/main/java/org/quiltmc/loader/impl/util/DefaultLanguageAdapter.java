@@ -29,6 +29,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class DefaultLanguageAdapter implements LanguageAdapter {
 	public static final DefaultLanguageAdapter INSTANCE = new DefaultLanguageAdapter();
 

@@ -17,8 +17,12 @@
 
 package org.quiltmc.loader.impl.language;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 @SuppressWarnings("serial")
 @Deprecated
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class LanguageAdapterException extends Exception {
 	public LanguageAdapterException(String s) {
 		super(s);

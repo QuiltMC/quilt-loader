@@ -22,10 +22,13 @@ import org.jetbrains.annotations.ApiStatus;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A reported error during plugin loading, which is shown in the error screen. This doesn't necessarily indicate an
  * error - however reporting any errors will cause the plugin loading to halt at the end of the current cycle. */
 @ApiStatus.NonExtendable
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltPluginError {
 
 	/** Adds more lines which are shown in the log and the crash report file, NOT in the gui.

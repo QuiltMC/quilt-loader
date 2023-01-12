@@ -19,8 +19,11 @@ package org.quiltmc.loader.api.plugin.solver;
 import java.util.Collection;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Base definition of a link between one or more {@link LoadOption}s, that */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class Rule {
 
 	public Rule() {}

@@ -24,7 +24,10 @@ import java.util.Objects;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class VersionIntervalImpl implements VersionInterval {
 	private final Version min;
 	private final boolean minInclusive;

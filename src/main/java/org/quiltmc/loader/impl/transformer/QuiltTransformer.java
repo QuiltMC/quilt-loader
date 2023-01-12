@@ -22,6 +22,8 @@ import java.util.HashSet;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -32,6 +34,7 @@ import net.fabricmc.loader.launch.common.FabricLauncherBase;
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 import net.fabricmc.api.EnvType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltTransformer {
 	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
 		// FIXME: Could use a better way to detect this...

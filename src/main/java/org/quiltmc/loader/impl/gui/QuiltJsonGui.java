@@ -49,7 +49,10 @@ import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltJsonGui {
 	public enum QuiltTreeWarningLevel {
 		FATAL,

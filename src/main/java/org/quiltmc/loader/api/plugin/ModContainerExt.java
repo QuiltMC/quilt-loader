@@ -17,7 +17,10 @@
 package org.quiltmc.loader.api.plugin;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface ModContainerExt extends ModContainer {
 	@Override
 	ModMetadataExt metadata();

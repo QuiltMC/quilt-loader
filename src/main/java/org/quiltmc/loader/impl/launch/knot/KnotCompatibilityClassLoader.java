@@ -21,6 +21,8 @@ import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.UrlUtil;
 
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.CodeSource;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
 	private final KnotClassDelegate delegate;
 
@@ -52,23 +55,19 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 	}
 
 	@Override
+	public Class<?> findLoadedClassFwd(String name) {
+		return findLoadedClass(name);
+	}
+
+	@Override
+	public void resolveClassFwd(Class<?> c) {
+		resolveClass(c);
+	}
+
+	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
-			Class<?> c = findLoadedClass(name);
-
-			if (c == null) {
-				c = delegate.tryLoadClass(name, false);
-
-				if (c == null) {
-					c = getParent().loadClass(name);
-				}
-			}
-
-			if (resolve) {
-				resolveClass(c);
-			}
-
-			return c;
+			return delegate.loadClass(name, getParent(), resolve);
 		}
 	}
 

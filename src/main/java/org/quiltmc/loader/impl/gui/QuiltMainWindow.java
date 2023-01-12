@@ -85,8 +85,11 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class QuiltMainWindow {
 	static Icon missingIcon = null;
 

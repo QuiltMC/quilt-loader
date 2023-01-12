@@ -16,8 +16,12 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** Base definition of something that can either be completely loaded or not loaded. (Usually this is just a mod jar
  * file, but in the future this might refer to something else that loader has control over). */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class LoadOption {
 
 }

@@ -31,6 +31,10 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 
 	private QuiltMemoryFile(QuiltMemoryPath path) {

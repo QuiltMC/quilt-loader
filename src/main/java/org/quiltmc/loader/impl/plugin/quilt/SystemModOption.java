@@ -21,12 +21,15 @@ import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A specialised {@link BuiltinModOption} which never has a useful origin hash, usually because it's either unknown or
  * useless to base the transformer hash key off.
  * <p>
  * Currently only the 'java' mod uses this, however architecture, operating system, or hardware related builtin mods
  * would use this too. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class SystemModOption extends BuiltinModOption {
 
 	public SystemModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, Path resourceRoot) {

@@ -28,7 +28,10 @@ import java.util.Map;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class JsonLoaderFactoryImpl implements LoaderValueFactory {
 
 	public static final JsonLoaderFactoryImpl INSTANCE = new JsonLoaderFactoryImpl();

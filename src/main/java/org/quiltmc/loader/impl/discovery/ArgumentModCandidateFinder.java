@@ -27,9 +27,12 @@ import java.nio.file.Paths;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ArgumentModCandidateFinder {
 
 	public static void addMods(QuiltPluginContext ctx, String list, String source) {

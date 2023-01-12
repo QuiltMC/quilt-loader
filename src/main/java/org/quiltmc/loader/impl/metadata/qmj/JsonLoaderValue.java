@@ -35,7 +35,10 @@ import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.MalformedSyntaxException;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 interface JsonLoaderValue extends LoaderValue {
 	static JsonLoaderValue read(JsonReader reader) throws IOException, ParseException {
 		switch (reader.peek()) {

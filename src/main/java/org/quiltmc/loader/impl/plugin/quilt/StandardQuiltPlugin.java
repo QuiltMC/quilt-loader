@@ -34,11 +34,12 @@ import java.util.Objects;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.ModDependency.All;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
@@ -61,12 +62,15 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.SpecificOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Quilt-loader's plugin. For simplicities sake this is a builtin plugin - and cannot be disabled, or reloaded (since
  * quilt-loader can't reload itself to a different version). */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);

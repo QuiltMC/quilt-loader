@@ -16,9 +16,13 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 /** If the very first class transformed by mixin is also referenced by a mixin config then we'll crash due to an
  * "attempted duplicate class definition". To avoid this, {@link Knot} loads this class instead - since it's *very
  * unlikely* to be referenced by mixin plugin. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class UnusedEmptyTargetClass {
 
 }

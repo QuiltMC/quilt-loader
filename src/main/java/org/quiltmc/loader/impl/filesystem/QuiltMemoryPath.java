@@ -17,7 +17,10 @@
 package org.quiltmc.loader.impl.filesystem;
 
 import org.jetbrains.annotations.NotNull;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltMemoryPath extends QuiltBasePath<QuiltMemoryFileSystem, QuiltMemoryPath> {
 
 	QuiltMemoryPath(@NotNull QuiltMemoryFileSystem fs, QuiltMemoryPath parent, String name) {

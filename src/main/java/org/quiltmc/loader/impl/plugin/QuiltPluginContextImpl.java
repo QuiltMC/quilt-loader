@@ -25,7 +25,10 @@ import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModPlugin;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltPluginContextImpl extends BasePluginContext {
 
 	final ModLoadOption optionFrom;

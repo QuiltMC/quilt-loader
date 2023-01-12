@@ -17,7 +17,10 @@
 package org.quiltmc.loader.impl.plugin;
 
 import org.quiltmc.loader.api.plugin.ModLocation;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class ModLocationImpl implements ModLocation {
 
 	private final boolean classpath, direct;

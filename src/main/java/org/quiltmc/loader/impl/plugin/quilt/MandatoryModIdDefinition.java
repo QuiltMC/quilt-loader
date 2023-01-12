@@ -20,10 +20,13 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModCandidate;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A concrete definition that mandates that the modid must be loaded by the given singular {@link ModCandidate}, and no
  * others. (The resolver pre-validates that we don't have duplicate mandatory mods, so this is always valid by the time
  * this is used). */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class MandatoryModIdDefinition extends ModIdDefinition {
 	public final ModLoadOption option;
 

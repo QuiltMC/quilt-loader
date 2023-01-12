@@ -17,6 +17,7 @@
 
 package org.quiltmc.loader.impl.util;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class SystemProperties {
 	public static final String DEVELOPMENT = "loader.development";
 	public static final String SIDE = "loader.side";

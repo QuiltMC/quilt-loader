@@ -21,8 +21,12 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.loader.api.metadata.ContactInformation;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class MapBackedContactInformation implements ContactInformation {
 	private final Map<String, String> map;
 

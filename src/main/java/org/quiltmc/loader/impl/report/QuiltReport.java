@@ -29,11 +29,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Helper class for writing a 'report' file to the game directory (either a crash report, a simulated load failed
  * report, or an informational mod state report). */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltReport {
 
 	private final String header;

@@ -28,11 +28,14 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.spongepowered.include.com.google.common.base.Charsets;
 
 /**
  * The central class used to read a {@code quilt.mod.json}.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ModMetadataReader {
 	/**
 	 * Name of the schema field used to detect what version of the {@code quilt.mod.json} file we are parsing. This

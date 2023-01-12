@@ -20,6 +20,10 @@ package org.quiltmc.loader.impl.util.log;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ConsoleLogHandler implements LogHandler {
 	private static final LogLevel MIN_STDERR_LEVEL = LogLevel.ERROR;
 	private static final LogLevel MIN_STDOUT_LEVEL = LogLevel.getDefault();

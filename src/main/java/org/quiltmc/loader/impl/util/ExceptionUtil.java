@@ -21,6 +21,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ExceptionUtil {
 	private static final boolean THROW_DIRECTLY = System.getProperty(SystemProperties.DEBUG_THROW_DIRECTLY) != null;
 

@@ -18,9 +18,12 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.spongepowered.asm.service.IGlobalPropertyService;
 import org.spongepowered.asm.service.IPropertyKey;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltGlobalPropertyService implements IGlobalPropertyService {
 	@Override
 	public IPropertyKey resolveKey(String name) {

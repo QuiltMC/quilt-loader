@@ -56,11 +56,11 @@ import java.util.zip.ZipException;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
-import org.quiltmc.loader.api.plugin.ModMetadataExt.ProvidedMod;
 import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
@@ -103,6 +103,8 @@ import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -114,6 +116,7 @@ import net.fabricmc.api.EnvType;
  * <p>
  * Unlike {@link QuiltLoader} itself, it does make sense to have multiple of these at once: one for loading plugins that
  * will be used, and many more for "simulating" mod loading. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private static final String QUILT_ID = "quilt_loader";

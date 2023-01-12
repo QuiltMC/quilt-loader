@@ -30,7 +30,10 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class ModDependencyImpl {
 	ModDependencyImpl() {
 	}

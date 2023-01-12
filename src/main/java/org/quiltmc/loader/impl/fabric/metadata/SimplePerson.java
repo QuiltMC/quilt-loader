@@ -17,12 +17,16 @@
 
 package org.quiltmc.loader.impl.fabric.metadata;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.loader.api.metadata.ContactInformation;
 import net.fabricmc.loader.api.metadata.Person;
 
 /**
  * Represents a simple implementation of person which is only identified by name.
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class SimplePerson implements Person {
 	private final String name;
 

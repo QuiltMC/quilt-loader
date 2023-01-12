@@ -17,9 +17,13 @@
 
 package org.quiltmc.loader.impl.fabric.util.version;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.util.version.SemanticVersionImpl;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Quilt2FabricVersion implements net.fabricmc.loader.api.Version {
 
 	final org.quiltmc.loader.api.Version quilt;

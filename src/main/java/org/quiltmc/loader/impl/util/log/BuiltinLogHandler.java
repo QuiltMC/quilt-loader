@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.impl.util.log;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 import java.io.IOException;
@@ -37,6 +39,7 @@ import java.util.Queue;
  * - option to relay previous log output to another log handler if requested through Log.init
  * - dumps previous log output to a log file if not closed/relayed yet
  */
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class BuiltinLogHandler extends ConsoleLogHandler {
 	private static final String DEFAULT_LOG_FILE = "quilt_loader.log";
 

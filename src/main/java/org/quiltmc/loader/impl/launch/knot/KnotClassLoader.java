@@ -23,7 +23,11 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,6 +42,7 @@ import java.util.Enumeration;
 import java.util.Objects;
 import java.util.Optional;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterface {
 	private static class DynamicURLClassLoader extends URLClassLoader {
 		private DynamicURLClassLoader(URL[] urls) {
@@ -183,23 +188,19 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	}
 
 	@Override
+	public void resolveClassFwd(Class<?> c) {
+		resolveClass(c);
+	}
+
+	@Override
+	public Class<?> findLoadedClassFwd(String name) {
+		return findLoadedClass(name);
+	}
+
+	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
-			Class<?> c = findLoadedClass(name);
-
-			if (c == null) {
-				c = delegate.tryLoadClass(name, false);
-
-				if (c == null) {
-					c = originalLoader.loadClass(name);
-				}
-			}
-
-			if (resolve) {
-				resolveClass(c);
-			}
-
-			return c;
+			return delegate.loadClass(name, originalLoader, resolve);
 		}
 	}
 

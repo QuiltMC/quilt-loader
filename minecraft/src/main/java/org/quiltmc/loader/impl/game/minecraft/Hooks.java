@@ -21,11 +21,14 @@ import net.fabricmc.api.ModInitializer;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.File;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_NO_WARN)
 public final class Hooks {
 	public static final String INTERNAL_NAME = Hooks.class.getName().replace('.', '/');
 

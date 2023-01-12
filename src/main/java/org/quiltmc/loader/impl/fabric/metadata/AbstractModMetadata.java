@@ -17,9 +17,13 @@
 
 package org.quiltmc.loader.impl.fabric.metadata;
 
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
 import net.fabricmc.loader.api.metadata.CustomValue;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class AbstractModMetadata implements ModMetadata {
 	public static final String TYPE_BUILTIN = "builtin";
 	public static final String TYPE_FABRIC_MOD = "fabric";
