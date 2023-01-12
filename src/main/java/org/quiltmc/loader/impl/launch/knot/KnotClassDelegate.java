@@ -32,6 +32,7 @@ import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -85,6 +86,8 @@ class KnotClassDelegate {
 		}
 	}
 
+	private static final boolean LOG_EARLY_CLASS_LOADS = Boolean.getBoolean(SystemProperties.LOG_EARLY_CLASS_LOADS);
+
 	private final Map<String, Metadata> metadataCache = new ConcurrentHashMap<>();
 	private final KnotClassLoaderInterface itf;
 	private final GameProvider provider;
@@ -92,6 +95,7 @@ class KnotClassDelegate {
 	private final EnvType envType;
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
+	private boolean transformFinishedLoading = false;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -426,12 +430,20 @@ class KnotClassDelegate {
 		}
 	}
 
+	public void afterMixinIntiializeFinished() {
+		transformFinishedLoading = true;
+	}
+
 	/**
 	 * Runs all the class transformers except mixin.
 	 */
 	public byte[] getPreMixinClassByteArray(String name, boolean allowFromParent) {
 		// some of the transformers rely on dot notation
 		name = name.replace('/', '.');
+
+		if (!transformFinishedLoading && LOG_EARLY_CLASS_LOADS) {
+			Log.info(LogCategory.GENERAL, "Loading " + name + " early", new Throwable());
+		}
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			try {
