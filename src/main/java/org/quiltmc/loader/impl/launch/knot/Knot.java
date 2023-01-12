@@ -165,6 +165,8 @@ public final class Knot extends QuiltLauncherBase {
 			Log.warn(LogCategory.KNOT, "If you get a 'LinkageError' of 'attempted duplicated * definition' after this then this error is the cause!", cnfe);
 		}
 
+		classLoader.getDelegate().afterMixinIntiializeFinished();
+
 		loader.invokePreLaunch();
 
 		return cl;
