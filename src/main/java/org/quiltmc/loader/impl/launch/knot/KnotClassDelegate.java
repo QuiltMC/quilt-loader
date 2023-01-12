@@ -167,7 +167,7 @@ class KnotClassDelegate {
 
 		c = parent.loadClass(name);
 
-		if (c != null) {
+		if (c != null && false /* Temporarily removed, since it doesn't work with Log4J. */) {
 			QuiltLoaderInternal internal = c.getAnnotation(QuiltLoaderInternal.class);
 			QuiltLoaderInternalType type;
 			Class<?>[] replacements = {};
