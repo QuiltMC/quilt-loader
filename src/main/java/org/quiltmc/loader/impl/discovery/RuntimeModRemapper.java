@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -63,6 +64,31 @@ public final class RuntimeModRemapper {
 		List<ModLoadOption> modsToRemap = modList.stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
+
+		// Copy everything that's not in the mods to remap list
+		for (ModLoadOption mod : modList) {
+			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
+				Path modSrc = mod.resourceRoot();
+				Path modDst = cache.resolve(mod.id());
+				try {
+					Files.walk(modSrc).forEach(path -> {
+						if (!Files.isRegularFile(path)) {
+							return;
+						}
+						Path sub = modSrc.relativize(path);
+						Path dst = modDst.resolve(sub.toString());
+						try {
+							Files.createDirectories(dst.getParent());
+							Files.copy(path, dst);
+						} catch (IOException e) {
+							throw new Error(e);
+						}
+					});
+				} catch (IOException io) {
+					throw new Error(io);
+				}
+			}
+		}
 
 		if (modsToRemap.isEmpty()) {
 			return;

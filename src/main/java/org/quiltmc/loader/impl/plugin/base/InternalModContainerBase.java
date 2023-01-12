@@ -108,4 +108,9 @@ public abstract class InternalModContainerBase implements ModContainerExt {
 	public List<List<Path>> getSourcePaths() {
 		return sourcePaths;
 	}
+
+	@Override
+	public boolean shouldAddToQuiltClasspath() {
+		return true;
+	}
 }

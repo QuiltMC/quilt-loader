@@ -39,6 +39,8 @@ public final class LogCategory {
 	public static final LogCategory SOLVING = new LogCategory("Solving");
 	public static final LogCategory TEST = new LogCategory("Test");
 	public static final LogCategory CONFIG = new LogCategory("Config");
+	public static final LogCategory CACHE = new LogCategory("Cache");
+	public static final LogCategory CHASM = new LogCategory("Chasm");
 
 	public static final String SEPARATOR = "/";
 

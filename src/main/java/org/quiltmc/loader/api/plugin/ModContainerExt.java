@@ -26,4 +26,7 @@ public interface ModContainerExt extends ModContainer {
 	ModMetadataExt metadata();
 
 	String pluginId();
+
+	/** @return True if quilt-loader should add {@link #rootPath()} to it's classpath, false otherwise. */
+	boolean shouldAddToQuiltClasspath();
 }

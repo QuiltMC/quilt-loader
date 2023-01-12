@@ -54,6 +54,7 @@ public final class SystemProperties {
 	// defaults to 60 seconds; can be changed by setting the system property
 	public static final String DEBUG_RESOLUTION_TIME_LIMIT = "loader.debug.resolutionTimeLimit";
 	public static final String DEBUG_DUMP_OVERRIDE_PATHS = "loader.debug.dump_override_paths";
+	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
 	public static final String LOG_EARLY_CLASS_LOADS = "loader.debug.log_early_class_loads";
 
