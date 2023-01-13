@@ -20,6 +20,7 @@ import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -89,6 +90,7 @@ class KnotClassDelegate {
 	private static final boolean LOG_EARLY_CLASS_LOADS = Boolean.getBoolean(SystemProperties.LOG_EARLY_CLASS_LOADS);
 
 	private final Map<String, Metadata> metadataCache = new ConcurrentHashMap<>();
+	private final Map<String, String> modCodeSourceMap = new ConcurrentHashMap<>();
 	private final KnotClassLoaderInterface itf;
 	private final GameProvider provider;
 	private final boolean isDevelopment;
@@ -96,8 +98,15 @@ class KnotClassDelegate {
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
 	private boolean transformFinishedLoading = false;
+	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+	private final Map<KnotClassLoaderKey, ModContainer> modKeys = new ConcurrentHashMap<>();
+	private final Map<ModContainer, KnotSeparateClassLoader> modClassLoaders = new ConcurrentHashMap<>();
+
+	/** Classes loaded by this loader, or {@link KnotSeparateClassLoader}. */
+	private final Map<String, Class<?>> classes = new ConcurrentHashMap<>();
 
 	/** Map of package to whether we can load it in this environment. */
 	private final Map<String, Boolean> packageSideCache = new ConcurrentHashMap<>();
@@ -136,15 +145,15 @@ class KnotClassDelegate {
 		return mixinTransformer;
 	}
 
-	Class<?> loadClass(String name, ClassLoader parent, boolean resolve) throws ClassNotFoundException {
-		Class<?> c = loadClassOnly(name, parent);
+	Class<?> loadClass(String name, ClassLoader parent, KnotSeparateClassLoader from, boolean resolve) throws ClassNotFoundException {
+		Class<?> c = loadClassOnly(name, parent, from);
 		if (resolve) {
 			itf.resolveClassFwd(c);
 		}
 		return c;
 	}
 
-	private Class<?> loadClassOnly(String name, ClassLoader parent) throws ClassNotFoundException {
+	private Class<?> loadClassOnly(String name, ClassLoader parent, KnotSeparateClassLoader from) throws ClassNotFoundException {
 		Class<?> c = itf.findLoadedClassFwd(name);
 		if (c != null) {
 			return c;
@@ -167,7 +176,7 @@ class KnotClassDelegate {
 
 		c = parent.loadClass(name);
 
-		if (c != null && false /* Temporarily removed, since it doesn't work with Log4J. */) {
+		if (c != null && from != null) {
 			QuiltLoaderInternal internal = c.getAnnotation(QuiltLoaderInternal.class);
 			QuiltLoaderInternalType type;
 			Class<?>[] replacements = {};
@@ -185,7 +194,8 @@ class KnotClassDelegate {
 			}
 
 			if (type != QuiltLoaderInternalType.LEGACY_NO_WARN) {
-				String msg = generateInternalClassWarning(c, type, replacements);
+				String src = from.key().toString();
+				String msg = generateInternalClassWarning(c, type, replacements, src);
 
 				switch (type) {
 					case LEGACY_EXPOSED: {
@@ -205,19 +215,19 @@ class KnotClassDelegate {
 		return c;
 	}
 
-	private static String generateInternalClassWarning(Class<?> target, QuiltLoaderInternalType type, Class<?>[] replacements) {
+	private static String generateInternalClassWarning(Class<?> target, QuiltLoaderInternalType type, Class<?>[] replacements, String from) {
 		StringBuilder sb = new StringBuilder();
 		switch (type) {
 			case LEGACY_EXPOSED: {
-				sb.append("Found access to quilt-loader internal " + target + " - ");
+				sb.append("Found access to quilt-loader internal " + target + " by " + from + " - ");
 				break;
 			}
 			case NEW_INTERNAL: {
-				sb.append("! Quilt-loader internal " + target + "\n");
+				sb.append("! Quilt-loader internal " + target + " by " + from + "\n");
 				break;
 			}
 			case PLUGIN_API: {
-				sb.append("! Quilt-loader plugin-only internal api " + target + "\n");
+				sb.append("! Quilt-loader plugin-only internal api " + target + " by " + from + "\n");
 				break;
 			}
 			default: {
@@ -245,6 +255,11 @@ class KnotClassDelegate {
 	Class<?> tryLoadClass(String name, boolean allowFromParent) throws ClassNotFoundException {
 		if (name.startsWith("java.")) {
 			return null;
+		}
+
+		Class<?> c = classes.get(name);
+		if (c != null) {
+			return c;
 		}
 
 		if (!allowedPrefixes.isEmpty()) {
@@ -291,6 +306,13 @@ class KnotClassDelegate {
 
 		int pkgDelimiterPos = name.lastIndexOf('.');
 
+		KnotBaseClassLoader cl = itf;
+
+		ModContainer mod = metadata.codeSource.mod;
+		if (mod != null) {
+			cl = getClassLoader(mod);
+		}
+
 		if (pkgDelimiterPos > 0) {
 			// TODO: package definition stub
 			String pkgString = name.substring(0, pkgDelimiterPos);
@@ -304,19 +326,30 @@ class KnotClassDelegate {
 				throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
 			}
 
-			Package pkg = itf.getPackage(pkgString);
+			Package pkg = cl.getPackage(pkgString);
 
 			if (pkg == null) {
 				try {
-					pkg = itf.definePackage(pkgString, null, null, null, null, null, null, null);
+					pkg = cl.definePackage(pkgString, null, null, null, null, null, null, null);
 				} catch (IllegalArgumentException e) { // presumably concurrent package definition
-					pkg = itf.getPackage(pkgString);
+					pkg = cl.getPackage(pkgString);
 					if (pkg == null) throw e; // still not defined?
 				}
 			}
 		}
 
-		return itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
+		c = cl.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
+		classes.put(name, c);
+		return c;
+	}
+
+	KnotBaseClassLoader getClassLoader(ModContainer mod) {
+		return modClassLoaders.computeIfAbsent(mod, m -> {
+			KnotClassLoaderKey key = new ModClassLoaderKey(mod);
+			KnotSeparateClassLoader separate = itf.createSeparateClassLoader(key);
+			modKeys.put(key, mod);
+			return separate;
+		});
 	}
 
 	boolean computeCanLoadPackage(String pkgName, boolean allowFromParent) {
@@ -338,10 +371,32 @@ class KnotClassDelegate {
 	Metadata getMetadata(String name, URL resourceURL) {
 		if (resourceURL == null) return Metadata.EMPTY;
 
+		String classFileName = LoaderUtil.getClassFileName(name);
+
+		if (transformCacheUrl != null) {
+			String resourceUrlString = resourceURL.toString();
+			if (resourceUrlString.startsWith(transformCacheUrl) && resourceUrlString.endsWith(classFileName)) {
+				String middle = resourceUrlString.substring(transformCacheUrl.length(), resourceUrlString.length() - classFileName.length());
+				if (middle.startsWith("/")) {
+					middle = middle.substring(1);
+				}
+				if (middle.endsWith("/")) {
+					middle = middle.substring(0, middle.length() - 1);
+				}
+				String modUrl = modCodeSourceMap.get(middle);
+				if (modUrl != null) {
+					Metadata metadata = metadataCache.get(modUrl);
+					if (metadata != null) {
+						return metadata;
+					}
+				}
+			}
+		}
+
 		URL codeSourceUrl = null;
 
 		try {
-			codeSourceUrl = UrlUtil.getSource(LoaderUtil.getClassFileName(name), resourceURL);
+			codeSourceUrl = UrlUtil.getSource(classFileName, resourceURL);
 		} catch (UrlConversionException e) {
 			System.err.println("Could not find code source for " + resourceURL + ": " + e.getMessage());
 		}
@@ -352,7 +407,11 @@ class KnotClassDelegate {
 	}
 
 	public void setMod(Path loadFrom, URL codeSourceUrl, ModContainer mod) {
-		metadataCache.computeIfAbsent(codeSourceUrl.toString(), str -> {
+		String urlStr = codeSourceUrl.toString();
+		if (mod != null) {
+			modCodeSourceMap.put(mod.metadata().id(), urlStr);
+		}
+		metadataCache.computeIfAbsent(urlStr, str -> {
 			Manifest manifest = null;
 
 			try {
@@ -498,6 +557,25 @@ class KnotClassDelegate {
 			allowedPrefixes.remove(url.toString());
 		} else {
 			allowedPrefixes.put(url.toString(), prefixes);
+		}
+	}
+
+	void setTransformCache(URL insideTransformCache) {
+		transformCacheUrl = insideTransformCache.toString();
+	}
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	private static final class ModClassLoaderKey extends KnotClassLoaderKey {
+
+		final ModContainer mod;
+
+		public ModClassLoaderKey(ModContainer mod) {
+			this.mod = mod;
+		}
+
+		@Override
+		public String toString() {
+			return mod.metadata().id();
 		}
 	}
 }

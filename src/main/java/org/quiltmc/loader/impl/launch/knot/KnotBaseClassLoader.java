@@ -16,24 +16,17 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.nio.file.Path;
+import java.security.CodeSource;
 
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-interface KnotClassLoaderInterface extends KnotBaseClassLoader {
-	KnotClassDelegate getDelegate();
-	boolean isClassLoaded(String name);
-	Class<?> loadIntoTarget(String name) throws ClassNotFoundException;
-	void addURL(URL url);
-	void addPath(Path root, ModContainer mod, URL origin);
-	URL getResource(String name);
-	InputStream getResourceAsStream(String filename, boolean skipOriginalLoader) throws IOException;
-
-	KnotSeparateClassLoader createSeparateClassLoader(KnotClassLoaderKey key);
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+interface KnotBaseClassLoader {
+	Package getPackage(String name);
+	Package definePackage(String name, String specTitle, String specVersion, String specVendor, String implTitle, String implVersion, String implVendor, URL sealBase) throws IllegalArgumentException;
+	Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs);
+	void resolveClassFwd(Class<?> c);
+	Class<?> findLoadedClassFwd(String name);
 }

@@ -25,6 +25,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -200,7 +201,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
-			return delegate.loadClass(name, originalLoader, resolve);
+			return delegate.loadClass(name, originalLoader, null, resolve);
 		}
 	}
 
@@ -281,7 +282,12 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	@Override
 	public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
 		Class<?> clazz = super.defineClass(name, b, off, len, cs);
-		if (Boolean.getBoolean("temp.alexiil.debug_class_to_mod_container")) {
+		printDebugClassLoad(clazz);
+		return clazz;
+	}
+
+	private static void printDebugClassLoad(Class<?> clazz) {
+		if (Boolean.getBoolean(SystemProperties.DEBUG_CLASS_TO_MOD)) {
 			Optional<ModContainer> modContainer = QuiltLoader.getModContainer(clazz);
 
 			StringBuilder text = new StringBuilder(clazz.toString());
@@ -292,11 +298,88 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 			text.append("\n");
 			System.out.print(text.toString());
 		}
+	}
 
-		return clazz;
+	@Override
+	public KnotSeparateClassLoader createSeparateClassLoader(KnotClassLoaderKey key) {
+		return new Separate(this, key); 
 	}
 
 	static {
 		registerAsParallelCapable();
+	}
+
+	private static final class Separate extends SecureClassLoader implements KnotSeparateClassLoader {
+		static {
+			registerAsParallelCapable();
+		}
+
+		final KnotClassLoader container;
+		final KnotClassLoaderKey key;
+
+		Separate(KnotClassLoader container, KnotClassLoaderKey key) {
+			this.container = container;
+			this.key = key;
+		}
+
+		@Override
+		public KnotClassLoaderKey key() {
+			return key;
+		}
+
+		@Override
+		public KnotClassLoaderInterface getBaseClassLoader() {
+			return container;
+		}
+
+		@Override
+		protected URL findResource(String name) {
+			return container.findResource(name);
+		}
+
+		@Override
+		public InputStream getResourceAsStream(String name) {
+			return container.getResourceAsStream(name);
+		}
+
+		@Override
+		protected Enumeration<URL> findResources(String name) throws IOException {
+			return container.findResources(name);
+		}
+
+		@Override
+		protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+			synchronized (getClassLoadingLock(name)) {
+				return container.delegate.loadClass(name, container.originalLoader, this, resolve);
+			}
+		}
+
+		@Override
+		public Package getPackage(String name) {
+			return super.getPackage(name);
+		}
+
+		@Override
+		public Package definePackage(String name, String specTitle, String specVersion, String specVendor,
+				String implTitle, String implVersion, String implVendor, URL sealBase) throws IllegalArgumentException {
+			return super.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
+		}
+
+		@Override
+		public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
+			Class<?> clazz = super.defineClass(name, b, off, len, cs);
+			printDebugClassLoad(clazz);
+			return clazz;
+		}
+
+		@Override
+		public void resolveClassFwd(Class<?> c) {
+			super.resolveClass(c);
+		}
+
+		@Override
+		public Class<?> findLoadedClassFwd(String name) {
+			return super.findLoadedClass(name);
+		}
 	}
 }

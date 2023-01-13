@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -146,6 +147,15 @@ public class ClasspathModCandidateFinder {
 	public static Path getLoaderPath() {
 		try {
 			return UrlUtil.asPath(QuiltLauncherBase.getLauncher().getClass().getProtectionDomain().getCodeSource().getLocation());
+		} catch (Throwable t) {
+			Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
+			return null;
+		}
+	}
+
+	public static Path getGameProviderPath() {
+		try {
+			return UrlUtil.asPath(QuiltLoaderImpl.INSTANCE.getGameProvider().getClass().getProtectionDomain().getCodeSource().getLocation());
 		} catch (Throwable t) {
 			Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			return null;

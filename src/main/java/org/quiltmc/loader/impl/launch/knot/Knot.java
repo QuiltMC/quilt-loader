@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.launch.knot;
 import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.config.QuiltConfigImpl;
@@ -303,6 +304,53 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	@Override
+	public void setTransformCache(URL insideTransformCache) {
+		classLoader.getDelegate().setTransformCache(insideTransformCache);
+	}
+
+	@Override
+	public void validateGameClassLoader(Object gameInstance) {
+		ClassLoader gameClassLoader = gameInstance.getClass().getClassLoader();
+		ClassLoader targetClassLoader = QuiltLauncherBase.getLauncher().getTargetClassLoader();
+		boolean matchesKnot = isMatchingClassLoader(targetClassLoader, gameClassLoader);
+		boolean containsKnot = false;
+
+		if (matchesKnot) {
+			containsKnot = true;
+		} else {
+			ClassLoader parentClassLoader = gameClassLoader.getParent();
+
+			while (parentClassLoader != null && parentClassLoader.getParent() != parentClassLoader) {
+				if (isMatchingClassLoader(targetClassLoader, parentClassLoader)) {
+					containsKnot = true;
+					break;
+				}
+
+				parentClassLoader = parentClassLoader.getParent();
+			}
+		}
+
+		if (!matchesKnot) {
+			if (containsKnot) {
+				Log.info(LogCategory.KNOT, "Environment: Target class loader is parent of game class loader.");
+			} else {
+				Log.warn(LogCategory.KNOT, "\n\n* CLASS LOADER MISMATCH! THIS IS VERY BAD AND WILL PROBABLY CAUSE WEIRD ISSUES! *\n"
+						+ " - Expected game class loader: %s\n"
+						+ " - Actual game class loader: %s\n"
+						+ "Could not find the expected class loader in game class loader parents!\n",
+						QuiltLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
+			}
+		}
+	}
+
+	private static boolean isMatchingClassLoader(ClassLoader expected, ClassLoader actual) {
+		if (actual instanceof KnotSeparateClassLoader) {
+			return ((KnotSeparateClassLoader) actual).getBaseClassLoader() == expected;
+		}
+		return false;
+	}
+
+	@Override
 	public EnvType getEnvironmentType() {
 		return envType;
 	}
@@ -329,6 +377,14 @@ public final class Knot extends QuiltLauncherBase {
 	@Override
 	public ClassLoader getTargetClassLoader() {
 		return (ClassLoader) classLoader;
+	}
+
+	@Override
+	public ClassLoader getClassLoader(ModContainer mod) {
+		if (mod.getSourceType() == BasicSourceType.BUILTIN) {
+			return null;
+		}
+		return (ClassLoader) classLoader.getDelegate().getClassLoader(mod);
 	}
 
 	@Override

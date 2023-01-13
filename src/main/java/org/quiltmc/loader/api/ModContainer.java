@@ -72,6 +72,16 @@ public interface ModContainer {
 	 * interface of this class). */
 	BasicSourceType getSourceType();
 
+	/** Retrieves the {@link ClassLoader} which directly stores classes for this mod. Most mods will have no use for
+	 * this method, since classes from any mod can be loaded by using the {@link ClassLoader} that loaded that mods
+	 * class (so using Class.forName("pkg.ClassName") will work for any mod).
+	 * <p>
+	 * This returns null for {@link BasicSourceType#BUILTIN} mods, and potentially {@link BasicSourceType#OTHER}.
+	 * 
+	 * @return The {@link ClassLoader} which loads classes for this mod, or null if quilt-loader doesn't provide that
+	 *         {@link ClassLoader}. */
+	ClassLoader getClassLoader();
+
 	public enum BasicSourceType {
 		/** A regular quilt mod, likely loaded from a mod jar file, but could be from the classpath instead. */
 		NORMAL_QUILT,

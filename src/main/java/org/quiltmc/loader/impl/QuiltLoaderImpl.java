@@ -22,6 +22,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -112,7 +113,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.30";
+	public static final String VERSION = "0.18.1-beta.31";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -295,6 +296,12 @@ public final class QuiltLoaderImpl {
 			transformedModBundle = FileSystemUtil.getJarFileSystem(transformCacheFile, false).get().getPath("/");
 		} catch (IOException e) {
 			throw new RuntimeException(e); // TODO
+		}
+
+		try {
+			QuiltLauncherBase.getLauncher().setTransformCache(transformedModBundle.toUri().toURL());
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
 		}
 
 		Set<String> modsToCopy = new HashSet<>();
@@ -789,6 +796,12 @@ public final class QuiltLoaderImpl {
 			Set<Path> knownModPaths = new HashSet<>();
 
 			for (ModContainerExt mod : mods) {
+				for (List<Path> paths : mod.getSourcePaths()) {
+					if (paths.size() != 1) {
+						continue;
+					}
+					knownModPaths.add(paths.get(0).toAbsolutePath().normalize());
+				}
 				if (mod.rootPath() instanceof QuiltJoinedPath) {
 					QuiltJoinedPath joined = (QuiltJoinedPath) mod.rootPath();
 					for (int i = 0; i < joined.getFileSystem().getBackingPathCount(); i++) {
@@ -802,6 +815,9 @@ public final class QuiltLoaderImpl {
 			// suppress fabric loader explicitly in case its fabric.mod.json is in a different folder from the classes
 			Path loaderPath = ClasspathModCandidateFinder.getLoaderPath();
 			if (loaderPath != null) knownModPaths.add(loaderPath.toAbsolutePath().normalize());
+
+			Path gameProviderPath = ClasspathModCandidateFinder.getGameProviderPath();
+			if (gameProviderPath != null) knownModPaths.add(gameProviderPath.toAbsolutePath().normalize());
 
 			for (String pathName : System.getProperty("java.class.path", "").split(File.pathSeparator)) {
 				if (pathName.isEmpty() || pathName.endsWith("*")) continue;
@@ -973,37 +989,8 @@ public final class QuiltLoaderImpl {
 			throw new RuntimeException("Cannot instantiate mods when not frozen!");
 		}
 
-		if (gameInstance != null && QuiltLauncherBase.getLauncher() instanceof Knot) {
-			ClassLoader gameClassLoader = gameInstance.getClass().getClassLoader();
-			ClassLoader targetClassLoader = QuiltLauncherBase.getLauncher().getTargetClassLoader();
-			boolean matchesKnot = (gameClassLoader == targetClassLoader);
-			boolean containsKnot = false;
-
-			if (matchesKnot) {
-				containsKnot = true;
-			} else {
-				gameClassLoader = gameClassLoader.getParent();
-
-				while (gameClassLoader != null && gameClassLoader.getParent() != gameClassLoader) {
-					if (gameClassLoader == targetClassLoader) {
-						containsKnot = true;
-					}
-
-					gameClassLoader = gameClassLoader.getParent();
-				}
-			}
-
-			if (!matchesKnot) {
-				if (containsKnot) {
-					Log.info(LogCategory.KNOT, "Environment: Target class loader is parent of game class loader.");
-				} else {
-					Log.warn(LogCategory.KNOT, "\n\n* CLASS LOADER MISMATCH! THIS IS VERY BAD AND WILL PROBABLY CAUSE WEIRD ISSUES! *\n"
-							+ " - Expected game class loader: %s\n"
-							+ " - Actual game class loader: %s\n"
-							+ "Could not find the expected class loader in game class loader parents!\n",
-							QuiltLauncherBase.getLauncher().getTargetClassLoader(), gameClassLoader);
-				}
-			}
+		if (gameInstance != null) {
+			QuiltLauncherBase.getLauncher().validateGameClassLoader(gameInstance);
 		}
 
 		this.gameInstance = gameInstance;

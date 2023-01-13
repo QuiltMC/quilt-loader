@@ -36,6 +36,8 @@ public interface QuiltLauncher {
 	void addToClassPath(Path path, String... allowedPrefixes);
 	void addToClassPath(Path path, ModContainer mod, URL origin, String... allowedPrefixes);
 	void setAllowedPrefixes(Path path, String... prefixes);
+	void setTransformCache(URL insideTransformCache);
+	void validateGameClassLoader(Object gameInstance);
 
 	EnvType getEnvironmentType();
 
@@ -49,6 +51,8 @@ public interface QuiltLauncher {
 	InputStream getResourceAsStream(String name);
 
 	ClassLoader getTargetClassLoader();
+
+	ClassLoader getClassLoader(ModContainer mod);
 
 	/**
 	 * Gets the byte array for a particular class.

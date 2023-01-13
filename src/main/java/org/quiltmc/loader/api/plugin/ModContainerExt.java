@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api.plugin;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -29,4 +30,9 @@ public interface ModContainerExt extends ModContainer {
 
 	/** @return True if quilt-loader should add {@link #rootPath()} to it's classpath, false otherwise. */
 	boolean shouldAddToQuiltClasspath();
+
+	@Override
+	default ClassLoader getClassLoader() {
+		return QuiltLauncherBase.getLauncher().getClassLoader(this);
+	}
 }
