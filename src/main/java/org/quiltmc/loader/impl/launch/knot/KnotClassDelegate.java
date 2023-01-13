@@ -262,10 +262,10 @@ class KnotClassDelegate {
 			return c;
 		}
 
-		URL classFileURL = itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent);
+		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
 
 		if (!allowedPrefixes.isEmpty()) {
-			URL url = classFileURL;
+			URL url = cachedUrl.get();
 			String[] prefixes;
 
 			if (url != null
@@ -297,14 +297,14 @@ class KnotClassDelegate {
 			}
 		}
 
-		byte[] input = getPostMixinClassByteArray(classFileURL, name);
+		byte[] input = getPostMixinClassByteArray(cachedUrl, name);
 		if (input == null) return null;
 
 		if (allowFromParent) {
 			parentSourcedClasses.add(name);
 		}
 
-		KnotClassDelegate.Metadata metadata = getMetadata(name, classFileURL);
+		KnotClassDelegate.Metadata metadata = getMetadata(name, cachedUrl.get());
 
 		int pkgDelimiterPos = name.lastIndexOf('.');
 
@@ -475,10 +475,10 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getPostMixinClassByteArray(String name, boolean allowFromParent) {
-		return getPostMixinClassByteArray(itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent), name);
+		return getPostMixinClassByteArray(new CachedUrl(name, allowFromParent), name);
 	}
 
-	public byte[] getPostMixinClassByteArray(URL classFileURL, String name) {
+	public byte[] getPostMixinClassByteArray(CachedUrl classFileURL, String name) {
 		byte[] transformedClassArray = getPreMixinClassByteArray(classFileURL, name);
 
 		if (!transformInitialized || !canTransformClass(name)) {
@@ -503,13 +503,13 @@ class KnotClassDelegate {
 	 * Runs all the class transformers except mixin.
 	 */
 	public byte[] getPreMixinClassByteArray(String name, boolean allowFromParent) {
-		return getPreMixinClassByteArray(itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent), name);
+		return getPreMixinClassByteArray(new CachedUrl(name, allowFromParent), name);
 	}
 
 	/**
 	 * Runs all the class transformers except mixin.
 	 */
-	public byte[] getPreMixinClassByteArray(URL classFileURL, String name) {
+	public byte[] getPreMixinClassByteArray(CachedUrl classFileURL, String name) {
 		// some of the transformers rely on dot notation
 		name = name.replace('/', '.');
 
@@ -549,11 +549,11 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(String name, boolean allowFromParent) throws IOException {
-		return getRawClassByteArray(itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent), name);
+		return getRawClassByteArray(new CachedUrl(name, allowFromParent), name);
 	}
 
-	public byte[] getRawClassByteArray(URL classFileURL, String name) throws IOException {
-		InputStream inputStream = classFileURL.openStream();
+	public byte[] getRawClassByteArray(CachedUrl urlCache, String name) throws IOException {
+		InputStream inputStream = urlCache.openStream();
 		if (inputStream == null) return null;
 
 		int a = inputStream.available();
@@ -579,6 +579,31 @@ class KnotClassDelegate {
 
 	void setTransformCache(URL insideTransformCache) {
 		transformCacheUrl = insideTransformCache.toString();
+	}
+
+	private final class CachedUrl {
+		final String className;
+		final boolean allowFromParent;
+		boolean hasLoaded = false;
+		URL url;
+
+		CachedUrl(String className, boolean allowFromParent) {
+			this.className = className;
+			this.allowFromParent = allowFromParent;
+		}
+
+		URL get() {
+			if (!hasLoaded) {
+				url = itf.getResource(LoaderUtil.getClassFileName(className), allowFromParent);
+				hasLoaded = true;
+			}
+			return url;
+		}
+
+		InputStream openStream() throws IOException {
+			URL u = get();
+			return u != null ? u.openStream() : null;
+		}
 	}
 
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
