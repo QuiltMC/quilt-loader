@@ -116,6 +116,15 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 	}
 
 	@Override
+	public URL getResource(String name, boolean allowFromParent) {
+		if (allowFromParent) {
+			return super.getResource(name);
+		} else {
+			return findResource(name);
+		}
+	}
+
+	@Override
 	public InputStream getResourceAsStream(String classFile, boolean allowFromParent) throws IOException {
 		if (!allowFromParent) {
 			if (findResource(classFile) == null) {
@@ -192,7 +201,7 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 
 		@Override
 		protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-			synchronized (getClassLoadingLock(name)) {
+			synchronized (container.getClassLoadingLock(name)) {
 				return container.delegate.loadClass(name, container.getParent(), this, resolve);
 			}
 		}

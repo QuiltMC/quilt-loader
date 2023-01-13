@@ -25,6 +25,8 @@ import java.util.Map;
 
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Essentially a {@link QuiltJoinedFileSystem} but which caches all paths in advance. Not exposed as a filesystem since
  * this is a bit more dynamic than that. */
@@ -46,6 +48,7 @@ public class QuiltClassPath {
 			QuiltMemoryFileSystem fs = ((QuiltMemoryPath) root).fs;
 
 			if (fs instanceof QuiltMemoryFileSystem.ReadWrite) {
+				Log.warn(LogCategory.GENERAL, "Adding read/write FS root to the classpath, this may slow down class loading: " + fs.name);
 				roots.add(root);
 			} else {
 				for (Path key : fs.files.keySet()) {
@@ -54,6 +57,7 @@ public class QuiltClassPath {
 			}
 
 		} else {
+			Log.warn(LogCategory.GENERAL, "Adding unknown root to the classpath, this may slow down class loading: " + root.getFileSystem() + " " + root);
 			roots.add(root);
 		}
 	}

@@ -33,7 +33,8 @@ interface KnotClassLoaderInterface extends KnotBaseClassLoader {
 	void addURL(URL url);
 	void addPath(Path root, ModContainer mod, URL origin);
 	URL getResource(String name);
-	InputStream getResourceAsStream(String filename, boolean skipOriginalLoader) throws IOException;
+	URL getResource(String name, boolean allowFromParent);
+	InputStream getResourceAsStream(String filename, boolean allowFromParent) throws IOException;
 
 	KnotSeparateClassLoader createSeparateClassLoader(KnotClassLoaderKey key);
 }

@@ -262,8 +262,10 @@ class KnotClassDelegate {
 			return c;
 		}
 
+		URL classFileURL = itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent);
+
 		if (!allowedPrefixes.isEmpty()) {
-			URL url = itf.getResource(LoaderUtil.getClassFileName(name));
+			URL url = classFileURL;
 			String[] prefixes;
 
 			if (url != null
@@ -295,14 +297,14 @@ class KnotClassDelegate {
 			}
 		}
 
-		byte[] input = getPostMixinClassByteArray(name, allowFromParent);
+		byte[] input = getPostMixinClassByteArray(classFileURL, name);
 		if (input == null) return null;
 
 		if (allowFromParent) {
 			parentSourcedClasses.add(name);
 		}
 
-		KnotClassDelegate.Metadata metadata = getMetadata(name, itf.getResource(LoaderUtil.getClassFileName(name)));
+		KnotClassDelegate.Metadata metadata = getMetadata(name, classFileURL);
 
 		int pkgDelimiterPos = name.lastIndexOf('.');
 
@@ -473,7 +475,11 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getPostMixinClassByteArray(String name, boolean allowFromParent) {
-		byte[] transformedClassArray = getPreMixinClassByteArray(name, allowFromParent);
+		return getPostMixinClassByteArray(itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent), name);
+	}
+
+	public byte[] getPostMixinClassByteArray(URL classFileURL, String name) {
+		byte[] transformedClassArray = getPreMixinClassByteArray(classFileURL, name);
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			return transformedClassArray;
@@ -497,6 +503,13 @@ class KnotClassDelegate {
 	 * Runs all the class transformers except mixin.
 	 */
 	public byte[] getPreMixinClassByteArray(String name, boolean allowFromParent) {
+		return getPreMixinClassByteArray(itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent), name);
+	}
+
+	/**
+	 * Runs all the class transformers except mixin.
+	 */
+	public byte[] getPreMixinClassByteArray(URL classFileURL, String name) {
 		// some of the transformers rely on dot notation
 		name = name.replace('/', '.');
 
@@ -506,7 +519,7 @@ class KnotClassDelegate {
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			try {
-				return getRawClassByteArray(name, allowFromParent);
+				return getRawClassByteArray(classFileURL, name);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
 			}
@@ -516,7 +529,7 @@ class KnotClassDelegate {
 
 		if (input == null) {
 			try {
-				input = getRawClassByteArray(name, allowFromParent);
+				input = getRawClassByteArray(classFileURL, name);
 			} catch (IOException e) {
 				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
 			}
@@ -536,7 +549,11 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(String name, boolean allowFromParent) throws IOException {
-		InputStream inputStream = itf.getResourceAsStream(LoaderUtil.getClassFileName(name), allowFromParent);
+		return getRawClassByteArray(itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent), name);
+	}
+
+	public byte[] getRawClassByteArray(URL classFileURL, String name) throws IOException {
+		InputStream inputStream = classFileURL.openStream();
 		if (inputStream == null) return null;
 
 		int a = inputStream.available();

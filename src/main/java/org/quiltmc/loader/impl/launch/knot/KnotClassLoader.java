@@ -90,11 +90,16 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	@Override
 	public URL getResource(String name) {
+		return getResource(name, true);
+	}
+
+	@Override
+	public URL getResource(String name, boolean allowFromParent) {
 		Objects.requireNonNull(name);
 
 		URL url = findResource(name);
 
-		if (url == null) {
+		if (url == null && allowFromParent) {
 			url = originalLoader.getResource(name);
 		}
 
@@ -349,7 +354,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 		@Override
 		protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-			synchronized (getClassLoadingLock(name)) {
+			synchronized (container.getClassLoadingLock(name)) {
 				return container.delegate.loadClass(name, container.originalLoader, this, resolve);
 			}
 		}
