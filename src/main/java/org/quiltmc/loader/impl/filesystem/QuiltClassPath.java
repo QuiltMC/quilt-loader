@@ -16,12 +16,27 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.WatchEvent.Kind;
+import java.nio.file.WatchEvent.Modifier;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -33,8 +48,10 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltClassPath {
 
-	private final List<Path> roots = new ArrayList<>();
-	private final Map<String, Path> files = new HashMap<>();
+	private static final AtomicInteger ZIP_SCANNER_COUNT = new AtomicInteger();
+
+	private final List<Path> roots = new CopyOnWriteArrayList<>();
+	private final Map<String, Path> files = new ConcurrentHashMap<>();
 
 	public void addRoot(Path root) {
 		if (root instanceof QuiltJoinedPath) {
@@ -52,13 +69,71 @@ public class QuiltClassPath {
 				roots.add(root);
 			} else {
 				for (Path key : fs.files.keySet()) {
-					files.putIfAbsent(key.toString(), key);
+					putQuickFile(key.toString(), key);
 				}
 			}
 
 		} else {
+
+			FileSystem fs = root.getFileSystem();
+
+			if ("jar".equals(fs.provider().getScheme())) {
+				// Assume it's read-only for speed
+				roots.add(root);
+				beginScanning(root);
+				return;
+			}
+
 			Log.warn(LogCategory.GENERAL, "Adding unknown root to the classpath, this may slow down class loading: " + root.getFileSystem() + " " + root);
 			roots.add(root);
+		}
+	}
+
+	private void putQuickFile(String fileName, Path file) {
+		files.compute(fileName, (name, current) -> {
+			if (current == null) {
+				return file;
+			} else if (current instanceof OverlappingPath) {
+				OverlappingPath multi = (OverlappingPath) current;
+				multi.paths.add(file);
+				multi.hasWarned = false;
+				return multi;
+			} else {
+				OverlappingPath multi = new OverlappingPath(name);
+				multi.paths.add(current);
+				multi.paths.add(file);
+				return multi;
+			}
+		});
+	}
+
+	private void beginScanning(Path zipRoot) {
+		Thread scanner = new Thread("QuiltClassPath ZipScanner#" + ZIP_SCANNER_COUNT.incrementAndGet()) {
+			@Override
+			public void run() {
+				scanZip(zipRoot);
+			}
+		};
+		scanner.setDaemon(true);
+		scanner.start();
+	}
+
+	private void scanZip(Path zipRoot) {
+		try {
+			long start = System.nanoTime();
+			Files.walkFileTree(zipRoot, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					Path relative = zipRoot.relativize(file);
+					putQuickFile("/" + relative.toString(), file);
+					return FileVisitResult.CONTINUE;
+				}
+			});
+			roots.remove(zipRoot);
+			long end = System.nanoTime();
+			Log.info(LogCategory.GENERAL, "Took " + (end - start) / 1000 + "us to scan " + zipRoot);
+		} catch (IOException e) {
+			Log.warn(LogCategory.GENERAL, "Failed to scan " + zipRoot + "!", e);
 		}
 	}
 
@@ -69,6 +144,9 @@ public class QuiltClassPath {
 		}
 		Path quick = files.get(absolutePath);
 		if (quick != null) {
+			if (quick instanceof OverlappingPath) {
+				return ((OverlappingPath) quick).getFirst();
+			}
 			return quick;
 		}
 
@@ -80,5 +158,171 @@ public class QuiltClassPath {
 		}
 
 		return null;
+	}
+
+	/** Used when multiple paths are stored as values in {@link QuiltClassPath#files}. */
+	private static final class OverlappingPath implements Path {
+
+		final String exposedName;
+		final List<Path> paths = new ArrayList<>();
+		boolean hasWarned = false;
+
+		public OverlappingPath(String exposedName) {
+			this.exposedName = exposedName;
+		}
+
+		private static IllegalStateException illegal() {
+			throw new IllegalStateException(
+				"QuiltClassPath must NEVER return a MultiPath - something has gone very wrong!"
+			);
+		}
+
+		public Path getFirst() {
+			if (!hasWarned) {
+				hasWarned = true;
+				StringBuilder sb = new StringBuilder();
+				sb.append("Multiple paths added for '");
+				sb.append(exposedName);
+				sb.append("', but only a single one can be returned!");
+				for (Path path : paths) {
+					sb.append("\n - ");
+					sb.append(path.getFileSystem());
+					sb.append(" ");
+					sb.append(path);
+				}
+				Log.warn(LogCategory.GENERAL, sb.toString());
+			}
+			return paths.get(0);
+		}
+
+		@Override
+		public FileSystem getFileSystem() {
+			throw illegal();
+		}
+
+		@Override
+		public boolean isAbsolute() {
+			throw illegal();
+		}
+
+		@Override
+		public Path getRoot() {
+			throw illegal();
+		}
+
+		@Override
+		public Path getFileName() {
+			throw illegal();
+		}
+
+		@Override
+		public Path getParent() {
+			throw illegal();
+		}
+
+		@Override
+		public int getNameCount() {
+			throw illegal();
+		}
+
+		@Override
+		public Path getName(int index) {
+			throw illegal();
+		}
+
+		@Override
+		public Path subpath(int beginIndex, int endIndex) {
+			throw illegal();
+		}
+
+		@Override
+		public boolean startsWith(Path other) {
+			throw illegal();
+		}
+
+		@Override
+		public boolean startsWith(String other) {
+			throw illegal();
+		}
+
+		@Override
+		public boolean endsWith(Path other) {
+			throw illegal();
+		}
+
+		@Override
+		public boolean endsWith(String other) {
+			throw illegal();
+		}
+
+		@Override
+		public Path normalize() {
+			throw illegal();
+		}
+
+		@Override
+		public Path resolve(Path other) {
+			throw illegal();
+		}
+
+		@Override
+		public Path resolve(String other) {
+			throw illegal();
+		}
+
+		@Override
+		public Path resolveSibling(Path other) {
+			throw illegal();
+		}
+
+		@Override
+		public Path resolveSibling(String other) {
+			throw illegal();
+		}
+
+		@Override
+		public Path relativize(Path other) {
+			throw illegal();
+		}
+
+		@Override
+		public URI toUri() {
+			throw illegal();
+		}
+
+		@Override
+		public Path toAbsolutePath() {
+			throw illegal();
+		}
+
+		@Override
+		public Path toRealPath(LinkOption... options) throws IOException {
+			throw illegal();
+		}
+
+		@Override
+		public File toFile() {
+			throw illegal();
+		}
+
+		@Override
+		public WatchKey register(WatchService watcher, Kind<?>[] events, Modifier... modifiers) throws IOException {
+			throw illegal();
+		}
+
+		@Override
+		public WatchKey register(WatchService watcher, Kind<?>... events) throws IOException {
+			throw illegal();
+		}
+
+		@Override
+		public Iterator<Path> iterator() {
+			throw illegal();
+		}
+
+		@Override
+		public int compareTo(Path other) {
+			throw illegal();
+		}
 	}
 }
