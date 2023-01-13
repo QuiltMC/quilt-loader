@@ -161,6 +161,7 @@ public class QuiltClassPath {
 	}
 
 	/** Used when multiple paths are stored as values in {@link QuiltClassPath#files}. */
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 	private static final class OverlappingPath implements Path {
 
 		final String exposedName;
