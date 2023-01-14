@@ -262,6 +262,17 @@ class KnotClassDelegate {
 			return c;
 		}
 
+		if (!allowFromParent && !parentSourcedClasses.isEmpty()) {
+			int pos = name.length();
+
+			while ((pos = name.lastIndexOf('$', pos - 1)) > 0) {
+				if (parentSourcedClasses.contains(name.substring(0, pos))) {
+					allowFromParent = true;
+					break;
+				}
+			}
+		}
+
 		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
 
 		if (!allowedPrefixes.isEmpty()) {
@@ -282,17 +293,6 @@ class KnotClassDelegate {
 
 				if (!found) {
 					throw new ClassNotFoundException("class "+name+" is currently restricted from being loaded");
-				}
-			}
-		}
-
-		if (!allowFromParent && !parentSourcedClasses.isEmpty()) {
-			int pos = name.length();
-
-			while ((pos = name.lastIndexOf('$', pos - 1)) > 0) {
-				if (parentSourcedClasses.contains(name.substring(0, pos))) {
-					allowFromParent = true;
-					break;
 				}
 			}
 		}

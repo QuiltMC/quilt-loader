@@ -226,9 +226,11 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 				if (c == null) {
 					throw new ClassNotFoundException("can't find class "+name);
 				}
-			}
 
-			resolveClass(c);
+				((KnotBaseClassLoader) c.getClassLoader()).resolveClassFwd(c);
+			} else {
+				resolveClass(c);
+			}
 
 			return c;
 		}
