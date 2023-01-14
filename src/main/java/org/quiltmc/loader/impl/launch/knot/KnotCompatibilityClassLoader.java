@@ -231,5 +231,15 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 		public Class<?> findLoadedClassFwd(String name) {
 			return super.findLoadedClass(name);
 		}
+
+		@Override
+		public Enumeration<URL> findResources(String name) throws IOException {
+			return container.findResources(name);
+		}
+
+		@Override
+		public URL findResource(String name) {
+			return container.findResource(name);
+		}
 	}
 }

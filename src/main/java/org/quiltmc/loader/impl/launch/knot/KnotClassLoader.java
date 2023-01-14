@@ -327,6 +327,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 			this.key = key;
 		}
 
+
 		@Override
 		public KnotClassLoaderKey key() {
 			return key;
@@ -348,8 +349,18 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		}
 
 		@Override
+		public URL getResource(String name) {
+			return container.getResource(name);
+		}
+
+		@Override
 		protected Enumeration<URL> findResources(String name) throws IOException {
 			return container.findResources(name);
+		}
+
+		@Override
+		public Enumeration<URL> getResources(String name) throws IOException {
+			return container.getResources(name);
 		}
 
 		@Override
