@@ -310,9 +310,16 @@ class KnotClassDelegate {
 
 		KnotBaseClassLoader cl = itf;
 
-		ModContainer mod = metadata.codeSource.mod;
-		if (mod != null) {
-			cl = getClassLoader(mod);
+		if (metadata.codeSource == null) {
+			// For now, this might be downgraded to a warning rather than an error if it turns out there's nothing we can do about this
+			String msg = "Failed to lookup the code source while class loading '" + name + "' from " + cachedUrl.get();
+//			Log.warn(LogCategory.GENERAL, msg);
+			throw new Error(msg);
+		} else {
+			ModContainer mod = metadata.codeSource.mod;
+			if (mod != null) {
+				cl = getClassLoader(mod);
+			}
 		}
 
 		if (pkgDelimiterPos > 0) {
