@@ -288,23 +288,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	@Override
 	public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
-		Class<?> clazz = super.defineClass(name, b, off, len, cs);
-		printDebugClassLoad(clazz);
-		return clazz;
-	}
-
-	private static void printDebugClassLoad(Class<?> clazz) {
-		if (Boolean.getBoolean(SystemProperties.DEBUG_CLASS_TO_MOD)) {
-			Optional<ModContainer> modContainer = QuiltLoader.getModContainer(clazz);
-
-			StringBuilder text = new StringBuilder(clazz.toString());
-			while (text.length() < 100) {
-				text.append(" ");
-			}
-			text.append(modContainer.isPresent() ? modContainer.get().metadata().id() : "?");
-			text.append("\n");
-			System.out.print(text.toString());
-		}
+		return super.defineClass(name, b, off, len, cs);
 	}
 
 	@Override
@@ -385,9 +369,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 		@Override
 		public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
-			Class<?> clazz = super.defineClass(name, b, off, len, cs);
-			printDebugClassLoad(clazz);
-			return clazz;
+			return super.defineClass(name, b, off, len, cs);
 		}
 
 		@Override

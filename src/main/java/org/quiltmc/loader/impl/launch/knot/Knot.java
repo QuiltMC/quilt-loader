@@ -384,7 +384,7 @@ public final class Knot extends QuiltLauncherBase {
 		if (mod.getSourceType() == BasicSourceType.BUILTIN) {
 			return null;
 		}
-		return (ClassLoader) classLoader.getDelegate().getClassLoader(mod);
+		return (ClassLoader) classLoader.getDelegate().getClassLoader(mod.metadata().id());
 	}
 
 	@Override

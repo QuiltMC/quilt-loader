@@ -52,6 +52,9 @@ public interface GameProvider {
 	GameTransformer getEntrypointTransformer();
 	void unlockClassPath(QuiltLauncher launcher);
 	void launch(ClassLoader loader);
+	default boolean isGameClass(String name) {
+		return true;
+	}
 
 	default boolean displayCrash(Throwable exception, String context) {
 		return false;

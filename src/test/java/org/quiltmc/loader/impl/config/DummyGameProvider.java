@@ -107,6 +107,11 @@ public class DummyGameProvider implements GameProvider {
 	}
 
 	@Override
+	public boolean isGameClass(String name) {
+		return false;
+	}
+
+	@Override
 	public Arguments getArguments() {
 		return new Arguments();
 	}

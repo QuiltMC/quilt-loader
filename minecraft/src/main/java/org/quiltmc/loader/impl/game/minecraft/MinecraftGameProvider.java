@@ -322,6 +322,11 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
+	public boolean isGameClass(String name) {
+		return name.startsWith("net.minecraft.");
+	}
+
+	@Override
 	public void initialize(QuiltLauncher launcher) {
 		Map<String, Path> gameJars = new HashMap<>(2);
 		String name = envType.name().toLowerCase(Locale.ENGLISH);
