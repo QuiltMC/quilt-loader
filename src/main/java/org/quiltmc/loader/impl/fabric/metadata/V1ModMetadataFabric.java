@@ -37,6 +37,8 @@ import net.fabricmc.loader.api.metadata.Person;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -81,6 +83,8 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 
 	// Optional (custom values)
 	private final Map<String, CustomValue> customValues;
+
+	private FabricModMetadataWrapper cache2quilt;
 
 	V1ModMetadataFabric(String id, Version version, Collection<String> provides,
 						ModEnvironment environment, Map<String, List<EntrypointMetadata>> entrypoints, Collection<NestedJarEntry> jars,
@@ -128,6 +132,14 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 
 		this.languageAdapters = Collections.unmodifiableMap(languageAdapters);
 		this.customValues = Collections.unmodifiableMap(customValues);
+	}
+
+	@Override
+	public InternalModMetadata asQuiltModMetadata() {
+		if (cache2quilt == null) {
+			cache2quilt = new FabricModMetadataWrapper(this);
+		}
+		return cache2quilt;
 	}
 
 	@Override

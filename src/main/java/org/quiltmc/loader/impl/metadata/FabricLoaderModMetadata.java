@@ -66,11 +66,6 @@ public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMeta
 		return this;
 	}
 
-	@Override
-	default InternalModMetadata asQuiltModMetadata() {
-		return new FabricModMetadataWrapper(this);
-	}
-
 	void setVersion(Version version);
 	void setDependencies(Collection<ModDependency> dependencies);
 }

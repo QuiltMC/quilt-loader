@@ -49,16 +49,6 @@ public interface InternalModMetadata
 	String intermediateMappings();
 
 	@Override
-	default FabricLoaderModMetadata asFabricModMetadata() {
-		return new QuiltModMetadataWrapperFabric(this, null);
-	}
-
-	@Override
-	default FabricLoaderModMetadata asFabricModMetadata(ModContainer quiltContainer) {
-		return new QuiltModMetadataWrapperFabric(this, quiltContainer);
-	}
-
-	@Override
 	default InternalModMetadata asQuiltModMetadata() {
 		return this;
 	}

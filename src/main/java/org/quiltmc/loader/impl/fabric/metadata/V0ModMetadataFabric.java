@@ -35,6 +35,8 @@ import net.fabricmc.loader.api.metadata.Person;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -63,6 +65,8 @@ final class V0ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 	private final ContactInformation links;
 	private final String license;
 
+	private FabricModMetadataWrapper cache2quilt;
+
 	V0ModMetadataFabric(String id, Version version, Collection<ModDependency> dependencies, Mixins mixins, ModEnvironment environment, String initializer, Collection<String> initializers,
 						String name, String description, Collection<Person> authors, Collection<Person> contributors, ContactInformation links, String license) {
 		this.id = id;
@@ -90,6 +94,14 @@ final class V0ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 		this.contributors = Collections.unmodifiableCollection(contributors);
 		this.links = links;
 		this.license = license;
+	}
+
+	@Override
+	public InternalModMetadata asQuiltModMetadata() {
+		if (cache2quilt == null) {
+			cache2quilt = new FabricModMetadataWrapper(this);
+		}
+		return cache2quilt;
 	}
 
 	@Override

@@ -36,6 +36,8 @@ import org.quiltmc.loader.impl.fabric.metadata.AbstractModMetadata;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -45,11 +47,21 @@ class BuiltinMetadataWrapperFabric extends AbstractModMetadata implements Fabric
 	private Version version;
 	private Collection<ModDependency> dependencies;
 
+	private FabricModMetadataWrapper cache2quilt;
+
 	BuiltinMetadataWrapperFabric(ModMetadata parent) {
 		this.parent = parent;
 
 		version = parent.getVersion();
 		dependencies = parent.getDependencies();
+	}
+
+	@Override
+	public InternalModMetadata asQuiltModMetadata() {
+		if (cache2quilt == null) {
+			cache2quilt = new FabricModMetadataWrapper(this);
+		}
+		return cache2quilt;
 	}
 
 	@Override
