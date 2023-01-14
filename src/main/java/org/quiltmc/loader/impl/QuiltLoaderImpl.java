@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -113,7 +114,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.34";
+	public static final String VERSION = "0.18.1-beta.35";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -289,7 +290,9 @@ public final class QuiltLoaderImpl {
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
 
-		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache.zip");
+		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
+
+		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix + ".zip");
 		TransformCache.populateTransformBundle(transformCacheFile, modList, result);
 		Path transformedModBundle;
 		try {

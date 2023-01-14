@@ -174,7 +174,7 @@ public class QuiltClassPath {
 
 		private static IllegalStateException illegal() {
 			throw new IllegalStateException(
-				"QuiltClassPath must NEVER return a MultiPath - something has gone very wrong!"
+				"QuiltClassPath must NEVER return an OverlappingPath - something has gone very wrong!"
 			);
 		}
 
