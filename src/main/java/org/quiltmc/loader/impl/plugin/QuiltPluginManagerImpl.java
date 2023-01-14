@@ -127,6 +127,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Version gameVersion;
 
 	private final Path gameDir, configDir, modsDir;
+	private final Path absGameDir, absModsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
 	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
@@ -187,6 +188,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		this.gameDir = gameDir;
 		this.configDir = configDir;
 		this.modsDir = modsDir;
+		this.absGameDir = gameDir.toAbsolutePath().normalize();
+		this.absModsDir = modsDir.toAbsolutePath().normalize();
 
 		this.executor = config.singleThreadedLoading ? null : Executors.newCachedThreadPool();
 		this.mainThreadTasks = config.singleThreadedLoading ? new ArrayDeque<>() : new ConcurrentLinkedQueue<>();
@@ -712,8 +715,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 			for (List<Path> paths : sourcePaths) {
 				for (int i = 0; i < paths.size(); i++) {
-					Path path = paths.get(i);
-					String pathStr = (path.startsWith(modsDir) ? "<mods>/" + modsDir.relativize(path) : path).toString();
+					String pathStr = QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(i));
 					if (maxSourcePathLengths.size() <= i) {
 						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
 						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
@@ -837,8 +839,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					sbTab.append(" | ");
 					final String pathStr;
 					if (pathIndex < paths.size()) {
-						Path path = paths.get(pathIndex);
-						pathStr = path.startsWith(modsDir) ? "<mods>/" + modsDir.relativize(path) : path.toString();
+						pathStr = QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(pathIndex));
 					} else {
 						pathStr = "";
 					}
@@ -951,11 +952,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				Collection<Path> roots = getJoinedPaths(root);
 				to.accept("Joined path [" + roots.size() + "]:");
 				for (Path in : roots) {
-					to.accept(" - '" + in.toString() + "'");
+					to.accept(" - '" + QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, in) + "'");
 				}
 				to.accept("mod:");
 			} else {
-				to.accept(root.toString() + ":");
+				to.accept(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, root) + ":");
 			}
 
 			for (String line : processDetail(pathMap, insideBox, root, 0)) {

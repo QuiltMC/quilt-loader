@@ -582,6 +582,8 @@ public final class QuiltLoaderImpl {
 		int maxVersionLength = "Version".length();
 		int maxPluginLength = "Plugin".length();
 		List<Integer> maxSourcePathLengths = new ArrayList<>();
+		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
+		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
 
 		for (ModContainerExt mod : mods) {
 			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
@@ -591,8 +593,7 @@ public final class QuiltLoaderImpl {
 
 			for (List<Path> paths : mod.getSourcePaths()) {
 				for (int i = 0; i < paths.size(); i++) {
-					Path path = paths.get(i);
-					String pathStr = path.startsWith(gameDir) ? "<game>/" + gameDir.relativize(path).toString() : path.toString();
+					String pathStr = prefixPath(absoluteGameDir, absoluteModsDir, paths.get(i));
 					if (maxSourcePathLengths.size() <= i) {
 						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
 						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
@@ -713,8 +714,7 @@ public final class QuiltLoaderImpl {
 					sbTab.append(" | ");
 					final String pathStr;
 					if (pathIndex < paths.size()) {
-						Path path = paths.get(pathIndex);
-						pathStr = path.startsWith(gameDir) ? "<game>/" + gameDir.relativize(path) : path.toString();
+						pathStr = prefixPath(absoluteGameDir, absoluteModsDir, paths.get(pathIndex));
 					} else {
 						pathStr = "";
 					}
@@ -730,6 +730,29 @@ public final class QuiltLoaderImpl {
 		}
 
 		to.accept(sbSep.toString());
+	}
+
+	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
+		String fsSep = path.getFileSystem().getSeparator();
+		path = path.toAbsolutePath().normalize();
+		if (path.startsWith(modsDir)) {
+			return "<mods>" + fsSep + modsDir.relativize(path);
+		}
+		if (path.startsWith(gameDir)) {
+			return "<game>" + fsSep + gameDir.relativize(path);
+		}
+		String pathStr = path.toString();
+		String userHome = System.getProperty("user.home");
+		if (userHome.isEmpty()) {
+			return pathStr;
+		}
+		if (!userHome.endsWith(fsSep)) {
+			userHome += fsSep;
+		}
+		if (pathStr.startsWith(userHome)) {
+			return "<user>" + fsSep + pathStr.substring(userHome.length());
+		}
+		return pathStr;
 	}
 
 	private static void performMixinReordering(List<ModLoadOption> modList) {
