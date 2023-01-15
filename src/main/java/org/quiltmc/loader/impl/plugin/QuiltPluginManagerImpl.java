@@ -884,7 +884,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			return a.toAbsolutePath().toString().compareTo(b.toAbsolutePath().toString());
 		};
 		Map<Path, Set<Path>> pathMap = new TreeMap<>(pathComparator);
-		Set<Path> rootFsPaths = Collections.newSetFromMap(new TreeMap<>());
+		Set<Path> rootFsPaths = Collections.newSetFromMap(new TreeMap<>(pathComparator));
 
 		Map<ModLoadOption, List<String>> insideBox = new HashMap<>();
 
