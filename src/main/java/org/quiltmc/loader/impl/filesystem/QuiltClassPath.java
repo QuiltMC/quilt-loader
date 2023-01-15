@@ -33,9 +33,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,6 +54,8 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 public class QuiltClassPath {
 
 	private static final AtomicInteger ZIP_SCANNER_COUNT = new AtomicInteger();
+	private static final Queue<Runnable> SCAN_TASKS = new ArrayDeque<>();
+	private static final Set<Thread> ACTIVE_SCANNERS = new HashSet<>();
 
 	private final List<Path> roots = new CopyOnWriteArrayList<>();
 	private final Map<String, Path> files = new ConcurrentHashMap<>();
@@ -110,14 +115,31 @@ public class QuiltClassPath {
 	}
 
 	private void beginScanning(Path zipRoot) {
-		Thread scanner = new Thread("QuiltClassPath ZipScanner#" + ZIP_SCANNER_COUNT.incrementAndGet()) {
-			@Override
-			public void run() {
-				scanZip(zipRoot);
+		synchronized (QuiltClassPath.class) {
+			SCAN_TASKS.add(() -> scanZip(zipRoot));
+			int scannerCount = ACTIVE_SCANNERS.size();
+			if (scannerCount < 4 && scannerCount < SCAN_TASKS.size()) {
+				Thread scanner = new Thread("QuiltClassPath ZipScanner#" + ZIP_SCANNER_COUNT.incrementAndGet()) {
+					@Override
+					public void run() {
+						while (true) {
+							Runnable next;
+							synchronized (QuiltClassPath.class) {
+								next = SCAN_TASKS.poll();
+								if (next == null) {
+									ACTIVE_SCANNERS.remove(this);
+									break;
+								}
+							}
+							next.run();
+						}
+					}
+				};
+				ACTIVE_SCANNERS.add(scanner);
+				scanner.setDaemon(true);
+				scanner.start();
 			}
-		};
-		scanner.setDaemon(true);
-		scanner.start();
+		}
 	}
 
 	private void scanZip(Path zipRoot) {
