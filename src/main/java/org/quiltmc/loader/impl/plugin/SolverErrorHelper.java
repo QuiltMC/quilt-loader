@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
@@ -515,10 +516,11 @@ class SolverErrorHelper {
 		for (ModLoadOption option : mandatories) {
 			String path = manager.describePath(option.from());
 			// Just in case
-			Path container = manager.getRealContainingFile(option.from());
+			Optional<Path> container = manager.getRealContainingFile(option.from());
 			error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.mod", path));
-			error.addFileViewButton(QuiltLoaderText.translate("button.view_file", container.getFileName()), container)
-				.icon(option.modCompleteIcon());
+			container.ifPresent(value -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", value.getFileName()), value)
+					.icon(option.modCompleteIcon()));
+
 			error.appendReportText("- " + path);
 		}
 

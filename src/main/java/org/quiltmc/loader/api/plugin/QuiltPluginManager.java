@@ -24,8 +24,10 @@ import java.nio.file.ProviderNotFoundException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
@@ -93,8 +95,8 @@ public interface QuiltPluginManager {
 	/** Retrieves the file in the default {@link FileSystem} (that the user can view directly in a file browser) that
 	 * contains the given path.
 	 * 
-	 * @return Either a Path with a {@link FileSystem} equal to {@link FileSystems#getDefault()}, or null. */
-	Path getRealContainingFile(Path file);
+	 * @return Either a Path with a {@link FileSystem} equal to {@link FileSystems#getDefault()}, or empty.*/
+	Optional<Path> getRealContainingFile(Path file);
 
 	// #################
 	// Joined Paths
@@ -103,7 +105,7 @@ public interface QuiltPluginManager {
 	/** @return True if the given {@link Path} points to multiple root paths. */
 	boolean isJoinedPath(Path path);
 
-    /** @return All of paths that the given path actually refers to, or null if {@link #isJoinedPath(Path)} returns
+    /** @return All paths that the given path actually refers to, or null if {@link #isJoinedPath(Path)} returns
      *         false. */
 	Collection<Path> getJoinedPaths(Path path);
 

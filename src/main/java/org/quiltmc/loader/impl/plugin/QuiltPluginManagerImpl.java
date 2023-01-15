@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
@@ -360,15 +361,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	@Override
-	public Path getRealContainingFile(Path file) {
+	public Optional<Path> getRealContainingFile(Path file) {
 		Path next = file;
 		while (next.getFileSystem() != FileSystems.getDefault()) {
 			next = getParent(next);
 			if (next == null) {
-				return null;
+				return Optional.empty();
 			}
 		}
-		return next;
+		return Optional.of(next);
 	}
 
 	// #################
@@ -1823,8 +1824,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.0", describePath(file)));
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.1"));
 			error.appendThrowable(e);
-			error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), getRealContainingFile(file))
-				.icon(guiManager.iconZipFile());
+			getRealContainingFile(file).ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real).icon(guiManager.iconZipFile()));
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.zipexception", e.getMessage()))// TODO: translate
 				.setError(e, error);
@@ -1836,8 +1836,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendReportText("Failed to read " + describePath(file) + "!");
 			error.appendDescription(QuiltLoaderText.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
-			error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), getRealContainingFile(file))
-				.icon(guiManager.iconZipFile());
+			getRealContainingFile(file).ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real).icon(guiManager.iconZipFile()));
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.ioexception", e.getMessage()))// TODO: translate
 				.setError(e, error);
@@ -1937,11 +1936,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				return;
 			}
 
-			Path containingFile = getRealContainingFile(file);
-			QuiltLoaderText title = QuiltLoaderText.translate("error.unhandled_mod_file.title", describePath(containingFile));
+			Optional<Path> containingFile = getRealContainingFile(file);
+			QuiltLoaderText title = QuiltLoaderText.translate("error.unhandled_mod_file.title", describePath(containingFile.isPresent() ? containingFile.get() : file));
 			QuiltPluginError error = reportError(theQuiltPluginContext, title);
 			error.appendDescription(QuiltLoaderText.translate("error.unhandled_mod_file.desc"));
-			error.addFileViewButton(QuiltLoaderText.translate("button.view_file", containingFile.getFileName()), containingFile);
+			containingFile.ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", real.getFileName()), real));
 			error.appendReportText("No plugin could load " + describePath(file));
 			guiNode.addChild(QuiltLoaderText.translate("error.unhandled_mod_file"))
 				.setError(null, error);

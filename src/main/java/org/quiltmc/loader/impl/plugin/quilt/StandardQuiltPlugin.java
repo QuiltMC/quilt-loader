@@ -233,10 +233,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			PluginGuiManager guiManager = context().manager().getGuiManager();
-			error.addFileViewButton(
-				QuiltLoaderText.translate("button.view_file"), //
-				context().manager().getRealContainingFile(root)
-			).icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()));
+				context().manager().getRealContainingFile(root).ifPresent(real ->
+						error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
+								.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()))
+				);
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//
 				.setError(parse, error);
