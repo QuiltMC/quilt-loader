@@ -55,6 +55,7 @@ import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -113,7 +114,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.40";
+	public static final String VERSION = "0.18.1-beta.41";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -285,6 +286,10 @@ public final class QuiltLoaderImpl {
 		}
 
 		List<ModLoadOption> modList = new ArrayList<>(result.directMods().values());
+		Set<String> modIds = new HashSet<>();
+		for (ModLoadOption mod : modList) {
+			modIds.add(mod.id());
+		}
 
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
@@ -345,7 +350,7 @@ public final class QuiltLoaderImpl {
 				}
 			}
 
-			if (modsToCopy.contains(modOption.id()) || shouldCopyToJar(modOption)) {
+			if (modsToCopy.contains(modOption.id()) || shouldCopyToJar(modOption, modIds)) {
 				resourceRoot = copyToJar(modOption, resourceRoot);
 			}
 
@@ -356,8 +361,21 @@ public final class QuiltLoaderImpl {
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
 	}
 
-	private boolean shouldCopyToJar(ModLoadOption mod) {
+	private boolean shouldCopyToJar(ModLoadOption mod, Set<String> modIds) {
 		String id = mod.id();
+		if (id.equals("minecraft")) {
+			if (Version.of("1.17.1").compareTo(mod.version()) > 0) {
+				// Versions before 1.17.1 don't work very well if they aren't at the root of their zip file
+				return true;
+			}
+			if (Version.of("1.18.2").compareTo(mod.version()) >= 0) {
+				if (modIds.contains("fabric-resource-loader-v0")) {
+					// Fabric API turns minecraft into a resource pack to load from instead of using the classpath,
+					// so it also doesn't work very well
+					return true;
+				}
+			}
+		}
 		if (id.contains("yung")) {
 			// YUNGs mods use reflections
 			// which *require* the class files are loaded directly from .jar files :|

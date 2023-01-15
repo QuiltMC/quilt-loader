@@ -30,7 +30,9 @@ import java.nio.file.WatchEvent.Modifier;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -122,10 +124,37 @@ public class QuiltClassPath {
 		try {
 			long start = System.nanoTime();
 			Files.walkFileTree(zipRoot, new SimpleFileVisitor<Path>() {
+
+				// A previous version of this code used Path.relativize to construct the output paths
+				// But Java 8's ZipFileSystem doesn't implement this correctly, so we do it manually instead.
+
+				final Deque<String> stack = new ArrayDeque<>();
+
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					stack.addLast(dir.getFileName().toString());
+					return FileVisitResult.CONTINUE;
+				}
+
+				@Override
+				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+					stack.removeLast();
+					return FileVisitResult.CONTINUE;
+				}
+
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					Path relative = zipRoot.relativize(file);
-					putQuickFile("/" + relative.toString(), file);
+					StringBuilder relativeString = new StringBuilder();
+					boolean first = true;
+					for (String path : stack) {
+						if (!first) {
+							relativeString.append(path);
+						}
+						relativeString.append("/");
+						first = false;
+					}
+					relativeString.append(file.getFileName().toString());
+					putQuickFile(relativeString.toString(), file);
 					return FileVisitResult.CONTINUE;
 				}
 			});
