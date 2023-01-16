@@ -115,7 +115,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.42";
+	public static final String VERSION = "0.18.1-beta.43";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -452,7 +452,7 @@ public final class QuiltLoaderImpl {
 			FileSystem fs = FileSystems.newFileSystem(file.toPath(), (ClassLoader) null);
 			return fs.getPath("/");
 		} catch (IOException e) {
-			throw new Error("// TODO: Failed to copy to jar!");
+			throw new Error("// TODO: Failed to copy to jar!", e);
 		}
 	}
 

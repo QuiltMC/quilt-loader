@@ -43,6 +43,7 @@ import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
+import org.quiltmc.loader.impl.util.ByteChannelInputStream;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -437,17 +438,9 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 		}
 
 		private InputStream createUncompressingInputStream() throws IOException, IOException {
-			InputStream from = Files.newInputStream(zipFrom, StandardOpenOption.READ);
-			long remaining = offset;
-			while (remaining > 0) {
-				long skipped = from.skip(remaining);
-				if (skipped <= 0) {
-					throw new IOException("Unable to skip any more! " + from);
-				}
-				remaining -= skipped;
-			}
-			InputStream stream = new LimitedInputStream(from, compressedSize);
-			return stream;
+			SeekableByteChannel channel = Files.newByteChannel(zipFrom, StandardOpenOption.READ);
+			channel.position(offset);
+			return new LimitedInputStream(new ByteChannelInputStream(channel), compressedSize);
 		}
 
 		SeekableByteChannel createByteChannel() throws IOException {
@@ -527,7 +520,7 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 		}
 
 		class InflaterSeekableByteChannel implements SeekableByteChannel {
-			final InflaterInputStream infl = new InflaterInputStream(createUncompressingInputStream());
+			final InflaterInputStream infl;
 
 			boolean open = true;
 			volatile long position = 0;
@@ -535,7 +528,7 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			int bufferPosition = 0;
 
 			public InflaterSeekableByteChannel() throws IOException {
-
+				infl = new InflaterInputStream(createUncompressingInputStream(), new Inflater(true));
 			}
 
 			@Override
