@@ -241,5 +241,11 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 		public URL findResource(String name) {
 			return container.findResource(name);
 		}
+
+		// Compat for Fabric-ASM
+		public void addUrl(URL url) {
+			container.addURL(url);
+		}
+
 	}
 }

@@ -381,5 +381,10 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		public Class<?> findLoadedClassFwd(String name) {
 			return super.findLoadedClass(name);
 		}
+
+		// Compat for Fabric-ASM
+		public void addUrl(URL url) {
+			container.addURL(url);
+		}
 	}
 }
