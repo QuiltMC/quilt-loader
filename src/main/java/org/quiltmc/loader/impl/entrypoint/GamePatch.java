@@ -53,10 +53,6 @@ public abstract class GamePatch {
 		return node.methods.stream().filter(predicate).findAny().orElse(null);
 	}
 
-	protected List<MethodNode> findMethods(ClassNode node, Predicate<MethodNode> predicate) {
-		return node.methods.stream().filter(predicate).collect(Collectors.toList());
-	}
-
 	protected AbstractInsnNode findInsn(MethodNode node, Predicate<AbstractInsnNode> predicate, boolean last) {
 		if (last) {
 			for (int i = node.instructions.size() - 1; i >= 0; i--) {
@@ -134,3 +130,4 @@ public abstract class GamePatch {
 
 	public abstract void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter);
 }
+

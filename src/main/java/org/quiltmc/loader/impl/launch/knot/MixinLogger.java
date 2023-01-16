@@ -45,7 +45,7 @@ final class MixinLogger extends LoggerAdapterAbstract {
 	MixinLogger(String name) {
 		super(name);
 
-		this.logCategory = new LogCategory(name.replace("mixin", LogCategory.MIXIN.name).replace(".", LogCategory.SEPARATOR));
+		this.logCategory = LogCategory.create(name.replace("mixin", LogCategory.MIXIN.name).replace(".", LogCategory.SEPARATOR));
 	}
 
 	@Override

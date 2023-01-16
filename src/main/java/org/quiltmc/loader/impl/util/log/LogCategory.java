@@ -22,32 +22,50 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class LogCategory {
-	public static final LogCategory DISCOVERY = new LogCategory("Discovery");
-	public static final LogCategory ENTRYPOINT = new LogCategory("Entrypoint");
-	public static final LogCategory GAME_PATCH = new LogCategory("GamePatch");
-	public static final LogCategory GAME_PROVIDER = new LogCategory("GameProvider");
-	public static final LogCategory GAME_REMAP = new LogCategory("GameRemap");
-	public static final LogCategory GUI = new LogCategory("Gui");
-	public static final LogCategory GENERAL = new LogCategory();
-	public static final LogCategory KNOT = new LogCategory("Knot");
-	public static final LogCategory LOG = new LogCategory("Log");
-	public static final LogCategory MAPPINGS = new LogCategory("Mappings");
-	public static final LogCategory METADATA = new LogCategory("Metadata");
-	public static final LogCategory MOD_REMAP = new LogCategory("ModRemap");
-	public static final LogCategory MIXIN = new LogCategory("Mixin");
-	public static final LogCategory RESOLUTION = new LogCategory("Resolution");
-	public static final LogCategory SOLVING = new LogCategory("Solving");
-	public static final LogCategory TEST = new LogCategory("Test");
-	public static final LogCategory CONFIG = new LogCategory("Config");
-	public static final LogCategory CACHE = new LogCategory("Cache");
-	public static final LogCategory CHASM = new LogCategory("Chasm");
+	public static final LogCategory CACHE = create("Cache");
+	public static final LogCategory CHASM = create("Chasm");
+	public static final LogCategory CONFIG = create("Config");
+	public static final LogCategory DISCOVERY = create("Discovery");
+	public static final LogCategory ENTRYPOINT = create("Entrypoint");
+	public static final LogCategory GAME_PATCH = create("GamePatch");
+	public static final LogCategory GAME_PROVIDER = create("GameProvider");
+	public static final LogCategory GAME_REMAP = create("GameRemap");
+	public static final LogCategory GENERAL = create();
+	public static final LogCategory GUI = create("GUI");
+	public static final LogCategory KNOT = create("Knot");
+	public static final LogCategory LIB_CLASSIFICATION = create("LibClassify");
+	public static final LogCategory LOG = create("Log");
+	public static final LogCategory MAPPINGS = create("Mappings");
+	public static final LogCategory METADATA = create("Metadata");
+	public static final LogCategory MOD_REMAP = create("ModRemap");
+	public static final LogCategory MIXIN = create("Mixin");
+	public static final LogCategory SOLVING = create("Solving");
+	public static final LogCategory TEST = create("Test");
 
 	public static final String SEPARATOR = "/";
 
+	public final String context;
 	public final String name;
 	public Object data;
 
-	public LogCategory(String... names) {
+	public static LogCategory create(String... names) {
+		return new LogCategory(Log.NAME, names);
+	}
+
+	/**
+	 * Create a log category for external uses, no API guarantees!
+	 */
+	public static LogCategory createCustom(String context, String... names) {
+		return new LogCategory(context, names);
+	}
+
+	private LogCategory(String context, String[] names) {
+		this.context = context;
 		this.name = String.join(SEPARATOR, names);
+	}
+
+	@Override
+	public String toString() {
+		return name.isEmpty() ? context : context+SEPARATOR+name;
 	}
 }

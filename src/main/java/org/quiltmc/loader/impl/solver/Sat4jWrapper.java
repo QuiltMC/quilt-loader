@@ -83,7 +83,7 @@ public class Sat4jWrapper implements RuleContext {
 		}
 	}
 
-	private final LogCategory CATEGORY = new LogCategory("Sat4j");
+	private final LogCategory CATEGORY = LogCategory.create("Sat4j");
 
 	private volatile Sat4jSolveStep step = Sat4jSolveStep.DEFINE;
 

@@ -17,11 +17,11 @@
 
 package org.quiltmc.loader.impl.util.log;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class ConsoleLogHandler implements LogHandler {
@@ -29,7 +29,7 @@ public class ConsoleLogHandler implements LogHandler {
 	private static final LogLevel MIN_STDOUT_LEVEL = LogLevel.getDefault();
 
 	@Override
-	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean isRelayedBuiltin) {
+	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean fromReplay, boolean wasSuppressed) {
 		String formatted = formatLog(time, level, category, msg, exc);
 
 		if (level.isLessThan(MIN_STDERR_LEVEL)) {
@@ -40,7 +40,7 @@ public class ConsoleLogHandler implements LogHandler {
 	}
 
 	protected static String formatLog(long time, LogLevel level, LogCategory category, String msg, Throwable exc) {
-		String ret = String.format("[%tT] [%s] [%s/%s]: %s%n", time, level.name(), Log.NAME, category.name, msg);
+		String ret = String.format("[%tT] [%s] [%s/%s]: %s%n", time, level.name(), category.context, category.name, msg);
 
 		if (exc != null) {
 			StringWriter writer = new StringWriter(ret.length() + 500);

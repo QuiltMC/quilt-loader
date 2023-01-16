@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import java.util.Set;
 
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -62,7 +64,7 @@ public class ClasspathModCandidateFinder {
 					URL url = quiltMods.nextElement();
 
 					try {
-						Path path = UrlUtil.getSourcePath("quilt.mod.json", url).toAbsolutePath().normalize();
+						Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, "quilt.mod.json"));
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
@@ -78,7 +80,7 @@ public class ClasspathModCandidateFinder {
 					URL url = fabricMods.nextElement();
 
 					try {
-						Path path = UrlUtil.getSourcePath("fabric.mod.json", url).toAbsolutePath().normalize();
+						Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, "fabric.mod.json"));
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
@@ -111,6 +113,7 @@ public class ClasspathModCandidateFinder {
 		String prop = System.getProperty(SystemProperties.PATH_GROUPS);
 		if (prop == null) return Collections.emptyMap();
 
+		Set<Path> cp = new HashSet<>(QuiltLauncherBase.getLauncher().getClassPath());
 		Map<Path, List<Path>> ret = new HashMap<>();
 
 		for (String group : prop.split(File.pathSeparator+File.pathSeparator)) {
@@ -119,18 +122,22 @@ public class ClasspathModCandidateFinder {
 			for (String path : group.split(File.pathSeparator)) {
 				if (path.isEmpty()) continue;
 
-				Path resolvedPath = Paths.get(path).toAbsolutePath().normalize();
+				Path resolvedPath = Paths.get(path);
 
 				if (!Files.exists(resolvedPath)) {
 					Log.warn(LogCategory.DISCOVERY, "Skipping missing class path group entry %s", path);
 					continue;
 				}
 
-				paths.add(resolvedPath);
+				resolvedPath = LoaderUtil.normalizeExistingPath(resolvedPath);
+
+				if (cp.contains(resolvedPath)) {
+					paths.add(resolvedPath);
+				}
 			}
 
 			if (paths.size() < 2) {
-				Log.warn(LogCategory.DISCOVERY, "Skipping class path group with no effect: %s", group);
+				Log.debug(LogCategory.DISCOVERY, "Skipping class path group with no effect: %s", group);
 				continue;
 			}
 
@@ -143,6 +150,7 @@ public class ClasspathModCandidateFinder {
 
 		return ret;
 	}
+
 
 	public static Path getLoaderPath() {
 		try {

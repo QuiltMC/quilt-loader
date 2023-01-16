@@ -17,6 +17,8 @@
 
 package org.quiltmc.loader.impl.game;
 
+import net.fabricmc.api.EnvType;
+
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -32,6 +34,7 @@ import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.MappingConfiguration;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -44,6 +47,7 @@ import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -59,6 +63,25 @@ import java.util.zip.ZipFile;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_NO_WARN)
 public final class GameProviderHelper {
 	private GameProviderHelper() { }
+
+	public static Path getCommonGameJar() {
+		return getGameJar(SystemProperties.GAME_JAR_PATH);
+	}
+
+	public static Path getEnvGameJar(EnvType env) {
+		return getGameJar(env == EnvType.CLIENT ? SystemProperties.GAME_JAR_PATH_CLIENT : SystemProperties.GAME_JAR_PATH_SERVER);
+	}
+
+	private static Path getGameJar(String property) {
+		String val = System.getProperty(property);
+		if (val == null) return null;
+
+		Path path = Paths.get(val);
+		if (!Files.exists(path)) throw new RuntimeException("Game jar "+path+" ("+LoaderUtil.normalizePath(path)+") configured through "+property+" system property doesn't exist");
+
+		return LoaderUtil.normalizeExistingPath(path);
+	}
+
 
 	public static Optional<Path> getSource(ClassLoader loader, String filename) {
 		URL url;

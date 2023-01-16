@@ -16,6 +16,10 @@
 
 package org.quiltmc.loader.impl.util;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
@@ -24,6 +28,20 @@ public final class LoaderUtil {
 		return className.replace('.', '/').concat(".class");
 	}
 
+	public static Path normalizePath(Path path) {
+		if (Files.exists(path)) {
+			return normalizeExistingPath(path);
+		} else {
+			return path.toAbsolutePath().normalize();
+		}
+	}
+	public static Path normalizeExistingPath(Path path) {
+		try {
+			return path.toRealPath();
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
 	public static boolean hasMacOs() {
 		return System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
 	}

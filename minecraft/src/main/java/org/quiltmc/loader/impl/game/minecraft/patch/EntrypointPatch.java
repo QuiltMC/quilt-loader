@@ -43,23 +43,9 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.game.minecraft.Hooks;
 
-
 public class EntrypointPatch extends GamePatch {
-	private final Version minecraftVersion;
-
-	public EntrypointPatch(Version mcVersion) {
-		this.minecraftVersion = mcVersion;
-	}
-
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
-		String sideName = type == EnvType.CLIENT ? "Client" : "Server";
-		// Compatibility for older fabric mods which redirect our start hook
-		if (minecraftVersion.compareTo(Version.of("1.17")) < 0) {
-			String internalName = "net/fabricmc/loader/entrypoint/minecraft/hooks/Entrypoint" + sideName;
-			it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, internalName, "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
-			return;
-		}
-		String methodName = String.format("start%s", sideName);
+		String methodName = String.format("start%s", type == EnvType.CLIENT ? "Client" : "Server");
 		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, methodName, "(Ljava/io/File;Ljava/lang/Object;)V", false));
 	}
 
@@ -114,7 +100,31 @@ public class EntrypointPatch extends GamePatch {
 				throw new RuntimeException("Could not find main method in " + entrypoint + "!");
 			}
 
-			if (type == EnvType.SERVER) {
+			if (type == EnvType.CLIENT && mainMethod.instructions.size() < 10) {
+				// 22w24+ forwards to another method in the same class instead of processing in main() directly, use that other method instead if that's the case
+				MethodInsnNode invocation = null;
+
+				for (AbstractInsnNode insn : mainMethod.instructions) {
+					MethodInsnNode methodInsn;
+
+					if (invocation == null
+							&& insn.getType() == AbstractInsnNode.METHOD_INSN
+							&& (methodInsn = (MethodInsnNode) insn).owner.equals(mainClass.name)) {
+						// capture first method insn to the same class
+						invocation = methodInsn;
+					} else if (insn.getOpcode() > Opcodes.ALOAD // ignore constant and variable loads as well as NOP, labels and line numbers
+							&& insn.getOpcode() != Opcodes.RETURN) { // and RETURN
+						// found unexpected insn for a simple forwarding method
+						invocation = null;
+						break;
+					}
+				}
+
+				if (invocation != null) { // simple forwarder confirmed, use its target for further processing
+					final MethodInsnNode reqMethod = invocation;
+					mainMethod = findMethod(mainClass, m -> m.name.equals(reqMethod.name) && m.desc.equals(reqMethod.desc));
+				}
+			} else if (type == EnvType.SERVER) {
 				// pre-1.6 method search route
 				MethodInsnNode newGameInsn = (MethodInsnNode) findInsn(mainMethod,
 						(insn) -> insn.getOpcode() == Opcodes.INVOKESPECIAL && ((MethodInsnNode) insn).name.equals("<init>") && ((MethodInsnNode) insn).owner.equals(mainClass.name),
@@ -128,41 +138,6 @@ public class EntrypointPatch extends GamePatch {
 			}
 
 			if (gameEntrypoint == null) {
-
-				// 22w24a moved all main code into a separate method, called by main
-				// so we check to see if there's a single method invocation to a different method in the same class
-				// before continuing
-				MethodInsnNode singleMethodInsn = null;
-				for (AbstractInsnNode insn : mainMethod.instructions) {
-					if (insn instanceof MethodInsnNode) {
-						MethodInsnNode method = (MethodInsnNode) insn;
-						if (singleMethodInsn != null) {
-							singleMethodInsn = null;
-							break;
-						} else {
-							singleMethodInsn = method;
-						}
-					}
-				}
-
-				if (singleMethodInsn != null) {
-					if (mainClass.name.equals(singleMethodInsn.owner)
-						&& singleMethodInsn.desc.startsWith("([Ljava/lang/String;")) {
-
-						for (MethodNode method : mainClass.methods) {
-							if (!method.name.equals(singleMethodInsn.name)) {
-								continue;
-							}
-							if (!method.desc.equals(singleMethodInsn.desc)) {
-								continue;
-							}
-							mainMethod = method;
-							break;
-						}
-					}
-				}
-				// End of 22w24a compat changes
-
 				// modern method search routes
 				MethodInsnNode newGameInsn = (MethodInsnNode) findInsn(mainMethod,
 						type == EnvType.CLIENT
@@ -308,8 +283,9 @@ public class EntrypointPatch extends GamePatch {
 				// Cannot return a void or boolean
 				// Is only method that returns a class instance
 				// If we do not find this, then we are certain this is 20w22a.
-				List<MethodNode> serverStartMethods = findMethods(mainClass, method -> {
-					if (method.name.equals("main") && method.desc.equals("([Ljava/lang/String;)V")) {
+				MethodNode serverStartMethod = findMethod(mainClass, method -> {
+					if ((method.access & Opcodes.ACC_SYNTHETIC) == 0 // reject non-synthetic
+							|| method.name.equals("main") && method.desc.equals("([Ljava/lang/String;)V")) { // reject main method (theoretically superfluous now)
 						return false;
 					}
 
@@ -318,7 +294,7 @@ public class EntrypointPatch extends GamePatch {
 					return methodReturnType.getSort() != Type.BOOLEAN && methodReturnType.getSort() != Type.VOID && methodReturnType.getSort() == Type.OBJECT;
 				});
 
-				if (serverStartMethods.isEmpty()) {
+				if (serverStartMethod == null) {
 					// We are running 20w22a, this requires a separate process for capturing game instance
 					Log.debug(LogCategory.GAME_PATCH, "Detected 20w22a");
 				} else {
@@ -383,13 +359,11 @@ public class EntrypointPatch extends GamePatch {
 				finishEntrypoint(type, it); // Inject the hook entrypoint.
 
 				// Time to find the dedicated server ctor to capture game instance
-				if (serverStartMethods.isEmpty()) {
+				if (serverStartMethod == null) {
 					// FIXME: For 20w22a, find the only constructor in the game method that takes a DataFixer.
 					// That is the guaranteed to be dedicated server constructor
 					Log.debug(LogCategory.GAME_PATCH, "Server game instance has not be implemented yet for 20w22a");
-				}
-
-				for (MethodNode serverStartMethod : serverStartMethods) {
+				} else {
 					final ListIterator<AbstractInsnNode> serverStartIt = serverStartMethod.instructions.iterator();
 
 					// 1.16-pre1+ Find the only constructor which takes a Thread as it's first parameter
@@ -408,7 +382,7 @@ public class EntrypointPatch extends GamePatch {
 					}, false);
 
 					if (dedicatedServerConstructor == null) {
-						continue;
+						throw new RuntimeException("Could not find dedicated server constructor");
 					}
 
 					// Jump after the <init> call
@@ -417,15 +391,9 @@ public class EntrypointPatch extends GamePatch {
 					// Duplicate dedicated server instance for loader
 					serverStartIt.add(new InsnNode(Opcodes.DUP));
 					serverStartIt.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, "setGameInstance", "(Ljava/lang/Object;)V", false));
-					patched = true;
-
-					break;
 				}
 
-				if (!patched) {
-					throw new RuntimeException("Could not find dedicated server constructor");
-				}
-
+				patched = true;
 			}
 		} else if (type == EnvType.CLIENT && isApplet) {
 			// Applet-side: field is private static File, run at end

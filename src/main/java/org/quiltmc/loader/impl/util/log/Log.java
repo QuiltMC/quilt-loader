@@ -45,6 +45,20 @@ public final class Log {
 		oldhHandler.close();
 	}
 
+	/**
+	 * Configure builtin log handler.
+	 *
+	 * @param buffer whether to buffer log messages for later replaying
+	 * @param output whether to output log messages directly
+	 */
+	public static void configureBuiltin(boolean buffer, boolean output) {
+		LogHandler handler = Log.handler;
+
+		if (handler instanceof BuiltinLogHandler) {
+			((BuiltinLogHandler) handler).configure(buffer, output);
+		}
+	}
+
 	public static void error(LogCategory category, String format, Object... args) {
 		logFormat(LogLevel.ERROR, category, format, args);
 	}
@@ -198,8 +212,9 @@ public final class Log {
 	}
 
 	private static void log(LogHandler handler, LogLevel level, LogCategory category, String msg, Throwable exc) {
-		handler.log(System.currentTimeMillis(), level, category, msg.trim(), exc, false);
+		handler.log(System.currentTimeMillis(), level, category, msg.trim(), exc, false, false);
 	}
+
 
 	public static boolean shouldLog(LogLevel level, LogCategory category) {
 		return handler.shouldLog(level, category);

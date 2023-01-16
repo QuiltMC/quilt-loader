@@ -47,6 +47,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -102,7 +103,10 @@ public class QuiltClassPath {
 				return;
 			}
 
-			Log.warn(LogCategory.GENERAL, "Adding unknown root to the classpath, this may slow down class loading: " + root.getFileSystem() + " " + root);
+			if (!QuiltLoader.isDevelopmentEnvironment()) { // Directory and other unique filesystems expected in a dev environment
+				Log.warn(LogCategory.GENERAL, "Adding unknown root to the classpath, this may slow down class loading: " + root.getFileSystem() + " " + root);
+			}
+
 			roots.add(root);
 		}
 	}

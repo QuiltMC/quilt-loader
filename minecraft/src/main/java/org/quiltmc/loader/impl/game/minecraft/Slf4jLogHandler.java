@@ -24,24 +24,25 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.log.LogHandler;
 import org.quiltmc.loader.impl.util.log.LogLevel;
 
+
 public final class Slf4jLogHandler implements LogHandler {
 	@Override
 	public boolean shouldLog(LogLevel level, LogCategory category) {
 		Logger logger = getLogger(category);
 
 		switch (level) {
-		case ERROR: return logger.isErrorEnabled();
-		case WARN: return logger.isWarnEnabled();
-		case INFO: return logger.isInfoEnabled();
-		case DEBUG: return logger.isDebugEnabled();
-		case TRACE: return logger.isTraceEnabled();
+			case ERROR: return logger.isErrorEnabled();
+			case WARN: return logger.isWarnEnabled();
+			case INFO: return logger.isInfoEnabled();
+			case DEBUG: return logger.isDebugEnabled();
+			case TRACE: return logger.isTraceEnabled();
 		}
 
 		throw new IllegalArgumentException("unknown level: "+level);
 	}
 
 	@Override
-	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean isReplayedBuiltin) {
+	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean fromReplay, boolean wasSuppressed) {
 		Logger logger = getLogger(category);
 
 		if (msg == null) {
@@ -50,48 +51,48 @@ public final class Slf4jLogHandler implements LogHandler {
 		}
 
 		switch (level) {
-		case ERROR:
-			if (exc == null) {
-				logger.error(msg);
-			} else {
-				logger.error(msg, exc);
-			}
+			case ERROR:
+				if (exc == null) {
+					logger.error(msg);
+				} else {
+					logger.error(msg, exc);
+				}
 
-			break;
-		case WARN:
-			if (exc == null) {
-				logger.warn(msg);
-			} else {
-				logger.warn(msg, exc);
-			}
+				break;
+			case WARN:
+				if (exc == null) {
+					logger.warn(msg);
+				} else {
+					logger.warn(msg, exc);
+				}
 
-			break;
-		case INFO:
-			if (exc == null) {
-				logger.info(msg);
-			} else {
-				logger.info(msg, exc);
-			}
+				break;
+			case INFO:
+				if (exc == null) {
+					logger.info(msg);
+				} else {
+					logger.info(msg, exc);
+				}
 
-			break;
-		case DEBUG:
-			if (exc == null) {
-				logger.debug(msg);
-			} else {
-				logger.debug(msg, exc);
-			}
+				break;
+			case DEBUG:
+				if (exc == null) {
+					logger.debug(msg);
+				} else {
+					logger.debug(msg, exc);
+				}
 
-			break;
-		case TRACE:
-			if (exc == null) {
-				logger.trace(msg);
-			} else {
-				logger.trace(msg, exc);
-			}
+				break;
+			case TRACE:
+				if (exc == null) {
+					logger.trace(msg);
+				} else {
+					logger.trace(msg, exc);
+				}
 
-			break;
-		default:
-			throw new IllegalArgumentException("unknown level: "+level);
+				break;
+			default:
+				throw new IllegalArgumentException("unknown level: "+level);
 		}
 	}
 
@@ -99,8 +100,7 @@ public final class Slf4jLogHandler implements LogHandler {
 		Logger ret = (Logger) category.data;
 
 		if (ret == null) {
-			String name = category.name.isEmpty() ? Log.NAME : String.format("%s/%s", Log.NAME, category.name);
-			category.data = ret = LoggerFactory.getLogger(name);
+			category.data = ret = LoggerFactory.getLogger(category.toString());
 		}
 
 		return ret;

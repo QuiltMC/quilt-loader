@@ -17,6 +17,7 @@
 
 package org.quiltmc.loader.impl.entrypoint;
 
+import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -24,6 +25,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.tree.ClassNode;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.util.SimpleClassPath;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -38,12 +40,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipError;
 import java.util.zip.ZipFile;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class GameTransformer {
-	public static String appletMainClass;
 
+public class GameTransformer {
 	private final List<GamePatch> patches;
 	private Map<String, byte[]> patchedClasses;
 	private boolean entrypointsLocated = false;
@@ -64,14 +66,14 @@ public class GameTransformer {
 		patchedClasses.put(key, writer.toByteArray());
 	}
 
-	public void locateEntrypoints(QuiltLauncher launcher, Path gamePath) {
+	public void locateEntrypoints(QuiltLauncher launcher, List<Path> gameJars) {
 		if (entrypointsLocated) {
 			return;
 		}
 
 		patchedClasses = new HashMap<>();
 
-		if (Files.isDirectory(gamePath)) {
+		try (SimpleClassPath cp = new SimpleClassPath(gameJars)) {
 			Function<String, ClassReader> classSource = name -> {
 				byte[] data = patchedClasses.get(name);
 
@@ -79,45 +81,25 @@ public class GameTransformer {
 					return new ClassReader(data);
 				}
 
-				Path path = gamePath.resolve(LoaderUtil.getClassFileName(name));
-				if (Files.notExists(path)) return null;
+				try {
+					SimpleClassPath.CpEntry entry = cp.getEntry(LoaderUtil.getClassFileName(name));
+					if (entry == null) return null;
 
-				try (InputStream is = Files.newInputStream(path)) {
-					return new ClassReader(is);
+					try (InputStream is = entry.getInputStream()) {
+						return new ClassReader(is);
+					} catch (IOException | ZipError e) {
+						throw new RuntimeException(String.format("error reading %s in %s: %s", name, LoaderUtil.normalizePath(entry.getOrigin()), e), e);
+					}
 				} catch (IOException e) {
-					throw new UncheckedIOException(String.format("error reading %s in %s: %s", path.toAbsolutePath(), gamePath.toAbsolutePath(), e), e);
+					throw ExceptionUtil.wrap(e);
 				}
 			};
 
 			for (GamePatch patch : patches) {
 				patch.process(launcher, classSource, this::addPatchedClass);
 			}
-		} else {
-
-			try (ZipFile zf = new ZipFile(gamePath.toFile())) {
-				Function<String, ClassReader> classSource = name -> {
-					byte[] data = patchedClasses.get(name);
-
-					if (data != null) {
-						return new ClassReader(data);
-					}
-
-					ZipEntry entry = zf.getEntry(LoaderUtil.getClassFileName(name));
-					if (entry == null) return null;
-
-					try (InputStream is = zf.getInputStream(entry)) {
-						return new ClassReader(is);
-					} catch (IOException e) {
-						throw new UncheckedIOException(String.format("error reading %s in %s: %s", name, gamePath.toAbsolutePath(), e), e);
-					}
-				};
-
-				for (GamePatch patch : patches) {
-					patch.process(launcher, classSource, this::addPatchedClass);
-				}
-			} catch (IOException e) {
-				throw new UncheckedIOException(String.format("error reading %s: %s", gamePath.toAbsolutePath(), e), e);
-			}
+		} catch (IOException e) {
+			throw ExceptionUtil.wrap(e);
 		}
 
 		Log.debug(LogCategory.GAME_PATCH, "Patched %d class%s", patchedClasses.size(), patchedClasses.size() != 1 ? "s" : "");

@@ -22,6 +22,9 @@ public final class SystemProperties {
 	public static final String DEVELOPMENT = "loader.development";
 	public static final String SIDE = "loader.side";
 	public static final String GAME_JAR_PATH = "loader.gameJarPath";
+	public static final String GAME_JAR_PATH_CLIENT = "loader.gameJarPath.client";
+	public static final String GAME_JAR_PATH_SERVER = "loader.gameJarPath.server";
+
 	public static final String GAME_VERSION = "loader.gameVersion";
 	public static final String REMAP_CLASSPATH_FILE = "loader.remapClasspathFile";
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
@@ -39,6 +42,9 @@ public final class SystemProperties {
 	public static final String ADD_MODS = "loader.addMods";
 	// class path groups to map multiple class path entries to a mod (paths separated by path separator, groups by double path separator)
 	public static final String PATH_GROUPS = "loader.classPathGroups";
+	// system level libraries, matching code sources will not be assumed to be part of the game or mods and remain on the system class path (paths separated by path separator)
+	public static final String SYSTEM_LIBRARIES = "loader.systemLibraries";
+	public static final String DEBUG_LOG_LIB_CLASSIFICATION = "loader.debug.logLibClassification";
 	// throw exceptions from entrypoints, discovery etc. directly instead of gathering and attaching as suppressed
 	public static final String DEBUG_THROW_DIRECTLY = "loader.debug.throwDirectly";
 	// logs class transformation errors to uncover caught exceptions without adequate logging

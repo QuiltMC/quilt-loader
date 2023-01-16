@@ -75,7 +75,7 @@ configurations {
 }
 
 dependencies {
-	// fabric-loader dependencies
+	// Non-"include"d dependencies must be added to the LoaderLibrary class as well.
 	api "org.ow2.asm:asm:${project.asm}"
 	api "org.ow2.asm:asm-analysis:${project.asm}"
 	api "org.ow2.asm:asm-commons:${project.asm}"

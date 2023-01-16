@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.util.log;
 
+import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -27,6 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 
 
@@ -41,9 +44,11 @@ import java.util.Queue;
  */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 final class BuiltinLogHandler extends ConsoleLogHandler {
-	private static final String DEFAULT_LOG_FILE = "quilt_loader.log";
+	private static final String DEFAULT_LOG_FILE = "quiltloader.log";
 
-	private final Queue<ReplayEntry> replayBuffer = new ArrayDeque<>();
+	private boolean configured;
+	private boolean enableOutput;
+	private List<ReplayEntry> buffer = new ArrayList<>();
 	private final Thread shutdownHook;
 
 	BuiltinLogHandler() {
@@ -52,12 +57,38 @@ final class BuiltinLogHandler extends ConsoleLogHandler {
 	}
 
 	@Override
-	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean isReplayedBuiltin) {
-		super.log(time, level, category, msg, exc, isReplayedBuiltin);
+	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean fromReplay, boolean wasSuppressed) {
+		boolean output;
 
 		synchronized (this) {
-			replayBuffer.add(new ReplayEntry(time, level, category, msg, exc));
+			if (enableOutput) {
+				output = true;
+			} else if (level.isLessThan(LogLevel.ERROR)) {
+				output = false;
+			} else {
+				startOutput();
+				output = true;
+			}
+
+			if (buffer != null) {
+				buffer.add(new ReplayEntry(time, level, category, msg, exc));
+			}
 		}
+
+		if (output) super.log(time, level, category, msg, exc, fromReplay, wasSuppressed);
+	}
+
+	private void startOutput() {
+		if (enableOutput) return;
+
+		if (buffer != null) {
+			for (int i = 0; i < buffer.size(); i++) { // index based loop to tolerate replay producing log output by itself
+				ReplayEntry entry = buffer.get(i);
+				super.log(entry.time, entry.level, entry.category, entry.msg, entry.exc, true, true);
+			}
+		}
+
+		enableOutput = true;
 	}
 
 	@Override
@@ -73,11 +104,34 @@ final class BuiltinLogHandler extends ConsoleLogHandler {
 		}
 	}
 
-	synchronized boolean replay(LogHandler target) {
-		ReplayEntry entry;
+	synchronized void configure(boolean buffer, boolean output) {
+		if (!buffer && !output) throw new IllegalArgumentException("can't both disable buffering and the output");
 
-		while ((entry = replayBuffer.poll()) != null) {
-			target.log(entry.time, entry.level, entry.category, entry.msg, entry.exc, true);
+		if (output) {
+			startOutput();
+		} else {
+			enableOutput = false;
+		}
+
+		if (buffer) {
+			if (this.buffer == null) this.buffer = new ArrayList<>();
+		} else {
+			this.buffer = null;
+		}
+
+		configured = true;
+	}
+
+	synchronized void finishConfig() {
+		if (!configured) configure(false, true);
+	}
+
+	synchronized boolean replay(LogHandler target) {
+		if (buffer == null || buffer.isEmpty()) return false;
+
+		for (int i = 0; i < buffer.size(); i++) { // index based loop to tolerate replay producing log output by itself
+			ReplayEntry entry = buffer.get(i);
+			target.log(entry.time, entry.level, entry.category, entry.msg, entry.exc, true, !enableOutput);
 		}
 
 		return true;
@@ -107,19 +161,27 @@ final class BuiltinLogHandler extends ConsoleLogHandler {
 		@Override
 		public void run() {
 			synchronized (BuiltinLogHandler.this) {
-				if (replayBuffer.isEmpty()) return;
+				if (buffer == null || buffer.isEmpty()) return;
+
+				if (!enableOutput) {
+					enableOutput = true;
+
+					for (int i = 0; i < buffer.size(); i++) { // index based loop to tolerate replay producing log output by itself
+						ReplayEntry entry = buffer.get(i);
+						BuiltinLogHandler.super.log(entry.time, entry.level, entry.category, entry.msg, entry.exc, true, true);
+					}
+				}
 
 				String fileName = System.getProperty(SystemProperties.LOG_FILE, DEFAULT_LOG_FILE);
 				if (fileName.isEmpty()) return;
 
 				try {
-					Path file = Paths.get(fileName).toAbsolutePath().normalize();
+					Path file = LoaderUtil.normalizePath(Paths.get(fileName));
 					Files.createDirectories(file.getParent());
 
-					try (Writer writer = Files.newBufferedWriter(file, StandardOpenOption.WRITE, StandardOpenOption.APPEND, StandardOpenOption.CREATE)) {
-						ReplayEntry entry;
-
-						while ((entry = replayBuffer.poll()) != null) {
+					try (Writer writer = Files.newBufferedWriter(file, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)) {
+						for (int i = 0; i < buffer.size(); i++) { // index based loop to tolerate replay producing log output by itself
+							ReplayEntry entry = buffer.get(i);
 							writer.write(formatLog(entry.time, entry.level, entry.category, entry.msg, entry.exc));
 						}
 					}
