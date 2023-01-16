@@ -266,6 +266,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			for (Path root : fileSystem.getRootDirectories()) {
 				Path qRoot = copyToReadOnlyFileSystem(zip.getFileName().toString(), root);
 				pathParents.put(qRoot, zip);
+				fileSystem.close();
 				return qRoot;
 			}
 
@@ -288,8 +289,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	@Override
-	public Path copyToReadOnlyFileSystem(String name, Path folderRoot) throws IOException {
-		return new QuiltMemoryFileSystem.ReadOnly(name, true, folderRoot).getRoot();
+	public Path copyToReadOnlyFileSystem(String name, Path folderRoot, boolean compress) throws IOException {
+		return new QuiltMemoryFileSystem.ReadOnly(name, true, folderRoot, compress).getRoot();
 	}
 
 	// #################

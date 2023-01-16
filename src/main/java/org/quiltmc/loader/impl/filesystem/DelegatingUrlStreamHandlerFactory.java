@@ -60,6 +60,10 @@ public class DelegatingUrlStreamHandlerFactory implements URLStreamHandlerFactor
 			return new org.quiltmc.loader.impl.filesystem.quilt.jfs.Handler();
 		}
 
+		if (QuiltZipFileSystemProvider.SCHEME.equals(protocol)) {
+			return new org.quiltmc.loader.impl.filesystem.quilt.zfs.Handler();
+		}
+
 		URLStreamHandlerFactory[] array = factories;
 		for (URLStreamHandlerFactory factory : array) {
 			URLStreamHandler handler = factory.createURLStreamHandler(protocol);

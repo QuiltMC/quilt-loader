@@ -80,6 +80,13 @@ public class QuiltClassPath {
 				}
 			}
 
+		} else if (root instanceof QuiltZipPath) {
+			QuiltZipFileSystem fs = ((QuiltZipPath) root).fs;
+
+			for (Path key : fs.entries.keySet()) {
+				putQuickFile(key.toString(), key);
+			}
+
 		} else {
 
 			FileSystem fs = root.getFileSystem();

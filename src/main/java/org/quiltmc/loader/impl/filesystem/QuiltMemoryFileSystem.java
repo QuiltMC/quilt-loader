@@ -74,7 +74,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 	private QuiltMemoryFileSystem(String name, boolean uniquify, Map<QuiltMemoryPath, QuiltMemoryEntry> fileMap) {
 		super(QuiltMemoryFileSystem.class, QuiltMemoryPath.class, name, uniquify);
 		this.files = fileMap;
-		QuiltMemoryFileSystemProvider.register(this);
+		QuiltMemoryFileSystemProvider.PROVIDER.register(this);
 	}
 
 	@Override
@@ -92,14 +92,14 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 	public synchronized void close() {
 		if (openState == OpenState.OPEN) {
 			openState = OpenState.CLOSED;
-			QuiltMemoryFileSystemProvider.closeFileSystem(this);
+			QuiltMemoryFileSystemProvider.PROVIDER.closeFileSystem(this);
 		}
 	}
 
 	synchronized void beginMove() {
 		if (openState == OpenState.OPEN) {
 			openState = OpenState.MOVING;
-			QuiltMemoryFileSystemProvider.closeFileSystem(this);
+			QuiltMemoryFileSystemProvider.PROVIDER.closeFileSystem(this);
 		}
 	}
 
@@ -188,8 +188,9 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 		/** Creates a new read-only {@link FileSystem} that copies every file in the given directory.
 		 *
+		 * @param compress if true then all files will be stored in-memory compressed.
 		 * @throws IOException if any of the files in the given path could not be read. */
-		public ReadOnly(String name, boolean uniquify, Path from) throws IOException {
+		public ReadOnly(String name, boolean uniquify, Path from, boolean compress) throws IOException {
 			super(name, uniquify, new HashMap<>());
 
 			int[] stats = new int[3];
@@ -227,7 +228,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 					stats[STAT_MEMORY] += fileName.length() + 28;
 					QuiltMemoryPath childPath = state.folder.resolve(fileName);
 					state.children.add(childPath);
-					QuiltMemoryFile.ReadOnly qmf = QuiltMemoryFile.ReadOnly.create(childPath, Files.readAllBytes(file));
+					QuiltMemoryFile.ReadOnly qmf = QuiltMemoryFile.ReadOnly.create(childPath, Files.readAllBytes(file), compress);
 
 					stats[STAT_UNCOMPRESSED] += qmf.uncompressedSize;
 					stats[STAT_USED] += qmf.byteArray().length;
@@ -421,11 +422,11 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		}
 
 		/** Creates a new read-only version of this file system, copying the entire directory structure and file content
-		 * into it. This also compresses the files (if they can be compressed), and trims every byte array used to store
-		 * files down to the minimum required length. */
-		public QuiltMemoryFileSystem.ReadOnly optimizeToReadOnly(String newName) {
+		 * into it. This also compresses the files if the compress argument is true (and if compression reduces the file
+		 * size), and trims every byte array used to store files down to the minimum required length. */
+		public QuiltMemoryFileSystem.ReadOnly optimizeToReadOnly(String newName, boolean compress) {
 			try {
-				return new ReadOnly(newName, true, root);
+				return new ReadOnly(newName, true, root, compress);
 			} catch (IOException e) {
 				throw new RuntimeException(
 						"For some reason the in-memory file system threw an IOException while reading!", e
@@ -434,12 +435,12 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		}
 
 		/** Creates a new read-only version of this file system, copying the entire directory structure and file content
-		 * into it. This also compresses the files (if they can be compressed), and trims every byte array used to store
-		 * files down to the minimum required length. */
-		public QuiltMemoryFileSystem.ReadOnly replaceWithReadOnly() {
+		 * into it. This also compresses the files if the compress argument is true (and if compression reduces the file
+		 * size), and trims every byte array used to store files down to the minimum required length. */
+		public QuiltMemoryFileSystem.ReadOnly replaceWithReadOnly(boolean compress) {
 			beginMove();
 			try {
-				return new ReadOnly(name, false, root);
+				return new ReadOnly(name, false, root, compress);
 			} catch (IOException e) {
 				throw new RuntimeException(
 						"For some reason the in-memory file system threw an IOException while reading!", e

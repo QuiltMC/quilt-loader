@@ -33,6 +33,7 @@ import java.util.zip.GZIPOutputStream;
 
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 abstract class QuiltMemoryFile extends QuiltMemoryEntry {
@@ -64,10 +65,10 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 
 		abstract int bytesLength();
 
-		static QuiltMemoryFile.ReadOnly create(QuiltMemoryPath path, byte[] bytes) {
+		static QuiltMemoryFile.ReadOnly create(QuiltMemoryPath path, byte[] bytes, boolean compress) {
 			int size = bytes.length;
 
-			if (size < 24) {
+			if (size < 24 || !compress) {
 				return new QuiltMemoryFile.ReadOnly.Absolute(path, false, size, bytes);
 			}
 

@@ -1,2 +1,3 @@
 org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystemProvider
 org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystemProvider
+org.quiltmc.loader.impl.filesystem.QuiltZipFileSystemProvider

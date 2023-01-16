@@ -73,7 +73,14 @@ public interface QuiltPluginManager {
 	/** Creates a new in-memory file system, then copies the contents of the given folder into it.
 	 *
 	 * @return The root {@link Path} of the newly allocated {@link FileSystem} */
-	Path copyToReadOnlyFileSystem(String name, Path folderRoot) throws IOException;
+	default Path copyToReadOnlyFileSystem(String name, Path folderRoot) throws IOException {
+		return copyToReadOnlyFileSystem(name, folderRoot, false);
+	}
+
+	/** Creates a new in-memory file system, then copies the contents of the given folder into it.
+	 *
+	 * @return The root {@link Path} of the newly allocated {@link FileSystem} */
+	Path copyToReadOnlyFileSystem(String name, Path folderRoot, boolean compress) throws IOException;
 
 	// #################
 	// Identifying Paths

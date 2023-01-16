@@ -72,6 +72,7 @@ import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
@@ -311,6 +312,17 @@ public final class QuiltLoaderImpl {
 			throw new RuntimeException(e);
 		}
 
+		long zipStart = System.nanoTime();
+
+		QuiltZipFileSystem transformCacheZip;
+		try {
+			transformCacheZip = new QuiltZipFileSystem("transform-cache", transformCacheFile, "");
+		} catch (IOException e) {
+			throw new RuntimeException(e); // TODO
+		}
+
+		long zipEnd = System.nanoTime();
+
 		Set<String> modsToCopy = new HashSet<>();
 		String jarCopiedMods = System.getProperty(SystemProperties.JAR_COPIED_MODS);
 		if (jarCopiedMods != null) {
@@ -319,14 +331,17 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
+		long zipCopyTotal = 0;
+
 		for (ModLoadOption modOption : modList) {
 			Path resourceRoot;
 
 			if (!modOption.needsChasmTransforming() && modOption.namespaceMappingFrom() == null) {
 				resourceRoot = modOption.resourceRoot();
 			} else {
-				Path modTransformed = transformedModBundle.resolve(modOption.id() + "/");
-				Path excluded = transformedModBundle.resolve(modOption.id() + ".removed");
+				String modid = modOption.id();
+				Path modTransformed = transformedModBundle.resolve(modid + "/");
+				Path excluded = transformedModBundle.resolve(modid + ".removed");
 
 				if (Files.exists(excluded)) {
 					throw new Error("// TODO: Implement pre-transform file removal!");
@@ -335,27 +350,37 @@ public final class QuiltLoaderImpl {
 				} else {
 					List<Path> paths = new ArrayList<>();
 
-					paths.add(modTransformed);
+					long start = System.nanoTime();
+					paths.add(new QuiltZipFileSystem("transformed-mod-" + modid, transformCacheZip.getRoot().resolve(modid)).getRoot());
+					zipCopyTotal += System.nanoTime() - start;
 
-					/* Single path optimisation disabled since
-					 * URLClassPath can't handle loading folders from inside a zip.
-					 * We can re-enable it if we either move to our own classloader
-					 * or create the "cached filemap" filesystem. */
+					// This cannot pass a java ZipFileSystem directly since URLClassPath can't load
+					// from folders inside a zip.
 
-					// if (paths.size() == 1) {
-					// resourceRoot = paths.get(0);
-					// } else {
-					resourceRoot = new QuiltJoinedFileSystem("final-mod-" + modOption.id(), paths).getRoot();
-					// }
+					// Since we're using our own QuiltZipFileSystem this is okay, but if that gets reverted
+					// we'll also need to revert this optimisation
+
+					 if (paths.size() == 1) {
+						 resourceRoot = paths.get(0);
+					 } else {
+						 resourceRoot = new QuiltJoinedFileSystem("final-mod-" + modid, paths).getRoot();
+					 }
 				}
 			}
 
-			if (modsToCopy.contains(modOption.id()) || shouldCopyToJar(modOption, modIds)) {
+			String modid2 = modOption.id();
+			if (modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds)) {
 				resourceRoot = copyToJar(modOption, resourceRoot);
 			}
 
 			addMod(modOption.convertToMod(resourceRoot));
 		}
+
+		long modAddEnd = System.nanoTime();
+
+		System.out.println("zip read took " + (zipEnd - zipStart) / 1000_000 + "ms");
+		System.out.println("zip FS copy took " + zipCopyTotal / 1000_000 + "ms");
+		System.out.println("mod adding took " + (modAddEnd - zipEnd - zipCopyTotal) / 1000_000 + "ms");
 
 		int count = mods.size();
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
