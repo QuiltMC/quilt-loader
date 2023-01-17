@@ -17,6 +17,9 @@
 package org.quiltmc.loader.api;
 
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
 
 /** Implemented by quilt-loaders {@link FileSystem} which shouldn't change after a certain point. This applies both to
  * filesystems which are stored in memory, and filesystems which are loaded from files on-disk. Filesystems which are
@@ -31,4 +34,22 @@ public interface CachedFileSystem {
 	 *         IMPORTANT: If this method ever returns true, then it will always return true in the future! (The inverse
 	 *         doesn't hold true - a writable filesystem may become read-only after a certain point). */
 	boolean isPermanentlyReadOnly();
+
+	/** Direct method replacement for {@link Files#exists(Path, LinkOption...)}, which will be faster than it for
+	 * {@link CachedFileSystem}s. */
+	public static boolean doesExist(Path path, LinkOption... options) {
+		if (path.getFileSystem() instanceof CachedFileSystem) {
+			return ((CachedFileSystem) path.getFileSystem()).exists(path, options);
+		} else {
+			return Files.exists(path, options);
+		}
+	}
+
+	/** Either the same speed as, or faster than {@link Files#exists(Path, LinkOption...)}. Otherwise this has the same
+	 * semantics as {@link Files#exists(Path, LinkOption...)}.
+	 * 
+	 * @see #doesExist(Path, LinkOption...) */
+	default boolean exists(Path path, LinkOption... options) {
+		return Files.exists(path, options);
+	}
 }

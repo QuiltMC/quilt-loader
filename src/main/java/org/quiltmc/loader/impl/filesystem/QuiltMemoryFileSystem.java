@@ -23,6 +23,7 @@ import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -117,6 +118,11 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 	@Override
 	public Set<String> supportedFileAttributeViews() {
 		return FILE_ATTRS;
+	}
+
+	@Override
+	public boolean exists(Path path, LinkOption... options) {
+		return files.containsKey(path.toAbsolutePath().normalize());
 	}
 
 	public BasicFileAttributes readAttributes(QuiltMemoryPath qmp) throws IOException {

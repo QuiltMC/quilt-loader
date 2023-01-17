@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -165,6 +166,11 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 	@Override
 	public boolean isPermanentlyReadOnly() {
 		return true;
+	}
+
+	@Override
+	public boolean exists(Path path, LinkOption... options) {
+		return entries.containsKey(path.toAbsolutePath().normalize());
 	}
 
 	@Override

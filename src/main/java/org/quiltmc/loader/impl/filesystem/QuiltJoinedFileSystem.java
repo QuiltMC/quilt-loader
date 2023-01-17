@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl.filesystem;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
@@ -38,6 +40,8 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 
 	final Path[] from;
 	final boolean[] shouldCloseFroms;
+	/** True if every {@link Path} is from a {@link CachedFileSystem}. */
+	final boolean allCached;
 	boolean isOpen = true;
 
 	public QuiltJoinedFileSystem(String name, List<Path> from) {
@@ -52,6 +56,14 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 		for (int i = 0; i < shouldCloseFroms.length; i++) {
 			shouldCloseFroms[i] = shouldClose != null && shouldClose.get(i);
 		}
+		boolean allCached = true;
+		for (Path p : from) {
+			if (!(p.getFileSystem() instanceof CachedFileSystem)) {
+				allCached = false;
+				break;
+			}
+		}
+		this.allCached = allCached;
 		QuiltJoinedFileSystemProvider.register(this);
 	}
 
@@ -90,6 +102,10 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 
 	@Override
 	public boolean isPermanentlyReadOnly() {
+		if (!allCached) {
+			return false;
+		}
+
 		for (Path p : from) {
 			FileSystem fs = p.getFileSystem();
 			if (fs instanceof CachedFileSystem) {
@@ -101,6 +117,28 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public boolean exists(Path path, LinkOption... options) {
+		QuiltJoinedPath qjp = (QuiltJoinedPath) path;
+		for (int i = 0; i < from.length; i++) {
+			Path backingPath = getBackingPath(i, qjp);
+			final boolean exists;
+
+			if (backingPath.getFileSystem() instanceof CachedFileSystem) {
+				exists = ((CachedFileSystem) backingPath.getFileSystem()).exists(backingPath, options);
+			} else {
+				// Potentially still an optimisation since some JVM file systems
+				// have a fast path here
+				exists = Files.exists(backingPath, options);
+			}
+
+			if (exists) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
