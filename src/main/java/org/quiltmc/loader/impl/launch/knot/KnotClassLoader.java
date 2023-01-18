@@ -296,6 +296,11 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		return new Separate(this, key); 
 	}
 
+	@Override
+	public String toString() {
+		return "KnotClassLoader[ROOT]";
+	}
+
 	static {
 		registerAsParallelCapable();
 	}
@@ -313,10 +318,14 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 			this.key = key;
 		}
 
-
 		@Override
 		public KnotClassLoaderKey key() {
 			return key;
+		}
+
+		@Override
+		public String toString() {
+			return "KnotClassLoader.Separate[" + key + "]";
 		}
 
 		@Override

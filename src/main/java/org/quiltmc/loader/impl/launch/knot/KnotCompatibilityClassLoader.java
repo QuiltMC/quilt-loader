@@ -156,6 +156,11 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 		return new Separate(this, key);
 	}
 
+	@Override
+	public String toString() {
+		return "KnotCompatibilityClassLoader[ROOT]";
+	}
+
 	static {
 		registerAsParallelCapable();
 	}
@@ -177,6 +182,11 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 		@Override
 		public KnotClassLoaderKey key() {
 			return key;
+		}
+
+		@Override
+		public String toString() {
+			return "KnotCompatibilityClassLoader.Separate[" + key + "]";
 		}
 
 		@Override
