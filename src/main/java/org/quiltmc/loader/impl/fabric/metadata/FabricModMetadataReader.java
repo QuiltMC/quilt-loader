@@ -40,6 +40,7 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -109,16 +110,7 @@ public final class FabricModMetadataReader {
 
 		// At least, that's what we used to do. However our json doesn't support rewinding,
 		// so we'll just copy the entire buffer out to rewind.
-		final byte[] srcData;
-		try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-			// Transfer all bytes to the output
-	        byte[] buffer = new byte[4096];
-	        int read;
-	        while ((read = is.read(buffer, 0, buffer.length)) >= 0) {
-	            out.write(buffer, 0, read);
-	        }
-	        srcData = out.toByteArray();
-		}
+		byte[] srcData = FileUtil.readAllBytes(is);
 		int schemaVersion = 0;
 
 		try (JsonReader reader = JsonReader.json(new InputStreamReader(new ByteArrayInputStream(srcData), StandardCharsets.UTF_8))) {

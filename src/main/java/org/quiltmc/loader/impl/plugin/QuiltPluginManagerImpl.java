@@ -18,17 +18,13 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Constructor;
-import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.ProviderNotFoundException;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipException;
+import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
@@ -88,6 +85,7 @@ import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
@@ -223,57 +221,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
-		try {
-			FileSystem fileSystem;
-
-			try {
-				// Cast to ClassLoader since newer versions of java added a conflicting method
-				// Java 8 - just "newFileSystem(Path, ClassLoader)"
-				// Java 13 - added "newFileSystem(Path, Map)"
-				fileSystem = FileSystems.newFileSystem(zip, (ClassLoader) null);
-			} catch (ProviderNotFoundException nfe) {
-				// JDK 10 and below only permit making a zip file system from files on the default FS
-				// However the code still works even if we're not on the default FS, so go around the provider.
-
-				// Since everything that works on 9 and 10 *hopefully* works on 11, we're going to ignore those
-				// versions and special-case a fix for java 8
-				try {
-					Class<?> zfsp = Class.forName("com.sun.nio.zipfs.ZipFileSystemProvider");
-
-					fileSystem = null;
-
-					for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
-						if (!provider.getClass().isAssignableFrom(zfsp)) {
-							continue;
-						}
-						Class<?> zfs = Class.forName("com.sun.nio.zipfs.ZipFileSystem");
-						Constructor<?> ctor = zfs.getDeclaredConstructor(zfsp, Path.class, Map.class);
-						ctor.setAccessible(true);
-						fileSystem = (FileSystem) ctor.newInstance(provider, zip, Collections.emptyMap());
-					}
-
-					if (fileSystem == null) {
-						nfe.addSuppressed(new Error("Failed to find the zip file system provider!"));
-						throw nfe;
-					}
-
-				} catch (ReflectiveOperationException e) {
-					nfe.addSuppressed(e);
-					throw nfe;
-				}
-			}
-
-			for (Path root : fileSystem.getRootDirectories()) {
-				Path qRoot = copyToReadOnlyFileSystem(zip.getFileName().toString(), root);
-				pathParents.put(qRoot, zip);
-				fileSystem.close();
-				return qRoot;
-			}
-
-			throw new IOException("No root directories found in " + describePath(zip));
-
-		} catch (ProviderNotFoundException e) {
-			String name = zip.getFileName().toString();
+		String name = zip.getFileName().toString();
+		try (ZipInputStream zipFrom = new ZipInputStream(Files.newInputStream(zip))) {
+			QuiltMemoryPath qRoot = new QuiltMemoryFileSystem.ReadOnly(name, zipFrom, "", false).getRoot();
+			pathParents.put(qRoot, zip);
+			return qRoot;
+		} catch (IOException e) {
 			if (name.endsWith(".zip") || name.endsWith(".jar")) {
 				// Something probably went wrong while trying to load them as zips
 				throw new IOException("Failed to read " + zip + " as a zip file!", e);
@@ -1825,7 +1778,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.0", describePath(file)));
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.1"));
 			error.appendThrowable(e);
-			getRealContainingFile(file).ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real).icon(guiManager.iconZipFile()));
+			getRealContainingFile(file).ifPresent(real -> {
+				error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
+					.icon(guiManager.iconZipFile());
+			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.zipexception", e.getMessage()))// TODO: translate
 				.setError(e, error);
@@ -1837,7 +1793,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendReportText("Failed to read " + describePath(file) + "!");
 			error.appendDescription(QuiltLoaderText.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
-			getRealContainingFile(file).ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real).icon(guiManager.iconZipFile()));
+			getRealContainingFile(file).ifPresent(real -> {
+				error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
+					.icon(guiManager.iconZipFile());
+			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.ioexception", e.getMessage()))// TODO: translate
 				.setError(e, error);

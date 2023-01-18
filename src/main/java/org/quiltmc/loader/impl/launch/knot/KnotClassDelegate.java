@@ -31,6 +31,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -606,20 +607,12 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(CachedUrl urlCache, String name) throws IOException {
-		InputStream inputStream = urlCache.openStream();
-		if (inputStream == null) return null;
-
-		int a = inputStream.available();
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(a < 32 ? 32768 : a);
-		byte[] buffer = new byte[8192];
-		int len;
-
-		while ((len = inputStream.read(buffer)) > 0) {
-			outputStream.write(buffer, 0, len);
+		try (InputStream inputStream = urlCache.openStream()) {
+			if (inputStream == null) {
+				return null;
+			}
+			return FileUtil.readAllBytes(inputStream);
 		}
-
-		inputStream.close();
-		return outputStream.toByteArray();
 	}
 
 	void setAllowedPrefixes(URL url, String... prefixes) {

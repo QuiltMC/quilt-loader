@@ -27,6 +27,7 @@ import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -238,16 +239,9 @@ public final class Knot extends QuiltLauncherBase {
 				if (entry == null) return null;
 
 				try (InputStream is = zf.getInputStream(entry)) {
-					byte[] buffer = new byte[100];
-					int offset = 0;
-					int len;
+					byte[] buffer = FileUtil.readAllBytes(is);
 
-					while ((len = is.read(buffer, offset, buffer.length - offset)) >= 0) {
-						offset += len;
-						if (offset == buffer.length) buffer = Arrays.copyOf(buffer, buffer.length * 2);
-					}
-
-					String content = new String(buffer, 0, offset, StandardCharsets.UTF_8).trim();
+					String content = new String(buffer, 0, buffer.length, StandardCharsets.UTF_8).trim();
 					if (content.indexOf('\n') >= 0) return null; // potentially more than one entry -> bail out
 
 					int pos = content.indexOf('#');

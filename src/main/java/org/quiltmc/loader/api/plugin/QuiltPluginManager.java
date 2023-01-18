@@ -46,8 +46,7 @@ public interface QuiltPluginManager {
 	// Loading
 	// #######
 
-	/** Returns a task which will load the specified zip file and returns a path to the root of it's contents, using
-	 * {@link FileSystems#newFileSystem(Path, ClassLoader)} to actually load it.
+	/** Returns a task which will load the specified zip file and returns a path to the root of it's contents.
 	 * <p>
 	 * How the given zip is loaded depends on loaders config settings - in particular the zip could be extracted to a
 	 * temporary folder on the same filesystem as the original zip.

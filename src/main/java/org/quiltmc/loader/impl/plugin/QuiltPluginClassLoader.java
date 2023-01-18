@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -66,14 +67,7 @@ class QuiltPluginClassLoader extends ClassLoader {
 			String path = name.replace(".", from.getFileSystem().getSeparator()).concat(".class");
 
 			try (InputStream is = Files.newInputStream(from.resolve(path))) {
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				int read;
-				byte[] buffer = new byte[256];
-				while ((read = is.read(buffer)) > 0) {
-					baos.write(buffer, 0, read);
-				}
-
-				byte[] src = baos.toByteArray();
+				byte[] src = FileUtil.readAllBytes(is);
 
 				try {
 					definePackage(pkg, null, null, null, null, null, null, null);
