@@ -235,7 +235,7 @@ public final class Knot extends QuiltLauncherBase {
 			if (!flPath.getFileName().toString().endsWith(".jar")) return null; // not a jar
 
 			try (ZipFile zf = new ZipFile(flPath.toFile())) {
-				ZipEntry entry = zf.getEntry("META-INF/services/net.fabricmc.loader.impl.game.GameProvider"); // same file as used by service loader
+				ZipEntry entry = zf.getEntry("META-INF/services/org.quiltmc.loader.impl.game.GameProvider"); // same file as used by service loader
 				if (entry == null) return null;
 
 				try (InputStream is = zf.getInputStream(entry)) {
