@@ -33,7 +33,7 @@ import java.util.zip.ZipFile;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.util.UrlUtil;
 
-final class LibClassifier {
+public final class LibClassifier {
 	private final Map<Lib, Path> matches = new EnumMap<>(Lib.class);
 	private final Map<Lib, String> localPaths = new EnumMap<>(Lib.class);
 	private final List<Path> unmatchedOrigins = new ArrayList<>();
@@ -138,7 +138,7 @@ final class LibClassifier {
 		return ret;
 	}
 
-	enum Lib {
+	public enum Lib {
 		MC_CLIENT(EnvType.CLIENT, "net/minecraft/client/main/Main.class", "net/minecraft/client/MinecraftApplet.class", "com/mojang/minecraft/MinecraftApplet.class"),
 		MC_SERVER(EnvType.SERVER, "net/minecraft/server/Main.class", "net/minecraft/server/MinecraftServer.class", "com/mojang/minecraft/server/MinecraftServer.class"),
 		MC_BUNDLER(EnvType.SERVER, "net/minecraft/bundler/Main.class"),
@@ -177,6 +177,10 @@ final class LibClassifier {
 
 		boolean isInEnv(EnvType env) {
 			return this.env == null || this.env == env;
+		}
+
+		public String[] getPaths() {
+			return paths;
 		}
 	}
 }
