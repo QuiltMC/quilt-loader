@@ -328,10 +328,8 @@ class KnotClassDelegate {
 				}
 
 			} else {
-				// For now, this might be downgraded to a warning rather than an error if it turns out there's nothing we can do about this
-				String msg = "Failed to lookup the code source while class loading '" + name + "' from " + cachedUrl.get();
-				// Log.warn(LogCategory.GENERAL, msg);
-				throw new Error(msg);
+				// We don't have a code source for the URL - it was likely added by a mod calling "addUrl" directly.
+				cl = getClassLoader("?");
 			}
 		} else {
 			modId = metadata.codeSource.modId;

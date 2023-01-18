@@ -341,7 +341,7 @@ public final class Knot extends QuiltLauncherBase {
 		if (actual instanceof KnotSeparateClassLoader) {
 			return ((KnotSeparateClassLoader) actual).getBaseClassLoader() == expected;
 		}
-		return false;
+		return expected == actual;
 	}
 
 	@Override
