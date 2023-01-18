@@ -474,7 +474,7 @@ public class MinecraftGameProvider implements GameProvider {
 			targetClass = "org.quiltmc.loader.impl.game.minecraft.applet.AppletMain";
 		}
 
-		System.out.println(targetClass);
+		Log.log(LogCategory.GAME_PROVIDER, "Launching using target class '" + targetClass + "'");
 
 		try {
 			Class<?> c = loader.loadClass(targetClass);
