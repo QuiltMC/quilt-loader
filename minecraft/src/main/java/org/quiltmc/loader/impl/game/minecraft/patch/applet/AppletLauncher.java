@@ -16,7 +16,6 @@ package org.quiltmc.loader.impl.game.minecraft.patch.applet;/*
 
 
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import org.quiltmc.loader.impl.game.minecraft.LibClassifier;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 import java.applet.Applet;
@@ -63,27 +62,8 @@ public class AppletLauncher extends Applet implements AppletStub {
 		params.put("demo", Boolean.toString(demo));
 
 		try {
-			Class<?> classToInstantiate = null;
-
-			for (String className : LibClassifier.Lib.MC_CLIENT.getPaths()) {
-				try {
-					classToInstantiate = QuiltLauncherBase
-							.getClass(
-									className
-											.replace(".class", "")
-											.replace("/",".")
-							);
-					break;
-				} catch (ClassNotFoundException exception) {
-					// Continue to next index
-				}
-			}
-
-			if (classToInstantiate == null) {
-				throw new RuntimeException("Could not instantiate MinecraftApplet - cannot find class");
-			}
-
-			mcApplet = (Applet) classToInstantiate
+			mcApplet = (Applet) QuiltLauncherBase
+					.getClass(GameTransformer.appletMainClass)
 					.getDeclaredConstructor()
 					.newInstance();
 			//noinspection ConstantConditions
@@ -92,7 +72,7 @@ public class AppletLauncher extends Applet implements AppletStub {
 			}
 
 			this.add(mcApplet, "Center");
-		} catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+		} catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
 			throw new RuntimeException(e);
 		}
 	}
