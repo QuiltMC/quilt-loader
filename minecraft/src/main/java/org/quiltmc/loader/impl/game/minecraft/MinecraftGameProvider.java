@@ -57,6 +57,7 @@ import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.log.LogHandler;
 
 import net.fabricmc.loader.api.ObjectShare;
@@ -471,8 +472,11 @@ public class MinecraftGameProvider implements GameProvider {
 		String targetClass = entrypoint;
 
 		if (envType == EnvType.CLIENT && targetClass.contains("Applet")) {
+			GameTransformer.appletMainClass = targetClass;
 			targetClass = "org.quiltmc.loader.impl.game.minecraft.applet.AppletMain";
 		}
+
+		Log.debug(LogCategory.GAME_PROVIDER, "Launching using target class '" + targetClass + "'");
 
 		try {
 			Class<?> c = loader.loadClass(targetClass);

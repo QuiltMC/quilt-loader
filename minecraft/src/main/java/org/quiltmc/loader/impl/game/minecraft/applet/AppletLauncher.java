@@ -46,9 +46,8 @@ public class AppletLauncher extends Applet implements AppletStub {
 		params.put("demo", Boolean.toString(demo));
 
 		try {
-			mcApplet = (Applet) QuiltLauncherBase.getLauncher()
-					.getTargetClassLoader()
-					.loadClass(GameTransformer.appletMainClass)
+			mcApplet = (Applet) QuiltLauncherBase
+					.getClass(GameTransformer.appletMainClass)
 					.getDeclaredConstructor()
 					.newInstance();
 			//noinspection ConstantConditions
