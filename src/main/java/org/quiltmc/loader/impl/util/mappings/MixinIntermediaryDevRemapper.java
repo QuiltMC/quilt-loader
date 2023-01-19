@@ -105,6 +105,11 @@ public class MixinIntermediaryDevRemapper extends MixinRemapper {
 
 	@Override
 	public String mapMethodName(String owner, String name, String desc) {
+		// Realistically, this can't be remapped.
+		if (owner != null && owner.startsWith("java/")) {
+			return name;
+		}
+
 		// handle unambiguous values early
 		if (owner == null || allPossibleClassNames.contains(owner)) {
 			String newName;
