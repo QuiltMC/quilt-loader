@@ -1,5 +1,6 @@
 /*
  * Copyright 2016 FabricMC
+ * Copyright 2022-2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -271,7 +272,9 @@ public final class McVersionLookup {
 			int year = Integer.parseInt(matcher.group(1));
 			int week = Integer.parseInt(matcher.group(2));
 
-			if (year == 22 && week >= 42) {
+			if (year == 23 && week >= 3) {
+				return "1.19.4";
+			} else if (year == 22 && week >= 42) {
 				// 22w42a started not including a release_target again, hence the large gap
 				return "1.19.3";
 			} else if (year == 20 && week >= 6) {
