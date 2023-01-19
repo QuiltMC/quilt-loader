@@ -352,6 +352,9 @@ public final class QuiltLoaderImpl {
 
 					long start = System.nanoTime();
 					paths.add(new QuiltZipFileSystem("transformed-mod-" + modid, transformCacheZip.getRoot().resolve(modid)).getRoot());
+					if (modOption.couldResourcesChange()) {
+						paths.add(modOption.resourceRoot());
+					}
 					zipCopyTotal += System.nanoTime() - start;
 
 					// This cannot pass a java ZipFileSystem directly since URLClassPath can't load
