@@ -447,7 +447,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
-		QuiltMemoryPath qmp = (QuiltMemoryPath) path;
+		QuiltMemoryPath qmp = toAbsQuiltPath(path);
 		return qmp.fs.getFileAttributeView(qmp, type);
 	}
 

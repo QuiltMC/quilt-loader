@@ -129,7 +129,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		if (entry != null) {
 			return entry.createAttributes();
 		} else {
-			throw new NoSuchFileException(qmp.name);
+			throw new NoSuchFileException(qmp.toString());
 		}
 	}
 
@@ -332,6 +332,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 				QuiltMemoryPath path = getPath(entryName);
 				if (entryName.endsWith("/")) {
 					// Folder, but it might have already been automatically added by a file
+					folders.computeIfAbsent(path, p -> new HashSet<>());
 					putParentFolders(folders, path);
 				} else {
 					// File
