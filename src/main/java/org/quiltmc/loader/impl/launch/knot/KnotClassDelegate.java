@@ -460,7 +460,7 @@ class KnotClassDelegate {
 		try {
 			codeSourceUrl = UrlUtil.getSource(classFileName, resourceURL);
 		} catch (UrlConversionException e) {
-			System.err.println("Could not find code source for " + resourceURL + ": " + e.getMessage());
+			Log.warn(LogCategory.KNOT, "Could not find code source for " + resourceURL + ": " + e.getMessage());
 		}
 
 		if (codeSourceUrl == null) return Metadata.EMPTY;
