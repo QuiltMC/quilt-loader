@@ -46,6 +46,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TransformCache {
 
+	private static final String FILE_TRANSFORM_COMPLETE = "__TRANSFORM_COMPLETE";
+
 	public static void populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 		Map<String, String> map = new TreeMap<>();
@@ -104,6 +106,10 @@ public class TransformCache {
 		try {
 			fileSystem = FileSystems.newFileSystem(transformCacheFile, (ClassLoader) null);
 			Path inner = fileSystem.getPath("/");
+			if (!Files.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
+				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since the last time it was created it was incomplete!");
+				return null;
+			}
 			Path optionFile = inner.resolve("options.txt");
 
 			try (BufferedReader br = Files.newBufferedReader(optionFile, StandardCharsets.UTF_8)) {
@@ -193,6 +199,8 @@ public class TransformCache {
 			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 
 			populateTransformCache(inner, modList, result);
+
+			Files.createFile(inner.resolve(FILE_TRANSFORM_COMPLETE));
 		} catch (IOException e) {
 			throw new ModResolutionException("Failed to create the transform bundle!", e);
 		} catch (URISyntaxException e) {
