@@ -46,6 +46,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
 	implements Path {
+
 	static final String NAME_ROOT = "/";
 	static final String NAME_SELF = ".";
 	static final String NAME_PARENT = "..";
@@ -57,7 +58,11 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	 * {@link #NAME_PARENT}, or {@link #NAME_SELF} if it matches. */
 	final String name;
 
+	/** {@link #isAbsolute()} */
 	final boolean absolute;
+
+	/** If true then {@link #normalize()} will return this. */
+	final boolean normalized;
 	final int nameCount;
 
 	final int hash;
@@ -76,6 +81,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			this.name = NAME_ROOT;
 			this.nameCount = 0;
 			this.absolute = true;
+			this.normalized = true;
 		} else {
 			if (name.equals(NAME_PARENT)) {
 				this.name = NAME_PARENT;
@@ -93,10 +99,14 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			}
 			this.nameCount = count;
 
+			boolean isNormalName = !name.equals(NAME_PARENT) && !name.equals(NAME_SELF);
+
 			if (parent == null) {
 				absolute = false;
+				normalized = isNormalName;
 			} else {
 				absolute = parent.absolute;
+				normalized = parent.normalized && isNormalName;
 			}
 		}
 
@@ -322,6 +332,10 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	@Override
 	public P normalize() {
+		if (normalized) {
+			return getThisPath();
+		}
+
 		if (NAME_SELF.equals(name)) {
 			if (parent != null) {
 				return parent.normalize();
