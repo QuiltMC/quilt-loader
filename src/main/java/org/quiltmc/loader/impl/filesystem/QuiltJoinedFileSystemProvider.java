@@ -51,6 +51,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -227,7 +228,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 				for (int i = 0; i < qmp.fs.getBackingPathCount(); i++) {
 					Path backing = qmp.fs.getBackingPath(i, qmp);
 					backingPaths.add(backing);
-					if (Files.isDirectory(backing)) {
+					if (FasterFiles.isDirectory(backing)) {
 						streams.add(Files.newDirectoryStream(backing, path -> {
 							return filter.accept(toJoinedPath(backing, path));
 						}));

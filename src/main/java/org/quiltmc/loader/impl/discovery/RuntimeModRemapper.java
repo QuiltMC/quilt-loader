@@ -37,6 +37,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
@@ -75,7 +76,7 @@ public final class RuntimeModRemapper {
 				Path modDst = cache.resolve(mod.id());
 				try {
 					Files.walk(modSrc).forEach(path -> {
-						if (!Files.isRegularFile(path)) {
+						if (!FasterFiles.isRegularFile(path)) {
 							// Only copy class files, since those files are the only files modified by chasm
 							return;
 						}
@@ -86,7 +87,7 @@ public final class RuntimeModRemapper {
 						Path sub = modSrc.relativize(path);
 						Path dst = modDst.resolve(sub.toString());
 						try {
-							Files.createDirectories(dst.getParent());
+							FasterFiles.createDirectories(dst.getParent());
 							Files.copy(path, dst);
 						} catch (IOException e) {
 							throw new Error(e);

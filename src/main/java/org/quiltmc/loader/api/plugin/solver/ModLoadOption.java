@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -136,7 +137,7 @@ public abstract class ModLoadOption extends LoadOption {
 
 	public boolean couldResourcesChange() {
 		Path from = from();
-		if (from.getFileSystem() == FileSystems.getDefault() && Files.isDirectory(from)) {
+		if (from.getFileSystem() == FileSystems.getDefault() && FasterFiles.isDirectory(from)) {
 			return true;
 		} else if (from instanceof QuiltJoinedPath) {
 			QuiltJoinedPath path = (QuiltJoinedPath) from;

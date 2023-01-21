@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -210,7 +211,7 @@ public class QuiltClassPath {
 
 		for (Path root : roots) {
 			Path ext = root.resolve(path);
-			if (Files.exists(ext)) {
+			if (FasterFiles.exists(ext)) {
 				return ext;
 			}
 		}

@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
@@ -107,7 +108,7 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 
 	@Override
 	public QuiltPluginButton addFolderViewButton(QuiltLoaderText name, Path openedFolder) {
-		if (Files.exists(openedFolder) && Files.isRegularFile(openedFolder)) {
+		if (FasterFiles.isRegularFile(openedFolder)) {
 			return addFileViewButton(name, openedFolder);
 		} else {
 			return button(name, QuiltBasicButtonAction.VIEW_FOLDER).arg("folder", openedFolder.toString());

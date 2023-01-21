@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
@@ -104,13 +105,13 @@ public class TransformCache {
 	}
 
 	private static QuiltZipPath checkTransformCache(Path transformCacheFile, Map<String, String> options) throws ModResolutionException {
-		if (!Files.exists(transformCacheFile)) {
+		if (!FasterFiles.exists(transformCacheFile)) {
 			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's missing");
 			return null;
 		}
 		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", transformCacheFile, "")) {
 			QuiltZipPath inner = fs.getRoot();
-			if (!Files.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
+			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
 				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
 				return null;
 			}
@@ -183,7 +184,7 @@ public class TransformCache {
 	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 
-		if (Files.exists(transformCacheFile)) {
+		if (FasterFiles.exists(transformCacheFile)) {
 			try {
 				Files.delete(transformCacheFile);
 			} catch (IOException e) {

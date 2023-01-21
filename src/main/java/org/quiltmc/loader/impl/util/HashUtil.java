@@ -24,11 +24,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 
+import org.quiltmc.loader.api.FasterFiles;
+
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class HashUtil {
 
 	public static byte[] computeHash(Path path) throws IOException {
-		if (Files.isDirectory(path)) {
+		if (FasterFiles.isDirectory(path)) {
 			// We don't support hash computations here?
 			// So instead return the current date & time
 

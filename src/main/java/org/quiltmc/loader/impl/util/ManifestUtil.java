@@ -29,6 +29,8 @@ import java.security.CodeSource;
 import java.util.jar.Attributes.Name;
 import java.util.jar.Manifest;
 
+import org.quiltmc.loader.api.FasterFiles;
+
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class ManifestUtil {
 	public static Manifest readManifest(Class<?> cls) throws IOException, URISyntaxException {
@@ -44,7 +46,7 @@ public final class ManifestUtil {
 	public static Manifest readManifest(URL codeSourceUrl) throws IOException, URISyntaxException {
 		Path path = UrlUtil.asPath(codeSourceUrl);
 
-		if (Files.isDirectory(path)) {
+		if (FasterFiles.isDirectory(path)) {
 			return readManifest(path);
 		} else {
 			URLConnection connection = new URL("jar:" + codeSourceUrl.toString() + "!/").openConnection();
@@ -61,7 +63,7 @@ public final class ManifestUtil {
 
 	public static Manifest readManifest(Path basePath) throws IOException {
 		Path path = basePath.resolve("META-INF").resolve("MANIFEST.MF");
-		if (!Files.exists(path)) return null;
+		if (!FasterFiles.exists(path)) return null;
 
 		try (InputStream stream = Files.newInputStream(path)) {
 			return new Manifest(stream);

@@ -19,7 +19,6 @@ package org.quiltmc.loader.impl.plugin.quilt;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,10 +31,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
-import org.quiltmc.loader.api.ModDependency.All;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
@@ -188,7 +187,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		PluginGuiTreeNode guiNode) throws IOException {
 
 		Path qmj = root.resolve("quilt.mod.json");
-		if (!Files.isRegularFile(qmj)) {
+		if (!FasterFiles.isRegularFile(qmj)) {
 			return null;
 		}
 

@@ -38,6 +38,7 @@ import org.quiltmc.chasm.api.util.Context;
 import org.quiltmc.chasm.internal.transformer.ChasmLangTransformer;
 import org.quiltmc.chasm.lang.api.ast.Node;
 import org.quiltmc.chasm.lang.api.metadata.Metadata;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LType;
@@ -66,7 +67,7 @@ class ChasmInvoker {
 		// TODO: Move chasm searching to here!
 		for (ModLoadOption mod : modList) {
 			Path path2 = root.resolve(mod.id());
-			if (!Files.isDirectory(path2)) {
+			if (!FasterFiles.isDirectory(path2)) {
 				continue;
 			}
 			Files.walkFileTree(path2, new SimpleFileVisitor<Path>() {
@@ -96,7 +97,7 @@ class ChasmInvoker {
 
 				for (ModLoadOption mod : modList) {
 					Path path2 = root.resolve(mod.id()).resolve(path);
-					if (Files.isRegularFile(path2)) {
+					if (FasterFiles.isRegularFile(path2)) {
 						try {
 							return Files.readAllBytes(path2);
 						} catch (IOException e) {
@@ -157,7 +158,7 @@ class ChasmInvoker {
 
 		for (ModLoadOption mod : modList) {
 			Path modPath = root.resolve(mod.id());
-			if (!Files.exists(modPath)) {
+			if (!FasterFiles.exists(modPath)) {
 				continue;
 			}
 

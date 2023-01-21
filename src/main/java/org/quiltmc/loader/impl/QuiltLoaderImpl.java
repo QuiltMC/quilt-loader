@@ -49,6 +49,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.objectweb.asm.Opcodes;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
@@ -331,9 +332,9 @@ public final class QuiltLoaderImpl {
 				Path modTransformed = transformedModBundle.resolve(modid + "/");
 				Path excluded = transformedModBundle.resolve(modid + ".removed");
 
-				if (Files.exists(excluded)) {
+				if (FasterFiles.exists(excluded)) {
 					throw new Error("// TODO: Implement pre-transform file removal!");
-				} else if (!Files.isDirectory(modTransformed)) {
+				} else if (!FasterFiles.isDirectory(modTransformed)) {
 					resourceRoot = modOption.resourceRoot();
 				} else {
 					List<Path> paths = new ArrayList<>();
@@ -431,7 +432,7 @@ public final class QuiltLoaderImpl {
 					if (pathStr.startsWith("/")) {
 						pathStr = pathStr.substring(1);
 					}
-					if (Files.isDirectory(path)) {
+					if (FasterFiles.isDirectory(path)) {
 						zip.putNextEntry(new ZipEntry(pathStr + "/"));
 					} else {
 						zip.putNextEntry(new ZipEntry(pathStr));
@@ -886,7 +887,7 @@ public final class QuiltLoaderImpl {
 
 				Path path = Paths.get(pathName).toAbsolutePath().normalize();
 
-				if (Files.isDirectory(path) && knownModPaths.add(path)) {
+				if (FasterFiles.isDirectory(path) && knownModPaths.add(path)) {
 					QuiltLauncherBase.getLauncher().addToClassPath(path);
 				}
 			}
@@ -1033,7 +1034,7 @@ public final class QuiltLoaderImpl {
 
 				Path path = mod.getPath(accessWidener);
 
-				if (!Files.isRegularFile(path)) {
+				if (!FasterFiles.isRegularFile(path)) {
 					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.metadata().id() + " '" + accessWidener + "'");
 				}
 

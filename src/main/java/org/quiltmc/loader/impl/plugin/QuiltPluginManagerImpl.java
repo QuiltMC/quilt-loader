@@ -52,6 +52,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
@@ -1077,10 +1078,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				path = paths.get(0);
 			}
 
-			if (Files.exists(path)) {
+			if (FasterFiles.exists(path)) {
 				String name = describePath(path);
 				PluginGuiTreeNode clNode = classpathRoot.addChild(QuiltLoaderText.of(name), SortOrder.ALPHABETICAL_ORDER);
-				if (Files.isDirectory(path)) {
+				if (FasterFiles.isDirectory(path)) {
 					clNode.mainIcon(clNode.manager().iconFolder());
 				}
 				scanModFile(path, new ModLocationImpl(true, true), clNode);
@@ -1744,7 +1745,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			return;
 		}
 
-		if (Files.isDirectory(file)) {
+		if (FasterFiles.isDirectory(file)) {
 			if (this.config.singleThreadedLoading) {
 				scanFolderAsMod(file, location, guiNode);
 			} else {

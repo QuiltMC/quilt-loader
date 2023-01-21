@@ -17,6 +17,7 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -205,7 +206,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 				Optional<ModContainer> modContainer = QuiltLoader.getModContainer(mod);
 				if (modContainer.isPresent()) {
 					Path modResource = modContainer.get().rootPath().resolve(resource);
-					if (!Files.exists(modResource)) {
+					if (!FasterFiles.exists(modResource)) {
 						return null;
 					}
 					try {

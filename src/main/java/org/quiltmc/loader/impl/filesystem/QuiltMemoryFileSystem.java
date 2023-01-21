@@ -48,6 +48,7 @@ import java.util.zip.ZipInputStream;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -199,7 +200,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 			int[] stats = new int[3];
 			stats[STAT_MEMORY] = 60;
 
-			if (!Files.isDirectory(from)) {
+			if (!FasterFiles.isDirectory(from)) {
 				throw new IOException(from + " is not a directory!");
 			}
 
@@ -460,7 +461,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		public ReadWrite(String name, boolean uniquify, Path from) throws IOException {
 			this(name, uniquify);
 
-			if (!Files.isDirectory(from)) {
+			if (!FasterFiles.isDirectory(from)) {
 				throw new IOException(from + " is not a directory!");
 			}
 

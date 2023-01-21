@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
@@ -80,7 +81,7 @@ public class ArgumentModCandidateFinder {
 
 		Path path = Paths.get(pathStr).toAbsolutePath().normalize();
 
-		if (!Files.exists(path)) { // missing
+		if (!FasterFiles.exists(path)) { // missing
 			QuiltPluginError error = ctx.reportError(
 				QuiltLoaderText.translate("error.arg_mods.missing.title", path.getFileName())
 			);

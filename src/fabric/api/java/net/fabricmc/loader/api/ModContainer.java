@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.quiltmc.loader.api.FasterFiles;
+
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.fabricmc.loader.api.metadata.ModOrigin;
 
@@ -64,7 +66,7 @@ public interface ModContainer {
 	default Optional<Path> findPath(String file) {
 		for (Path root : getRootPaths()) {
 			Path path = root.resolve(file.replace("/", root.getFileSystem().getSeparator()));
-			if (Files.exists(path)) return Optional.of(path);
+			if (FasterFiles.exists(path)) return Optional.of(path);
 		}
 
 		return Optional.empty();

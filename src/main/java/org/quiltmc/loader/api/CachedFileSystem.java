@@ -17,7 +17,6 @@
 package org.quiltmc.loader.api;
 
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
@@ -26,7 +25,7 @@ import java.nio.file.Path;
  * backed by folders (such as a development environment) will always return false from {@link #isPermanentlyReadOnly()}.
  * <p>
  * You need to call {@link #isPermanentlyReadOnly()} to check if that point has been reached. */
-public interface CachedFileSystem {
+public interface CachedFileSystem extends FasterFileSystem {
 
 	/** @return True if this {@link FileSystem} won't accept file creation, deletion, or modification, and the
 	 *         underlying files are not expected to be changed either.
@@ -35,21 +34,14 @@ public interface CachedFileSystem {
 	 *         doesn't hold true - a writable filesystem may become read-only after a certain point). */
 	boolean isPermanentlyReadOnly();
 
-	/** Direct method replacement for {@link Files#exists(Path, LinkOption...)}, which will be faster than it for
-	 * {@link CachedFileSystem}s. */
+	/** Kept for backwards compatibility only. Please use {@link FasterFiles#exists(Path, LinkOption...)} instead! */
+	@Deprecated
 	public static boolean doesExist(Path path, LinkOption... options) {
-		if (path.getFileSystem() instanceof CachedFileSystem) {
-			return ((CachedFileSystem) path.getFileSystem()).exists(path, options);
-		} else {
-			return Files.exists(path, options);
-		}
+		return FasterFiles.exists(path, options);
 	}
 
-	/** Either the same speed as, or faster than {@link Files#exists(Path, LinkOption...)}. Otherwise this has the same
-	 * semantics as {@link Files#exists(Path, LinkOption...)}.
-	 * 
-	 * @see #doesExist(Path, LinkOption...) */
+	@Override
 	default boolean exists(Path path, LinkOption... options) {
-		return Files.exists(path, options);
+		return FasterFileSystem.super.exists(path, options);
 	}
 }

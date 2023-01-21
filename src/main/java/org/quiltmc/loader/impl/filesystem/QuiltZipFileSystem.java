@@ -28,14 +28,17 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -68,7 +72,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * this if it's not read-only, or the "compress" constructor argument is false). */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, QuiltZipPath>
-	implements CachedFileSystem {
+	implements ReadOnlyFileSystem {
 
 	final Map<QuiltZipPath, QuiltZipEntry> entries = new HashMap<>();
 	final SharedByteChannels channels;
@@ -238,14 +242,58 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 		return true;
 	}
 
+	// FasterFileSystem
+
 	@Override
-	public boolean isPermanentlyReadOnly() {
-		return true;
+	public boolean isSymbolicLink(Path path) {
+		// Symbolic links are not supported in zips
+		return false;
+	}
+
+	@Override
+	public boolean isDirectory(Path path, LinkOption... options) {
+		return entries.get(path.toAbsolutePath().normalize()) instanceof QuiltZipFolder;
+	}
+
+	@Override
+	public boolean isRegularFile(Path path, LinkOption[] options) {
+		return entries.get(path.toAbsolutePath().normalize()) instanceof QuiltZipFile;
 	}
 
 	@Override
 	public boolean exists(Path path, LinkOption... options) {
 		return entries.containsKey(path.toAbsolutePath().normalize());
+	}
+
+	@Override
+	public boolean notExists(Path path, LinkOption... options) {
+		// Normally you're not meant to do this
+		// But it's fine, since there's nothing that could prevent us from checking if the file exists
+		return !exists(path, options);
+	}
+
+	@Override
+	public boolean isReadable(Path path) {
+		return exists(path);
+	}
+
+	@Override
+	public boolean isExecutable(Path path) {
+		return exists(path);
+	}
+
+	@Override
+	public Stream<Path> list(Path dir) throws IOException {
+		return getChildren(dir).stream().map(p -> (Path) p);
+	}
+
+	@Override
+	public Collection<? extends Path> getChildren(Path dir) throws IOException {
+		QuiltZipEntry entry = entries.get(dir.toAbsolutePath().normalize());
+		if (!(entry instanceof QuiltZipFolder)) {
+			throw new NotDirectoryException(dir.toString());
+		}
+		return Collections.unmodifiableCollection(((QuiltZipFolder) entry).children.values());
 	}
 
 	@Override

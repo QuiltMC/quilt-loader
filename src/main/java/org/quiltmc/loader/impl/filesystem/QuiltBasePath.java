@@ -40,6 +40,7 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -560,7 +561,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	 * {@link org.quiltmc.loader.impl.filesystem.quilt.mfs.Handler} and
 	 * {@link org.quiltmc.loader.impl.filesystem.quilt.jfs.Handler} */
 	public InputStream openUrlInputStream() throws IOException {
-		if (Files.isDirectory(this)) {
+		if (FasterFiles.isDirectory(this)) {
 			return new ByteArrayInputStream("folder".getBytes(StandardCharsets.UTF_8));
 		} else {
 			return Files.newInputStream(this);
