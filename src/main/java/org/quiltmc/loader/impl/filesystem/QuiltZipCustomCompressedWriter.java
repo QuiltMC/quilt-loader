@@ -310,8 +310,9 @@ final class QuiltZipCustomCompressedWriter {
 		int currentArrayIndex = ARRAY_LENGTH;
 
 		final ExpandingOutputStream outputStream = new ExpandingOutputStream();
-
 		final Map<Path, FileEntry> files = new HashMap<>();
+
+		Deflater deflater;
 
 		public WriterThread(int mainIndex, int subIndex) {
 			super("QuiltZipWriter-" + mainIndex + "." + subIndex);
@@ -325,17 +326,20 @@ final class QuiltZipCustomCompressedWriter {
 					next = sourceFiles.take();
 				} catch (InterruptedException e) {
 					interrupted = true;
-					return;
+					break;
 				}
 				if (next == THREAD_STOPPER) {
-					return;
+					break;
 				}
 
 				int offset = currentOffset();
 				int uncompressedLength;
-				try (DeflaterOutputStream compressor = new DeflaterOutputStream(
-					outputStream, new Deflater(Deflater.DEFAULT_COMPRESSION, true)
-				)) {
+				if (deflater == null) {
+					deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
+				} else {
+					deflater.reset();
+				}
+				try (DeflaterOutputStream compressor = new DeflaterOutputStream(outputStream, deflater)) {
 					uncompressedLength = (int) Files.copy(next, compressor);
 				} catch (IOException e) {
 					e = new IOException("Failed to copy " + next, e);
@@ -343,18 +347,22 @@ final class QuiltZipCustomCompressedWriter {
 						if (aborted) {
 							// Don't try to append to an exception if it's already been thrown
 							e.printStackTrace();
-							return;
+							break;
 						}
 						if (exception == null) {
 							exception = e;
 						} else {
 							exception.addSuppressed(e);
 						}
-						return;
+						break;
 					}
 				}
 				int length = currentOffset() - offset;
 				files.put(next, new FileEntry(offset, uncompressedLength, length));
+			}
+
+			if (deflater != null) {
+				deflater.end();
 			}
 		}
 
