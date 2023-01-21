@@ -18,6 +18,8 @@ package org.quiltmc.loader.impl.filesystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
@@ -272,11 +274,21 @@ public class QuiltClassPath {
 				sb.append("Multiple paths added for '");
 				sb.append(exposedName);
 				sb.append("', but only a single one can be returned!");
-				for (Path path : paths) {
-					sb.append("\n - ");
-					sb.append(path.getFileSystem());
-					sb.append(" ");
-					sb.append(path);
+				if ("/".equals(exposedName)) {
+					// Since every entry on the classpath contains a root folder
+					// it's not useful to log every classpath entry.
+					// So instead we'll log the current stacktrace.
+					StringWriter writer = new StringWriter();
+					new Throwable("Overlapping Path Caller").printStackTrace(new PrintWriter(writer));
+					sb.append("\n");
+					sb.append(writer.toString());
+				} else {
+					for (Path path : paths) {
+						sb.append("\n - ");
+						sb.append(path.getFileSystem());
+						sb.append(" ");
+						sb.append(path);
+					}
 				}
 				Log.warn(LogCategory.GENERAL, sb.toString());
 			}
