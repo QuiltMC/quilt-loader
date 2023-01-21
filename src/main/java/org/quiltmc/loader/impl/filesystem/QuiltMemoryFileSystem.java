@@ -24,15 +24,18 @@ import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -42,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -118,9 +122,58 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		return FILE_ATTRS;
 	}
 
+	// FasterFileSystem
+
+	@Override
+	public boolean isSymbolicLink(Path path) {
+		// Not supported
+		return false;
+	}
+
+	@Override
+	public boolean isDirectory(Path path, LinkOption... options) {
+		return files.get(path.toAbsolutePath().normalize()) instanceof QuiltMemoryFolder;
+	}
+
+	@Override
+	public boolean isRegularFile(Path path, LinkOption[] options) {
+		return files.get(path.toAbsolutePath().normalize()) instanceof QuiltMemoryFile;
+	}
+
 	@Override
 	public boolean exists(Path path, LinkOption... options) {
 		return files.containsKey(path.toAbsolutePath().normalize());
+	}
+
+	@Override
+	public boolean notExists(Path path, LinkOption... options) {
+		// Nothing can go wrong, so this is fine
+		return !exists(path, options);
+	}
+
+	@Override
+	public boolean isReadable(Path path) {
+		return exists(path);
+	}
+
+	@Override
+	public boolean isExecutable(Path path) {
+		return exists(path);
+	}
+
+	@Override
+	public Stream<Path> list(Path dir) throws IOException {
+		return getChildren(dir).stream().map(p -> (Path) p);
+	}
+
+	@Override
+	public Collection<? extends Path> getChildren(Path dir) throws IOException {
+		QuiltMemoryEntry entry = files.get(dir.toAbsolutePath().normalize());
+		if (entry instanceof QuiltMemoryFolder) {
+			return ((QuiltMemoryFolder) entry).getChildren();
+		} else {
+			throw new NotDirectoryException(dir.toString());
+		}
 	}
 
 	public BasicFileAttributes readAttributes(QuiltMemoryPath qmp) throws IOException {
@@ -143,7 +196,8 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 				}
 
 				@Override
-				public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+				public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime)
+					throws IOException {
 					// Unsupported
 					// Since we don't need to throw we won't
 				}
@@ -169,7 +223,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		}
 	}
 
-	public static final class ReadOnly extends QuiltMemoryFileSystem {
+	public static final class ReadOnly extends QuiltMemoryFileSystem implements ReadOnlyFileSystem {
 
 		/** Used to store all file data content in a single byte array. Potentially provides performance gains as we
 		 * don't allocate as many objects (plus it's all packed). Comes with the one-time cost of actually coping all
@@ -284,9 +338,9 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 						int len = abs.bytesLength();
 						System.arraycopy(abs.byteArray(), 0, packed, pos, len);
 						entry.setValue(
-								new QuiltMemoryFile.ReadOnly.Relative(
-										abs.path, abs.isCompressed, abs.uncompressedSize, pos, len
-								)
+							new QuiltMemoryFile.ReadOnly.Relative(
+								abs.path, abs.isCompressed, abs.uncompressedSize, pos, len
+							)
 						);
 						pos += len;
 					}
@@ -518,7 +572,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 				return new ReadOnly(newName, true, root, compress);
 			} catch (IOException e) {
 				throw new RuntimeException(
-						"For some reason the in-memory file system threw an IOException while reading!", e
+					"For some reason the in-memory file system threw an IOException while reading!", e
 				);
 			}
 		}
@@ -532,7 +586,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 				return new ReadOnly(name, false, root, compress);
 			} catch (IOException e) {
 				throw new RuntimeException(
-						"For some reason the in-memory file system threw an IOException while reading!", e
+					"For some reason the in-memory file system threw an IOException while reading!", e
 				);
 			} finally {
 				endMove();
@@ -552,6 +606,39 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		@Override
 		public boolean isPermanentlyReadOnly() {
 			return false;
+		}
+
+		// FasterFileSystem
+
+		@Override
+		public Path createFile(Path path, FileAttribute<?>... attrs) throws IOException {
+			// This is already fairly quick, so don't bother reimplementing it
+			return super.createFile(path, attrs);
+		}
+
+		@Override
+		public Path createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException {
+			dir = dir.toAbsolutePath().normalize();
+			Deque<Path> stack = new ArrayDeque<>();
+			Path p = dir;
+			do {
+				if (isDirectory(p)) {
+					break;
+				} else {
+					stack.push(p);
+				}
+			} while ((p = p.getParent()) != null);
+
+			while (!stack.isEmpty()) {
+				provider().createDirectory(stack.pop(), attrs);
+			}
+
+			return dir;
+		}
+
+		@Override
+		public boolean isWritable(Path path) {
+			return exists(path);
 		}
 	}
 }
