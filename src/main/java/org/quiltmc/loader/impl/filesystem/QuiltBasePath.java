@@ -498,7 +498,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	@Override
 	public File toFile() {
-		throw new UnsupportedOperationException("Only the default FileSystem supports 'Path.toFile()'");
+		throw new UnsupportedOperationException("Only the default FileSystem supports 'Path.toFile()', " + getClass() + " '" + this + "' does not!");
 	}
 
 	@Override
