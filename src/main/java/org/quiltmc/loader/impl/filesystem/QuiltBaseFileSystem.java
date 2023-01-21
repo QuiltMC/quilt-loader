@@ -146,6 +146,11 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 
 	abstract P createPath(@Nullable P parent, String name);
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "[" + name + "]";
+	}
+
 	public String getName() {
 		return name;
 	}
