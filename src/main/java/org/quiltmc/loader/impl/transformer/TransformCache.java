@@ -35,6 +35,12 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileStore.ReadWrite;
+import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -48,7 +54,7 @@ public class TransformCache {
 
 	private static final String FILE_TRANSFORM_COMPLETE = "__TRANSFORM_COMPLETE";
 
-	public static void populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList,
+	public static QuiltZipPath populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 		Map<String, String> map = new TreeMap<>();
 		// Mod order is important? For now, assume it is
@@ -76,12 +82,12 @@ public class TransformCache {
 			throw new ModResolutionException("Failed to create parent directories of the transform cache file!", e);
 		}
 
-		Path existing = checkTransformCache(transformCacheFile, map);
+		QuiltZipPath existing = checkTransformCache(transformCacheFile, map);
 		if (existing != null) {
-			return;
+			return existing;
 		}
 
-		createTransformCache(transformCacheFile, toString(map), modList, result);
+		return createTransformCache(transformCacheFile, toString(map), modList, result);
 	}
 
 	private static String toString(Map<String, String> map) {
@@ -97,17 +103,15 @@ public class TransformCache {
 		return options;
 	}
 
-	private static Path checkTransformCache(Path transformCacheFile, Map<String, String> options) throws ModResolutionException {
+	private static QuiltZipPath checkTransformCache(Path transformCacheFile, Map<String, String> options) throws ModResolutionException {
 		if (!Files.exists(transformCacheFile)) {
 			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's missing");
 			return null;
 		}
-		FileSystem fileSystem = null;
-		try {
-			fileSystem = FileSystems.newFileSystem(transformCacheFile, (ClassLoader) null);
-			Path inner = fileSystem.getPath("/");
+		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", transformCacheFile, "")) {
+			QuiltZipPath inner = fs.getRoot();
 			if (!Files.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
-				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since the last time it was created it was incomplete!");
+				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
 				return null;
 			}
 			Path optionFile = inner.resolve("options.txt");
@@ -156,15 +160,11 @@ public class TransformCache {
 			}
 			return inner;
 		} catch (IOException | IOError io) {
-
-			try {
-				if (fileSystem != null) {
-					fileSystem.close();
-				}
-			} catch (IOException | IOError e) {
-				io.addSuppressed(e);
+			if (io instanceof PartiallyWrittenIOException) {
+				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
+			} else {
+				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since something went wrong while reading it!");
 			}
-
 			try {
 				Files.delete(transformCacheFile);
 			} catch (IOException e) {
@@ -174,12 +174,13 @@ public class TransformCache {
 				ex.addSuppressed(io);
 				throw ex;
 			}
-
 			return null;
 		}
 	}
 
-	private static void createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
+	static final boolean WRITE_CUSTOM = true;
+
+	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 
 		if (Files.exists(transformCacheFile)) {
@@ -190,21 +191,47 @@ public class TransformCache {
 			}
 		}
 
+		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
+			try (QuiltMemoryFileSystem.ReadWrite rw = new QuiltMemoryFileSystem.ReadWrite("transform-cache", true)) {
+				QuiltMemoryPath root = rw.getRoot();
+				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
+				populateTransformCache(root, modList, result);
+				// This isn't actually necessary
+				Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
+				QuiltZipFileSystem.writeQuiltCompressedFileSystem(root, transformCacheFile);
+
+				return openCache(transformCacheFile);
+			} catch (IOException e) {
+				throw new ModResolutionException("Failed to create the transform bundle!", e);
+			}
+		}
+
 		try (FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, true)) {
 			URI fileUri = transformCacheFile.toUri();
 			URI zipUri = new URI("jar:" + fileUri.getScheme(), fileUri.getPath(), null);
 
 			Path inner = fs.get().getPath("/");
 
-			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
-
 			populateTransformCache(inner, modList, result);
 
+			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 			Files.createFile(inner.resolve(FILE_TRANSFORM_COMPLETE));
+
 		} catch (IOException e) {
 			throw new ModResolutionException("Failed to create the transform bundle!", e);
 		} catch (URISyntaxException e) {
 			throw new ModResolutionException(e);
+		}
+
+		return openCache(transformCacheFile);
+	}
+
+	private static QuiltZipPath openCache(Path transformCacheFile) throws ModResolutionException {
+		try {
+			return new QuiltZipFileSystem("transform-cache", transformCacheFile, "").getRoot();
+		} catch (IOException e) {
+			// TODO: Better error message for the gui!
+			throw new ModResolutionException("Failed to read the newly written transform cache!", e);
 		}
 	}
 

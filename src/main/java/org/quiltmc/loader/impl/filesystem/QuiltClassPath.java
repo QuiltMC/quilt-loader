@@ -220,7 +220,7 @@ public class QuiltClassPath {
 
 	/** Used when multiple paths are stored as values in {@link QuiltClassPath#files}. */
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-	private static final class OverlappingPath implements Path {
+	private static final class OverlappingPath extends NullPath {
 
 		final String exposedName;
 		final List<Path> paths = new ArrayList<>();
@@ -230,7 +230,8 @@ public class QuiltClassPath {
 			this.exposedName = exposedName;
 		}
 
-		private static IllegalStateException illegal() {
+		@Override
+		protected IllegalStateException illegal() {
 			throw new IllegalStateException(
 				"QuiltClassPath must NEVER return an OverlappingPath - something has gone very wrong!"
 			);
@@ -254,134 +255,5 @@ public class QuiltClassPath {
 			return paths.get(0);
 		}
 
-		@Override
-		public FileSystem getFileSystem() {
-			throw illegal();
-		}
-
-		@Override
-		public boolean isAbsolute() {
-			throw illegal();
-		}
-
-		@Override
-		public Path getRoot() {
-			throw illegal();
-		}
-
-		@Override
-		public Path getFileName() {
-			throw illegal();
-		}
-
-		@Override
-		public Path getParent() {
-			throw illegal();
-		}
-
-		@Override
-		public int getNameCount() {
-			throw illegal();
-		}
-
-		@Override
-		public Path getName(int index) {
-			throw illegal();
-		}
-
-		@Override
-		public Path subpath(int beginIndex, int endIndex) {
-			throw illegal();
-		}
-
-		@Override
-		public boolean startsWith(Path other) {
-			throw illegal();
-		}
-
-		@Override
-		public boolean startsWith(String other) {
-			throw illegal();
-		}
-
-		@Override
-		public boolean endsWith(Path other) {
-			throw illegal();
-		}
-
-		@Override
-		public boolean endsWith(String other) {
-			throw illegal();
-		}
-
-		@Override
-		public Path normalize() {
-			throw illegal();
-		}
-
-		@Override
-		public Path resolve(Path other) {
-			throw illegal();
-		}
-
-		@Override
-		public Path resolve(String other) {
-			throw illegal();
-		}
-
-		@Override
-		public Path resolveSibling(Path other) {
-			throw illegal();
-		}
-
-		@Override
-		public Path resolveSibling(String other) {
-			throw illegal();
-		}
-
-		@Override
-		public Path relativize(Path other) {
-			throw illegal();
-		}
-
-		@Override
-		public URI toUri() {
-			throw illegal();
-		}
-
-		@Override
-		public Path toAbsolutePath() {
-			throw illegal();
-		}
-
-		@Override
-		public Path toRealPath(LinkOption... options) throws IOException {
-			throw illegal();
-		}
-
-		@Override
-		public File toFile() {
-			throw illegal();
-		}
-
-		@Override
-		public WatchKey register(WatchService watcher, Kind<?>[] events, Modifier... modifiers) throws IOException {
-			throw illegal();
-		}
-
-		@Override
-		public WatchKey register(WatchService watcher, Kind<?>... events) throws IOException {
-			throw illegal();
-		}
-
-		@Override
-		public Iterator<Path> iterator() {
-			throw illegal();
-		}
-
-		@Override
-		public int compareTo(Path other) {
-			throw illegal();
-		}
 	}
 }

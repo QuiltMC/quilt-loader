@@ -339,17 +339,17 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		}
 
 		QuiltMemoryEntry srcEntry = src.fs.files.get(src);
-		QuiltMemoryEntry dstEntry = src.fs.files.get(dst);
+		QuiltMemoryEntry dstEntry = dst.fs.files.get(dst);
 
 		if (srcEntry == null) {
 			throw new NoSuchFileException(src.toString());
 		}
 
-		if (!(srcEntry instanceof QuiltMemoryFile.ReadWrite)) {
+		if (!(srcEntry instanceof QuiltMemoryFile)) {
 			throw new IOException("Not a file: " + src);
 		}
 
-		QuiltMemoryFile.ReadWrite srcFile = (QuiltMemoryFile.ReadWrite) srcEntry;
+		QuiltMemoryFile srcFile = (QuiltMemoryFile) srcEntry;
 		boolean canExist = false;
 
 		for (CopyOption option : options) {
@@ -367,7 +367,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 					throw new DirectoryNotEmptyException(dstEntry.path.toString());
 				}
 				dstEntry = dstFile = new QuiltMemoryFile.ReadWrite(dst);
-				src.fs.files.put(dst, dstEntry);
+				dst.fs.files.put(dst, dstEntry);
 			} else if (dstEntry instanceof QuiltMemoryFile.ReadWrite) {
 				dstFile = (QuiltMemoryFile.ReadWrite) dstEntry;
 			} else if (dstEntry != null) {
@@ -382,7 +382,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		}
 
 		if (dstFile == null) {
-			QuiltMemoryEntry parent = src.fs.files.get(dst.parent);
+			QuiltMemoryEntry parent = dst.fs.files.get(dst.parent);
 			if (parent == null) {
 				throw new IOException("Missing parent folder! " + dst);
 			} else if (parent instanceof QuiltMemoryFolder.ReadWrite) {
@@ -393,7 +393,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 			}
 
 			dstEntry = dstFile = new QuiltMemoryFile.ReadWrite(dst);
-			src.fs.files.put(dst, dstEntry);
+			dst.fs.files.put(dst, dstEntry);
 		}
 
 		dstFile.copyFrom(srcFile);

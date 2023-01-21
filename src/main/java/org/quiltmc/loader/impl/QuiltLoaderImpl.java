@@ -73,6 +73,7 @@ import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
@@ -115,7 +116,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.49";
+	public static final String VERSION = "0.18.1-beta.50";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -295,33 +296,19 @@ public final class QuiltLoaderImpl {
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
 
+		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
 
 		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix + ".zip");
-		TransformCache.populateTransformBundle(transformCacheFile, modList, result);
-		Path transformedModBundle;
-		try {
-			transformedModBundle = FileSystemUtil.getJarFileSystem(transformCacheFile, false).get().getPath("/");
-		} catch (IOException e) {
-			throw new RuntimeException(e); // TODO
-		}
+		QuiltZipPath transformedModBundle = TransformCache.populateTransformBundle(transformCacheFile, modList, result);
+
+		long zipEnd = System.nanoTime();
 
 		try {
 			QuiltLauncherBase.getLauncher().setTransformCache(transformedModBundle.toUri().toURL());
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
-
-		long zipStart = System.nanoTime();
-
-		QuiltZipFileSystem transformCacheZip;
-		try {
-			transformCacheZip = new QuiltZipFileSystem("transform-cache", transformCacheFile, "");
-		} catch (IOException e) {
-			throw new RuntimeException(e); // TODO
-		}
-
-		long zipEnd = System.nanoTime();
 
 		Set<String> modsToCopy = new HashSet<>();
 		String jarCopiedMods = System.getProperty(SystemProperties.JAR_COPIED_MODS);
@@ -331,7 +318,8 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		long zipCopyTotal = 0;
+		long zipSubCopyTotal = 0;
+		long jarCopyTotal = 0;
 
 		for (ModLoadOption modOption : modList) {
 			Path resourceRoot;
@@ -351,11 +339,11 @@ public final class QuiltLoaderImpl {
 					List<Path> paths = new ArrayList<>();
 
 					long start = System.nanoTime();
-					paths.add(new QuiltZipFileSystem("transformed-mod-" + modid, transformCacheZip.getRoot().resolve(modid)).getRoot());
+					paths.add(new QuiltZipFileSystem("transformed-mod-" + modid, transformedModBundle.resolve(modid)).getRoot());
 					if (modOption.couldResourcesChange()) {
 						paths.add(modOption.resourceRoot());
 					}
-					zipCopyTotal += System.nanoTime() - start;
+					zipSubCopyTotal += System.nanoTime() - start;
 
 					// This cannot pass a java ZipFileSystem directly since URLClassPath can't load
 					// from folders inside a zip.
@@ -373,7 +361,9 @@ public final class QuiltLoaderImpl {
 
 			String modid2 = modOption.id();
 			if (modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds)) {
+				long start = System.nanoTime();
 				resourceRoot = copyToJar(modOption, resourceRoot);
+				jarCopyTotal += System.nanoTime() - start;
 			}
 
 			addMod(modOption.convertToMod(resourceRoot));
@@ -381,9 +371,10 @@ public final class QuiltLoaderImpl {
 
 		long modAddEnd = System.nanoTime();
 
-		System.out.println("zip read took " + (zipEnd - zipStart) / 1000_000 + "ms");
-		System.out.println("zip FS copy took " + zipCopyTotal / 1000_000 + "ms");
-		System.out.println("mod adding took " + (modAddEnd - zipEnd - zipCopyTotal) / 1000_000 + "ms");
+		System.out.println("transform-cache took " + (zipEnd - zipStart) / 1000_000 + "ms");
+		System.out.println("zip sub copy took " + zipSubCopyTotal / 1000_000 + "ms");
+		System.out.println("tmp jar copy took " + jarCopyTotal / 1000_000 + "ms");
+		System.out.println("mod adding took " + (modAddEnd - zipEnd - zipSubCopyTotal - jarCopyTotal) / 1000_000 + "ms");
 
 		int count = mods.size();
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
