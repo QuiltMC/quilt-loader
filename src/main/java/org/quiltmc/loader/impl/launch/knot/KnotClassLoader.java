@@ -40,6 +40,8 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.SecureClassLoader;
 import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -149,15 +151,19 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public Enumeration<URL> getResources(String name) throws IOException {
 		Objects.requireNonNull(name);
 
-		// Since we want to get *all* the resources, and QuiltClassPath only caches one per name
-		// we need to skip it anyway
-		Enumeration<URL> first = fakeLoader.getResources(name);
+		List<Path> fromPaths = paths.getResources(name);
+		Enumeration<URL> first = minimalLoader.getResources(name);
 		Enumeration<URL> second = originalLoader.getResources(name);
 		return new Enumeration<URL>() {
+			Iterator<Path> iterator = fromPaths.iterator();
 			Enumeration<URL> current = first;
 
 			@Override
 			public boolean hasMoreElements() {
+				if (iterator.hasNext()) {
+					return true;
+				}
+
 				if (current == null) {
 					return false;
 				}
@@ -175,6 +181,14 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 			@Override
 			public URL nextElement() {
+				if (iterator.hasNext()) {
+					Path path = iterator.next();
+					try {
+						return UrlUtil.asUrl(path);
+					} catch (MalformedURLException e) {
+						throw new IllegalStateException("Failed to turn the path " + path.getClass() + " " + path + " into a url!", e);
+					}
+				}
 				if (current == null) {
 					return null;
 				}

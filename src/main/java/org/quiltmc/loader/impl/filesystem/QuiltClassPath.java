@@ -32,6 +32,7 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -217,6 +218,32 @@ public class QuiltClassPath {
 		}
 
 		return null;
+	}
+
+	public List<Path> getResources(String path) {
+		String absolutePath = path;
+		if (!path.startsWith("/")) {
+			absolutePath = "/" + path;
+		}
+
+		Path quick = files.get(absolutePath);
+		List<Path> paths = new ArrayList<>();
+		if (quick != null) {
+			if (quick instanceof OverlappingPath) {
+				paths.addAll(((OverlappingPath)quick).paths);
+			} else {
+				paths.add(quick);
+			}
+		}
+
+		for (Path root : roots) {
+			Path ext = root.resolve(path);
+			if (FasterFiles.exists(ext)) {
+				paths.add(ext);
+			}
+		}
+
+		return Collections.unmodifiableList(paths);
 	}
 
 	/** Used when multiple paths are stored as values in {@link QuiltClassPath#files}. */
