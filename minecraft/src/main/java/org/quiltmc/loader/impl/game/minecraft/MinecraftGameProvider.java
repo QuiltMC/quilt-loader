@@ -498,7 +498,7 @@ public class MinecraftGameProvider implements GameProvider {
 		String targetClass = entrypoint;
 
 		if (envType == EnvType.CLIENT && targetClass.contains("Applet")) {
-			GameTransformer.appletMainClass = targetClass;
+			Hooks.appletMainClass = targetClass;
 			targetClass = "org.quiltmc.loader.impl.game.minecraft.applet.AppletMain";
 		}
 

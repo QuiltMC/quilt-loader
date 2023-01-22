@@ -22,16 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.util.version.SemanticVersionImpl;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -44,9 +39,7 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 import org.quiltmc.loader.impl.util.ExceptionUtil;
-import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.SimpleClassPath;
 
@@ -293,9 +286,7 @@ public final class McVersionLookup {
 
 			if (year == 23 && week >= 3) {
 				return "1.19.4";
-			} else if (year == 22 && week >= 42) {
-				// 22w42a started not including a release_target again, hence the large gap
-			if (year == 22 && week >= 42 || year >= 23) {
+			} else if (year == 22 && week >= 42 || year >= 23) {
 				return "1.19.3";
 			} else if (year == 20 && week >= 6) {
 				return "1.16";
@@ -345,7 +336,6 @@ public final class McVersionLookup {
 				return "1.1";
 			}
 		}
-
 		return null;
 	}
 
