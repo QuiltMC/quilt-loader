@@ -96,8 +96,6 @@ import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
-import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.ModLanguageAdapter;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -117,7 +115,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.56";
+	public static final String VERSION = "0.18.1-beta.57";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -1003,7 +1001,9 @@ public final class QuiltLoaderImpl {
 				}
 
 				try {
-					adapterMap.put(laEntry.getKey(), new ModLanguageAdapter(mod, laEntry.getKey(), laEntry.getValue()));
+					ClassLoader classLoader = QuiltLauncherBase.getLauncher().getClassLoader(mod);
+					Class<?> adapterClass = Class.forName(laEntry.getValue(), true, classLoader);
+					adapterMap.put(laEntry.getKey(), (LanguageAdapter) adapterClass.getDeclaredConstructor().newInstance());
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to instantiate language adapter: " + laEntry.getKey(), e);
 				}
@@ -1086,12 +1086,6 @@ public final class QuiltLoaderImpl {
 			EntrypointUtils.invoke("preLaunch", net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint.class, net.fabricmc.loader.api.entrypoint.PreLaunchEntrypoint::onPreLaunch);
 		} catch (RuntimeException e) {
 			throw new FormattedException("A mod crashed on startup!", e);
-		}
-
-		for (LanguageAdapter adapter : adapterMap.values()) {
-			if (adapter instanceof ModLanguageAdapter) {
-				((ModLanguageAdapter) adapter).init();
-			}
 		}
 	}
 
