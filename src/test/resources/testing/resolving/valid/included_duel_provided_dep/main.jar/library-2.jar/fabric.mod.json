@@ -1,0 +1,6 @@
+{
+    "schemaVersion": 1,
+    "id": "mod-resolving-tests-bookshelf",
+    "version": "1.1.0",
+    "provides": [ "mod-resolving-tests-library" ]
+}

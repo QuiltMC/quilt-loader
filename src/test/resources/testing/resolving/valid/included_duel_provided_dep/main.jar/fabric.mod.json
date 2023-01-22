@@ -1,0 +1,12 @@
+{
+    "schemaVersion": 1,
+    "id": "mod-resolving-tests-main",
+    "version": "1.0.0",
+    "depends": {
+        "mod-resolving-tests-library": "*"
+    },
+    "jars": [
+        { "file": "library-1.jar" },
+        { "file": "library-2.jar" }
+    ]
+}

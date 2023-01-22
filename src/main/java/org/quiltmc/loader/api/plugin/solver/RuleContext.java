@@ -26,13 +26,16 @@ public interface RuleContext {
 	/** Adds a new {@link LoadOption}, without any weight. */
 	void addOption(LoadOption option);
 
-	/** Adds a new {@link LoadOption}, with the given weight. */
-	void addOption(LoadOption option, int weight);
-
-	/** Sets the weight of an existing {@link LoadOption}.
+	/** Sets the weight of an existing {@link LoadOption}, applied by the given rule.
 	 * 
+	 * @param key The rule which provides the weight modifier. May be null. If not null then this weight modifier will
+	 *            be removed whenever the rule is removed.
+	 * @param weight The weight. Negative values will mean the solver will try to include the option, positive values
+	 *            encourage the solver to pick a different option. Absolute values are unimportant when only 1 of a set
+	 *            of options can be chosen, instead only relative will be important. The sum of all weights is used when
+	 *            solving.
 	 * @throws IllegalArgumentException if the given {@link LoadOption} isn't present. */
-	void setWeight(LoadOption option, int weight);
+	void setWeight(LoadOption option, Rule key, int weight);
 
 	void removeOption(LoadOption option);
 

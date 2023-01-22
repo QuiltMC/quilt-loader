@@ -35,7 +35,7 @@ import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 
-final class ModResolvingTests {
+public final class ModResolvingTests {
 
 	private static Path testLocation;
 
@@ -127,6 +127,23 @@ final class ModResolvingTests {
 		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
 		assertModPresent(modSet, "mod-resolving-tests-optional", "1.19-1.0.6");
 		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void includedDuelProvidedDep() throws Exception {
+		// Run the test multiple times to ensure we always pick the right dep
+		// (and also makes sure we never mess up)
+		for (int i = 0; i < 1000; i++) {
+			if (i % 100 == 0) {
+				System.out.println("ModResolvingTests.includedDuelProvidedDep iteration " + i);
+			}
+			ModSolveResult modSet = resolveModSet("valid", "included_duel_provided_dep");
+
+			assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+			assertModPresent(modSet, "mod-resolving-tests-bookshelf", "1.1.0");
+			assertProvidedPresent(modSet, "mod-resolving-tests-library", "1.1.0");
+			assertNoMoreMods(modSet);
+		}
 	}
 
 	@Test
@@ -307,7 +324,7 @@ final class ModResolvingTests {
 				sb.append("  - '" + entry.getKey() + "' provided from " + entry.getValue().getLoadSource() + "\n");
 			}
 
-			Assertions.fail(sb.toString());
+			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
 			// Correct
 		}
@@ -343,7 +360,7 @@ final class ModResolvingTests {
 		ModLoadOption mod = result.directMods().remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + result.directMods());
+			fail(modid + " is missing from " + result.directMods());
 		} else {
 			Assertions.assertEquals(version, mod.version().raw());
 		}
@@ -354,7 +371,7 @@ final class ModResolvingTests {
 		ModLoadOption mod = result.directMods().remove(modid);
 
 		if (mod != null) {
-			Assertions.fail(modid + " is not missing, and instead is loaded: " + mod);
+			fail(modid + " is not missing, and instead is loaded: " + mod);
 		}
 	}
 
@@ -364,7 +381,7 @@ final class ModResolvingTests {
 		ModLoadOption mod = result.providedMods().remove(modid);
 
 		if (mod == null) {
-			Assertions.fail(modid + " is missing from " + result.providedMods());
+			fail(modid + " is missing from " + result.providedMods());
 		} else {
 			Assertions.assertEquals(version, mod.version().raw());
 		}
@@ -375,16 +392,21 @@ final class ModResolvingTests {
 		ModLoadOption mod = result.providedMods().remove(modid);
 
 		if (mod != null) {
-			Assertions.fail(modid + " is not missing, and instead is provided by: " + mod);
+			fail(modid + " is not missing, and instead is provided by: " + mod);
 		}
 	}
 
 	private static void assertNoMoreMods(ModSolveResult result) {
 		if (!result.directMods().isEmpty()) {
-			Assertions.fail("Expected to find no more mods loaded, but found: " + result.directMods());
+			fail("Expected to find no more mods loaded, but found: " + result.directMods());
 		}
 		if (!result.providedMods().isEmpty()) {
-			Assertions.fail("Expected to find no more provided mods loaded, but found: " + result.providedMods());
+			fail("Expected to find no more provided mods loaded, but found: " + result.providedMods());
 		}
+	}
+
+	private static void fail(String msg) {
+		System.err.println(msg);
+		Assertions.fail(msg);
 	}
 }

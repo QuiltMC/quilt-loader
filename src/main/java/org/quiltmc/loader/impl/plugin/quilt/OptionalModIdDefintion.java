@@ -109,20 +109,21 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 		int index = 0;
 
 		for (ModLoadOption mod : sources) {
+			int weight;
 			if (mod instanceof AliasedLoadOption) {
-				continue;
-			}
+				weight = 0;
+			} else {
+				weight = 1000;
 
-			int weight = 1000;
-
-			if (mod.metadata().loadType() == ModLoadType.IF_POSSIBLE) {
-				weight = -weight;
+				if (mod.metadata().loadType() == ModLoadType.IF_POSSIBLE) {
+					weight = -weight;
+				}
 			}
 
 			// Always prefer newer (larger) versions
 			// by subtracting the larger index
 			weight -= index++;
-			ctx.setWeight(mod, weight);
+			ctx.setWeight(mod, this, weight);
 		}
 	}
 

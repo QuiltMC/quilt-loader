@@ -158,14 +158,8 @@ abstract class BasePluginContext implements QuiltPluginContext {
 		}
 
 		@Override
-		public void addOption(LoadOption option, int weight) {
-			addOption(option);
-			setWeight(option, weight);
-		}
-
-		@Override
-		public void setWeight(LoadOption option, int weight) {
-			manager.solver.setWeight(option, weight);
+		public void setWeight(LoadOption option, Rule key, int weight) {
+			manager.solver.setWeight(option, key, weight);
 		}
 
 		@Override
