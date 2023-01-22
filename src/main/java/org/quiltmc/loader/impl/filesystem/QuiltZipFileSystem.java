@@ -672,6 +672,10 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			InputStream stream = createUncompressingInputStream();
 			if (isCompressed) {
 				stream = new InflaterInputStream(stream, new Inflater(true));
+				// Make InputStream.available work
+				// older versions of FerriteCore used this to allocate a byte array to read into
+				// - newer versions are fixed, but we still want to keep backwards compatibility
+				stream = new LimitedInputStream(stream, uncompressedSize);
 			}
 			return stream;
 		}
