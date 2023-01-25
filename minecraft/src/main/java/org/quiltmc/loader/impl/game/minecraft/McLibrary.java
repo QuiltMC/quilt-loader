@@ -41,7 +41,7 @@ enum McLibrary implements LibClassifier.LibraryType {
 		map.put("brigadier", BRIGADIER);
 		map.put("datafixerupper", DATA_FIXER_UPPER);
 		map.put("java_bridge", JAVA_BRIDGE);
-		MINECRAFT_SPECIFIC = Collections.unmodifiableMap(map );
+		MINECRAFT_SPECIFIC = Collections.unmodifiableMap(map);
 	}
 
 	private final EnvType env;
