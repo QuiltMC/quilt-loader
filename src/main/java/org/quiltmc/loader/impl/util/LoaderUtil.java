@@ -29,7 +29,9 @@ public final class LoaderUtil {
 	}
 
 	public static Path normalizePath(Path path) {
-		if (Files.exists(path)) {
+		if (path == null) {
+			return null;
+		} else if (Files.exists(path)) {
 			return normalizeExistingPath(path);
 		} else {
 			return path.toAbsolutePath().normalize();

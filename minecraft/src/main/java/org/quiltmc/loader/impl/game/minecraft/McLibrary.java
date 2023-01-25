@@ -2,6 +2,10 @@ package org.quiltmc.loader.impl.game.minecraft;
 
 import net.fabricmc.api.EnvType;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.quiltmc.loader.impl.game.LibClassifier;
 
 enum McLibrary implements LibClassifier.LibraryType {
@@ -19,10 +23,26 @@ enum McLibrary implements LibClassifier.LibraryType {
 	LOG4J_PLUGIN_3("net/minecrell/terminalconsole/util/LoggerNamePatternSelector.class"), // in terminalconsoleappender, used by loom's log4j config
 	GSON("com/google/gson/TypeAdapter.class"), // used by log4j plugins
 	SLF4J_API("org/slf4j/Logger.class"),
-	SLF4J_CORE("META-INF/services/org.slf4j.spi.SLF4JServiceProvider");
+	SLF4J_CORE("META-INF/services/org.slf4j.spi.SLF4JServiceProvider"),
+	AUTHLIB("com/mojang/authlib/GameProfile.class", "yggdrasil_session_pubkey.der"),
+	BRIGADIER("com/mojang/brigadier/Command.class"),
+	DATA_FIXER_UPPER("com/mojang/datafixers/schemas/Schema.class"),
+	JAVA_BRIDGE("com/mojang/bridge/Bridge.class");
 
 	static final McLibrary[] GAME = { MC_CLIENT, MC_SERVER, MC_BUNDLER };
 	static final McLibrary[] LOGGING = { LOG4J_API, LOG4J_CORE, LOG4J_CONFIG, LOG4J_PLUGIN, LOG4J_PLUGIN_2, LOG4J_PLUGIN_3, GSON, SLF4J_API, SLF4J_CORE };
+
+	/** Libraries which mods can transform with mixin or chasm. */
+	static final Map<String, McLibrary> MINECRAFT_SPECIFIC;
+
+	static {
+		Map<String, McLibrary> map = new HashMap<>();
+		map.put("authlib", AUTHLIB);
+		map.put("brigadier", BRIGADIER);
+		map.put("datafixerupper", DATA_FIXER_UPPER);
+		map.put("java_bridge", JAVA_BRIDGE);
+		MINECRAFT_SPECIFIC = Collections.unmodifiableMap(map );
+	}
 
 	private final EnvType env;
 	private final String[] paths;

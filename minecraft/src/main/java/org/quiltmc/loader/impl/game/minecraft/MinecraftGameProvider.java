@@ -28,9 +28,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
@@ -82,7 +85,6 @@ public class MinecraftGameProvider implements GameProvider {
 	private Arguments arguments;
 	private final List<Path> gameJars = new ArrayList<>(2); // env game jar and common game jar, potentially
 	private Path realmsJar;
-	private Collection<Path> validParentClassPath; // computed parent class path restriction (loader+deps)
 	private final Set<Path> logJars = new HashSet<>();
 	private boolean log4jAvailable;
 	private boolean slf4jAvailable;
@@ -221,17 +223,26 @@ public class MinecraftGameProvider implements GameProvider {
 			Path envGameJar = GameProviderHelper.getEnvGameJar(envType);
 			boolean commonGameJarDeclared = commonGameJar != null;
 
+			Set<Path> nonBundled = new LinkedHashSet<>();
+
 			if (commonGameJarDeclared) {
 				if (envGameJar != null) {
+					nonBundled.add(envGameJar);
 					classifier.process(envGameJar, McLibrary.MC_COMMON);
 				}
 
+				nonBundled.add(commonGameJar);
 				classifier.process(commonGameJar);
 			} else if (envGameJar != null) {
+				nonBundled.add(envGameJar);
 				classifier.process(envGameJar);
 			}
 
-			classifier.process(launcher.getClassPath());
+			for (Path path : launcher.getClassPath()) {
+				path = LoaderUtil.normalizeExistingPath(path);
+				nonBundled.add(path);
+				classifier.process(path);
+			}
 
 			if (classifier.has(McLibrary.MC_BUNDLER)) {
 				BundlerProcessor.process(classifier);
@@ -264,7 +275,7 @@ public class MinecraftGameProvider implements GameProvider {
 			for (McLibrary lib : McLibrary.LOGGING) {
 				Path path = classifier.getOrigin(lib);
 
-				if (path != null) {
+				if (path != null && !nonBundled.contains(path)) {
 					if (hasLogLib) {
 						logJars.add(path);
 					} else if (!gameJars.contains(path)) {
@@ -273,8 +284,21 @@ public class MinecraftGameProvider implements GameProvider {
 				}
 			}
 
-			miscGameLibraries.addAll(classifier.getUnmatchedOrigins());
-			validParentClassPath = classifier.getSystemLibraries();
+			for (Map.Entry<String, McLibrary> lib : McLibrary.MINECRAFT_SPECIFIC.entrySet()) {
+				// TODO: Hook up the modid with the transformer cache!
+				String modid = lib.getKey();
+				Path path = classifier.getOrigin(lib.getValue());
+
+				if (path != null && !gameJars.contains(path)) {
+					miscGameLibraries.add(path);
+				}
+			}
+
+			for (Path path : classifier.getUnmatchedOrigins()) {
+				if (!nonBundled.contains(path)) {
+					miscGameLibraries.add(path);
+				}
+			}
 		} catch (IOException e) {
 			throw ExceptionUtil.wrap(e);
 		}
@@ -338,8 +362,6 @@ public class MinecraftGameProvider implements GameProvider {
 
 	@Override
 	public void initialize(QuiltLauncher launcher) {
-//		launcher.setValidParentClassPath(validParentClassPath);
-
 		if (isObfuscated()) {
 			Map<String, Path> obfJars = new HashMap<>(3);
 			String[] names = new String[gameJars.size()];
