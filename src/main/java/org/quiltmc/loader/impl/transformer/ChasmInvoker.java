@@ -17,6 +17,8 @@
 package org.quiltmc.loader.impl.transformer;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -28,12 +30,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.quiltmc.chasm.api.ChasmProcessor;
-import org.quiltmc.chasm.api.ClassData;
+import org.quiltmc.chasm.api.ClassResult;
 import org.quiltmc.chasm.api.Transformer;
+import org.quiltmc.chasm.api.util.ClassInfo;
 import org.quiltmc.chasm.api.util.Context;
 import org.quiltmc.chasm.internal.transformer.ChasmLangTransformer;
 import org.quiltmc.chasm.lang.api.ast.Node;
@@ -45,6 +49,7 @@ import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -55,12 +60,12 @@ class ChasmInvoker {
 		throws ModResolutionException {
 		try {
 			applyChasm0(root, modList, result);
-		} catch (IOException e) {
-			throw new ModResolutionException("Failed to apply chasm!", e);
+		} catch (Exception e) {
+			throw new ChasmTransformException("Failed to apply chasm!", e);
 		}
 	}
 
-	static void applyChasm0(Path root, List<ModLoadOption> modList, ModSolveResult result) throws IOException {
+	static void applyChasm0(Path root, List<ModLoadOption> modList, ModSolveResult solveResult) throws IOException {
 		Map<String, String> package2mod = new HashMap<>();
 		Map<String, byte[]> inputClassCache = new HashMap<>();
 
@@ -85,74 +90,24 @@ class ChasmInvoker {
 		ChasmProcessor chasm = new ChasmProcessor(new Context() {
 
 			@Override
-			public byte @Nullable [] readFile(String path) {
-
-				byte[] cached = inputClassCache.get(path);
-				if (cached != null) {
-					return cached;
-				}
-
-				// Chasm wants this to be pure, which it is!
-				// (since the transform cache isn't modified during chasm invocation anyway)
-
-				for (ModLoadOption mod : modList) {
-					Path path2 = root.resolve(mod.id()).resolve(path);
-					if (FasterFiles.isRegularFile(path2)) {
-						try {
-							return Files.readAllBytes(path2);
-						} catch (IOException e) {
-							return null;
-						}
-					}
-				}
-				return null;
-			}
-
-			@Override
-			public boolean isInterface(String className) {
-				ClassReader cr = new ClassReader(readFile(LoaderUtil.getClassFileName(className)));
-				return (Opcodes.ACC_INTERFACE & cr.getAccess()) != 0;
-			}
-
-			@Override
-			public boolean isAssignable(String leftClass, String rightClass) {
-				if ("java/lang/Object".equals(leftClass)) {
-					return true;
-				}
-
-				byte[] file = readFile(LoaderUtil.getClassFileName(rightClass));
+			public @Nullable ClassInfo getClassInfo(String className) {
+				byte[] file = readFile(LoaderUtil.getClassFileName(className));
 				if (file == null) {
-					return false;
+					return null;
 				}
-
 				ClassReader cr = new ClassReader(file);
-
-				if (cr.getSuperName().equals(leftClass)) {
-					return true;
-				}
-
-				for (String itf : cr.getInterfaces()) {
-					if (itf.equals(leftClass)) {
-						return true;
-					}
-				}
-
-				if (isAssignable(leftClass, cr.getSuperName())) {
-					return true;
-				}
-
-				for (String itf : cr.getInterfaces()) {
-					if (isAssignable(leftClass, itf)) {
-						return true;
-					}
-				}
-
-				return false;
+				boolean isInterface = (cr.getAccess() & Opcodes.ACC_INTERFACE) != 0;
+				return new ClassInfo(cr.getClassName(), cr.getSuperName(), cr.getInterfaces(), isInterface);
 			}
 
 			@Override
-			public String getSuperClass(String className) {
-				return new ClassReader(readFile(LoaderUtil.getClassFileName(className))).getSuperName();
+			public byte @Nullable [] readFile(String path) {
+				try (InputStream stream = getClass().getClassLoader().getResourceAsStream(path)) {
+					return stream != null ? FileUtil.readAllBytes(stream) : null;
+				} catch (IOException e) {
+					// TODO: Is this correct? Chasm probably won't be expecting this
+					throw new UncheckedIOException(e);
+				}
 			}
 		});
 
@@ -208,7 +163,7 @@ class ChasmInvoker {
 						byte[] bytes = Files.readAllBytes(file);
 						Metadata meta = new Metadata();
 						meta.put(QuiltMetadata.class, new QuiltMetadata(mod));
-						chasm.addClass(new ClassData(bytes, meta));
+						chasm.addClass(bytes, meta);
 					} else if (file.getFileName().toString().endsWith(".chasm")) {
 						for (Path chasmRoot : chasmRoots) {
 							if (file.startsWith(chasmRoot)) {
@@ -229,27 +184,56 @@ class ChasmInvoker {
 			});
 		}
 
-		List<ClassData> changed = chasm.process(true);
-		for (ClassData changedTo : changed) {
-
-			ClassReader cr = new ClassReader(changedTo.getClassBytes());
-
-			QuiltMetadata qm = changedTo.getMetadata().get(QuiltMetadata.class);
-			final Path rootTo;
-			if (qm != null) {
-				rootTo = root.resolve(qm.from.id());
-			} else {
-				String mod = package2mod.get(cr.getClassName().substring(0, cr.getClassName().lastIndexOf('/')));
-				if (mod == null) {
-					// TODO: Classload from this place!
-					mod = "misc-classes";
+		List<ClassResult> classResults = chasm.process();
+		for (ClassResult result : classResults) {
+			switch (result.getType()) {
+				case ADDED:
+				case MODIFIED: {
+					QuiltMetadata qm = this_value_is_actually_nullable(result.getMetadata().get(QuiltMetadata.class));
+					byte[] bytes = result.getClassBytes();
+					ClassReader cr = new ClassReader(bytes);
+					String className = cr.getClassName();
+					final Path rootTo;
+					if (qm != null) {
+						rootTo = root.resolve(qm.from.id());
+					} else {
+						String mod = package2mod.get(className.substring(0, className.lastIndexOf('/')));
+						if (mod == null) {
+							mod = TransformCache.TRANSFORM_CACHE_NONMOD_CLASSLOADABLE;
+							throw new AbstractMethodError("// TODO: Support classloading from unknown mods!");
+						}
+						rootTo = root.resolve(mod);
+					}
+					Path to = rootTo.resolve(LoaderUtil.getClassFileName(className));
+					Files.createDirectories(to.getParent());
+					Files.write(to, bytes);
+					break;
 				}
-				rootTo = root.resolve(mod);
+				case UNMODIFIED: {
+					break;
+				}
+				case REMOVED: {
+					// We need to prevent resource loading from accessing this file.
+
+					// Deleting the file from the transform cache isn't enough.
+					// QuiltLoaderImpl#setup() is missing functionality
+					// and so are the file systems?
+					throw new AbstractMethodError("// TODO: Support REMOVED files in the path system!");
+				}
+				default: {
+					throw new UnsupportedChasmException(
+						"Chasm returned an unknown 'ClassResult.getType()': ''" + result.getType()
+							+ "' - you might need to update loader?"
+					);
+				}
 			}
-			Path to = rootTo.resolve(cr.getClassName() + ".class");
-			Files.createDirectories(to.getParent());
-			Files.write(to, changedTo.getClassBytes());
 		}
+	}
+
+	@Nullable
+	private static <T> T this_value_is_actually_nullable(T in) {
+		// Eclipse thinks that "T.class" is "Class<@NotNull T>", which is wrong
+		return in;
 	}
 
 	static class QuiltMetadata {

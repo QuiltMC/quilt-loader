@@ -70,7 +70,7 @@ public final class RuntimeModRemapper {
 		for (ModLoadOption mod : modList) {
 			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
 
-				final boolean onlyClassFiles = mod.couldResourcesChange();
+				final boolean onlyTranformableFiles = mod.couldResourcesChange();
 
 				Path modSrc = mod.resourceRoot();
 				Path modDst = cache.resolve(mod.id());
@@ -80,9 +80,13 @@ public final class RuntimeModRemapper {
 							// Only copy class files, since those files are the only files modified by chasm
 							return;
 						}
-						if (onlyClassFiles && !path.getFileName().toString().endsWith(".class")) {
-							// Only copy class files, since those files are the only files modified by chasm
-							return;
+						if (onlyTranformableFiles) {
+							String fileName = path.getFileName().toString();
+							if (!fileName.endsWith(".class") && !fileName.endsWith(".chasm")) {
+								// Only copy class files, since those files are the only files modified by chasm
+								// (and chasm files, since they are read by chasm)
+								return;
+							}
 						}
 						Path sub = modSrc.relativize(path);
 						Path dst = modDst.resolve(sub.toString());

@@ -8,5 +8,6 @@
   },
   "mixin": [
     "fabricmc.test.mixins.client.json"
-  ]
+  ],
+  "experimental_chasm_transformers": "chasm_transformers"
 }

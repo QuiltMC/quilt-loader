@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -36,7 +34,6 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileStore.ReadWrite;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
@@ -44,14 +41,17 @@ import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TransformCache {
+
+	/** Sub-folder for classes which are not associated with any mod in particular, but still need to be classloaded. */
+	public static final String TRANSFORM_CACHE_NONMOD_CLASSLOADABLE = "Unknown Mod";
 
 	private static final String FILE_TRANSFORM_COMPLETE = "__TRANSFORM_COMPLETE";
 
@@ -76,6 +76,9 @@ public class TransformCache {
 				throw new ModResolutionException("Failed to compute the hash of " + mod.getValue(), io);
 			}
 		}
+
+		boolean enableChasm = Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM);
+		map.put("system-property:" + SystemProperties.ENABLE_EXPERIMENTAL_CHASM, "" + enableChasm);
 
 		try {
 			Files.createDirectories(transformCacheFile.getParent());
@@ -104,7 +107,8 @@ public class TransformCache {
 		return options;
 	}
 
-	private static QuiltZipPath checkTransformCache(Path transformCacheFile, Map<String, String> options) throws ModResolutionException {
+	private static QuiltZipPath checkTransformCache(Path transformCacheFile, Map<String, String> options)
+		throws ModResolutionException {
 		if (!FasterFiles.exists(transformCacheFile)) {
 			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's missing");
 			return null;
@@ -154,7 +158,9 @@ public class TransformCache {
 						String key = diff.getKey();
 						String oldValue = diff.getValue();
 						String newValue = options.get(key);
-						Log.info(LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'");
+						Log.info(
+							LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'"
+						);
 					}
 					return null;
 				}
@@ -164,7 +170,10 @@ public class TransformCache {
 			if (io instanceof PartiallyWrittenIOException) {
 				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
 			} else {
-				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since something went wrong while reading it!");
+				Log.info(
+					LogCategory.CACHE,
+					"Not reusing previous transform cache since something went wrong while reading it!"
+				);
 			}
 			try {
 				Files.delete(transformCacheFile);
@@ -181,8 +190,8 @@ public class TransformCache {
 
 	static final boolean WRITE_CUSTOM = true;
 
-	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<ModLoadOption> modList,
-		ModSolveResult result) throws ModResolutionException {
+	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<
+		ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
 
 		if (FasterFiles.exists(transformCacheFile)) {
 			try {
