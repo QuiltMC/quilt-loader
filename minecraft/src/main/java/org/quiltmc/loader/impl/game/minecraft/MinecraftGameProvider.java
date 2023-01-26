@@ -223,24 +223,21 @@ public class MinecraftGameProvider implements GameProvider {
 			Path envGameJar = GameProviderHelper.getEnvGameJar(envType);
 			boolean commonGameJarDeclared = commonGameJar != null;
 
-			Set<Path> nonBundled = new LinkedHashSet<>();
-
 			if (commonGameJarDeclared) {
 				if (envGameJar != null) {
-					nonBundled.add(envGameJar);
 					classifier.process(envGameJar, McLibrary.MC_COMMON);
 				}
 
-				nonBundled.add(commonGameJar);
 				classifier.process(commonGameJar);
 			} else if (envGameJar != null) {
-				nonBundled.add(envGameJar);
 				classifier.process(envGameJar);
 			}
 
+			Set<Path> classpath = new LinkedHashSet<>();
+
 			for (Path path : launcher.getClassPath()) {
 				path = LoaderUtil.normalizeExistingPath(path);
-				nonBundled.add(path);
+				classpath.add(path);
 				classifier.process(path);
 			}
 
@@ -275,7 +272,7 @@ public class MinecraftGameProvider implements GameProvider {
 			for (McLibrary lib : McLibrary.LOGGING) {
 				Path path = classifier.getOrigin(lib);
 
-				if (path != null && !nonBundled.contains(path)) {
+				if (path != null && !classpath.contains(path)) {
 					if (hasLogLib) {
 						logJars.add(path);
 					} else if (!gameJars.contains(path)) {
@@ -295,7 +292,7 @@ public class MinecraftGameProvider implements GameProvider {
 			}
 
 			for (Path path : classifier.getUnmatchedOrigins()) {
-				if (!nonBundled.contains(path)) {
+				if (!classpath.contains(path)) {
 					miscGameLibraries.add(path);
 				}
 			}
