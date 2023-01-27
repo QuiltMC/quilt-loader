@@ -673,8 +673,7 @@ public final class QuiltJsonGui {
 			}
 
 			if (warningLevel.isHigherThan(level)) {
-				// Just because I haven't written the back-fill revalidation for this
-				throw new Error("Why would you set the warning level multiple times?");
+				// Reject high -> low level changes, since it's probably a mistake
 			} else {
 				if (parent != null && level.isHigherThan(parent.warningLevel)) {
 					parent.setWarningLevel(level);
