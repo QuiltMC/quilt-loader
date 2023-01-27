@@ -94,13 +94,11 @@ class ChasmInvoker {
 
 			@Override
 			public @Nullable ClassInfo getClassInfo(String className) {
-				byte[] file = readFile(LoaderUtil.getClassFileName(className));
-				if (file == null) {
+				byte[] bytes = readFile(LoaderUtil.getClassFileName(className));
+				if (bytes == null) {
 					return null;
 				}
-				ClassReader cr = new ClassReader(file);
-				boolean isInterface = (cr.getAccess() & Opcodes.ACC_INTERFACE) != 0;
-				return new ClassInfo(cr.getClassName(), cr.getSuperName(), cr.getInterfaces(), isInterface);
+				return ClassInfo.fromBytes(bytes);
 			}
 
 			@Override
@@ -153,7 +151,7 @@ class ChasmInvoker {
 					continue;
 				}
 				try {
-					chasmRoots.add(modPath.resolve(path));
+					chasmRoots.add(modPath.resolve(path.replace("/", modPath.getFileSystem().getSeparator())));
 				} catch (InvalidPathException e) {
 					Log.warn(LogCategory.CHASM, "Invalid path '" + path + "' for 'experimental_chasm_transformers' in " + mod.id());
 				}
@@ -171,6 +169,7 @@ class ChasmInvoker {
 						for (Path chasmRoot : chasmRoots) {
 							if (file.startsWith(chasmRoot)) {
 								String chasmId = mod.id() + ":" + chasmRoot.relativize(file).toString();
+								chasmId = chasmId.replace(chasmRoot.getFileSystem().getSeparator(), "/");
 								if (chasmId.endsWith(".chasm")) {
 									chasmId = chasmId.substring(0, chasmId.length() - ".chasm".length());
 								}
