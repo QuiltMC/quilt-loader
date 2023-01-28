@@ -95,6 +95,7 @@ import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
+import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -116,7 +117,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.62";
+	public static final String VERSION = "0.18.1-beta.63";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -147,9 +148,6 @@ public final class QuiltLoaderImpl {
 	private Path gameDir;
 	private Path configDir;
 	private Path modsDir;
-
-	/** Destination folder for {@link #copiedToJarMods}. */
-	private File temporaryCopiedJarFolder;
 
 	/** Stores every mod which has been copied into a temporary jar file: see {@link #shouldCopyToJar(ModLoadOption)}
 	 * and {@link #copyToJar(ModLoadOption, Path)}. */
@@ -303,8 +301,9 @@ public final class QuiltLoaderImpl {
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
 
-		Path transformCacheFile = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix + ".zip");
-		QuiltZipPath transformedModBundle = TransformCache.populateTransformBundle(transformCacheFile, modList, result);
+		Path transformCacheFolder = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
+		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, result);
+		QuiltZipPath transformedModBundle = cacheResult.transformCacheRoot;
 
 		long zipEnd = System.nanoTime();
 
@@ -366,7 +365,7 @@ public final class QuiltLoaderImpl {
 			String modid2 = modOption.id();
 			if (modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds)) {
 				long start = System.nanoTime();
-				resourceRoot = copyToJar(modOption, resourceRoot);
+				resourceRoot = copyToJar(transformCacheFolder, modOption, resourceRoot);
 				jarCopyTotal += System.nanoTime() - start;
 			}
 
@@ -426,38 +425,60 @@ public final class QuiltLoaderImpl {
 		return false;
 	}
 
-	private Path copyToJar(ModLoadOption modOption, final Path resourceRoot) throws Error {
-		try {
-			if (temporaryCopiedJarFolder == null) {
-				temporaryCopiedJarFolder = Files.createTempDirectory("quilt-loader").toFile();
-				temporaryCopiedJarFolder.deleteOnExit();
+	private Path copyToJar(Path transformCacheFolder, ModLoadOption modOption, final Path resourceRoot) throws Error {
+
+		String versionFrom = modOption.version().toString();
+		StringBuilder version = new StringBuilder();
+		// Ensure it only contains reasonable chars
+		for (int i = 0; i < versionFrom.length(); i++) {
+			char c = versionFrom.charAt(i);
+			if ('0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '-' || c == '_' || c == ' ' || c == '.') {
+				version.append(c);
 			}
-			File file = File.createTempFile(modOption.id(), ".jar", temporaryCopiedJarFolder);
-			Log.info(LogCategory.GENERAL, "Copying " + modOption.id() + " to a temporary jar file " + file);
-			file.deleteOnExit();
-			try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(file))) {
-				List<Path> list = Files.walk(resourceRoot).collect(Collectors.toList());
-				for (Path path : list) {
-					String pathStr = path.toString();
-					if (pathStr.startsWith("/")) {
-						pathStr = pathStr.substring(1);
+		}
+
+		String fileName = "Transformed mod " + modOption.id() + " v" + version + ".jar";
+		Path modJarFile = transformCacheFolder.resolve(fileName);
+		Path andFinished = transformCacheFolder.resolve(fileName + ".finished");
+
+		if (!Files.exists(modJarFile) || !Files.exists(andFinished)) {
+			try {
+				Files.deleteIfExists(modJarFile);
+				Files.deleteIfExists(andFinished);
+			} catch (IOException e) {
+				throw new Error("// TODO: Failed to delete the previous partial jar!", e);
+			}
+
+			Log.info(LogCategory.GENERAL, "Copying " + modOption.id() + " to a temporary jar file " + modJarFile);
+			try {
+				try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(modJarFile))) {
+					List<Path> list = Files.walk(resourceRoot).collect(Collectors.toList());
+					for (Path path : list) {
+						String pathStr = path.toString();
+						if (pathStr.startsWith("/")) {
+							pathStr = pathStr.substring(1);
+						}
+						if (FasterFiles.isDirectory(path)) {
+							zip.putNextEntry(new ZipEntry(pathStr + "/"));
+						} else {
+							zip.putNextEntry(new ZipEntry(pathStr));
+							zip.write(Files.readAllBytes(path));
+						}
+						zip.closeEntry();
 					}
-					if (FasterFiles.isDirectory(path)) {
-						zip.putNextEntry(new ZipEntry(pathStr + "/"));
-					} else {
-						zip.putNextEntry(new ZipEntry(pathStr));
-						zip.write(Files.readAllBytes(path));
-					}
-					zip.closeEntry();
 				}
+
+				Files.createFile(andFinished);
+			} catch (IOException e) {
+				throw new Error("// TODO: Failed to copy the jar " + modJarFile, e);
 			}
+		}
 
-			copiedToJarMods.put(modOption.id(), file);
-
-			FileSystem fs = FileSystems.newFileSystem(file.toPath(), (ClassLoader) null);
+		try {
+			FileSystem fs = FileSystems.newFileSystem(modJarFile, (ClassLoader) null);
 			return fs.getPath("/");
 		} catch (IOException e) {
-			throw new Error("// TODO: Failed to copy to jar!", e);
+			throw new Error("// TODO: Failed to open the jar " + modJarFile, e);
 		}
 	}
 

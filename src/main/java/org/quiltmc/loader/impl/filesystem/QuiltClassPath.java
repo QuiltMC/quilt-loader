@@ -169,7 +169,11 @@ public class QuiltClassPath {
 
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-					stack.addLast(dir.getFileName().toString());
+					if (dir.getFileName() == null && "/".equals(dir.toString()) && stack.isEmpty()) {
+						stack.addLast("/");
+					} else {
+						stack.addLast(dir.getFileName().toString());
+					}
 					return FileVisitResult.CONTINUE;
 				}
 

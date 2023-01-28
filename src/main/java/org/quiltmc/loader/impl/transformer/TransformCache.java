@@ -22,8 +22,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitOption;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,9 +59,10 @@ public class TransformCache {
 	/** Sub-folder for classes which are not associated with any mod in particular, but still need to be classloaded. */
 	public static final String TRANSFORM_CACHE_NONMOD_CLASSLOADABLE = "Unknown Mod";
 
+	private static final String CACHE_FILE = "files.zip";
 	private static final String FILE_TRANSFORM_COMPLETE = "__TRANSFORM_COMPLETE";
 
-	public static QuiltZipPath populateTransformBundle(Path transformCacheFile, List<ModLoadOption> modList,
+	public static TransformCacheResult populateTransformBundle(Path transformCacheFolder, List<ModLoadOption> modList,
 		ModSolveResult result) throws ModResolutionException {
 		Map<String, String> map = new TreeMap<>();
 		// Mod order is important? For now, assume it is
@@ -81,17 +88,18 @@ public class TransformCache {
 		map.put("system-property:" + SystemProperties.ENABLE_EXPERIMENTAL_CHASM, "" + enableChasm);
 
 		try {
-			Files.createDirectories(transformCacheFile.getParent());
+			Files.createDirectories(transformCacheFolder.getParent());
 		} catch (IOException e) {
 			throw new ModResolutionException("Failed to create parent directories of the transform cache file!", e);
 		}
 
-		QuiltZipPath existing = checkTransformCache(transformCacheFile, map);
-		if (existing != null) {
-			return existing;
+		QuiltZipPath existing = checkTransformCache(transformCacheFolder, map);
+		boolean isNewlyGenerated = false;
+		if (existing == null) {
+			existing = createTransformCache(transformCacheFolder.resolve(CACHE_FILE), toString(map), modList, result);
+			isNewlyGenerated = true;
 		}
-
-		return createTransformCache(transformCacheFile, toString(map), modList, result);
+		return new TransformCacheResult(transformCacheFolder, isNewlyGenerated, existing);
 	}
 
 	private static String toString(Map<String, String> map) {
@@ -107,13 +115,17 @@ public class TransformCache {
 		return options;
 	}
 
-	private static QuiltZipPath checkTransformCache(Path transformCacheFile, Map<String, String> options)
+	private static QuiltZipPath checkTransformCache(Path transformCacheFolder, Map<String, String> options)
 		throws ModResolutionException {
-		if (!FasterFiles.exists(transformCacheFile)) {
+
+		Path cacheFile = transformCacheFolder.resolve(CACHE_FILE);
+
+		if (!FasterFiles.exists(cacheFile)) {
 			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's missing");
+			erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 			return null;
 		}
-		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", transformCacheFile, "")) {
+		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", cacheFile, "")) {
 			QuiltZipPath inner = fs.getRoot();
 			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
 				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
@@ -162,6 +174,7 @@ public class TransformCache {
 							LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'"
 						);
 					}
+					erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 					return null;
 				}
 			}
@@ -175,16 +188,36 @@ public class TransformCache {
 					"Not reusing previous transform cache since something went wrong while reading it!"
 				);
 			}
-			try {
-				Files.delete(transformCacheFile);
-			} catch (IOException e) {
-				ModResolutionException ex = new ModResolutionException(
-					"Failed to read an older transform cache file " + transformCacheFile + " and then delete it!", e
-				);
-				ex.addSuppressed(io);
-				throw ex;
-			}
+
+			erasePreviousTransformCache(transformCacheFolder, cacheFile, io);
+
 			return null;
+		}
+	}
+
+	private static void erasePreviousTransformCache(Path transformCacheFolder, Path cacheFile, Throwable suppressed)
+		throws ModResolutionException {
+
+		if (!Files.exists(transformCacheFolder)) {
+			return;
+		}
+
+		try {
+			Files.walkFileTree(transformCacheFolder, Collections.emptySet(), 1, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					Files.delete(file);
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		} catch (IOException e) {
+			ModResolutionException ex = new ModResolutionException(
+				"Failed to read an older transform cache file " + cacheFile + " and then delete it!", e
+			);
+			if (suppressed != null) {
+				ex.addSuppressed(suppressed);
+			}
+			throw ex;
 		}
 	}
 
@@ -193,12 +226,10 @@ public class TransformCache {
 	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<
 		ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
 
-		if (FasterFiles.exists(transformCacheFile)) {
-			try {
-				Files.delete(transformCacheFile);
-			} catch (IOException e) {
-				throw new ModResolutionException("Failed to delete the previous transform bundle!", e);
-			}
+		try {
+			Files.createDirectories(transformCacheFile.getParent());
+		} catch (IOException e) {
+			throw new ModResolutionException("Failed to create the transform cache parent directory!", e);
 		}
 
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
@@ -238,7 +269,8 @@ public class TransformCache {
 
 	private static QuiltZipPath openCache(Path transformCacheFile) throws ModResolutionException {
 		try {
-			return new QuiltZipFileSystem("transform-cache", transformCacheFile, "").getRoot();
+			QuiltZipPath path = new QuiltZipFileSystem("transform-cache", transformCacheFile, "").getRoot();
+			return path;
 		} catch (IOException e) {
 			// TODO: Better error message for the gui!
 			throw new ModResolutionException("Failed to read the newly written transform cache!", e);
