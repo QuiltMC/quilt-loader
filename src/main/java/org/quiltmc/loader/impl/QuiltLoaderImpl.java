@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -115,7 +116,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.61";
+	public static final String VERSION = "0.18.1-beta.62";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -291,6 +292,10 @@ public final class QuiltLoaderImpl {
 		for (ModLoadOption mod : modList) {
 			modIds.add(mod.id());
 		}
+
+		modList.sort(Comparator.comparing(ModLoadOption::id));
+		int seed = modIds.hashCode();
+		Collections.shuffle(modList, new Random(seed));
 
 		performMixinReordering(modList);
 		performLoadLateReordering(modList);
