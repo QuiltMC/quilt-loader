@@ -220,7 +220,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
-			return delegate.loadClass(name, originalLoader, null, resolve);
+			return delegate.loadClass(name, originalLoader, resolve);
 		}
 	}
 
@@ -306,108 +306,11 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	}
 
 	@Override
-	public KnotSeparateClassLoader createSeparateClassLoader(KnotClassLoaderKey key) {
-		return new Separate(this, key); 
-	}
-
-	@Override
 	public String toString() {
-		return "KnotClassLoader[ROOT]";
+		return "KnotClassLoader";
 	}
 
 	static {
 		registerAsParallelCapable();
-	}
-
-	private static final class Separate extends SecureClassLoader implements KnotSeparateClassLoader {
-		static {
-			registerAsParallelCapable();
-		}
-
-		final KnotClassLoader container;
-		final KnotClassLoaderKey key;
-
-		Separate(KnotClassLoader container, KnotClassLoaderKey key) {
-			this.container = container;
-			this.key = key;
-		}
-
-		@Override
-		public KnotClassLoaderKey key() {
-			return key;
-		}
-
-		@Override
-		public String toString() {
-			return "KnotClassLoader.Separate[" + key + "]";
-		}
-
-		@Override
-		public KnotClassLoaderInterface getBaseClassLoader() {
-			return container;
-		}
-
-		@Override
-		protected URL findResource(String name) {
-			return container.findResource(name);
-		}
-
-		@Override
-		public InputStream getResourceAsStream(String name) {
-			return container.getResourceAsStream(name);
-		}
-
-		@Override
-		public URL getResource(String name) {
-			return container.getResource(name);
-		}
-
-		@Override
-		protected Enumeration<URL> findResources(String name) throws IOException {
-			return container.findResources(name);
-		}
-
-		@Override
-		public Enumeration<URL> getResources(String name) throws IOException {
-			return container.getResources(name);
-		}
-
-		@Override
-		protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-			synchronized (container.getClassLoadingLock(name)) {
-				return container.delegate.loadClass(name, container.originalLoader, this, resolve);
-			}
-		}
-
-		@Override
-		public Package getPackage(String name) {
-			return super.getPackage(name);
-		}
-
-		@Override
-		public Package definePackage(String name, String specTitle, String specVersion, String specVendor,
-				String implTitle, String implVersion, String implVendor, URL sealBase) throws IllegalArgumentException {
-			return super.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
-		}
-
-		@Override
-		public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
-			return super.defineClass(name, b, off, len, cs);
-		}
-
-		@Override
-		public void resolveClassFwd(Class<?> c) {
-			super.resolveClass(c);
-		}
-
-		@Override
-		public Class<?> findLoadedClassFwd(String name) {
-			return super.findLoadedClass(name);
-		}
-
-		// Compat for Fabric-ASM
-		public void addUrl(URL url) {
-			container.addURL(url);
-		}
 	}
 }

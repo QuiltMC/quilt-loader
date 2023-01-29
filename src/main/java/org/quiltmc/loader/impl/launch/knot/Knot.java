@@ -338,9 +338,9 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	private static boolean isMatchingClassLoader(ClassLoader expected, ClassLoader actual) {
-		if (actual instanceof KnotSeparateClassLoader) {
-			return ((KnotSeparateClassLoader) actual).getBaseClassLoader() == expected;
-		}
+//		if (actual instanceof KnotSeparateClassLoader) {
+//			return ((KnotSeparateClassLoader) actual).getBaseClassLoader() == expected;
+//		}
 		return expected == actual;
 	}
 
@@ -378,7 +378,7 @@ public final class Knot extends QuiltLauncherBase {
 		if (mod.getSourceType() == BasicSourceType.BUILTIN) {
 			return null;
 		}
-		return (ClassLoader) classLoader.getDelegate().getClassLoader(mod.metadata().id());
+		return getTargetClassLoader();
 	}
 
 	@Override

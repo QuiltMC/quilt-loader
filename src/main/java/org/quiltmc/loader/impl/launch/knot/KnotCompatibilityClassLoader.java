@@ -32,8 +32,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.CodeSource;
-import java.security.SecureClassLoader;
-import java.util.Enumeration;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
@@ -69,7 +67,7 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
 		synchronized (getClassLoadingLock(name)) {
-			return delegate.loadClass(name, getParent(), null, resolve);
+			return delegate.loadClass(name, getParent(), resolve);
 		}
 	}
 
@@ -152,110 +150,11 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 	}
 
 	@Override
-	public KnotSeparateClassLoader createSeparateClassLoader(KnotClassLoaderKey key) {
-		return new Separate(this, key);
-	}
-
-	@Override
 	public String toString() {
-		return "KnotCompatibilityClassLoader[ROOT]";
+		return "KnotCompatibilityClassLoader";
 	}
 
 	static {
 		registerAsParallelCapable();
-	}
-
-	private static final class Separate extends URLClassLoader implements KnotSeparateClassLoader {
-		static {
-			registerAsParallelCapable();
-		}
-
-		final KnotCompatibilityClassLoader container;
-		final KnotClassLoaderKey key;
-
-		Separate(KnotCompatibilityClassLoader container, KnotClassLoaderKey key) {
-			super(new URL[0]);
-			this.container = container;
-			this.key = key;
-		}
-
-		@Override
-		public KnotClassLoaderKey key() {
-			return key;
-		}
-
-		@Override
-		public String toString() {
-			return "KnotCompatibilityClassLoader.Separate[" + key + "]";
-		}
-
-		@Override
-		public KnotClassLoaderInterface getBaseClassLoader() {
-			return container;
-		}
-
-		@Override
-		public InputStream getResourceAsStream(String name) {
-			return container.getResourceAsStream(name);
-		}
-
-		@Override
-		public URL getResource(String name) {
-			return container.getResource(name);
-		}
-
-		@Override
-		public Enumeration<URL> getResources(String name) throws IOException {
-			return container.getResources(name);
-		}
-
-		@Override
-		protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-			synchronized (container.getClassLoadingLock(name)) {
-				return container.delegate.loadClass(name, container.getParent(), this, resolve);
-			}
-		}
-
-		@Override
-		public Package getPackage(String name) {
-			return super.getPackage(name);
-		}
-
-		@Override
-		public Package definePackage(String name, String specTitle, String specVersion, String specVendor,
-				String implTitle, String implVersion, String implVendor, URL sealBase) throws IllegalArgumentException {
-			return super.definePackage(name, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
-		}
-
-		@Override
-		public Class<?> defineClassFwd(String name, byte[] b, int off, int len, CodeSource cs) {
-			return super.defineClass(name, b, off, len, cs);
-		}
-
-		@Override
-		public void resolveClassFwd(Class<?> c) {
-			super.resolveClass(c);
-		}
-
-		@Override
-		public Class<?> findLoadedClassFwd(String name) {
-			return super.findLoadedClass(name);
-		}
-
-		@Override
-		public Enumeration<URL> findResources(String name) throws IOException {
-			return container.findResources(name);
-		}
-
-		@Override
-		public URL findResource(String name) {
-			return container.findResource(name);
-		}
-
-		// Compat for Fabric-ASM
-		public void addUrl(URL url) {
-			container.addURL(url);
-		}
-
 	}
 }

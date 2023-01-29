@@ -35,6 +35,4 @@ interface KnotClassLoaderInterface extends KnotBaseClassLoader {
 	URL getResource(String name);
 	URL getResource(String name, boolean allowFromParent);
 	InputStream getResourceAsStream(String filename, boolean allowFromParent) throws IOException;
-
-	KnotSeparateClassLoader createSeparateClassLoader(KnotClassLoaderKey key);
 }

@@ -27,6 +27,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.MethodVisitor;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 
 import net.fabricmc.loader.launch.common.FabricLauncherBase;

@@ -30,6 +30,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -277,11 +278,73 @@ public class TransformCache {
 		}
 	}
 
-	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult result)
-		throws ModResolutionException {
+	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult solveResult)
+		throws ModResolutionException, IOException {
+
 		RuntimeModRemapper.remap(root, modList);
+
 		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
-			ChasmInvoker.applyChasm(root, modList, result);
+			ChasmInvoker.applyChasm(root, modList, solveResult);
 		}
+
+		InternalsHiderTransform internalsHider = new InternalsHiderTransform();
+		Map<Path, ClassData> classes = new HashMap<>();
+
+		forEachClassFile(root, modList, (mod, file) -> {
+			byte[] classBytes = Files.readAllBytes(file);
+			classes.put(file, new ClassData(mod, classBytes));
+			internalsHider.scanClass(mod, classBytes);
+			return null;
+		});
+
+		for (Map.Entry<Path, ClassData> entry : classes.entrySet()) {
+			byte[] newBytes = internalsHider.run(entry.getValue().mod, entry.getValue().classBytes);
+			if (newBytes != null) {
+				Files.write(entry.getKey(), newBytes);
+			}
+		}
+
+		internalsHider.finish();
+	}
+
+	private static void forEachClassFile(Path root, List<ModLoadOption> modList, ClassConsumer action)
+		throws IOException {
+		for (ModLoadOption mod : modList) {
+			visitFolder(mod, root.resolve(mod.id()), action);
+		}
+		visitFolder(null, root.resolve(TRANSFORM_CACHE_NONMOD_CLASSLOADABLE), action);
+	}
+
+	private static void visitFolder(ModLoadOption mod, Path root, ClassConsumer action) throws IOException {
+		if (!Files.isDirectory(root)) {
+			return;
+		}
+		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				if (file.getFileName().toString().endsWith(".class")) {
+					byte[] result = action.run(mod, file);
+					if (result != null) {
+						Files.write(file, result);
+					}
+				}
+				return FileVisitResult.CONTINUE;
+			}
+		});
+	}
+
+	static final class ClassData {
+		final ModLoadOption mod;
+		final byte[] classBytes;
+
+		ClassData(ModLoadOption mod, byte[] classBytes) {
+			this.mod = mod;
+			this.classBytes = classBytes;
+		}
+	}
+
+	@FunctionalInterface
+	interface ClassConsumer {
+		byte[] run(ModLoadOption mod, Path file) throws IOException;
 	}
 }
