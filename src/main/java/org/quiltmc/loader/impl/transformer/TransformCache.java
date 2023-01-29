@@ -39,6 +39,7 @@ import java.util.TreeMap;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
@@ -46,7 +47,9 @@ import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
+import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -99,6 +102,8 @@ public class TransformCache {
 		if (existing == null) {
 			existing = createTransformCache(transformCacheFolder.resolve(CACHE_FILE), toString(map), modList, result);
 			isNewlyGenerated = true;
+		} else if (!Boolean.getBoolean(SystemProperties.DISABLE_PRELOAD_TRANSFORM_CACHE)) {
+			FilePreloadHelper.preLoad(transformCacheFolder.resolve(CACHE_FILE));
 		}
 		return new TransformCacheResult(transformCacheFolder, isNewlyGenerated, existing);
 	}

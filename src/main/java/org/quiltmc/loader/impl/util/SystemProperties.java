@@ -66,6 +66,7 @@ public final class SystemProperties {
 	public static final String DEBUG_CLASS_TO_MOD = "loader.debug.dump_class_to_mod";
 	public static final String CACHE_SUFFIX = "loader.cache_suffix";
 	public static final String DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE = "loader.transform_cache.disable_optimised_compression";
+	public static final String DISABLE_PRELOAD_TRANSFORM_CACHE = "loader.transform_cache.disable_preload";
 
 	private SystemProperties() {
 	}

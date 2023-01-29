@@ -98,6 +98,7 @@ import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -472,6 +473,8 @@ public final class QuiltLoaderImpl {
 			} catch (IOException e) {
 				throw new Error("// TODO: Failed to copy the jar " + modJarFile, e);
 			}
+		} else if (!Boolean.getBoolean(SystemProperties.DISABLE_PRELOAD_TRANSFORM_CACHE)) {
+			FilePreloadHelper.preLoad(modJarFile);
 		}
 
 		try {
