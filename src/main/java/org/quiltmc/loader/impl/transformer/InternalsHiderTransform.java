@@ -287,7 +287,7 @@ class InternalsHiderTransform {
 					type = QuiltLoaderInternalType.LEGACY_NO_WARN;
 				}
 
-				if (type == QuiltLoaderInternalType.LEGACY_NO_WARN) {
+				if (type != QuiltLoaderInternalType.LEGACY_NO_WARN) {
 					value = new LoaderInternalValue();
 					for (Class<?> cls : replacements) {
 						value.replacements.add(cls.toString());
