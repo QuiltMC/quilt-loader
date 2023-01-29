@@ -292,6 +292,8 @@ class InternalsHiderTransform {
 					for (Class<?> cls : replacements) {
 						value.replacements.add(cls.toString());
 					}
+				} else {
+					value = PermittedLoaderInternalValue.INSTANCE;
 				}
 				internalClasses.put(owner, value);
 
@@ -417,6 +419,20 @@ class InternalsHiderTransform {
 		@Override
 		boolean isPermitted(ModLoadOption mod) {
 			return false;
+		}
+
+		@Override
+		String modFrom() {
+			return "Quilt Loader";
+		}
+	}
+
+	static final class PermittedLoaderInternalValue extends InternalValue {
+		static final PermittedLoaderInternalValue INSTANCE = new PermittedLoaderInternalValue();
+
+		@Override
+		boolean isPermitted(ModLoadOption mod) {
+			return true;
 		}
 
 		@Override
