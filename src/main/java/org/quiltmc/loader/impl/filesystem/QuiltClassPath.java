@@ -174,6 +174,7 @@ public class QuiltClassPath {
 					} else {
 						stack.addLast(dir.getFileName().toString());
 					}
+					putQuickFile(dir.toString(), dir);
 					return FileVisitResult.CONTINUE;
 				}
 
