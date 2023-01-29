@@ -43,7 +43,6 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 class InternalsHiderTransform {
 
-	private static final String LOADER_INTERNAL_DESCRIPTOR = Type.getDescriptor(QuiltLoaderInternal.class);
 	private static final String MOD_INTERNAL_DESCRIPTOR = Type.getDescriptor(ModInternal.class);
 
 	private static final String METHOD_OWNER = Type.getInternalName(QuiltInternalExceptionUtil.class);
@@ -288,11 +287,13 @@ class InternalsHiderTransform {
 					type = QuiltLoaderInternalType.LEGACY_NO_WARN;
 				}
 
-				value = new LoaderInternalValue();
-				for (Class<?> cls : replacements) {
-					value.replacements.add(cls.toString());
+				if (type == QuiltLoaderInternalType.LEGACY_NO_WARN) {
+					value = new LoaderInternalValue();
+					for (Class<?> cls : replacements) {
+						value.replacements.add(cls.toString());
+					}
 				}
-				internalClasses.put(owner, null);
+				internalClasses.put(owner, value);
 
 				return value;
 
