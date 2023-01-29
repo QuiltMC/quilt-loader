@@ -89,7 +89,7 @@ public final class RuntimeModRemapper {
 							}
 						}
 						Path sub = modSrc.relativize(path);
-						Path dst = modDst.resolve(sub.toString());
+						Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
 						try {
 							FasterFiles.createDirectories(dst.getParent());
 							Files.copy(path, dst);
