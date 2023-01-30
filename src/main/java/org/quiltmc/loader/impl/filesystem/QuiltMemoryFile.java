@@ -472,7 +472,9 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 						expand(newLength);
 						System.arraycopy(b, off, bytes, position, len);
 						position += len;
-						length += len;
+						if (length < position) {
+							length = position;
+						}
 					}
 				}
 			};
@@ -480,9 +482,60 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 
 		@Override
 		SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) {
+
+			boolean read = false;
+			boolean write = false;
+			boolean append = false;
+			boolean truncate = false;
+
+			for (OpenOption option : options) {
+				if (!(option instanceof StandardOpenOption)) {
+					throw new UnsupportedOperationException("This only accepts StandardOpenOption!");
+				}
+				switch ((StandardOpenOption) option) {
+					case READ: {
+						read = true;
+						break;
+					}
+					case WRITE: {
+						write = true;
+						break;
+					}
+					case APPEND: {
+						write = true;
+						append = true;
+						break;
+					}
+					case TRUNCATE_EXISTING: {
+						truncate = true;
+						break;
+					}
+					default: {
+						// The other options can be ignored
+						break;
+					}
+				}
+			}
+
+			if (!read && !write && !append) {
+				read = true;
+			}
+
+			if (read && append) {
+				throw new IllegalArgumentException("READ & APPEND cannot be used together! " + options);
+			}
+
+			if (write && truncate) {
+				length = 0;
+			}
+
+			final boolean canRead = read;
+			final boolean canWrite = write;
+			final int startPosition = append ? length : 0;
+
 			return new SeekableByteChannel() {
 
-				int position = 0;
+				int position = startPosition;
 
 				@Override
 				public boolean isOpen() {
@@ -496,6 +549,9 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 
 				@Override
 				public int write(ByteBuffer src) throws IOException {
+					if (!canWrite) {
+						throw new IOException("Files.newByteChannel() wasn't called with the WRITE or APPEND options! " + options);
+					}
 					synchronized (sync()) {
 						int len = src.remaining();
 						int newLength = position + len;
@@ -513,6 +569,9 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 						if (length > size) {
 							length = (int) size;
 						}
+						if (position > size) {
+							position = (int) size;
+						}
 					}
 					return this;
 				}
@@ -526,6 +585,10 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 
 				@Override
 				public int read(ByteBuffer dst) throws IOException {
+					if (!canRead) {
+						throw new IOException("Files.newByteChannel() wasn't called with the READ option, or was only called with WRITE or APPEND! " + options);
+					}
+
 					synchronized (sync()) {
 						int available = length - position;
 						if (available <= 0) {

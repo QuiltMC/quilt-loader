@@ -241,9 +241,8 @@ public class TransformCache {
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
 			try (QuiltMemoryFileSystem.ReadWrite rw = new QuiltMemoryFileSystem.ReadWrite("transform-cache", true)) {
 				QuiltMemoryPath root = rw.getRoot();
-				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 				populateTransformCache(root, modList, result);
-				// This isn't actually necessary
+				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 				Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
 				QuiltZipFileSystem.writeQuiltCompressedFileSystem(root, transformCacheFile);
 

@@ -188,7 +188,7 @@ class InternalsHiderTransform {
 						if (set != null && !set.isPermitted(mod)) {
 							super.visitLdcInsn(set.generateError("the field " + owner + "." + name, className));
 							super.visitMethodInsn(
-								Opcodes.INVOKESTATIC, METHOD_OWNER, "throwInternalFieldAccess", "(Ljava/lang/String;)V",
+								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(), "(Ljava/lang/String;)V",
 								false
 							);
 						}
@@ -217,7 +217,7 @@ class InternalsHiderTransform {
 								set.generateError("the method " + owner + "." + name + descriptor, className)
 							);
 							super.visitMethodInsn(
-								Opcodes.INVOKESTATIC, METHOD_OWNER, "throwInternalMethodAccess",
+								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(),
 								"(Ljava/lang/String;)V", false
 							);
 						}
@@ -243,13 +243,17 @@ class InternalsHiderTransform {
 			}
 
 			private void prefixClassInitErrors(MethodVisitor to) {
+				boolean onlyWarn = true;
 				StringBuilder msg = new StringBuilder();
 				for (InternalSuper value : illegalSupers) {
+					if (!(value.value instanceof WarnLoaderInternalValue)) {
+						onlyWarn = false;
+					}
 					msg.append(value.generateError(className));
 				}
 				to.visitLdcInsn(msg.toString());
 				to.visitMethodInsn(
-					Opcodes.INVOKESTATIC, METHOD_OWNER, "throwInternalClassAccess", "(Ljava/lang/String;)V", false
+					Opcodes.INVOKESTATIC, METHOD_OWNER, onlyWarn ? "warnInternalAccess" : "throwInternalAccess", "(Ljava/lang/String;)V", false
 				);
 			}
 		};
@@ -287,13 +291,17 @@ class InternalsHiderTransform {
 					type = QuiltLoaderInternalType.LEGACY_NO_WARN;
 				}
 
-				if (type != QuiltLoaderInternalType.LEGACY_NO_WARN) {
-					value = new LoaderInternalValue();
+				if (type == QuiltLoaderInternalType.LEGACY_NO_WARN) {
+					value = PermittedLoaderInternalValue.INSTANCE;
+				} else {
+					if (type == QuiltLoaderInternalType.LEGACY_EXPOSED) {
+						value = new WarnLoaderInternalValue();
+					} else {
+						value = new LoaderInternalValue();
+					}
 					for (Class<?> cls : replacements) {
 						value.replacements.add(cls.toString());
 					}
-				} else {
-					value = PermittedLoaderInternalValue.INSTANCE;
 				}
 				internalClasses.put(owner, value);
 
@@ -385,6 +393,10 @@ class InternalsHiderTransform {
 
 		abstract String modFrom();
 
+		String getInvokeMethodName() {
+			return "throwInternalAccess";
+		}
+
 		String generateError(String target, String site) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(site);
@@ -415,7 +427,7 @@ class InternalsHiderTransform {
 		}
 	}
 
-	static final class LoaderInternalValue extends InternalValue {
+	static class LoaderInternalValue extends InternalValue {
 		@Override
 		boolean isPermitted(ModLoadOption mod) {
 			return false;
@@ -427,17 +439,21 @@ class InternalsHiderTransform {
 		}
 	}
 
-	static final class PermittedLoaderInternalValue extends InternalValue {
+	static final class PermittedLoaderInternalValue extends LoaderInternalValue {
 		static final PermittedLoaderInternalValue INSTANCE = new PermittedLoaderInternalValue();
 
 		@Override
 		boolean isPermitted(ModLoadOption mod) {
 			return true;
 		}
+	}
+
+	static final class WarnLoaderInternalValue extends LoaderInternalValue {
+		static final WarnLoaderInternalValue INSTANCE = new WarnLoaderInternalValue();
 
 		@Override
-		String modFrom() {
-			return "Quilt Loader";
+		String getInvokeMethodName() {
+			return "warnInternalAccess";
 		}
 	}
 
