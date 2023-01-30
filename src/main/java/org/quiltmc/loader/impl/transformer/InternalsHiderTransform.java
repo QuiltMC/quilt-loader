@@ -138,12 +138,12 @@ class InternalsHiderTransform {
 		boolean[] hasClassInit = { false };
 		ClassVisitor visitor = new ClassVisitor(QuiltLoaderImpl.ASM_VERSION, writer) {
 			@Override
-			public MethodVisitor visitMethod(int access, String mthName, String descriptor, String signature,
+			public MethodVisitor visitMethod(int access, String mthName, String mthDescriptor, String signature,
 				String[] exceptions) {
 
-				MethodVisitor sup = super.visitMethod(access, mthName, descriptor, signature, exceptions);
+				MethodVisitor sup = super.visitMethod(access, mthName, mthDescriptor, signature, exceptions);
 
-				boolean isClassInit = "<clinit>".equals(mthName) && "()V".equals(descriptor);
+				boolean isClassInit = "<clinit>".equals(mthName) && "()V".equals(mthDescriptor);
 				if (isClassInit) {
 					hasClassInit[0] = true;
 				}
@@ -186,7 +186,7 @@ class InternalsHiderTransform {
 						}
 
 						if (set != null && !set.isPermitted(mod)) {
-							super.visitLdcInsn(set.generateError("the field " + owner + "." + name, className));
+							super.visitLdcInsn(set.generateError(mod, "the field " + owner + "." + name, className + "." + mthName + mthDescriptor));
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(), "(Ljava/lang/String;)V",
 								false
@@ -214,7 +214,7 @@ class InternalsHiderTransform {
 
 						if (set != null && !set.isPermitted(mod)) {
 							super.visitLdcInsn(
-								set.generateError("the method " + owner + "." + name + descriptor, className)
+								set.generateError(mod, "the method " + owner + "." + name + descriptor, className + "." + mthName + mthDescriptor)
 							);
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(),
@@ -249,7 +249,7 @@ class InternalsHiderTransform {
 					if (!(value.value instanceof WarnLoaderInternalValue)) {
 						onlyWarn = false;
 					}
-					msg.append(value.generateError(className));
+					msg.append(value.generateError(mod, className));
 				}
 				to.visitLdcInsn(msg.toString());
 				to.visitMethodInsn(
@@ -397,19 +397,21 @@ class InternalsHiderTransform {
 			return "throwInternalAccess";
 		}
 
-		String generateError(String target, String site) {
+		String generateError(ModLoadOption from, String target, String site) {
 			StringBuilder sb = new StringBuilder();
+			sb.append("Found illegal access from ");
+			sb.append(from != null ? from.metadata().name() : "Unknown Mod");
+			sb.append(" to ");
+			sb.append(modFrom());
+			sb.append("\n class ");
 			sb.append(site);
-			sb.append(" contains illegal access to ");
+			sb.append("\n accessed ");
 			sb.append(target);
-			sb.append(", from ");
-			String mod = modFrom();
-			sb.append(mod);
 			sb.append("\n");
 
 			if (replacements.isEmpty()) {
 				sb.append("Please don't use this, instead ask ");
-				sb.append(mod);
+				sb.append(modFrom());
 				sb.append(" to declare a new public API that can have guarenteed backwards compatibility!");
 			} else if (replacements.size() == 1) {
 				sb.append("Please don't use this, instead try using the public api ");
@@ -488,8 +490,8 @@ class InternalsHiderTransform {
 			this.value = value;
 		}
 
-		String generateError(String site) {
-			return value.generateError((isInterface ? "the interface " : "the class ") + superName, site);
+		String generateError(ModLoadOption from, String site) {
+			return value.generateError(from, (isInterface ? "the interface " : "the class ") + superName, site);
 		}
 	}
 
