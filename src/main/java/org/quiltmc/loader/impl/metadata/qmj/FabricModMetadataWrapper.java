@@ -54,13 +54,19 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final List<ModProvided> provides;
 
 	public FabricModMetadataWrapper(FabricLoaderModMetadata fabricMeta) {
+		Version toAssign;
 		this.fabricMeta = fabricMeta;
 		net.fabricmc.loader.api.Version fabricVersion = fabricMeta.getVersion();
 		if (fabricVersion instanceof StringVersion) {
-			this.version = Version.of(fabricVersion.getFriendlyString());
+			toAssign = Version.of(fabricVersion.getFriendlyString());
 		} else {
-			this.version = (FabricSemanticVersionImpl) fabricVersion;
+			try {
+				toAssign = Version.Semantic.of(fabricVersion.getFriendlyString());
+			} catch (VersionFormatException e) {
+				toAssign = (FabricSemanticVersionImpl) fabricVersion;
+			}
 		}
+		this.version = toAssign;
 		this.depends = genDepends(fabricMeta.getDepends());
 		this.breaks = genDepends(fabricMeta.getBreaks());
 		this.licenses = Collections.unmodifiableCollection(fabricMeta.getLicense().stream().map(ModLicenseImpl::fromIdentifierOrDefault).collect(Collectors.toList()));
