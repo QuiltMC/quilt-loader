@@ -297,7 +297,7 @@ public class TransformCache {
 		forEachClassFile(root, modList, (mod, file) -> {
 			byte[] classBytes = Files.readAllBytes(file);
 			classes.put(file, new ClassData(mod, classBytes));
-			internalsHider.scanClass(mod, classBytes);
+			internalsHider.scanClass(mod, file, classBytes);
 			return null;
 		});
 

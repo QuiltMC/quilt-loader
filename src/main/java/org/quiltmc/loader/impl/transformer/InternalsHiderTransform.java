@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.transformer;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,9 +55,14 @@ class InternalsHiderTransform {
 
 	InternalsHiderTransform() {}
 
-	void scanClass(ModLoadOption mod, byte[] classBytes) {
+	void scanClass(ModLoadOption mod, Path file, byte[] classBytes) {
 		// TODO: Replace this with full-reflect lookup!
-		ClassReader reader = new ClassReader(classBytes);
+		ClassReader reader;
+		try {
+			reader = new ClassReader(classBytes);
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Failed to read the class " + file + " from mod " + mod.id(), e);
+		}
 		String className = reader.getClassName();
 		boolean isPackageInfo = className.endsWith("/package-info");
 		ClassVisitor visitor = new ClassVisitor(QuiltLoaderImpl.ASM_VERSION) {
