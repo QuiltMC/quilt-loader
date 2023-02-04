@@ -79,6 +79,12 @@ public interface VersionInterval extends Comparable<VersionInterval> {
 	boolean isMaxInclusive();
 
 	default boolean isSatisfiedBy(Version version) {
+
+		if (version.raw().equals("${version}") && QuiltLoader.isDevelopmentEnvironment()) {
+			// Special cased by QMJ
+			return true;
+		}
+
 		Version min = getMin();
 		if (min != null) {
 			int cmp = min.compareTo(version);

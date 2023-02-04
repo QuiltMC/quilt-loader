@@ -229,12 +229,12 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 
 	@Override
 	public void close() throws IOException {
-		// We don't really open anything
+		channels.close(this);
 	}
 
 	@Override
 	public boolean isOpen() {
-		return true;
+		return channels.isOpen;
 	}
 
 	@Override
@@ -675,6 +675,9 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 				// Make InputStream.available work
 				// older versions of FerriteCore used this to allocate a byte array to read into
 				// - newer versions are fixed, but we still want to keep backwards compatibility
+				// Also make InputStream.read(byte[], int, int) read as much as possible
+				// - minecraft 1.18.2 reads the font sizes by incorrectly assuming read(new byte[65536])
+				//   will always read exactly 65536 bytes, when that's not normally true
 				stream = new LimitedInputStream(stream, uncompressedSize);
 			}
 			return stream;

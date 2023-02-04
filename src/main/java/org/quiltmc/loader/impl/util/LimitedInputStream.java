@@ -55,10 +55,21 @@ public final class LimitedInputStream extends InputStream {
 		if (max <= 0) {
 			return -1;
 		}
-		int read = from.read(b, off, max);
-		if (read > 0) {
+		// Minecraft 1.18.2 assumes this method always reads as much as possible, rather than just "some bytes"
+		int totalRead = 0;
+		while (true) {
+			int read = from.read(b, off, max);
+			if (read <= 0) {
+				return totalRead > 0 ? totalRead : read;
+			}
 			position += read;
+			off += read;
+			max -= read;
+			totalRead += read;
+			if (max <= 0) {
+				break;
+			}
 		}
-		return read;
+		return totalRead;
 	}
 }
