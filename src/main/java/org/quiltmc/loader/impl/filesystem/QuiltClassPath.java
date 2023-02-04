@@ -166,14 +166,29 @@ public class QuiltClassPath {
 				// But Java 8's ZipFileSystem doesn't implement this correctly, so we do it manually instead.
 
 				final Deque<String> stack = new ArrayDeque<>();
+				int foldersRead = 0;
+				int filesRead = 0;
 
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-					if (dir.getFileName() == null && "/".equals(dir.toString()) && stack.isEmpty()) {
-						stack.addLast("/");
+					Path fileName = dir.getFileName();
+					if (fileName != null) {
+						stack.addLast(fileName.toString());
+					} else if (!"/".equals(dir.toString())) {
+						throw new IOException("Unknown directory with no file names " + dir.getClass() + " '" + dir + "'");
+					} else if (!stack.isEmpty()) {
+						if (stack.size() == 1 && stack.contains("/")) {
+							// Java 8's ZipFileSystem seems to repeat the zip forever?
+							Log.info(LogCategory.GENERAL, "Encountered the root directory multiple times, terminating "
+								+ zipRoot.getClass() + " (after reading " + foldersRead + " folders and "
+								+ filesRead + " files)");
+							return FileVisitResult.TERMINATE;
+						}
+						throw new IOException("Encountered multiple roots? (Non-empty stack): " + stack);
 					} else {
-						stack.addLast(dir.getFileName().toString());
+						stack.addLast("/");
 					}
+					foldersRead++;
 					putQuickFile(dir.toString(), dir);
 					return FileVisitResult.CONTINUE;
 				}
@@ -195,6 +210,7 @@ public class QuiltClassPath {
 						relativeString.append("/");
 						first = false;
 					}
+					filesRead++;
 					relativeString.append(file.getFileName().toString());
 					putQuickFile(relativeString.toString(), file);
 					return FileVisitResult.CONTINUE;

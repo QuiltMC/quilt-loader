@@ -118,7 +118,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.66";
+	public static final String VERSION = "0.18.1-beta.67";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -433,12 +433,12 @@ public final class QuiltLoaderImpl {
 		// Ensure it only contains reasonable chars
 		for (int i = 0; i < versionFrom.length(); i++) {
 			char c = versionFrom.charAt(i);
-			if ('0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '-' || c == '_' || c == ' ' || c == '.') {
+			if ('0' <= c && c <= '9' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || c == '-' || c == '_' || c == '.') {
 				version.append(c);
 			}
 		}
 
-		String fileName = "Transformed mod " + modOption.id() + " v" + version + ".jar";
+		String fileName = "transformed-mod-" + modOption.id() + "-v" + version + ".jar";
 		Path modJarFile = transformCacheFolder.resolve(fileName);
 		Path andFinished = transformCacheFolder.resolve(fileName + ".finished");
 

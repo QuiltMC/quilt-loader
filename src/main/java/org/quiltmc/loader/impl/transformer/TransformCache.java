@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.quiltmc.loader.api.FasterFiles;
@@ -324,15 +325,39 @@ public class TransformCache {
 			return;
 		}
 		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+
+			@Override
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+				String folderName = Objects.toString(dir.getFileName());
+				if (folderName != null && !couldBeJavaElement(folderName, false)) {
+					return FileVisitResult.SKIP_SUBTREE;
+				}
+				return FileVisitResult.CONTINUE;
+			}
+
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				if (file.getFileName().toString().endsWith(".class")) {
+				String fileName = file.getFileName().toString();
+				if (fileName.endsWith(".class") && couldBeJavaElement(fileName, true)) {
 					byte[] result = action.run(mod, file);
 					if (result != null) {
 						Files.write(file, result);
 					}
 				}
 				return FileVisitResult.CONTINUE;
+			}
+
+			private boolean couldBeJavaElement(String name, boolean ignoreClassSuffix) {
+				int end = name.length();
+				if (ignoreClassSuffix) {
+					end -= ".class".length();
+				}
+				for (int i = 0; i < end; i++) {
+					if (!Character.isJavaIdentifierPart(name.codePointAt(i))) {
+						return false;
+					}
+				}
+				return true;
 			}
 		});
 	}
