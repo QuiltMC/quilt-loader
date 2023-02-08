@@ -118,7 +118,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.73";
+	public static final String VERSION = "0.18.1-beta.74";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -394,11 +394,9 @@ public final class QuiltLoaderImpl {
 				return true;
 			}
 			if (modIds.contains("fabric-resource-loader-v0")) {
-				if (Version.of("1.18.2").compareTo(mod.version()) >= 0) {
-					// Fabric API turns minecraft into a resource pack to load from instead of using the classpath,
-					// so it also doesn't work very well
-					return true;
-				}
+				// Fabric API turns minecraft into a resource pack to load from instead of using the classpath,
+				// so it also doesn't work very well
+				return true;
 			}
 			if (modIds.contains("polymer")) {
 				if (Version.of("1.19.3").compareTo(mod.version()) >= 0) {
