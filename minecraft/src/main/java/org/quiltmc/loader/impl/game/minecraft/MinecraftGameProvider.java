@@ -382,6 +382,10 @@ public class MinecraftGameProvider implements GameProvider {
 				obfJars.put("realms", realmsJar);
 			}
 
+			for (Path obf : obfJars.values()) {
+				launcher.hideParentPath(obf);
+			}
+
 			obfJars = GameProviderHelper.deobfuscate(obfJars,
 					getGameId(), getNormalizedGameVersion(),
 					getLaunchDirectory(),

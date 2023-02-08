@@ -32,7 +32,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import net.fabricmc.api.EnvType;
 
 /**
- * The public-facing FabricLoader instance.
+ * The public-facing QuiltLoader instance.
  */
 public final class QuiltLoader {
 	private QuiltLoader() {}
@@ -173,6 +173,28 @@ public final class QuiltLoader {
 	@Deprecated
 	public static Object getGameInstance() {
 		return impl().getGameInstance();
+	}
+
+	/**
+	 * Gets the game version, normalised to be usefully compared via
+	 * {@link Version#compareTo(Version)} to other versions of the same game.
+	 *
+	 * @return A normalised version.
+	 * @see #getRawGameVersion()
+	 */
+	public static String getNormalizedGameVersion() {
+		return impl().getGameProvider().getNormalizedGameVersion();
+	}
+
+	/**
+	 * Gets the game version, unnormalised. This generally won't be
+	 * usefully comparable to other versions of the same game.
+
+	 * @return A string. This wont be empty or null.
+	 * @see #getNormalizedGameVersion()
+	 */
+	public static String getRawGameVersion() {
+		return impl().getGameProvider().getRawGameVersion();
 	}
 
 	/**

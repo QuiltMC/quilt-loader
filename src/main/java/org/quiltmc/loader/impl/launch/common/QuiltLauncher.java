@@ -38,6 +38,8 @@ public interface QuiltLauncher {
 	void addToClassPath(Path path, ModContainer mod, URL origin, String... allowedPrefixes);
 	void setAllowedPrefixes(Path path, String... prefixes);
 	void setTransformCache(URL insideTransformCache);
+	void hideParentUrl(URL hidden);
+	void hideParentPath(Path obf);
 	void validateGameClassLoader(Object gameInstance);
 
 	EnvType getEnvironmentType();

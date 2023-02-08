@@ -104,6 +104,10 @@ class KnotClassDelegate {
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
+	/** Set of {@link URL}s which should not be loaded from the parent, because they have been replaced by URLs/paths
+	 * in this loader. */
+	private final Set<String> parentHiddenUrls = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 	/** Map of package to whether we can load it in this environment. */
 	private final Map<String, Boolean> packageSideCache = new ConcurrentHashMap<>();
 
@@ -190,6 +194,28 @@ class KnotClassDelegate {
 		}
 
 		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
+
+		if (!allowFromParent) {
+			// Check to see if the class actually exists in the parent
+			// and it hasn't been "hidden"
+			String classFileName = LoaderUtil.getClassFileName(name);
+			URL originalURL = itf.getOriginalLoader().getResource(classFileName);
+			if (originalURL != null) {
+				try {
+					URL codeSource = UrlUtil.getSource(classFileName, originalURL);
+					if (codeSource != null && !parentHiddenUrls.contains(codeSource.toString())) {
+						// Exists in parent, not hidden
+						URL alsoInMods = cachedUrl.get();
+						if (alsoInMods != null) {
+							Log.warn(LogCategory.GENERAL, "Rerouting classloading to the parent classloader instead of " + alsoInMods);
+						}
+						return null;
+					}
+				} catch (UrlConversionException e) {
+					Log.warn(LogCategory.GENERAL, "Failed to get the code source URL for " + originalURL);
+				}
+			}
+		}
 
 		if (!allowedPrefixes.isEmpty()) {
 			URL url = cachedUrl.get();
@@ -492,6 +518,10 @@ class KnotClassDelegate {
 
 	void setTransformCache(URL insideTransformCache) {
 		transformCacheUrl = insideTransformCache.toString();
+	}
+
+	void hideParentUrl(URL parentPath) {
+		parentHiddenUrls.add(parentPath.toString());
 	}
 
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)

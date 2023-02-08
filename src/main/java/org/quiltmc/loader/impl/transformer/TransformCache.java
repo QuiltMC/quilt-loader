@@ -353,7 +353,7 @@ public class TransformCache {
 					end -= ".class".length();
 				}
 				for (int i = 0; i < end; i++) {
-					if (!Character.isJavaIdentifierPart(name.codePointAt(i))) {
+					if (name.charAt(i) == '.') {
 						return false;
 					}
 				}
