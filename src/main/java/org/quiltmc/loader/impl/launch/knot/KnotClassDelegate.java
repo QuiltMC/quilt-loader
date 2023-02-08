@@ -195,7 +195,8 @@ class KnotClassDelegate {
 
 		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
 
-		if (!allowFromParent && false) {
+		if (!allowFromParent && name.startsWith("org.slf4j.")) {
+			// Force slf4j itself to be loaded on a single classloader
 			// FIXME DISABLED
 			// TODO: Change this into a report, rather than being printed on each overlap.
 			// Check to see if the class actually exists in the parent
