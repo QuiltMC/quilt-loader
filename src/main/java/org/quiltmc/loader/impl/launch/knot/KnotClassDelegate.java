@@ -195,7 +195,9 @@ class KnotClassDelegate {
 
 		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
 
-		if (!allowFromParent) {
+		if (!allowFromParent && false) {
+			// FIXME DISABLED
+			// TODO: Change this into a report, rather than being printed on each overlap.
 			// Check to see if the class actually exists in the parent
 			// and it hasn't been "hidden"
 			String classFileName = LoaderUtil.getClassFileName(name);
@@ -258,6 +260,17 @@ class KnotClassDelegate {
 			modId = metadata.codeSource.modId;
 		}
 
+		Class<?> c = itf.findLoadedClassFwd(name);
+
+		if (c != null) {
+			// Workaround for an issue where the act of loading a class causes it to be loaded by the parent classloader,
+			// or where it causes a re-entrant classloading of itself
+			Log.warn(LogCategory.GENERAL, "Tried to define " + c + " but it was already loaded!");
+			Log.warn(LogCategory.GENERAL, "  - Already loaded source: " + UrlUtil.getCodeSource(c));
+			Log.warn(LogCategory.GENERAL, "  - Rejected (new) source: " + cachedUrl.get());
+			return c;
+		}
+
 		if (pkgDelimiterPos > 0) {
 			// TODO: package definition stub
 			String pkgString = name.substring(0, pkgDelimiterPos);
@@ -283,7 +296,7 @@ class KnotClassDelegate {
 			}
 		}
 
-		Class<?> c = itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
+		c = itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
 
 		if (Boolean.getBoolean(SystemProperties.DEBUG_CLASS_TO_MOD)) {
 			StringBuilder text = new StringBuilder(name);

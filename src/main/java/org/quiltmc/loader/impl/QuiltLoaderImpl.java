@@ -118,7 +118,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.72";
+	public static final String VERSION = "0.18.1-beta.73";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -297,6 +297,8 @@ public final class QuiltLoaderImpl {
 		Collections.shuffle(modList, new Random(seed));
 
 		performMixinReordering(modList);
+		// TODO: reorder libraries to be first in the classloader order
+		// (after we actually transform & load them with chasm)
 		performLoadLateReordering(modList);
 
 		long zipStart = System.nanoTime();
