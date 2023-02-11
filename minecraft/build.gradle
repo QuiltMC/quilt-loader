@@ -19,6 +19,9 @@ dependencies {
 	compileOnly 'org.apache.logging.log4j:log4j-api:2.8.1'
 	// slf4j wrapper
 	compileOnly 'org.slf4j:slf4j-api:1.8.0-beta4'
+	// HACK: work around proguard only seeing dependencies on the minecraft compile classpath
+	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
+	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 //	compileOnly 'org.quiltmc:quilt-json5:1.0.1'
 //	testCompileOnly 'org.quiltmc:quilt-json5:1.0.1'
 	// launchwrapper + dependencies

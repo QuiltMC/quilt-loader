@@ -18,6 +18,10 @@ dependencies {
 
 	implementation project(":minecraft")
 
+	// so that it works on runtime
+	implementation "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
+	implementation "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
+
 	// Required for mixin annotation processor
 	annotationProcessor "org.ow2.asm:asm:${project.asm}"
 	annotationProcessor "org.ow2.asm:asm-analysis:${project.asm}"
