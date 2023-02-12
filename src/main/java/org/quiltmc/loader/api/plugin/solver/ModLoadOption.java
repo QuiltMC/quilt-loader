@@ -144,11 +144,11 @@ public abstract class ModLoadOption extends LoadOption {
 			QuiltJoinedFileSystem fs = path.getFileSystem();
 			for (int i = 0; i < fs.getBackingPathCount(); i++) {
 				Path backingPath = fs.getBackingPath(i, path);
-				if (backingPath.getFileSystem() == FileSystems.getDefault()) {
+				if (backingPath.getFileSystem() == FileSystems.getDefault() && FasterFiles.isDirectory(backingPath)) {
 					return true;
 				}
 			}
-			return true;
+			return false;
 		} else {
 			return false;
 		}
