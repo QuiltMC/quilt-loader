@@ -323,6 +323,7 @@ public final class QuiltMemoryFileSystemProvider extends FileSystemProvider {
 		}
 
 		((QuiltMemoryFolder.ReadWrite) pEntry).children.remove(p);
+		p.fs.files.remove(p);
 		return true;
 	}
 
