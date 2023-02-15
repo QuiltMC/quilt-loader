@@ -53,6 +53,8 @@ public interface QuiltLauncher {
 
 	InputStream getResourceAsStream(String name);
 
+	URL getResourceURL(String name);
+
 	ClassLoader getTargetClassLoader();
 
 	ClassLoader getClassLoader(ModContainer mod);

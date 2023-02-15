@@ -384,6 +384,11 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	@Override
+	public URL getResourceURL(String name) {
+		return classLoader.getResource(name, false);
+	}
+
+	@Override
 	public ClassLoader getTargetClassLoader() {
 		return (ClassLoader) classLoader;
 	}
