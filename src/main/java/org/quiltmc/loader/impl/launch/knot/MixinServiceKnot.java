@@ -210,7 +210,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 					Path modResource = modContainer.get().rootPath().resolve(resource);
 					try {
 						if (!FasterFiles.exists(modResource)) {
-							URL url = QuiltLauncherBase.getLauncher().getResourceURL(name);
+							URL url = QuiltLauncherBase.getLauncher().getResourceURL(resource);
 							if (url != null) {
 								Log.warn(LogCategory.GENERAL, "Failed to find the resource '" + resource + "' in mod '" + mod + "', but did find it in a different place: " + url);
 								return url.openStream();
