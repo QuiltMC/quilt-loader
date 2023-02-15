@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.api.CachedFileSystem;
+import org.quiltmc.loader.api.FasterFiles;
 
 /** A {@link FileSystem} that exposes multiple {@link Path}s in a single {@link FileSystem}. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
@@ -124,17 +125,7 @@ public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSy
 		QuiltJoinedPath qjp = (QuiltJoinedPath) path;
 		for (int i = 0; i < from.length; i++) {
 			Path backingPath = getBackingPath(i, qjp);
-			final boolean exists;
-
-			if (backingPath.getFileSystem() instanceof CachedFileSystem) {
-				exists = ((CachedFileSystem) backingPath.getFileSystem()).exists(backingPath, options);
-			} else {
-				// Potentially still an optimisation since some JVM file systems
-				// have a fast path here
-				exists = Files.exists(backingPath, options);
-			}
-
-			if (exists) {
+			if (FasterFiles.exists(backingPath, options)) {
 				return true;
 			}
 		}
