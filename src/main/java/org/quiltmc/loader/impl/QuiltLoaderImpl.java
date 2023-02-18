@@ -407,22 +407,9 @@ public final class QuiltLoaderImpl {
 				}
 			}
 		}
-		if (id.contains("yung")) {
-			// YUNGs mods use reflections
-			// which *require* the class files are loaded directly from .jar files :|
-			return true;
-		}
 		if ("charm".equals(id) /* Add version check here for if/when charm doesn't need this */) {
 			// Charm also (currently) requires the mod files are in .jars directly.
 			return true;
-		}
-		for (ModDependency dep : mod.metadata().depends()) {
-			if (dep instanceof ModDependency.Only) {
-				String depId = ((ModDependency.Only) dep).id().id();
-				if (depId.contains("yung")) {
-					return true;
-				}
-			}
 		}
 		return false;
 	}
