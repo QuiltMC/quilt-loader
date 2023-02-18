@@ -28,6 +28,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -476,6 +477,10 @@ class KnotClassDelegate {
 
 		if (!transformFinishedLoading && LOG_EARLY_CLASS_LOADS) {
 			Log.info(LogCategory.GENERAL, "Loading " + name + " early", new Throwable());
+		}
+
+		if (name.startsWith("org.quiltmc.loader.impl.patch.")) {
+			return PatchLoader.getNewPatchedClass(name);
 		}
 
 		if (!transformInitialized || !canTransformClass(name)) {
