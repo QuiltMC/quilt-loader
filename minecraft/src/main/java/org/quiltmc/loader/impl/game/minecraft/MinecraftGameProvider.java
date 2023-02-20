@@ -19,7 +19,6 @@ package org.quiltmc.loader.impl.game.minecraft;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -28,19 +27,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
-import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.impl.FormattedException;
@@ -93,8 +87,8 @@ public class MinecraftGameProvider implements GameProvider {
 	private boolean useGameJarForLogging;
 	private boolean hasModLoader = false;
 
-	private static final GameTransformer TRANSFORMER = new GameTransformer(
-			new EntrypointPatch(),
+	private final GameTransformer transformer = new GameTransformer(
+			new EntrypointPatch(this),
 			new BrandingPatch());
 
 	@Override
@@ -413,7 +407,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 		setupLogHandler(launcher, true);
 
-		TRANSFORMER.locateEntrypoints(launcher, gameJars);
+		transformer.locateEntrypoints(launcher, gameJars);
 	}
 
 	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {
@@ -480,7 +474,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 	@Override
 	public GameTransformer getEntrypointTransformer() {
-		return TRANSFORMER;
+		return transformer;
 	}
 
 	@Override

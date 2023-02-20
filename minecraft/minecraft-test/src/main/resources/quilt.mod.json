@@ -4,10 +4,15 @@
     "group": "org.quiltmc.test",
     "id": "minecraft_test",
     "version": "1.0.0",
-    "intermediate_mappings": "net.fabricmc:intermediary"
+    "intermediate_mappings": "net.fabricmc:intermediary",
+    "entrypoints": {
+      "main": [
+        "net.fabricmc.minecraft.test.FabricEntrypointTest"
+      ]
+    }
   },
   "mixin": [
     "fabricmc.test.mixins.client.json"
   ],
-  "experimental_chasm_transformers": "chasm_transformers"
+  "experimental_chasm_transformers_disabled": "chasm_transformers"
 }

@@ -50,7 +50,11 @@ allprojects {
 		  name = 'Unascribed'
 		  url = 'https://repo.sleeping.town/'
 		}
-		mavenCentral()
+		mavenCentral() {
+			content {
+				excludeGroupByRegex "org.ow2.asm"
+			}
+		}
 	}
 	java {
 		toolchain {
@@ -209,7 +213,8 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 
 	manifest {
 		attributes (
-			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher"
+			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher",
+			"Fabric-Loom-Remap": "false"
 		)
 	}
 
