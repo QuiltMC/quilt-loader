@@ -93,14 +93,14 @@ public class VersionIntervalImpl implements VersionInterval {
 	public String toString() {
 		if (min == null) {
 			if (max == null) {
-				return "(-∞,∞)";
+				return "(-∞, ∞)";
 			} else {
-				return String.format("(-∞,%s%c", max, maxInclusive ? ']' : ')');
+				return String.format("(-∞, %s%c", max, maxInclusive ? ']' : ')');
 			}
 		} else if (max == null) {
-			return String.format("%c%s,∞)", minInclusive ? '[' : '(', min);
+			return String.format("%c%s, ∞)", minInclusive ? '[' : '(', min);
 		} else {
-			return String.format("%c%s,%s%c", minInclusive ? '[' : '(', min, max, maxInclusive ? ']' : ')');
+			return String.format("%c%s, %s%c", minInclusive ? '[' : '(', min, max, maxInclusive ? ']' : ')');
 		}
 	}
 
