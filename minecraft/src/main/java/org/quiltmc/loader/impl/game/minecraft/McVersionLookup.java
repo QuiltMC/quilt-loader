@@ -287,6 +287,7 @@ public final class McVersionLookup {
 			if (year == 23 && week >= 3) {
 				return "1.19.4";
 			} else if (year == 22 && week >= 42 || year >= 23) {
+				// 22w42a started not including a release_target again, hence the large gap
 				return "1.19.3";
 			} else if (year == 20 && week >= 6) {
 				return "1.16";
@@ -336,6 +337,7 @@ public final class McVersionLookup {
 				return "1.1";
 			}
 		}
+
 		return null;
 	}
 
