@@ -36,13 +36,13 @@ class VersionRangeDescriber {
 			if (interval.getMax() == null) {
 				return QuiltLoaderText.translate(getTransKey(titleKey, "any"), modName, depName);
 			} else {
-				return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMaxInclusive() ? "greater_equal" : "greater"), modName, interval.getMax(), depName);
+				return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMaxInclusive() ? "lesser_equal" : "lesser"), modName, interval.getMax(), depName);
 			}
 		}
 
 		// positive infinity
 		if (interval.getMax() == null) {
-			return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMinInclusive() ? "lesser_equal" : "lesser"), modName, interval.getMin(), depName);
+			return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMinInclusive() ? "greater_equal" : "greater"), modName, interval.getMin(), depName);
 		}
 
 		if (interval.getMax().equals(interval.getMin())) {
