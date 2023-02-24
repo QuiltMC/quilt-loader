@@ -22,7 +22,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
 
-public class QuiltRemoteWindowHelper {
+public class QuiltFork {
 
 	private static final QuiltForkComms COMMS;
 	private static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
