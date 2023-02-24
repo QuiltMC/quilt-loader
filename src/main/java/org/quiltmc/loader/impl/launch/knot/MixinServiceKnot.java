@@ -24,6 +24,8 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.launch.platform.container.ContainerHandleURI;
@@ -206,10 +208,15 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 				Optional<ModContainer> modContainer = QuiltLoader.getModContainer(mod);
 				if (modContainer.isPresent()) {
 					Path modResource = modContainer.get().rootPath().resolve(resource);
-					if (!FasterFiles.exists(modResource)) {
-						return null;
-					}
 					try {
+						if (!FasterFiles.exists(modResource)) {
+							URL url = QuiltLauncherBase.getLauncher().getResourceURL(resource);
+							if (url != null) {
+								Log.warn(LogCategory.GENERAL, "Failed to find the resource '" + resource + "' in mod '" + mod + "', but did find it in a different place: " + url);
+								return url.openStream();
+							}
+							return null;
+						}
 						return Files.newInputStream(modResource);
 					} catch (IOException e) {
 						throw new RuntimeException("Failed to read file '" + resource + "' from mod '" + mod + "'!", e);

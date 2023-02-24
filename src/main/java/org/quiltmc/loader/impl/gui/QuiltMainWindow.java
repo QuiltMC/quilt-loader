@@ -409,8 +409,6 @@ class QuiltMainWindow {
 
 	private JComponent createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
 		JScrollPane pane = new JScrollPane();
-		pane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-		pane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		pane.setOpaque(true);
 		pane.getVerticalScrollBar().setUnitIncrement(16);
 		pane.setBackground(Color.WHITE);

@@ -28,6 +28,7 @@ import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
@@ -103,6 +104,10 @@ class KnotClassDelegate {
 	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+	/** Set of {@link URL}s which should not be loaded from the parent, because they have been replaced by URLs/paths
+	 * in this loader. */
+	private final Set<String> parentHiddenUrls = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	/** Map of package to whether we can load it in this environment. */
 	private final Map<String, Boolean> packageSideCache = new ConcurrentHashMap<>();
@@ -191,6 +196,31 @@ class KnotClassDelegate {
 
 		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
 
+		if (!allowFromParent && name.startsWith("org.slf4j.")) {
+			// Force slf4j itself to be loaded on a single classloader
+			// FIXME DISABLED
+			// TODO: Change this into a report, rather than being printed on each overlap.
+			// Check to see if the class actually exists in the parent
+			// and it hasn't been "hidden"
+			String classFileName = LoaderUtil.getClassFileName(name);
+			URL originalURL = itf.getOriginalLoader().getResource(classFileName);
+			if (originalURL != null) {
+				try {
+					URL codeSource = UrlUtil.getSource(classFileName, originalURL);
+					if (codeSource != null && !parentHiddenUrls.contains(codeSource.toString())) {
+						// Exists in parent, not hidden
+						URL alsoInMods = cachedUrl.get();
+						if (alsoInMods != null) {
+							Log.warn(LogCategory.GENERAL, "Rerouting classloading to the parent classloader instead of " + alsoInMods);
+						}
+						return null;
+					}
+				} catch (UrlConversionException e) {
+					Log.warn(LogCategory.GENERAL, "Failed to get the code source URL for " + originalURL);
+				}
+			}
+		}
+
 		if (!allowedPrefixes.isEmpty()) {
 			URL url = cachedUrl.get();
 			String[] prefixes;
@@ -232,6 +262,17 @@ class KnotClassDelegate {
 			modId = metadata.codeSource.modId;
 		}
 
+		Class<?> c = itf.findLoadedClassFwd(name);
+
+		if (c != null) {
+			// Workaround for an issue where the act of loading a class causes it to be loaded by the parent classloader,
+			// or where it causes a re-entrant classloading of itself
+			Log.warn(LogCategory.GENERAL, "Tried to define " + c + " but it was already loaded!");
+			Log.warn(LogCategory.GENERAL, "  - Already loaded source: " + UrlUtil.getCodeSource(c));
+			Log.warn(LogCategory.GENERAL, "  - Rejected (new) source: " + cachedUrl.get());
+			return c;
+		}
+
 		if (pkgDelimiterPos > 0) {
 			// TODO: package definition stub
 			String pkgString = name.substring(0, pkgDelimiterPos);
@@ -257,7 +298,7 @@ class KnotClassDelegate {
 			}
 		}
 
-		Class<?> c = itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
+		c = itf.defineClassFwd(name, input, 0, input.length, metadata.codeSource);
 
 		if (Boolean.getBoolean(SystemProperties.DEBUG_CLASS_TO_MOD)) {
 			StringBuilder text = new StringBuilder(name);
@@ -438,6 +479,10 @@ class KnotClassDelegate {
 			Log.info(LogCategory.GENERAL, "Loading " + name + " early", new Throwable());
 		}
 
+		if (name.startsWith("org.quiltmc.loader.impl.patch.")) {
+			return PatchLoader.getNewPatchedClass(name);
+		}
+
 		if (!transformInitialized || !canTransformClass(name)) {
 			try {
 				return getRawClassByteArray(classFileURL, name);
@@ -492,6 +537,10 @@ class KnotClassDelegate {
 
 	void setTransformCache(URL insideTransformCache) {
 		transformCacheUrl = insideTransformCache.toString();
+	}
+
+	void hideParentUrl(URL parentPath) {
+		parentHiddenUrls.add(parentPath.toString());
 	}
 
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)

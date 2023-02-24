@@ -84,6 +84,11 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	}
 
 	@Override
+	public ClassLoader getOriginalLoader() {
+		return originalLoader;
+	}
+
+	@Override
 	public boolean isClassLoaded(String name) {
 		synchronized (getClassLoadingLock(name)) {
 			return findLoadedClass(name) != null;

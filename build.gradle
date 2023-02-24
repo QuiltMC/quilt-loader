@@ -19,7 +19,6 @@ sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
 
 archivesBaseName = "quilt-loader"
-// Don't forget to change this in the QuiltLoaderImpl class as well
 version = project.quilt_loader
 def ENV = System.getenv()
 
@@ -51,7 +50,11 @@ allprojects {
 		  name = 'Unascribed'
 		  url = 'https://repo.sleeping.town/'
 		}
-		mavenCentral()
+		mavenCentral() {
+			content {
+				excludeGroupByRegex "org.ow2.asm"
+			}
+		}
 	}
 	java {
 		toolchain {
@@ -97,8 +100,10 @@ dependencies {
 	include "com.electronwill.night-config:toml:${project.night_config}"
 	api "org.quiltmc:quilt-config:${project.quilt_config}"
 
-	api "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
-	api "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
+	// also must update in minecraft AND minecraft test
+	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
+	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
+
 
 	shadow "com.electronwill.night-config:core:${project.night_config}"
 	shadow "com.electronwill.night-config:toml:${project.night_config}"
@@ -208,7 +213,8 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 
 	manifest {
 		attributes (
-			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher"
+			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher",
+			"Fabric-Loom-Remap": "false"
 		)
 	}
 
@@ -374,27 +380,28 @@ publishing {
 			// runtime & compile classpaths would likely prove to be better if
 			// Quilt ever needs to have dependencies that aren't to be shaded nor
 			// passed through to the application.
-			pom.withXml {
-				final def dependenciesNode = asNode().appendNode("dependencies")
-
-				for (final def dep : configurations.api.allDependencies) {
-					// Tests for an external dependency.
-					// Provides a guarantee that the needed metadata is present.
-					if (dep instanceof ExternalDependency) {
-						// Inject the dependency metadata.
-						final def dependencyNode = dependenciesNode.appendNode("dependency")
-
-						dependencyNode.appendNode("groupId", dep.group)
-						dependencyNode.appendNode("artifactId", dep.name)
-						dependencyNode.appendNode("version", dep.version)
-
-						// Note: If ever retrofitted to include the runtime classpath,
-						// change this to use the runtime scope if the dependency is not
-						// present in the compile classpath.
-						dependencyNode.appendNode("scope", "compile")
-					}
-				}
-			}
+			// TODO: disabled until Loom can properly handle this.
+//			pom.withXml {
+//				final def dependenciesNode = asNode().appendNode("dependencies")
+//
+//				for (final def dep : configurations.api.allDependencies) {
+//					// Tests for an external dependency.
+//					// Provides a guarantee that the needed metadata is present.
+//					if (dep instanceof ExternalDependency) {
+//						// Inject the dependency metadata.
+//						final def dependencyNode = dependenciesNode.appendNode("dependency")
+//
+//						dependencyNode.appendNode("groupId", dep.group)
+//						dependencyNode.appendNode("artifactId", dep.name)
+//						dependencyNode.appendNode("version", dep.version)
+//
+//						// Note: If ever retrofitted to include the runtime classpath,
+//						// change this to use the runtime scope if the dependency is not
+//						// present in the compile classpath.
+//						dependencyNode.appendNode("scope", "compile")
+//					}
+//				}
+//			}
 		}
 	}
 

@@ -113,6 +113,28 @@ public class VersionRangeImpl extends AbstractSet<VersionInterval> implements Ve
 	}
 
 	@Override
+	public String toString() {
+		if (this.size() == 1) {
+			return this.intervals.first().toString();
+		} else if (this.isEmpty()) {
+			return "{ <empty set> }";
+		} else {
+			StringBuilder sb = new StringBuilder("{ ");
+			Iterator<VersionInterval> iter = this.iterator();
+			sb.append(iter.next());
+
+			while (iter.hasNext()) {
+				sb.append(" ∪ "); //TODO: there is probably a more logical way of notating this, but this is what i learned.
+				sb.append(iter.next());
+			}
+
+			sb.append(" }");
+
+			return sb.toString();
+		}
+	}
+
+	@Override
 	public VersionRange combineMatchingBoth(VersionRange other) {
 		List<VersionInterval> combined = new ArrayList<>();
 		for (VersionInterval a : this) {

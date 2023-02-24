@@ -301,7 +301,6 @@ class SolverErrorHelper {
 				}
 
 				boolean transitive = fullChain.size() > 1;
-				boolean anyVersion = VersionRange.ANY.equals(fullRange);
 				boolean missing = allInvalidOptions.isEmpty();
 
 				// Title:
@@ -310,20 +309,10 @@ class SolverErrorHelper {
 
 				// Description:
 				// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
-
-				String titleKey = "error.dep."//
-					+ (transitive ? "transitive" : "direct") //
-					+ (anyVersion ? ".any" : ".versioned") //
-					+ ".title";
-				Object[] titleData = new Object[anyVersion ? 2 : 3];
 				String rootModName = mandatoryMod.metadata().name();
-				titleData[0] = rootModName;
-				if (!anyVersion) {
-					// TODO: Turn this ugly range into a human-readable version specifier!
-					titleData[1] = "version " + fullRange;
-				}
-				titleData[anyVersion ? 1 : 2] = modOn;//getDepName(dep);
-				QuiltLoaderText first = QuiltLoaderText.translate(titleKey, titleData);
+
+				QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, fullRange, modOn, transitive);
+
 				Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
 				String secondKey = "error.dep.";
 				if (missing) {
@@ -362,10 +351,10 @@ class SolverErrorHelper {
 					report.append(" transitively");
 				}
 				report.append(" requires");
-				if (anyVersion) {
+				if (VersionRange.ANY.equals(fullRange)) {
 					report.append(" any version of ");
 				} else {
-					report.append(" version " + fullRange + " of ");
+					report.append(" version ").append(fullRange).append(" of ");
 				}
 				report.append(modOn);// TODO
 				report.append(", which is missing!");

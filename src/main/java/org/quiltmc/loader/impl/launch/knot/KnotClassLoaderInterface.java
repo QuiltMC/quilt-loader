@@ -28,6 +28,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 interface KnotClassLoaderInterface extends KnotBaseClassLoader {
 	KnotClassDelegate getDelegate();
+	ClassLoader getOriginalLoader();
 	boolean isClassLoaded(String name);
 	Class<?> loadIntoTarget(String name) throws ClassNotFoundException;
 	void addURL(URL url);

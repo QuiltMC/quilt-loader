@@ -21,6 +21,11 @@ import java.util.ListIterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import net.fabricmc.loader.api.SemanticVersion;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.api.metadata.version.VersionPredicate;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -33,9 +38,10 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.impl.entrypoint.GamePatch;
 
+import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
+import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -43,7 +49,16 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.game.minecraft.Hooks;
 
+
 public class EntrypointPatch extends GamePatch {
+	private static final VersionPredicate VERSION_1_19_4 = createVersionPredicate(">=1.19.4-");
+
+	private final MinecraftGameProvider gameProvider;
+
+	public EntrypointPatch(MinecraftGameProvider gameProvider) {
+		this.gameProvider = gameProvider;
+	}
+
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
 		String methodName = String.format("start%s", type == EnvType.CLIENT ? "Client" : "Server");
 		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, methodName, "(Ljava/io/File;Ljava/lang/Object;)V", false));
@@ -53,6 +68,7 @@ public class EntrypointPatch extends GamePatch {
 	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
 		EnvType type = launcher.getEnvironmentType();
 		String entrypoint = launcher.getEntrypoint();
+		Version gameVersion = getGameVersion();
 
 		if (!entrypoint.startsWith("net.minecraft.") && !entrypoint.startsWith("com.mojang.")) {
 			return;
@@ -183,6 +199,7 @@ public class EntrypointPatch extends GamePatch {
 		MethodNode gameMethod = null;
 		MethodNode gameConstructor = null;
 		AbstractInsnNode lwjglLogNode = null;
+		AbstractInsnNode currentThreadNode = null;
 		int gameMethodQuality = 0;
 
 		if (!is20w22aServerOrHigher) {
@@ -200,12 +217,19 @@ public class EntrypointPatch extends GamePatch {
 					// Try to find a method with an LDC string "LWJGL Version: ".
 					// This is the "init()" method, or as of 19w38a is the constructor, or called somewhere in that vicinity,
 					// and is by far superior in hooking into for a well-off mod start.
+					// Also try and find a Thread.currentThread() call before the LWJGL version print.
 
 					int qual = 2;
 					boolean hasLwjglLog = false;
 
 					for (AbstractInsnNode insn : gmCandidate.instructions) {
-						if (insn instanceof LdcInsnNode) {
+						if (insn.getOpcode() == Opcodes.INVOKESTATIC && insn instanceof MethodInsnNode) {
+							final MethodInsnNode methodInsn = (MethodInsnNode) insn;
+
+							if ("currentThread".equals(methodInsn.name) && "java/lang/Thread".equals(methodInsn.owner) && "()Ljava/lang/Thread;".equals(methodInsn.desc)) {
+								currentThreadNode = methodInsn;
+							}
+						} else if (insn instanceof LdcInsnNode) {
 							Object cst = ((LdcInsnNode) insn).cst;
 
 							if (cst instanceof String) {
@@ -420,7 +444,7 @@ public class EntrypointPatch extends GamePatch {
 					it.add(new LdcInsnNode("."));
 					it.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/io/File", "<init>", "(Ljava/lang/String;)V", false)); */
 				it.add(new InsnNode(Opcodes.ACONST_NULL));
-				it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
+				it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/fabricmc/loader/impl/game/minecraft/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
 				it.add(new VarInsnNode(Opcodes.ALOAD, 0));
 				finishEntrypoint(type, it);
 			} else {
@@ -428,7 +452,7 @@ public class EntrypointPatch extends GamePatch {
 				ListIterator<AbstractInsnNode> it = gameConstructor.instructions.iterator();
 				moveAfter(it, Opcodes.INVOKESPECIAL); /* Object.init */
 				it.add(new FieldInsnNode(Opcodes.GETSTATIC, gameClass.name, runDirectory.name, runDirectory.desc));
-				it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/quiltmc/loader/impl/game/minecraft/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
+				it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "net/fabricmc/loader/impl/game/minecraft/applet/AppletMain", "hookGameDir", "(Ljava/io/File;)Ljava/io/File;", false));
 				it.add(new FieldInsnNode(Opcodes.PUTSTATIC, gameClass.name, runDirectory.name, runDirectory.desc));
 
 				it = gameMethod.instructions.iterator();
@@ -468,7 +492,11 @@ public class EntrypointPatch extends GamePatch {
 						it = gameMethod.instructions.iterator();
 					}
 
-					if (lwjglLogNode != null) {
+					// Add the hook just before the Thread.currentThread() call for 1.19.4 or later
+					// If older 4 method insn's before the lwjgl log
+					if (currentThreadNode != null && VERSION_1_19_4.test(gameVersion)) {
+						moveBefore(it, currentThreadNode);
+					} else if (lwjglLogNode != null) {
 						moveBefore(it, lwjglLogNode);
 
 						for (int i = 0; i < 4; i++) {
@@ -539,5 +567,21 @@ public class EntrypointPatch extends GamePatch {
 		}
 
 		return false;
+	}
+
+	private Version getGameVersion() {
+		try {
+			return SemanticVersion.parse(gameProvider.getNormalizedGameVersion());
+		} catch (VersionParsingException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static VersionPredicate createVersionPredicate(String predicate) {
+		try {
+			return VersionPredicateParser.parse(predicate);
+		} catch (VersionParsingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

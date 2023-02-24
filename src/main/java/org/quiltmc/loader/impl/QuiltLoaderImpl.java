@@ -87,6 +87,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
@@ -118,7 +119,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.1-beta.68";
+	public static final String VERSION = "0.18.2";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -297,6 +298,8 @@ public final class QuiltLoaderImpl {
 		Collections.shuffle(modList, new Random(seed));
 
 		performMixinReordering(modList);
+		// TODO: reorder libraries to be first in the classloader order
+		// (after we actually transform & load them with chasm)
 		performLoadLateReordering(modList);
 
 		long zipStart = System.nanoTime();
@@ -392,11 +395,9 @@ public final class QuiltLoaderImpl {
 				return true;
 			}
 			if (modIds.contains("fabric-resource-loader-v0")) {
-				if (Version.of("1.18.2").compareTo(mod.version()) >= 0) {
-					// Fabric API turns minecraft into a resource pack to load from instead of using the classpath,
-					// so it also doesn't work very well
-					return true;
-				}
+				// Fabric API turns minecraft into a resource pack to load from instead of using the classpath,
+				// so it also doesn't work very well
+				return true;
 			}
 			if (modIds.contains("polymer")) {
 				if (Version.of("1.19.3").compareTo(mod.version()) >= 0) {
@@ -406,22 +407,9 @@ public final class QuiltLoaderImpl {
 				}
 			}
 		}
-		if (id.contains("yung")) {
-			// YUNGs mods use reflections
-			// which *require* the class files are loaded directly from .jar files :|
-			return true;
-		}
 		if ("charm".equals(id) /* Add version check here for if/when charm doesn't need this */) {
 			// Charm also (currently) requires the mod files are in .jars directly.
 			return true;
-		}
-		for (ModDependency dep : mod.metadata().depends()) {
-			if (dep instanceof ModDependency.Only) {
-				String depId = ((ModDependency.Only) dep).id().id();
-				if (depId.contains("yung")) {
-					return true;
-				}
-			}
 		}
 		return false;
 	}
@@ -932,6 +920,7 @@ public final class QuiltLoaderImpl {
 		}
 
 		postprocessModMetadata();
+		PatchLoader.load();
 		setupLanguageAdapters();
 		setupMods();
 	}

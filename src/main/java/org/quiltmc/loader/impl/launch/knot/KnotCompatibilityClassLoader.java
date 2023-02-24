@@ -48,6 +48,11 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 	}
 
 	@Override
+	public ClassLoader getOriginalLoader() {
+		return getParent();
+	}
+
+	@Override
 	public boolean isClassLoaded(String name) {
 		synchronized (getClassLoadingLock(name)) {
 			return findLoadedClass(name) != null;
