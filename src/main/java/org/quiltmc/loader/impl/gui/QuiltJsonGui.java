@@ -17,7 +17,6 @@
 
 package org.quiltmc.loader.impl.gui;
 
-import java.awt.Desktop;
 import java.awt.datatransfer.Clipboard;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -47,8 +46,11 @@ import javax.imageio.ImageIO;
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -100,16 +102,15 @@ public final class QuiltJsonGui {
 			}
 		}
 
-		static QuiltTreeWarningLevel read(JsonReader reader) throws IOException {
-			String string = reader.nextString();
-			if (string.isEmpty()) {
+		static QuiltTreeWarningLevel read(String strValue) throws IOException {
+			if (strValue.isEmpty()) {
 				return NONE;
 			}
-			QuiltTreeWarningLevel level = nameToValue.get(string);
+			QuiltTreeWarningLevel level = nameToValue.get(strValue);
 			if (level != null) {
 				return level;
 			} else {
-				throw new IOException("Expected a valid FabricTreeWarningLevel, but got '" + string + "'");
+				throw new IOException("Expected a valid QuiltTreeWarningLevel, but got '" + strValue + "'");
 			}
 		}
 
@@ -229,6 +230,8 @@ public final class QuiltJsonGui {
 	 * of {@link #ICON_TYPE_TICK} */
 	public static final String ICON_TYPE_LESSER_CROSS = "lesser_cross";
 
+	private static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
+
 	public final String title;
 	public final String mainText;
 	private final List<NavigableMap<Integer, BufferedImage>> customIcons = new ArrayList<>();
@@ -279,55 +282,33 @@ public final class QuiltJsonGui {
 		return button;
 	}
 
-	public QuiltJsonGui(JsonReader reader) throws IOException {
-		reader.beginObject();
-		expectName(reader, "title");
-		title = reader.nextString();
-		// As we write ourselves we mandate the order
-		// (This also makes everything a lot simpler)
-		expectName(reader, "mainText");
-		mainText = reader.nextString();
+	public QuiltJsonGui(LoaderValue.LObject obj) throws IOException {
+		title = HELPER.expectString(obj, "title");
+		mainText = HELPER.expectString(obj, "mainText");
 
-		expectName(reader, "message_tab_name");
-		messagesTabName = reader.nextString();
-		expectName(reader, "messages");
-		reader.beginArray();
-		while (reader.peek() != JsonToken.END_ARRAY) {
-			messages.add(new QuiltJsonGuiMessage(reader));
+		messagesTabName = HELPER.expectString(obj, "message_tab_name");
+		for (LoaderValue sub : HELPER.expectArray(obj, "messages")) {
+			messages.add(new QuiltJsonGuiMessage(HELPER.expectObject(sub)));
 		}
-		reader.endArray();
 
-		expectName(reader, "tabs");
-		reader.beginArray();
-		while (reader.peek() != JsonToken.END_ARRAY) {
-			tabs.add(new QuiltJsonGuiTreeTab(reader));
+		for (LoaderValue sub : HELPER.expectArray(obj, "tabs")) {
+			tabs.add(new QuiltJsonGuiTreeTab(sub.asObject()));
 		}
-		reader.endArray();
 
-		expectName(reader, "buttons");
-		reader.beginArray();
-		while (reader.peek() != JsonToken.END_ARRAY) {
-			buttons.add(new QuiltJsonButton(reader));
+		for (LoaderValue sub : HELPER.expectArray(obj, "buttons")) {
+			buttons.add(new QuiltJsonButton(sub.asObject()));
 		}
-		reader.endArray();
 
-		expectName(reader, "custom_icons");
-		reader.beginArray();
-		while (reader.peek() != JsonToken.END_ARRAY) {
-			reader.beginObject();
+		for (LoaderValue sub : HELPER.expectArray(obj, "custom_icons")) {
 			NavigableMap<Integer, BufferedImage> map = new TreeMap<>();
-			while (reader.peek() != JsonToken.END_OBJECT) {
-				int size = Integer.parseInt(reader.nextName());
-				String base64 = reader.nextString();
+			for (Map.Entry<String, LoaderValue> entry : sub.asObject().entrySet()) {
+				int size = Integer.parseInt(entry.getKey());
+				String base64 = entry.getValue().asString();
 				byte[] bytes = Base64.getDecoder().decode(base64);
 				map.put(size, ImageIO.read(new ByteArrayInputStream(bytes)));
 			}
 			customIcons.add(map);
-			reader.endObject();
 		}
-		reader.endArray();
-
-		reader.endObject();
 	}
 
 	/** Writes this tree out as a single json object. */
@@ -409,21 +390,13 @@ public final class QuiltJsonGui {
 			this.action = action;
 		}
 
-		QuiltJsonButton(JsonReader reader) throws IOException {
-			reader.beginObject();
-			expectName(reader, "text");
-			text = reader.nextString();
-			expectName(reader, "icon");
-			icon = reader.nextString();
-			expectName(reader, "action");
-			action = QuiltBasicButtonAction.valueOf(reader.nextString());
-			expectName(reader, "arguments");
-			reader.beginObject();
-			while (reader.peek() != JsonToken.END_OBJECT) {
-				arguments.put(reader.nextName(), reader.nextString());
+		QuiltJsonButton(LoaderValue.LObject obj) throws IOException {
+			text = HELPER.expectString(obj, "text");
+			icon = HELPER.expectString(obj, "icon");
+			action = QuiltBasicButtonAction.valueOf(HELPER.expectString(obj, "action"));
+			for (Map.Entry<String, LoaderValue> entry : HELPER.expectObject(obj, "arguments").entrySet()) {
+				arguments.put(entry.getKey(), entry.getValue().asString());
 			}
-			reader.endObject();
-			reader.endObject();
 		}
 
 		void write(JsonWriter writer) throws IOException {
@@ -474,46 +447,26 @@ public final class QuiltJsonGui {
 
 		}
 
-		public QuiltJsonGuiMessage(JsonReader reader) throws IOException {
-			reader.beginObject();
-			expectName(reader, "title");
-			title = reader.nextString();
+		public QuiltJsonGuiMessage(LoaderValue.LObject obj) throws IOException {
+			title = HELPER.expectString(obj, "title");
+			iconType = HELPER.expectString(obj, "icon");
+			subMessageHeader = HELPER.expectString(obj, "sub_message_header");
 
-			expectName(reader, "icon");
-			iconType = reader.nextString();
-
-			expectName(reader, "description");
-			reader.beginArray();
-			while (reader.peek() != JsonToken.END_ARRAY) {
-				description.add(reader.nextString());
+			for (LoaderValue sub : HELPER.expectArray(obj, "description")) {
+				description.add(sub.asString());
 			}
-			reader.endArray();
 
-			expectName(reader, "info");
-			reader.beginArray();
-			while (reader.peek() != JsonToken.END_ARRAY) {
-				additionalInfo.add(reader.nextString());
+			for (LoaderValue sub : HELPER.expectArray(obj, "info")) {
+				additionalInfo.add(sub.asString());
 			}
-			reader.endArray();
 
-			expectName(reader, "buttons");
-			reader.beginArray();
-			while (reader.peek() != JsonToken.END_ARRAY) {
-				buttons.add(new QuiltJsonButton(reader));
+			for (LoaderValue sub : HELPER.expectArray(obj, "buttons")) {
+				buttons.add(new QuiltJsonButton(sub.asObject()));
 			}
-			reader.endArray();
 
-			expectName(reader, "sub_message_header");
-			subMessageHeader = reader.nextString();
-
-			expectName(reader, "sub_messages");
-			reader.beginArray();
-			while (reader.peek() != JsonToken.END_ARRAY) {
-				subMessages.add(new QuiltJsonGuiMessage(reader));
+			for (LoaderValue sub : HELPER.expectArray(obj, "sub_messages")) {
+				subMessages.add(new QuiltJsonGuiMessage(sub.asObject()));
 			}
-			reader.endArray();
-
-			reader.endObject();
 		}
 
 		void write(JsonWriter writer) throws IOException {
@@ -574,13 +527,9 @@ public final class QuiltJsonGui {
 			return node.addChild(name);
 		}
 
-		QuiltJsonGuiTreeTab(JsonReader reader) throws IOException {
-			reader.beginObject();
-			expectName(reader, "level");
-			filterLevel = QuiltTreeWarningLevel.read(reader);
-			expectName(reader, "node");
-			node = new QuiltStatusNode(null, reader);
-			reader.endObject();
+		QuiltJsonGuiTreeTab(LoaderValue.LObject obj) throws IOException {
+			filterLevel = QuiltTreeWarningLevel.read(HELPER.expectString(obj, "level"));
+			node = new QuiltStatusNode(null, HELPER.expectObject(obj, "node"));
 		}
 
 		void write(JsonWriter writer) throws IOException {
@@ -616,28 +565,16 @@ public final class QuiltJsonGui {
 			this.name = name;
 		}
 
-		private QuiltStatusNode(QuiltStatusNode parent, JsonReader reader) throws IOException {
+		private QuiltStatusNode(QuiltStatusNode parent, LoaderValue.LObject obj) throws IOException {
 			this.parent = parent;
-			reader.beginObject();
-			expectName(reader, "name");
-			name = reader.nextString();
-			expectName(reader, "icon");
-			iconType = reader.nextString();
-			expectName(reader, "level");
-			warningLevel = QuiltTreeWarningLevel.read(reader);
-			expectName(reader, "expandByDefault");
-			expandByDefault = reader.nextBoolean();
-			expectName(reader, "details");
-			details = readStringOrNull(reader);
-			expectName(reader, "children");
-			reader.beginArray();
-
-			while (reader.peek() != JsonToken.END_ARRAY) {
-				children.add(new QuiltStatusNode(this, reader));
+			name = HELPER.expectString(obj, "name");
+			iconType = HELPER.expectString(obj, "icon");
+			warningLevel = QuiltTreeWarningLevel.read(HELPER.expectString(obj, "level"));
+			expandByDefault = HELPER.expectBoolean(obj, "expandByDefault");
+			details = obj.containsKey("details") ? HELPER.expectString(obj, "details") : null;
+			for (LoaderValue sub : HELPER.expectArray(obj, "children")) {
+				children.add(new QuiltStatusNode(this, HELPER.expectObject(sub)));
 			}
-
-			reader.endArray();
-			reader.endObject();
 		}
 
 		void write(JsonWriter writer) throws IOException {
@@ -646,7 +583,9 @@ public final class QuiltJsonGui {
 			writer.name("icon").value(iconType);
 			writer.name("level").value(warningLevel.lowerCaseName);
 			writer.name("expandByDefault").value(expandByDefault);
-			writer.name("details").value(details);
+			if (details != null) {
+				writer.name("details").value(details);
+			}
 			writer.name("children").beginArray();
 
 			for (QuiltStatusNode node : children) {

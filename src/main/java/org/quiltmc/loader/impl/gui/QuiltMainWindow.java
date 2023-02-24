@@ -53,6 +53,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 import javax.imageio.ImageIO;
@@ -93,37 +94,37 @@ import org.quiltmc.loader.impl.util.StringUtil;
 class QuiltMainWindow {
 	static Icon missingIcon = null;
 
-	static void open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		if (GraphicsEnvironment.isHeadless()) {
-			throw new HeadlessException();
-		}
-
+	static {
 		// Set MacOS specific system props
 		System.setProperty("apple.awt.application.appearance", "system");
 		System.setProperty("apple.awt.application.name", "Quilt Loader");
-
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		open0(tree, shouldWait);
 	}
 
-	private static void open0(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		CountDownLatch guiTerminatedLatch = new CountDownLatch(1);
+	static CompletableFuture<Void> open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
+		if (GraphicsEnvironment.isHeadless()) {
+			throw new HeadlessException();
+		}
+		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+
+		CompletableFuture<Void> future = new CompletableFuture<>();
 
 		SwingUtilities.invokeAndWait(() -> {
-			new QuiltMainWindow(guiTerminatedLatch, tree).open();
+			new QuiltMainWindow(future, tree).open();
 		});
 
 		if (shouldWait) {
-			guiTerminatedLatch.await();
+			future.get();
 		}
+
+		return future;
 	}
 
 	final JFrame window;
-	final CountDownLatch onCloseLatch;
+	final CompletableFuture<Void> onCloseFuture;
 	final IconSet icons;
 
-	public QuiltMainWindow(CountDownLatch onCloseLatch, QuiltJsonGui tree) {
-		this.onCloseLatch = onCloseLatch;
+	public QuiltMainWindow(CompletableFuture<Void> closeFuture, QuiltJsonGui tree) {
+		this.onCloseFuture = closeFuture;
 		window = new JFrame();
 		window.setVisible(false);
 		window.setTitle(tree.title);
@@ -146,7 +147,7 @@ class QuiltMainWindow {
 		window.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				onCloseLatch.countDown();
+				closeFuture.complete(null);
 			}
 		});
 
@@ -218,7 +219,7 @@ class QuiltMainWindow {
 
 			switch (button.action) {
 				case CONTINUE: {
-					onCloseLatch.countDown();
+					onCloseFuture.complete(null);
 					window.dispose();
 					return;
 				}

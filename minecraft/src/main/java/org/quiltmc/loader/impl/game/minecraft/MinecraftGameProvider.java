@@ -478,7 +478,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean canOpenErrorGui() {
+	public boolean canOpenGui() {
 		if (arguments == null || envType == EnvType.CLIENT) {
 			return true;
 		}

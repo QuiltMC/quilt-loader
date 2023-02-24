@@ -56,6 +56,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** The main entry point for all quilt-based stuff. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
+@Deprecated
 public final class QuiltGuiEntry {
 	/** Opens the given {@link QuiltJsonGui} in a new swing window.
 	 * 
@@ -73,19 +74,7 @@ public final class QuiltGuiEntry {
 	 *            window is closed before returning, otherwise this method will return as soon as the window has opened.
 	 * @throws Exception if something went wrong while opening the window. */
 	public static void open(QuiltJsonGui tree, Boolean forceFork, boolean shouldWait) throws Exception {
-		final boolean fork;
-
-		if (forceFork != null) {
-			fork = forceFork;
-		} else {
-			fork = shouldFork();
-		}
-
-		if (fork) {
-			fork(tree, shouldWait);
-		} else {
-			openWindow(tree, shouldWait);
-		}
+		QuiltFork.openErrorGui(tree, shouldWait);
 	}
 
 	private static boolean shouldFork() {
@@ -111,7 +100,7 @@ public final class QuiltGuiEntry {
 
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
-		if ((provider == null || provider.canOpenErrorGui()) && !GraphicsEnvironment.isHeadless()) {
+		if ((provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
 
 			QuiltReport report = new QuiltReport("Crashed!");
 			report.addStacktraceSection("Crash", 0, exception);
@@ -161,7 +150,7 @@ public final class QuiltGuiEntry {
 			tree.addButton("Exit", QuiltJsonGui.QuiltBasicButtonAction.CLOSE);
 
 			try {
-				open(tree);
+				QuiltFork.openErrorGui(tree, true);
 			} catch (Exception e) {
 				if (exitAfter) {
 					Log.warn(LogCategory.GUI, "Failed to open the error gui!", e);
@@ -173,76 +162,6 @@ public final class QuiltGuiEntry {
 
 		if (exitAfter) {
 			System.exit(1);
-		}
-	}
-
-	private static void fork(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		List<String> commands = new ArrayList<>();
-		commands.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
-		commands.add("-cp");
-		// Is this a good idea?
-		// I don't think we actually care about most of the classes here
-		// just *this* jar file?
-		commands.add(System.getProperty("java.class.path"));
-		commands.add(QuiltGuiEntry.class.getName());
-
-		File jsonFile = File.createTempFile("quilt-loader-tree", ".json.gz");
-
-		try (OutputStream out = new GZIPOutputStream(new BufferedOutputStream(new FileOutputStream(jsonFile)))) {
-			try (JsonWriter writer = JsonWriter.json(new OutputStreamWriter(out, StandardCharsets.UTF_8))) {
-				writer.setIndent(" ");
-				tree.write(writer);
-				writer.flush();
-			}
-		}
-		commands.add("--read-tree");
-		commands.add(jsonFile.getAbsolutePath());
-
-		ProcessBuilder pb = new ProcessBuilder(commands);
-		pb.redirectError(Redirect.INHERIT);
-		// TODO: handle more complex button presses by sending them through PIPE?
-		pb.redirectOutput(Redirect.INHERIT);
-
-		Process p = pb.start();
-
-		// TODO: Handle input (like "Status: Correct tree", or "Status: Continue")
-
-		jsonFile.deleteOnExit();
-
-		if (!shouldWait) {
-			return;
-		}
-
-		int result = p.waitFor();
-
-		if (result != 0) {
-			throw new Exception("Failed to open the gui! (The error should be higher up in the log/output)");
-		}
-	}
-
-	/** The entry point after forking the main application over into a different process to get around incompatibilities
-	 * on OSX (and problems where some games switch swing over to use headless mode, which doesn't work very well for
-	 * us). */
-	public static void main(String[] args) throws Exception {
-		if (args.length == 2 && "--read-tree".equals(args[0])) {
-			System.out.println("Status:Reading");
-			File from = new File(args[1]);
-
-			try (InputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(from)))) {
-				JsonReader reader = JsonReader.json(new InputStreamReader(is, StandardCharsets.UTF_8));
-				QuiltJsonGui tree = new QuiltJsonGui(reader);
-				System.out.println("Status:Opening");
-				openWindow(tree, true);
-			}
-		} else {
-			System.err.println("Expected 2 arguments: '--read-tree' followed by the tree.");
-			System.err.println("Actually got " + args.length);
-
-			for (String arg : args) {
-				System.err.println(arg);
-			}
-
-			System.exit(-1);
 		}
 	}
 }

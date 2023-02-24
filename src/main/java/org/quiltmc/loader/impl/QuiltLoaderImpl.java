@@ -483,7 +483,7 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			if ((provider != null && !provider.canOpenErrorGui()) || GraphicsEnvironment.isHeadless()) {
+			if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 				return result;
 			}
 
@@ -547,7 +547,7 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		if ((provider != null && !provider.canOpenErrorGui()) || GraphicsEnvironment.isHeadless()) {
+		if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 			if (crashReportFile != null) {
 				System.err.println("Game crashed! Saved the crash report to " + crashReportFile);
 			}

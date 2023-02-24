@@ -23,17 +23,18 @@ import java.util.function.Consumer;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
+import org.quiltmc.loader.impl.util.LimitedInputStream;
 
-/** Client entry point for opening communication to a local server. Fairly low level - */
-public class QuiltIPC {
+/** Client entry point for opening communication to a local server. */
+public class QuiltForkComms {
 
-	private static final String SYS_PROP = "quiltmc.loader.ipc.port";
+	private static final String SYS_PROP = "quiltmc.loader.fork.comms_port";
 
-	public static QuiltIPC connect(File medium, Consumer<LoaderValue> handler) throws IOException {
+	public static QuiltForkComms connect(File medium, Consumer<LoaderValue> handler) throws IOException {
 
 		Integer overridePort = Integer.getInteger(SYS_PROP);
 
-		QuiltIPC ipc = new QuiltIPC(handler);
+		QuiltForkComms ipc = new QuiltForkComms(handler);
 
 		if (overridePort == null) {
 			File portFile = new File(medium.toString() + ".port");
@@ -47,9 +48,15 @@ public class QuiltIPC {
 
 			List<String> commands = new ArrayList<>();
 			commands.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
+			// GC chosen to minimise real memory usage, and maximise returning memory to the OS
+			// (since the game is what should actually use more memory)
+			commands.add("-Xms4M");
+			commands.add("-XX:+UseSerialGC");
+			commands.add("-XX:MaxHeapFreeRatio=10");
+			commands.add("-XX:MinHeapFreeRatio=2");
 			commands.add("-cp");
 			commands.add(System.getProperty("java.class.path"));
-			commands.add(QuiltIPCServerEntry.class.getName());
+			commands.add(QuiltForkServerMain.class.getName());
 
 			commands.add("--file");
 			commands.add(medium.getAbsolutePath());
@@ -99,13 +106,13 @@ public class QuiltIPC {
 	private volatile Throwable exception;
 	private volatile boolean closed;
 
-	QuiltIPC(Consumer<LoaderValue> msgHandler) {
+	QuiltForkComms(Consumer<LoaderValue> msgHandler) {
 		this.msgHandler = msgHandler;
 
 		writerQueue = new LinkedBlockingQueue<>();
 	}
 
-	QuiltIPC(Socket socket, Consumer<LoaderValue> msgHandler) {
+	QuiltForkComms(Socket socket, Consumer<LoaderValue> msgHandler) {
 		this.msgHandler = msgHandler;
 		writerQueue = new LinkedBlockingQueue<>();
 		sender = new ReadySender(socket);
@@ -159,12 +166,13 @@ public class QuiltIPC {
 			while (waitingProcess.isAlive()) {
 				if (readyFile.isFile()) {
 					try {
-						QuiltIPC.this.sender = new ReadySender(readPort(portFile));
+						QuiltForkComms.this.sender = new ReadySender(readPort(portFile));
+						return;
 					} catch (IOException e) {
 						e.printStackTrace();
 						exception = e;
 					}
-					return;
+					break;
 				}
 				try {
 					Thread.sleep(10);
@@ -173,7 +181,7 @@ public class QuiltIPC {
 				}
 			}
 			// Crashed
-			QuiltIPC.this.sender = QuiltIPC.this.new FailedSender();
+			QuiltForkComms.this.sender = QuiltForkComms.this.new FailedSender();
 		}
 	}
 
@@ -240,7 +248,7 @@ public class QuiltIPC {
 					return;
 				}
 				e.printStackTrace();
-				synchronized (QuiltIPC.this) {
+				synchronized (QuiltForkComms.this) {
 					if (exception == null) {
 						exception = e;
 					} else {
@@ -251,8 +259,10 @@ public class QuiltIPC {
 		}
 
 		private void runReader() {
+			WatchingInputStream watchStream = null;
 			try {
-				DataInputStream stream = new DataInputStream(socket.getInputStream());
+				watchStream = new WatchingInputStream(socket.getInputStream());
+				DataInputStream stream = new DataInputStream(watchStream);
 				while (true) {
 					int length = stream.readInt();
 					LoaderValue value = LoaderValueFactory.getFactory().read(new LimitedInputStream(stream, length));
@@ -266,8 +276,12 @@ public class QuiltIPC {
 				if (closed) {
 					return;
 				}
+				if (watchStream != null && watchStream.eof) {
+					closed = true;
+					return;
+				}
 				e.printStackTrace();
-				synchronized (QuiltIPC.this) {
+				synchronized (QuiltForkComms.this) {
 					if (exception == null) {
 						exception = e;
 					} else {
@@ -278,46 +292,38 @@ public class QuiltIPC {
 		}
 	}
 
-	private static final class LimitedInputStream extends InputStream {
-		private final InputStream from;
-		private final int limit;
+	/** An {@link InputStream} which sets {@link WatchingInputStream#eof} to true when the underlying input stream
+	 * returns -1 from {@link InputStream#read()}. */
+	static final class WatchingInputStream extends InputStream {
 
-		private int position;
+		final InputStream from;
+		boolean eof;
 
-		public LimitedInputStream(InputStream from, int limit) {
+		WatchingInputStream(InputStream from) {
 			this.from = from;
-			this.limit = limit;
-		}
-
-		@Override
-		public int available() throws IOException {
-			return limit - position;
 		}
 
 		@Override
 		public int read() throws IOException {
-			if (position < limit) {
-				position++;
-				return from.read();
-			} else {
-				return -1;
+			int read = from.read();
+			if (read == -1) {
+				eof = true;
 			}
+			return read;
 		}
 
 		@Override
 		public int read(byte[] b, int off, int len) throws IOException {
-			if (len <= 0) {
-				return 0;
-			}
-			int max = Math.min(len, limit - position);
-			if (max <= 0) {
-				return -1;
-			}
-			int read = from.read(b, off, max);
-			if (read > 0) {
-				position += read;
+			int read = from.read(b, off, len);
+			if (read == -1) {
+				eof = true;
 			}
 			return read;
+		}
+
+		@Override
+		public int available() throws IOException {
+			return from.available();
 		}
 	}
 }
