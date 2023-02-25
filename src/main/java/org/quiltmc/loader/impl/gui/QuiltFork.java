@@ -57,7 +57,7 @@ public class QuiltFork {
 			return;
 		}
 		Map<String, LoaderValue> map = new HashMap<>();
-		map.put("__TYPE", lvf().string(IPC_Names.ID_OPEN_ERROR_GUI));
+		map.put("__TYPE", lvf().string(ForkCommNames.ID_OPEN_ERROR_GUI));
 		Integer index = ERROR_GUI_COUNT.incrementAndGet();
 		map.put("id", lvf().number(index));
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -106,7 +106,7 @@ public class QuiltFork {
 			LObject obj = msg.asObject();
 			String type = HELPER.expectString(obj, "__TYPE");
 			switch (type) {
-				case IPC_Names.ID_ERROR_GUI_CLOSED: {
+				case ForkCommNames.ID_ERROR_GUI_CLOSED: {
 					handleCloseErrorGui(obj);
 					return;
 				}

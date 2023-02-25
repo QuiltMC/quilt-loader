@@ -77,20 +77,6 @@ public final class QuiltGuiEntry {
 		QuiltFork.openErrorGui(tree, shouldWait);
 	}
 
-	private static boolean shouldFork() {
-		String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-
-		if (osName.contains("mac")) {
-			return true;
-		}
-
-		return false;
-	}
-
-	private static void openWindow(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		QuiltMainWindow.open(tree, shouldWait);
-	}
-
 	/** @param exitAfter If true then this will call {@link System#exit(int)} after showing the gui, otherwise this will
 	 *            return normally. */
 	public static void displayError(String mainText, Throwable exception, boolean warnEarly, boolean exitAfter) {

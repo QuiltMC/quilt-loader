@@ -108,7 +108,7 @@ public class QuiltForkServerMain {
 		String typeStr = type.asString();
 
 		switch (typeStr) {
-			case IPC_Names.ID_OPEN_ERROR_GUI: {
+			case ForkCommNames.ID_OPEN_ERROR_GUI: {
 				handleOpenErrorGui(obj);
 				break;
 			}
@@ -131,7 +131,7 @@ public class QuiltForkServerMain {
 		future.thenRun(() -> {
 			Map<String, LoaderValue> map = new HashMap<>();
 			LoaderValueFactory lvf = LoaderValueFactory.getFactory();
-			map.put("__TYPE", lvf.string(IPC_Names.ID_ERROR_GUI_CLOSED));
+			map.put("__TYPE", lvf.string(ForkCommNames.ID_ERROR_GUI_CLOSED));
 			map.put("id", lvf.number(id));
 			ipc.send(lvf.object(map));
 		});
