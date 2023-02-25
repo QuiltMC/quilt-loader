@@ -59,7 +59,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		URI uri = root.toUri();
 		if (!this.name.equals(uri.getHost())) {
 			throw new RuntimeException(
-				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "')"
+				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "', original name = '" + name + "')"
 			);
 		}
 		if (uri.getAuthority() == null || !uri.getAuthority().contains(this.name)) {
@@ -115,7 +115,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 					}
 				}
 				sb.append(c);
-				first = false;
+				first = c == '.';
 			} else if (c == '_' || c == '~') {
 				sb.append('-');
 			}
