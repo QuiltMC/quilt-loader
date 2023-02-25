@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
@@ -48,8 +49,12 @@ import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LType;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError.QuiltPluginButton;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.plugin.gui.PluginIconImpl;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -375,22 +380,40 @@ public final class QuiltJsonGui {
 		}
 	}
 
-	public static final class QuiltJsonButton {
-		public final String text, icon;
+	public static final class QuiltJsonButton implements QuiltPluginButton {
+
+		static final AtomicInteger IDS = new AtomicInteger();
+
+		// Sync state
+		final int id;
+		boolean sent;
+
+		// Normal state
+		public final String text;
+		public String icon;
 		public final QuiltBasicButtonAction action;
 		public final Map<String, String> arguments = new HashMap<>();
 
 		/** Only used for {@link QuiltBasicButtonAction#RETURN_SIGNAL_ONCE} and
 		 * {@link QuiltBasicButtonAction#RETURN_SIGNAL_MANY} */
 		Runnable returnSignalAction;
+		String disabledText;
+		boolean enabled;
 
 		public QuiltJsonButton(String text, String icon, QuiltBasicButtonAction action) {
+			this(text, icon, action, null);
+		}
+
+		public QuiltJsonButton(String text, String icon, QuiltBasicButtonAction action, Runnable returnSignalAction) {
+			id = IDS.incrementAndGet();
 			this.text = text;
 			this.icon = icon;
 			this.action = action;
+			this.returnSignalAction = returnSignalAction;
 		}
 
 		QuiltJsonButton(LoaderValue.LObject obj) throws IOException {
+			id = HELPER.expectNumber(obj, "id").intValue();
 			text = HELPER.expectString(obj, "text");
 			icon = HELPER.expectString(obj, "icon");
 			action = QuiltBasicButtonAction.valueOf(HELPER.expectString(obj, "action"));
@@ -410,6 +433,8 @@ public final class QuiltJsonGui {
 			}
 			writer.endObject();
 			writer.endObject();
+
+			sent = true;
 		}
 
 		public QuiltJsonButton arg(String key, String value) {
@@ -425,6 +450,35 @@ public final class QuiltJsonGui {
 		public QuiltJsonButton setAction(Runnable action) {
 			this.returnSignalAction = action;
 			return this;
+		}
+
+		@Override
+		public QuiltPluginButton icon(PluginGuiIcon newIcon) {
+			if (newIcon == null) {
+				this.icon = action.defaultIcon;
+			} else {
+				this.icon = PluginIconImpl.fromApi(newIcon).path;
+			}
+			if (sent) {
+				// TODO: Send the new icon!
+			}
+			return this;
+		}
+
+		@Override
+		public void setEnabled(boolean enabled, QuiltLoaderText disabledMessage) {
+			this.enabled = enabled;
+			if (!enabled) {
+				if (disabledMessage == null) {
+					throw new NullPointerException("disabledMessage");
+				} else {
+					this.disabledText = disabledMessage.toString();
+				}
+			}
+
+			if (sent) {
+				// TODO: Send the new state!
+			}
 		}
 	}
 

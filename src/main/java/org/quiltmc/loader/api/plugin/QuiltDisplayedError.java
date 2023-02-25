@@ -28,28 +28,27 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 /** A reported error during plugin loading, which is shown in the error screen. This doesn't necessarily indicate an
  * error - however reporting any errors will cause the plugin loading to halt at the end of the current cycle. */
 @ApiStatus.NonExtendable
-@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
-public interface QuiltPluginError {
+public interface QuiltDisplayedError {
 
 	/** Adds more lines which are shown in the log and the crash report file, NOT in the gui.
 	 * 
 	 * @return this. */
-	QuiltPluginError appendReportText(String... lines);
+	QuiltDisplayedError appendReportText(String... lines);
 
 	/** Adds more lines of description. */
-	QuiltPluginError appendDescription(QuiltLoaderText... descriptions);
+	QuiltDisplayedError appendDescription(QuiltLoaderText... descriptions);
 
-	QuiltPluginError setOrdering(int priority);
+	QuiltDisplayedError setOrdering(int priority);
 
 	/** Adds more lines of additional information, which is hidden from the user by default. */
-	QuiltPluginError appendAdditionalInformation(QuiltLoaderText... information);
+	QuiltDisplayedError appendAdditionalInformation(QuiltLoaderText... information);
 
 	/** Adds a {@link Throwable} to this error - which will be included in the crash-report file, but will not be shown
 	 * in the gui. */
-	QuiltPluginError appendThrowable(Throwable t);
+	QuiltDisplayedError appendThrowable(Throwable t);
 
 	/** Defaults to {@link PluginGuiManager#iconLevelError()}. */
-	QuiltPluginError setIcon(PluginGuiIcon icon);
+	QuiltDisplayedError setIcon(PluginGuiIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
 	QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath);
@@ -64,8 +63,30 @@ public interface QuiltPluginError {
 
 	QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile);
 
+	QuiltPluginButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action);
+
+	QuiltPluginButton addActionButton(QuiltLoaderText name, Runnable action);
+
+	// /**
+	// * Changes this error message to be "fixed".
+	// */
+	// void setFixed();
+
 	@ApiStatus.NonExtendable
 	public interface QuiltPluginButton {
 		QuiltPluginButton icon(PluginGuiIcon icon);
+
+		/** Enables this button. This is the default state. */
+		default void enable() {
+			setEnabled(true, null);
+		}
+
+		/** Changes the "enabled" state of this button, which controls whether the action associated with this button
+		 * can run.
+		 * 
+		 * @param enabled
+		 * @param disabledMessage Shown when the user hovers over the button and it's disabled. This is ignored when
+		 *            enabled is true. */
+		void setEnabled(boolean enabled, QuiltLoaderText disabledMessage);
 	}
 }

@@ -63,7 +63,7 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
@@ -475,7 +475,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return guiManager;
 	}
 
-	public QuiltPluginError reportError(BasePluginContext reporter, QuiltLoaderText title) {
+	public QuiltDisplayedError reportError(BasePluginContext reporter, QuiltLoaderText title) {
 		QuiltPluginErrorImpl error = new QuiltPluginErrorImpl(reporter.pluginId, title);
 		errors.add(error);
 		return error;
@@ -1732,7 +1732,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		} catch (IOException e) {
 
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.ioexception_files_hidden", e.getMessage());
-			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
 			error.appendReportText("Failed to check if " + describePath(file) + " is hidden or not!");
 			error.appendDescription(
 				QuiltLoaderText.translate("gui.text.ioexception_files_hidden.desc.0", describePath(file))
@@ -1774,7 +1774,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// (I.E zero-byte file)
 
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.error.zipexception.title", e.getMessage());
-			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
 			error.appendReportText("Failed to unzip " + describePath(file) + "!");
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.0", describePath(file)));
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.1"));
@@ -1790,7 +1790,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		} catch (IOException e) {
 
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.error.ioexception.title", e.getMessage());
-			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
 			error.appendReportText("Failed to read " + describePath(file) + "!");
 			error.appendDescription(QuiltLoaderText.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
@@ -1899,7 +1899,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 			Optional<Path> containingFile = getRealContainingFile(file);
 			QuiltLoaderText title = QuiltLoaderText.translate("error.unhandled_mod_file.title", describePath(containingFile.isPresent() ? containingFile.get() : file));
-			QuiltPluginError error = reportError(theQuiltPluginContext, title);
+			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
 			error.appendDescription(QuiltLoaderText.translate("error.unhandled_mod_file.desc"));
 			containingFile.ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", real.getFileName()), real));
 			error.appendReportText("No plugin could load " + describePath(file));

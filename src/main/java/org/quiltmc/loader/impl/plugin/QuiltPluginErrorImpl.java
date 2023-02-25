@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.quiltmc.loader.api.FasterFiles;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
@@ -40,7 +40,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltPluginErrorImpl implements QuiltPluginError {
+public class QuiltPluginErrorImpl implements QuiltDisplayedError {
 
 	final String reportingPlugin;
 	final QuiltLoaderText title;
@@ -60,43 +60,43 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 	}
 
 	@Override
-	public QuiltPluginError appendReportText(String... lines) {
+	public QuiltDisplayedError appendReportText(String... lines) {
 		Collections.addAll(reportLines, lines);
 		return this;
 	}
 
 	@Override
-	public QuiltPluginError setOrdering(int priority) {
+	public QuiltDisplayedError setOrdering(int priority) {
 		this.ordering = priority;
 		return this;
 	}
 
 	@Override
-	public QuiltPluginError appendDescription(QuiltLoaderText... descriptions) {
+	public QuiltDisplayedError appendDescription(QuiltLoaderText... descriptions) {
 		Collections.addAll(description, descriptions);
 		return this;
 	}
 
 	@Override
-	public QuiltPluginError appendAdditionalInformation(QuiltLoaderText... information) {
+	public QuiltDisplayedError appendAdditionalInformation(QuiltLoaderText... information) {
 		Collections.addAll(additionalInfo, information);
 		return this;
 	}
 
 	@Override
-	public QuiltPluginError appendThrowable(Throwable t) {
+	public QuiltDisplayedError appendThrowable(Throwable t) {
 		exceptions.add(t);
 		return this;
 	}
 
 	@Override
-	public QuiltPluginError setIcon(PluginGuiIcon icon) {
+	public QuiltDisplayedError setIcon(PluginGuiIcon icon) {
 		this.icon = icon;
 		return this;
 	}
 
 	private ErrorButton button(QuiltLoaderText name, QuiltBasicButtonAction action) {
-		ErrorButton button = new ErrorButton(name, action);
+		ErrorButton button = new ErrorButton(name, action, null);
 		buttons.add(button);
 		return button;
 	}
@@ -127,6 +127,18 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 
 	@Override
 	public QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile) {
+		// TODO Auto-generated method stub
+		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	@Override
+	public QuiltPluginButton addActionButton(QuiltLoaderText name, Runnable action) {
+		// TODO Auto-generated method stub
+		throw new AbstractMethodError("// TODO: Implement this!");
+	}
+
+	@Override
+	public QuiltPluginButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action) {
 		// TODO Auto-generated method stub
 		throw new AbstractMethodError("// TODO: Implement this!");
 	}
@@ -175,31 +187,32 @@ public class QuiltPluginErrorImpl implements QuiltPluginError {
 		return msg;
 	}
 
+	@Deprecated
 	static class ErrorButton implements QuiltPluginButton {
-		final QuiltLoaderText name;
-		final QuiltBasicButtonAction action;
-		PluginGuiIcon icon;
-		final Map<String, String> arguments = new HashMap<>();
+		final QuiltJsonGui.QuiltJsonButton button;
 
-		public ErrorButton(QuiltLoaderText name, QuiltBasicButtonAction action) {
-			this.name = name;
-			this.action = action;
+		public ErrorButton(QuiltLoaderText name, QuiltBasicButtonAction action, Runnable returnSignalAction) {
+			this.button = new QuiltJsonButton(name.toString(), "", action);
 		}
 
 		protected QuiltJsonButton toGuiButton(QuiltJsonGui json) {
-			String iconStr = icon == null ? action.defaultIcon : PluginIconImpl.fromApi(icon).path;
-			return new QuiltJsonButton(name.toString(), iconStr, action).arguments(arguments);
+			return button;
 		}
 
 		@Override
 		public ErrorButton icon(PluginGuiIcon icon) {
-			this.icon = icon;
+			button.icon(icon);
 			return this;
 		}
 
 		ErrorButton arg(String key, String value) {
-			arguments.put(key, value);
+			button.arg(key, value);
 			return this;
+		}
+
+		@Override
+		public void setEnabled(boolean enabled, QuiltLoaderText disabledMessage) {
+			button.setEnabled(enabled, disabledMessage);
 		}
 	}
 }

@@ -76,7 +76,7 @@ public interface QuiltPluginContext {
 	void lockZip(Path path);
 
 	/** Reports an error, which will be shown in the error gui screen and saved in the crash report file. */
-	QuiltPluginError reportError(QuiltLoaderText title);
+	QuiltDisplayedError reportError(QuiltLoaderText title);
 
 	// ##############
 	// # Scheduling #

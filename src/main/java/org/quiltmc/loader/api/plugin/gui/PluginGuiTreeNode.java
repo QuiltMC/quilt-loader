@@ -18,7 +18,7 @@ package org.quiltmc.loader.api.plugin.gui;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -113,9 +113,9 @@ public interface PluginGuiTreeNode {
 	}
 
 	/** Sets the {@link WarningLevel} of this node to {@link WarningLevel#ERROR}, and associates it with the given
-	 * {@link QuiltPluginError}. */
+	 * {@link QuiltDisplayedError}. */
 	@Contract("_ -> this")
-	default PluginGuiTreeNode setError(Throwable exception, QuiltPluginError reportedError) {
+	default PluginGuiTreeNode setError(Throwable exception, QuiltDisplayedError reportedError) {
 		setDirectLevel(WarningLevel.ERROR);
 		setException(exception);
 		assert reportedError != null;

@@ -40,7 +40,7 @@ import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
@@ -88,7 +88,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
 			overrides = new QuiltOverrides(overrideFile);
 		} catch (ParseException | IOException e) {
-			QuiltPluginError error = context().reportError(
+			QuiltDisplayedError error = context().reportError(
 				QuiltLoaderText.translate("error.quilt_overrides.io_parse.title")
 			);
 			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
@@ -226,7 +226,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			QuiltLoaderText title = QuiltLoaderText.translate(
 				"gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage()
 			);
-			QuiltPluginError error = context().reportError(title);
+			QuiltDisplayedError error = context().reportError(title);
 			String describedPath = context().manager().describePath(qmj);
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));

@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.ModLocation;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -109,7 +109,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());
-			QuiltPluginError error = context().reportError(title);
+			QuiltDisplayedError error = context().reportError(title);
 			String describedPath = context().manager().describePath(fmj);
 			error.appendReportText("Invalid 'fabric.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
