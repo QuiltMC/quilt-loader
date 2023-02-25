@@ -19,7 +19,10 @@ import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltForkServerMain {
 	public static void main(String[] args) {
 		if (args.length < 2 || !"--file".equals(args[0])) {

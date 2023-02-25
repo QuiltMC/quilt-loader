@@ -24,8 +24,11 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** Client entry point for opening communication to a local server. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltForkComms {
 
 	private static final String SYS_PROP = "quiltmc.loader.fork.comms_port";

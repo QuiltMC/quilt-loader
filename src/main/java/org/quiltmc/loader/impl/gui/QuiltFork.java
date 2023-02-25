@@ -21,7 +21,10 @@ import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltFork {
 
 	private static final QuiltForkComms COMMS;
@@ -87,7 +90,7 @@ public class QuiltFork {
 		try {
 			handleMessageFromServer0(msg);
 		} catch (IOException io) {
-			String json = "<failed to write read json>";
+			String json = "<failed to turn sent json into a string>";
 			try {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				LoaderValueFactory.getFactory().write(msg, baos);
