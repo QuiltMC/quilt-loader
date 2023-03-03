@@ -59,12 +59,14 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		URI uri = root.toUri();
 		if (!this.name.equals(uri.getHost())) {
 			throw new RuntimeException(
-				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "', original name = '" + name + "')"
+				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "', original name = '" + name + "').\n"
+					+ "This is a bug with 'sanitizeName(\"" + name + "\")', not a filename issue!"
 			);
 		}
 		if (uri.getAuthority() == null || !uri.getAuthority().contains(this.name)) {
 			throw new RuntimeException(
-				this.name + " wasn't found in the authority of " + uri + " (authority = " + uri.getAuthority() + "')"
+				this.name + " wasn't found in the authority of " + uri + " (authority = " + uri.getAuthority() + "').\n"
+					+ "This is a bug with 'sanitizeName(\"" + name + "\")', not a filename issue!"
 			);
 		}
 	}
