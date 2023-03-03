@@ -59,7 +59,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		URI uri = root.toUri();
 		if (!this.name.equals(uri.getHost())) {
 			throw new RuntimeException(
-				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "', original name = '" + name + "').\n"
+				this.name + " wasn't found as the host of " + uri + " (host = '" + uri.getHost() + "').\n"
 					+ "This is a bug with 'sanitizeName(\"" + name + "\")', not a filename issue!"
 			);
 		}
@@ -90,7 +90,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 
 	// Shamelessly stolen from UnixUriUtils
 	private static final long LOW_MASK = 0x3ff600000000000L;
-	private static final long HIGH_MASK = 0x47fffffe07fffffeL;
+	private static final long HIGH_MASK = 0x07fffffe03fffffeL;
 
 	private static String sanitizeName(String str) {
 		byte[] path = str.getBytes();

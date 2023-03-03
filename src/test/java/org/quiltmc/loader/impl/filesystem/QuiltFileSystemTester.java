@@ -25,8 +25,19 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class QuiltFileSystemTester {
+
+	@ParameterizedTest
+	@ValueSource(strings = { "buildcraft-9.0.0.jar", "extrasounds-2.3.11.19.2-1.19.1~akemi-git-c96fd99.jar" })
+	public void testFilesystemNames(String name) {
+		try (QuiltMemoryFileSystem mfs = new QuiltMemoryFileSystem.ReadWrite(name, true)) {
+			mfs.getRoot();
+		}
+	}
 
 	@Test
 	public void testPathTraversal() {
