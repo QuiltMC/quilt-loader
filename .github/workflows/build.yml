@@ -33,7 +33,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: gradle/wrapper-validation-action@v1
       - run: ./gradlew build publish --stacktrace
-        env:
-          SNAPSHOTS_URL: ${{ secrets.SNAPSHOTS_URL }}
-          SNAPSHOTS_USERNAME: ${{ secrets.SNAPSHOTS_USERNAME }}
-          SNAPSHOTS_PASSWORD: ${{ secrets.SNAPSHOTS_PASSWORD }}
+#        env:
+#          SNAPSHOTS_URL: ${{ secrets.SNAPSHOTS_URL }}
+#          SNAPSHOTS_USERNAME: ${{ secrets.SNAPSHOTS_USERNAME }}
+#          SNAPSHOTS_PASSWORD: ${{ secrets.SNAPSHOTS_PASSWORD }}
