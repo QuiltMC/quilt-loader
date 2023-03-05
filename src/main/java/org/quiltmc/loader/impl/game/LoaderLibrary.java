@@ -26,10 +26,9 @@ import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.quiltmc.config.api.Config;
 import org.quiltmc.json5.JsonReader;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
-import org.quiltmc.loader.util.sat4j.minisat.SolverFactory;
-import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import net.fabricmc.accesswidener.AccessWidener;
@@ -55,11 +54,24 @@ enum LoaderLibrary {
 //
 //	SAT4J_CORE(ContradictionException.class),
 //	SAT4J_PB(SolverFactory.class),
-	SERVER_LAUNCH("quilt-server-launch.properties", EnvType.SERVER); // installer generated jar to run setup loader's class path
+	SERVER_LAUNCH("quilt-server-launch.properties", EnvType.SERVER), // installer generated jar to run setup loader's class path
 //	SERVER_LAUNCHER("net/fabricmc/installer/ServerLauncher.class", EnvType.SERVER); // installer based launch-through method
+	JUNIT_API("org/junit/jupiter/api/Test.class", null),
+	JUNIT_PLATFORM_ENGINE("org/junit/platform/engine/TestEngine.class", null),
+	JUNIT_PLATFORM_LAUNCHER("org/junit/platform/launcher/core/LauncherFactory.class", null),
+	JUNIT_JUPITER("org/junit/jupiter/engine/JupiterTestEngine.class", null),
+	QUILT_LOADER_JUNIT("org/quiltmc/loader/impl/junit/FabricLoaderLauncherSessionListener.class", null),
+
+	// Logging libraries are only loaded from the platform CL when running as a unit test.
+	LOG4J_API("org/apache/logging/log4j/LogManager.class", true),
+	LOG4J_CORE("META-INF/services/org.apache.logging.log4j.spi.Provider", true),
+	LOG4J_CONFIG("log4j2.xml", true),
+	LOG4J_PLUGIN_3("net/minecrell/terminalconsole/util/LoggerNamePatternSelector.class", true),
+	SLF4J_API("org/slf4j/Logger.class", true);
 
 	final Path path;
 	final EnvType env;
+	final boolean junitRunOnly;
 
 	LoaderLibrary(Class<?> cls) {
 		this(UrlUtil.getCodeSource(cls));
@@ -70,9 +82,13 @@ enum LoaderLibrary {
 
 		this.path = path;
 		this.env = null;
+		this.junitRunOnly = false;
 	}
 
 	LoaderLibrary(String file, EnvType env) {
+		this(file, env, false);
+	}
+	LoaderLibrary(String file, EnvType env, boolean junitRunOnly) {
 		URL url = LoaderLibrary.class.getClassLoader().getResource(file);
 
 		try {
@@ -81,9 +97,15 @@ enum LoaderLibrary {
 		} catch (UrlConversionException e) {
 			throw new RuntimeException(e);
 		}
+
+		this.junitRunOnly = junitRunOnly;
 	}
 
-	boolean isApplicable(EnvType env) {
-		return this.env == null || this.env == env;
+	LoaderLibrary(String file, boolean junitRunOnly) {
+		this(file, null, junitRunOnly);
+	}
+
+	boolean isApplicable(EnvType env, boolean junitRun) {
+		return (this.env == null || this.env == env) && (!junitRunOnly || junitRun);
 	}
 }

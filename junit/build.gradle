@@ -1,0 +1,71 @@
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+archivesBaseName = "quilt-loader-junit"
+version = rootProject.version
+group = rootProject.group
+
+def ENV = System.getenv()
+compileJava {
+	options.release.set(8)
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	api project(":")
+
+	api platform("org.junit:junit-bom:5.9.2")
+	api "org.junit.jupiter:junit-jupiter-engine"
+	implementation "org.junit.platform:junit-platform-launcher"
+
+	// HACK: work around proguard only seeing dependencies on the minecraft compile classpath
+	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
+	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
+}
+
+java {
+	withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+
+	if (JavaVersion.current().isJava9Compatible()) {
+		it.options.release = 8
+	}
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			artifactId project.archivesBaseName
+			from components.java
+		}
+	}
+
+	repositories {
+		if (ENV.MAVEN_URL) {
+			maven {
+				url ENV.MAVEN_URL
+				credentials {
+					username ENV.MAVEN_USERNAME
+					password ENV.MAVEN_PASSWORD
+				}
+			}
+		} else if (ENV.SNAPSHOTS_URL) {
+			maven {
+				url ENV.SNAPSHOTS_URL
+
+				credentials {
+					username ENV.SNAPSHOTS_USERNAME
+					password ENV.SNAPSHOTS_PASSWORD
+				}
+			}
+		} else {
+			mavenLocal()
+		}
+	}
+}
