@@ -27,6 +27,7 @@ public final class SystemProperties {
 
 	public static final String GAME_VERSION = "loader.gameVersion";
 	public static final String REMAP_CLASSPATH_FILE = "loader.remapClasspathFile";
+	public static final String UNIT_TEST = "loader.unitTest";
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
 	public static final String MODS_DIRECTORY = "loader.modsDir";
 	public static final String CONFIG_DIRECTORY = "loader.configDir";

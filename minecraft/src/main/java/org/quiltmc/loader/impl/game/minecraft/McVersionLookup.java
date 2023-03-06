@@ -392,7 +392,7 @@ public final class McVersionLookup {
 				if (matcher.matches()) {
 					boolean legacyVersion;
 
-					legacyVersion = Version.of("1.16").compareTo(Version.of(release)) <= 0;
+					legacyVersion = Version.of("1.16").compareTo(Version.of(release)) >= 0;
 
 					// Mark pre-releases as 'beta' versions, except for version 1.16 and before, where they are 'rc'
 					if (legacyVersion) {
