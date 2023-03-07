@@ -445,10 +445,10 @@ class QuiltMainWindow {
 		JScrollPane pane = new JScrollPane();
 		pane.setOpaque(true);
 		pane.getVerticalScrollBar().setUnitIncrement(16);
-		pane.setBackground(Color.WHITE);
 
 		JPanel outerPanel = new JPanel();
 		outerPanel.setLayout(new BorderLayout());
+		outerPanel.setBackground(Color.WHITE);
 
 		JPanel panel = null;
 
