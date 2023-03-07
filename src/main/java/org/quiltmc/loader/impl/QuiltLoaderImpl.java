@@ -57,6 +57,7 @@ import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -76,6 +77,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
+import org.quiltmc.loader.impl.gui.QuiltFork;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
@@ -605,7 +607,11 @@ public final class QuiltLoaderImpl {
 			.arg("folder", getModsDir().toString());
 
 		try {
-			QuiltGuiEntry.open(tree, null, true);
+			try {
+				QuiltFork.openErrorGui(tree, true);
+			} catch (LoaderGuiClosed ignored) {
+				// Ignored
+			}
 			System.exit(1);
 			throw new Error("System.exit(1) Failed!");
 		} catch (Exception e) {

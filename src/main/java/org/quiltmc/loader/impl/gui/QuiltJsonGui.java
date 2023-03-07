@@ -333,6 +333,7 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 					throw new IOException("Can only receive 'closed' on the client!");
 				}
 				onClosedFuture.complete(null);
+				return;
 			}
 			default: {
 				throw new IOException("Unknown update '" + name + "'");

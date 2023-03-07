@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError.QuiltPluginButton;
@@ -34,7 +35,14 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 		this.text = text;
 		this.icon = icon;
 		this.action = action;
-		this.returnSignalAction = returnSignalAction;
+		if (action == QuiltBasicButtonAction.RETURN_SIGNAL_ONCE || action == QuiltBasicButtonAction.RETURN_SIGNAL_MANY) {
+			if (returnSignalAction == null) {
+				throw new NullPointerException("returnSignalAction");
+			}
+			this.returnSignalAction = returnSignalAction;
+		} else if (returnSignalAction != null) {
+			throw new IllegalArgumentException("Don't set a return signal action without using QuiltBasicButtonAction.RETURN_SIGNAL!");
+		}
 	}
 
 	QuiltJsonButton(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
@@ -104,11 +112,34 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 		}
 
 		if (shouldSendUpdates()) {
-			// TODO: Send the new state!
+			sendSignal(enabled ? "enable" : "disable");
 		}
 	}
 
 	public void sendClickToClient() {
 		sendSignal("click");
+	}
+
+	@Override
+	void handleUpdate(String name, LObject data) throws IOException {
+		switch (name) {
+			case "click": {
+				if (returnSignalAction != null) {
+					returnSignalAction.run();
+				} else {
+					throw new IOException("Shouldn't receive button clicks for non-return-signal actions! " + action);
+				}
+				break;
+			}
+			case "enable": {
+				
+			}
+			case "disable": {
+				// TODO: Implement enabled/disabled and propogate this to the actual swing gui!
+			}
+			default: {
+				super.handleUpdate(name, data);
+			}
+		}
 	}
 }

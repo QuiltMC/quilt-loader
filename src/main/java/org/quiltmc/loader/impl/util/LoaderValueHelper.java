@@ -31,6 +31,14 @@ public class LoaderValueHelper<T extends Throwable> {
 		return ex;
 	}
 
+	public LoaderValue expectValue(LoaderValue.LObject obj, String key) throws T {
+		LoaderValue value = obj.get(key);
+		if (value == null) {
+			throw except("Expected to find '" + key + "' , but it was missing!");
+		}
+		return value;
+	}
+
 	public String expectString(LoaderValue.LObject obj, String key) throws T {
 		LoaderValue value = obj.get(key);
 		if (value == null || value.type() != LType.STRING) {

@@ -21,10 +21,16 @@ abstract class QuiltGuiSyncBase {
 	static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
 	static final Map<Integer, QuiltGuiSyncBase> ALL_OBJECTS = new ConcurrentHashMap<>();
 
+	enum WriteState {
+		NOT_YET,
+		STARTED,
+		FINISHED;
+	}
+
 	final QuiltGuiSyncBase parent;
 	final int id;
 	Map<Integer, QuiltGuiSyncBase> children;
-	private boolean written = false;
+	private WriteState writeState = WriteState.NOT_YET;
 
 	private QuiltGuiSyncBase(QuiltGuiSyncBase parent, int id) {
 		this.parent = parent;
@@ -116,14 +122,14 @@ abstract class QuiltGuiSyncBase {
 	}
 
 	void handleUpdate(String name, LObject data) throws IOException {
-		throw new IOException("Unknown remote update '" + name + "'");
+		throw new IOException("Unknown remote update '" + name + "' in " + getClass());
 	}
 
 	/** Used for making sure we don't get desynced. */
 	abstract String syncType();
 
 	public final void send() {
-		if (written) {
+		if (writeState != WriteState.NOT_YET) {
 			return;
 		}
 		Map<String, LoaderValue> map = new HashMap<>();
@@ -134,11 +140,12 @@ abstract class QuiltGuiSyncBase {
 	}
 
 	public final LoaderValue.LObject write() {
-		written = true;
+		writeState = WriteState.STARTED;
 		Map<String, LoaderValue> map = new HashMap<>();
 		map.put("id", lvf().number(id));
 		map.put("syncType", lvf().string(syncType()));
 		write0(map);
+		writeState = WriteState.FINISHED;
 		return lvf().object(map);
 	}
 
@@ -148,20 +155,22 @@ abstract class QuiltGuiSyncBase {
 		int i = 0;
 		LoaderValue[] array = new LoaderValue[from.size()];
 		for (QuiltGuiSyncBase sync : from) {
-			if (sync == null) {
-				throw new NullPointerException();
-			}
-
-			if (sync.parent == this) {
-				array[i++] = sync.write();
-			} else {
-				if (!sync.written) {
-					sync.send();
-				}
-				array[i++] = lvf().number(sync.id);
-			}
+			array[i++] = writeChild(sync);
 		}
 		return array;
+	}
+
+	protected final LoaderValue writeChild(QuiltGuiSyncBase sync) {
+		if (sync == null) {
+			throw new NullPointerException();
+		}
+
+		if (sync.parent == this && writeState == WriteState.STARTED) {
+			return sync.write();
+		} else {
+			sync.send();
+			return lvf().number(sync.id);
+		}
 	}
 
 	protected <T extends QuiltGuiSyncBase> T readChild(LoaderValue value, Class<T> clazz) throws IOException {
@@ -186,6 +195,6 @@ abstract class QuiltGuiSyncBase {
 	}
 
 	final boolean shouldSendUpdates() {
-		return written;
+		return writeState == WriteState.FINISHED;
 	}
 }

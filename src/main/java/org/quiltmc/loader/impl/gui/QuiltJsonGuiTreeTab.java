@@ -3,7 +3,6 @@ package org.quiltmc.loader.impl.gui;
 import java.io.IOException;
 import java.util.Map;
 
-import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 
@@ -25,25 +24,17 @@ public final class QuiltJsonGuiTreeTab extends QuiltGuiSyncBase {
 	QuiltJsonGuiTreeTab(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
 		super(parent, obj);
 		filterLevel = QuiltTreeWarningLevel.read(HELPER.expectString(obj, "level"));
-		node = new QuiltStatusNode(null, HELPER.expectObject(obj, "node"));
+		node = readChild(HELPER.expectValue(obj, "node"), QuiltStatusNode.class);
 	}
 
 	@Override
 	protected void write0(Map<String, LoaderValue> map) {
 		map.put("level", lvf().string(filterLevel.lowerCaseName));
-		// map.put("node", node)
+		map.put("node", writeChild(node));
 	}
 
 	@Override
 	String syncType() {
 		return "tree_tab";
-	}
-
-	void write(JsonWriter writer) throws IOException {
-		writer.beginObject();
-		writer.name("level").value(filterLevel.lowerCaseName);
-		writer.name("node");
-		node.write(writer);
-		writer.endObject();
 	}
 }

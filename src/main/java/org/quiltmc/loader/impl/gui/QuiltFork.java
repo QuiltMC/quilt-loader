@@ -68,6 +68,7 @@ public class QuiltFork {
 		for (QuiltDisplayedError error : errors) {
 			tree.messages.add((QuiltJsonGuiMessage) error);
 		}
+//		tree.addButton(", action)
 //		tree.buttons.add()
 		openErrorGui(tree, true);
 	}

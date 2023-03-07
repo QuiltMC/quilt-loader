@@ -136,8 +136,13 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		return this;
 	}
 
+
 	private QuiltJsonButton button(QuiltLoaderText name, QuiltBasicButtonAction action) {
-		QuiltJsonButton button = new QuiltJsonButton(this, name.toString(), action.defaultIcon, action);
+		return button(name, action, null);
+	}
+
+	private QuiltJsonButton button(QuiltLoaderText name, QuiltBasicButtonAction action, Runnable run) {
+		QuiltJsonButton button = new QuiltJsonButton(this, name.toString(), action.defaultIcon, action, run);
 		buttons.add(button);
 		return button;
 	}
@@ -178,17 +183,14 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	@Override
 	public QuiltPluginButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action) {
-		QuiltJsonButton button = button(name, QuiltBasicButtonAction.RETURN_SIGNAL_ONCE);
-		button.setAction(action);
+		QuiltJsonButton button = button(name, QuiltBasicButtonAction.RETURN_SIGNAL_ONCE, action);
 		button.disabledText = disabledText.toString();
 		return button;
 	}
 
 	@Override
 	public QuiltPluginButton addActionButton(QuiltLoaderText name, Runnable action) {
-		QuiltJsonButton button = button(name, QuiltBasicButtonAction.RETURN_SIGNAL_MANY);
-		button.setAction(action);
-		return button;
+		return button(name, QuiltBasicButtonAction.RETURN_SIGNAL_MANY, action);
 	}
 
 	@Override
@@ -197,6 +199,10 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 			sendSignal("fixed");
 		}
 		fixed = true;
+	}
+
+	public boolean isFixed() {
+		return fixed;
 	}
 
 	@Override
@@ -232,5 +238,4 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		}
 		return lines;
 	}
-
 }

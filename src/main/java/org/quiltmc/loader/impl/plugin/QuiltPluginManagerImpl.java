@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -1267,6 +1268,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if
 	 * this is the case. */
 	private void checkForErrors() throws TreeContainsModError, QuiltReportedError {
+
+		Iterator<QuiltJsonGuiMessage> iterator = errors.iterator();
+		while (iterator.hasNext()) {
+			if (iterator.next().isFixed()) {
+				iterator.remove();
+			}
+		}
 
 		if (!errors.isEmpty()) {
 			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load"));

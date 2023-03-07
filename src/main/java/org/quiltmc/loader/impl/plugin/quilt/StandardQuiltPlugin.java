@@ -110,7 +110,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			} catch (LoaderGuiException ex) {
 				e.addSuppressed(ex);
 			} catch (LoaderGuiClosed ex) {
-				throw new RuntimeException("Failed to read the quilt-loader-overrides.json file!", e);
+				if (overrides == null) {
+					throw new RuntimeException("Failed to read the quilt-loader-overrides.json file!", e);
+				}
 			}
 		}
 	}

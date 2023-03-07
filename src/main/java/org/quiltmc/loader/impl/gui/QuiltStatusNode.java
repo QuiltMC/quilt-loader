@@ -5,19 +5,19 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 
-public final class QuiltStatusNode {
-	private QuiltStatusNode parent;
+public final class QuiltStatusNode extends QuiltGuiSyncBase {
+	private final QuiltStatusNode parent;
 
 	public String name;
 
@@ -36,45 +36,43 @@ public final class QuiltStatusNode {
 	public String details;
 
 	QuiltStatusNode(QuiltStatusNode parent, String name) {
+		super(parent);
 		this.parent = parent;
 		this.name = name;
 	}
 
-	QuiltStatusNode(QuiltStatusNode parent, LoaderValue.LObject obj) throws IOException {
-		this.parent = parent;
-		name = QuiltJsonGui.HELPER.expectString(obj, "name");
-		iconType = QuiltJsonGui.HELPER.expectString(obj, "icon");
-		warningLevel = QuiltTreeWarningLevel.read(QuiltJsonGui.HELPER.expectString(obj, "level"));
-		expandByDefault = QuiltJsonGui.HELPER.expectBoolean(obj, "expandByDefault");
-		details = obj.containsKey("details") ? QuiltJsonGui.HELPER.expectString(obj, "details") : null;
-		for (LoaderValue sub : QuiltJsonGui.HELPER.expectArray(obj, "children")) {
-			children.add(new QuiltStatusNode(this, QuiltJsonGui.HELPER.expectObject(sub)));
+	QuiltStatusNode(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
+		super(parent, obj);
+		if (parent instanceof QuiltStatusNode) {
+			this.parent = (QuiltStatusNode) parent;
+		} else {
+			this.parent = null;
+		}
+		name = HELPER.expectString(obj, "name");
+		iconType = HELPER.expectString(obj, "icon");
+		warningLevel = QuiltTreeWarningLevel.read(HELPER.expectString(obj, "level"));
+		expandByDefault = HELPER.expectBoolean(obj, "expandByDefault");
+		details = obj.containsKey("details") ? HELPER.expectString(obj, "details") : null;
+		for (LoaderValue sub : HELPER.expectArray(obj, "children")) {
+			children.add(readChild(sub, QuiltStatusNode.class));
 		}
 	}
 
-	void write(JsonWriter writer) throws IOException {
-		writer.beginObject();
-		writer.name("name").value(name);
-		writer.name("icon").value(iconType);
-		writer.name("level").value(warningLevel.lowerCaseName);
-		writer.name("expandByDefault").value(expandByDefault);
+	@Override
+	protected void write0(Map<String, LoaderValue> map) {
+		map.put("name", lvf().string(name));
+		map.put("icon", lvf().string(iconType));
+		map.put("level", lvf().string(warningLevel.lowerCaseName));
+		map.put("expandByDefault", lvf().bool(expandByDefault));
 		if (details != null) {
-			writer.name("details").value(details);
+			map.put("details", lvf().string(details));
 		}
-		writer.name("children").beginArray();
-
-		for (QuiltStatusNode node : children) {
-			node.write(writer);
-		}
-
-		writer.endArray();
-		writer.endObject();
+		map.put("children", lvf().array(write(children)));
 	}
 
-	public void moveTo(QuiltStatusNode newParent) {
-		parent.children.remove(this);
-		this.parent = newParent;
-		newParent.children.add(this);
+	@Override
+	String syncType() {
+		return "tree_node";
 	}
 
 	public QuiltTreeWarningLevel getMaximumWarningLevel() {
@@ -244,42 +242,6 @@ public final class QuiltStatusNode {
 		}
 
 		return sub;
-	}
-
-	/** If this node has one child then it merges the child node into this one. */
-	public void mergeWithSingleChild(String join) {
-		if (children.size() != 1) {
-			return;
-		}
-
-		QuiltStatusNode child = children.remove(0);
-		name += join + child.name;
-
-		for (QuiltStatusNode cc : child.children) {
-			cc.parent = this;
-			children.add(cc);
-		}
-
-		child.children.clear();
-	}
-
-	public void mergeSingleChildFilePath(String folderType) {
-		if (!iconType.equals(folderType)) {
-			return;
-		}
-
-		while (children.size() == 1 && children.get(0).iconType.equals(folderType)) {
-			mergeWithSingleChild("/");
-		}
-
-		children.sort((a, b) -> a.name.compareTo(b.name));
-		mergeChildFilePaths(folderType);
-	}
-
-	public void mergeChildFilePaths(String folderType) {
-		for (QuiltStatusNode node : children) {
-			node.mergeSingleChildFilePath(folderType);
-		}
 	}
 
 	public QuiltStatusNode getFileNode(String file, String folderType, String fileType) {
