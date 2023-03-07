@@ -80,6 +80,7 @@ import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiTreeTab;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -516,11 +517,11 @@ public final class QuiltLoaderImpl {
 			}
 
 			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, msg);
-			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
+			QuiltJsonGuiTreeTab tab = tree.addTab("Files");
 			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
 			plugins.guiFileRoot.toNode(tab.node, false);
 
-			QuiltJsonGui.QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
+			QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
 			plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
 			plugins.guiModsRoot.toNode(tab2.node, false);
 
@@ -585,11 +586,11 @@ public final class QuiltLoaderImpl {
 		// TODO: Move tab creation to the plugin manager
 		// so that the plugin manager can have tabs of both the file list
 		// AND mod list!
-		QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
+		QuiltJsonGuiTreeTab tab = tree.addTab("Files");
 		plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
 		plugins.guiFileRoot.toNode(tab.node, false);
 
-		QuiltJsonGui.QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
+		QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
 		plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
 		plugins.guiModsRoot.toNode(tab2.node, false);
 

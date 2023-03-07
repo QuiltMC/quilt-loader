@@ -84,9 +84,6 @@ import javax.swing.tree.TreeNode;
 
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

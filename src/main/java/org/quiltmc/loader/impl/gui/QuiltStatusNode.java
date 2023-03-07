@@ -1,0 +1,310 @@
+package org.quiltmc.loader.impl.gui;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+
+public final class QuiltStatusNode {
+	private QuiltStatusNode parent;
+
+	public String name;
+
+	/** The icon type. There can be a maximum of 2 decorations (added with "+" symbols), or 3 if the
+	 * {@link #setWarningLevel(QuiltTreeWarningLevel) warning level} is set to
+	 * {@link QuiltTreeWarningLevel#NONE } */
+	public String iconType = QuiltJsonGui.ICON_TYPE_DEFAULT;
+
+	private QuiltTreeWarningLevel warningLevel = QuiltTreeWarningLevel.NONE;
+
+	public boolean expandByDefault = false;
+
+	public final List<QuiltStatusNode> children = new ArrayList<>();
+
+	/** Extra text for more information. Lines should be separated by "\n". */
+	public String details;
+
+	QuiltStatusNode(QuiltStatusNode parent, String name) {
+		this.parent = parent;
+		this.name = name;
+	}
+
+	QuiltStatusNode(QuiltStatusNode parent, LoaderValue.LObject obj) throws IOException {
+		this.parent = parent;
+		name = QuiltJsonGui.HELPER.expectString(obj, "name");
+		iconType = QuiltJsonGui.HELPER.expectString(obj, "icon");
+		warningLevel = QuiltTreeWarningLevel.read(QuiltJsonGui.HELPER.expectString(obj, "level"));
+		expandByDefault = QuiltJsonGui.HELPER.expectBoolean(obj, "expandByDefault");
+		details = obj.containsKey("details") ? QuiltJsonGui.HELPER.expectString(obj, "details") : null;
+		for (LoaderValue sub : QuiltJsonGui.HELPER.expectArray(obj, "children")) {
+			children.add(new QuiltStatusNode(this, QuiltJsonGui.HELPER.expectObject(sub)));
+		}
+	}
+
+	void write(JsonWriter writer) throws IOException {
+		writer.beginObject();
+		writer.name("name").value(name);
+		writer.name("icon").value(iconType);
+		writer.name("level").value(warningLevel.lowerCaseName);
+		writer.name("expandByDefault").value(expandByDefault);
+		if (details != null) {
+			writer.name("details").value(details);
+		}
+		writer.name("children").beginArray();
+
+		for (QuiltStatusNode node : children) {
+			node.write(writer);
+		}
+
+		writer.endArray();
+		writer.endObject();
+	}
+
+	public void moveTo(QuiltStatusNode newParent) {
+		parent.children.remove(this);
+		this.parent = newParent;
+		newParent.children.add(this);
+	}
+
+	public QuiltTreeWarningLevel getMaximumWarningLevel() {
+		return warningLevel;
+	}
+
+	public void setWarningLevel(QuiltTreeWarningLevel level) {
+		if (this.warningLevel == level || level == null) {
+			return;
+		}
+
+		if (warningLevel.isHigherThan(level)) {
+			// Reject high -> low level changes, since it's probably a mistake
+		} else {
+			if (parent != null && level.isHigherThan(parent.warningLevel)) {
+				parent.setWarningLevel(level);
+			}
+
+			this.warningLevel = level;
+		}
+	}
+
+	public void setError() {
+		setWarningLevel(QuiltTreeWarningLevel.ERROR);
+	}
+
+	public void setWarning() {
+		setWarningLevel(QuiltTreeWarningLevel.WARN);
+	}
+
+	public void setInfo() {
+		setWarningLevel(QuiltTreeWarningLevel.INFO);
+	}
+
+	public QuiltStatusNode addChild(String string) {
+		int indent = 0;
+		QuiltTreeWarningLevel level = null;
+
+		while (string.startsWith("\t")) {
+			indent++;
+			string = string.substring(1);
+		}
+
+		string = string.trim();
+
+		if (string.length() > 1) {
+			if (Character.isWhitespace(string.charAt(1))) {
+				level = QuiltTreeWarningLevel.fromChar(string.charAt(0));
+
+				if (level != null) {
+					string = string.substring(2);
+				}
+			}
+		}
+
+		string = string.trim();
+		String icon = "";
+
+		if (string.length() > 3) {
+			if ('$' == string.charAt(0)) {
+				Pattern p = Pattern.compile("\\$([a-z.+-]+)\\$");
+				Matcher match = p.matcher(string);
+				if (match.find()) {
+					icon = match.group(1);
+					string = string.substring(icon.length() + 2);
+				}
+			}
+		}
+
+		string = string.trim();
+
+		QuiltStatusNode to = this;
+
+		for (; indent > 0; indent--) {
+			if (to.children.isEmpty()) {
+				QuiltStatusNode node = new QuiltStatusNode(to, "");
+				to.children.add(node);
+				to = node;
+			} else {
+				to = to.children.get(to.children.size() - 1);
+			}
+
+			to.expandByDefault = true;
+		}
+
+		QuiltStatusNode child = new QuiltStatusNode(to, string);
+		child.setWarningLevel(level);
+		child.iconType = icon;
+		to.children.add(child);
+		return child;
+	}
+
+	public QuiltStatusNode addException(Throwable exception) {
+		return addException(
+			this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity()
+		);
+	}
+
+	public QuiltStatusNode addCleanedException(Throwable exception) {
+		return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, e -> {
+			// Remove some self-repeating exception traces from the tree
+			// (for example the RuntimeException that is is created unnecessarily by ForkJoinTask)
+			Throwable cause;
+
+			while ((cause = e.getCause()) != null) {
+				if (e.getSuppressed().length > 0) {
+					break;
+				}
+
+				String msg = e.getMessage();
+
+				if (msg == null) {
+					msg = e.getClass().getName();
+				}
+
+				if (!msg.equals(cause.getMessage()) && !msg.equals(cause.toString())) {
+					break;
+				}
+
+				e = cause;
+			}
+
+			return e;
+		});
+	}
+
+	private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception,
+		UnaryOperator<Throwable> filter) {
+		if (!seen.add(exception)) {
+			return node;
+		}
+
+		exception = filter.apply(exception);
+		QuiltStatusNode sub = node.addExceptionNode(exception);
+
+		for (Throwable t : exception.getSuppressed()) {
+			addException(sub, seen, t, filter);
+		}
+
+		if (exception.getCause() != null) {
+			addException(sub, seen, exception.getCause(), filter);
+		}
+
+		return sub;
+	}
+
+	private QuiltStatusNode addExceptionNode(Throwable exception) {
+		String msg;
+
+		if (exception instanceof FormattedException) {
+			msg = Objects.toString(exception.getMessage());
+		} else if (exception.getMessage() == null || exception.getMessage().isEmpty()) {
+			msg = exception.toString();
+		} else {
+			msg = String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage());
+		}
+
+		String[] lines = msg.split("\n");
+
+		QuiltStatusNode sub = new QuiltStatusNode(this, lines[0]);
+		children.add(sub);
+		sub.setError();
+		sub.expandByDefault = true;
+
+		for (int i = 1; i < lines.length; i++) {
+			sub.addChild(lines[i]);
+		}
+
+		return sub;
+	}
+
+	/** If this node has one child then it merges the child node into this one. */
+	public void mergeWithSingleChild(String join) {
+		if (children.size() != 1) {
+			return;
+		}
+
+		QuiltStatusNode child = children.remove(0);
+		name += join + child.name;
+
+		for (QuiltStatusNode cc : child.children) {
+			cc.parent = this;
+			children.add(cc);
+		}
+
+		child.children.clear();
+	}
+
+	public void mergeSingleChildFilePath(String folderType) {
+		if (!iconType.equals(folderType)) {
+			return;
+		}
+
+		while (children.size() == 1 && children.get(0).iconType.equals(folderType)) {
+			mergeWithSingleChild("/");
+		}
+
+		children.sort((a, b) -> a.name.compareTo(b.name));
+		mergeChildFilePaths(folderType);
+	}
+
+	public void mergeChildFilePaths(String folderType) {
+		for (QuiltStatusNode node : children) {
+			node.mergeSingleChildFilePath(folderType);
+		}
+	}
+
+	public QuiltStatusNode getFileNode(String file, String folderType, String fileType) {
+		QuiltStatusNode fileNode = this;
+
+		pathIteration: for (String s : file.split("/")) {
+			if (s.isEmpty()) {
+				continue;
+			}
+
+			for (QuiltStatusNode c : fileNode.children) {
+				if (c.name.equals(s)) {
+					fileNode = c;
+					continue pathIteration;
+				}
+			}
+
+			if (fileNode.iconType.equals(QuiltJsonGui.ICON_TYPE_DEFAULT)) {
+				fileNode.iconType = folderType;
+			}
+
+			fileNode = fileNode.addChild(s);
+		}
+
+		fileNode.iconType = fileType;
+		return fileNode;
+	}
+}

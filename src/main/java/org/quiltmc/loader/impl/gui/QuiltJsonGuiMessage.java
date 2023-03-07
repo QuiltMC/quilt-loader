@@ -16,7 +16,6 @@ import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
 
 public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements QuiltDisplayedError {
 

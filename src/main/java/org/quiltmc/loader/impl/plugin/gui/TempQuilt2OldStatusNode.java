@@ -27,8 +27,8 @@ import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.PluginIconImpl;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -66,7 +66,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 		childrenByAlphabetical = new ArrayList<>();
 	}
 
-	public void toNode(QuiltJsonGui.QuiltStatusNode node, boolean debug) {
+	public void toNode(QuiltStatusNode node, boolean debug) {
 		node.name = text.toString();
 
 		if (mainIcon != GuiManagerImpl.ICON_NULL) {
