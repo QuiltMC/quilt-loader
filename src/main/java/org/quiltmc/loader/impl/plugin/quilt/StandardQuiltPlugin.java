@@ -64,6 +64,7 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.SpecificOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -91,27 +92,35 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		try {
 			overrides = new QuiltOverrides(overrideFile);
 		} catch (ParseException | IOException e) {
-			String key = "error.quilt_overrides.io_parse.title";
-			QuiltDisplayedError error = context().reportError(QuiltLoaderText.translate(key));
+			Exception[] mostRecentException = { e };
+			QuiltLoaderText title = QuiltLoaderText.translate("error.quilt_overrides.io_parse.title");
+			QuiltDisplayedError error = QuiltLoaderGui.createError(title);
 			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
 			error.appendThrowable(e);
-			error.addFileEditButton(QuiltLoaderText.translate("button.edit_file", overrideFile.getFileName()), overrideFile);
+			error.addFileEditButton(overrideFile).icon(QuiltLoaderGui.iconJsonFile());
 			error.addActionButton(QuiltLoaderText.translate("button.reload"), () -> {
 				try {
 					overrides = new QuiltOverrides(overrideFile);
 					error.setFixed();
 				} catch (ParseException | IOException e2) {
+					mostRecentException[0] = e2;
 					e2.printStackTrace();
 				}
-			});
+			}).icon(QuiltLoaderGui.iconReload());
 
 			try {
 				QuiltLoaderGui.openErrorGui(error);
 			} catch (LoaderGuiException ex) {
 				e.addSuppressed(ex);
-			} catch (LoaderGuiClosed ex) {
+			} catch (LoaderGuiClosed closed) {
 				if (overrides == null) {
-					throw new RuntimeException("Failed to read the quilt-loader-overrides.json file!", e);
+					Exception ex = mostRecentException[0];
+					QuiltDisplayedError error2 = context().reportError(title);
+					error2.appendDescription(QuiltLoaderText.of(ex.getMessage()));
+					error2.addFileViewButton(overrideFile);
+					error2.appendReportText("Failed to read the quilt-loader-overrides.json file!");
+					error2.appendThrowable(ex);
+					context().haltLoading();
 				}
 			}
 		}

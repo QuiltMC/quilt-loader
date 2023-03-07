@@ -605,6 +605,7 @@ public final class QuiltLoaderImpl {
 
 		tree.addButton(QuiltLoaderText.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
 			.arg("folder", getModsDir().toString());
+		tree.addButton(QuiltLoaderText.translate("button.exit").toString(), QuiltBasicButtonAction.CLOSE);
 
 		try {
 			try {

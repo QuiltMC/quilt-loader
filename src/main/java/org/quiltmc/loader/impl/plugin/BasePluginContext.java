@@ -89,6 +89,11 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
+	public void haltLoading() {
+		manager.haltLoading(this);
+	}
+
+	@Override
 	public <V> QuiltPluginTask<V> submit(Callable<V> task) {
 		return manager.submit(this, task);
 	}

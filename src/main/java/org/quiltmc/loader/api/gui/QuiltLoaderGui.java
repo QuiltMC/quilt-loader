@@ -74,6 +74,10 @@ public class QuiltLoaderGui {
 		return GuiManagerImpl.ICON_CONTINUE_BUT_IGNORE;
 	}
 
+	public static QuiltLoaderIcon iconReload() {
+		return GuiManagerImpl.ICON_RELOAD;
+	}
+
 	public static QuiltLoaderIcon iconFolder() {
 		return GuiManagerImpl.ICON_FOLDER;
 	}

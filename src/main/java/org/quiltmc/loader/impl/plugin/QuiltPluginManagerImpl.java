@@ -142,9 +142,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<TentativeLoadOption, BasePluginContext> tentativeLoadOptions = new LinkedHashMap<>();
 
 	private final StandardQuiltPlugin theQuiltPlugin;
-	final BuiltinPluginContext theQuiltPluginContext;
 	private final StandardFabricPlugin theFabricPlugin;
-	private final BuiltinPluginContext theFabricPluginContext;
+
+	BuiltinPluginContext theQuiltPluginContext;
+	BuiltinPluginContext theFabricPluginContext;
 
 	final Map<QuiltLoaderPlugin, BasePluginContext> plugins = new LinkedHashMap<>();
 	final Map<String, QuiltPluginContextImpl> pluginsById = new HashMap<>();
@@ -202,9 +203,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		mainThreadTasks.add(new MainThreadTask.ScanModFolderTask(modsDir, QUILT_ID));
 
 		theQuiltPlugin = new StandardQuiltPlugin();
-		theQuiltPluginContext = addBuiltinPlugin(theQuiltPlugin, QUILT_ID);
 		theFabricPlugin = new StandardFabricPlugin();
-		theFabricPluginContext = addBuiltinPlugin(theFabricPlugin, "quilted_fabric_loader");
 	}
 
 	private BuiltinPluginContext addBuiltinPlugin(BuiltinQuiltPlugin plugin, String id) {
@@ -478,9 +477,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	public QuiltDisplayedError reportError(BasePluginContext reporter, QuiltLoaderText title) {
-		QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(null, reporter.pluginId, title);
+		QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(null, reporter != null ? reporter.pluginId : null, title);
 		errors.add(error);
 		return error;
+	}
+
+	public void haltLoading(BasePluginContext reporter) {
+		try {
+			checkForErrors();
+		} catch (TreeContainsModError | QuiltReportedError e) {
+			throw HaltLoadingError.INSTANCE;
+		}
+		throw new Error();
 	}
 
 	// ############
@@ -526,7 +534,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				.addOpenQuiltSupportButton();
 
 			break outer;
-		} catch (TreeContainsModError e) {
+		} catch (TreeContainsModError | HaltLoadingError e) {
 			report = new QuiltReport("Quilt Loader: Load Error Report");
 			break outer;
 		} catch (TimeoutException e) {
@@ -1042,6 +1050,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	private ModSolveResultImpl runInternal(boolean scanClasspath) throws ModResolutionException, TimeoutException {
+
+		theQuiltPluginContext = addBuiltinPlugin(theQuiltPlugin, QUILT_ID);
+		theFabricPluginContext = addBuiltinPlugin(theFabricPlugin, "quilted_fabric_loader");
 
 		if (game != null) {
 			theQuiltPlugin.addBuiltinMods(game);

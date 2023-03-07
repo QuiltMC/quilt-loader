@@ -51,7 +51,17 @@ public interface QuiltDisplayedError {
 	QuiltDisplayedError setIcon(QuiltLoaderIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
+	default QuiltPluginButton addFileViewButton(Path openedPath) {
+		return addFileViewButton(QuiltLoaderText.translate("button.view_file", openedPath.getFileName()), openedPath);
+	}
+
+	/** Adds a button to this error, which will open a file browser, selecting the given file. */
 	QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath);
+
+	/** Adds a button to this error, which will open a file editor, editing the given file. */
+	default QuiltPluginButton addFileEditButton(Path openedPath) {
+		return addFileEditButton(QuiltLoaderText.translate("button.edit_file", openedPath.getFileName()), openedPath);
+	}
 
 	/** Adds a button to this error, which will open a file editor, editing the given file. */
 	QuiltPluginButton addFileEditButton(QuiltLoaderText name, Path openedPath);

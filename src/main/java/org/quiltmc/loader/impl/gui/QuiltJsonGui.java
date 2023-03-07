@@ -126,7 +126,7 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 	}
 
 	public enum QuiltBasicButtonAction {
-		CLOSE(ICON_TYPE_DEFAULT),
+		CLOSE("level_error"),
 		CONTINUE(ICON_TYPE_CONTINUE),
 		VIEW_FILE(ICON_TYPE_GENERIC_FILE, "file"),
 		EDIT_FILE(ICON_TYPE_GENERIC_FILE, "file"),
