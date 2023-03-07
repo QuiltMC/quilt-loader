@@ -39,6 +39,24 @@ public class LoaderValueHelper<T extends Throwable> {
 		return value.asString();
 	}
 
+	public String expectStringOrNull(LoaderValue.LObject obj, String key) throws T {
+		LoaderValue value = obj.get(key);
+		if (value == null) {
+			throw except("Expected to find '" + key + "' as a string or a null, but it was missing!");
+		}
+		switch (value.type()) {
+			case STRING: {
+				return value.asString();
+			}
+			case NULL: {
+				return null;
+			}
+			default: {
+				throw except("Expected to find '" + key + "' as a string, but got " + value);
+			}
+		}
+	}
+
 	public boolean expectBoolean(LoaderValue.LObject obj, String key) throws T {
 		LoaderValue value = obj.get(key);
 		if (value == null || value.type() != LType.BOOLEAN) {
@@ -76,5 +94,12 @@ public class LoaderValueHelper<T extends Throwable> {
 			throw except("Expected " + value + " to be an object!");
 		}
 		return value.asObject();
+	}
+
+	public String expectString(LoaderValue value) throws T {
+		if (value == null || value.type() != LType.STRING) {
+			throw except("Expected " + value + " to be a string!");
+		}
+		return value.asString();
 	}
 }

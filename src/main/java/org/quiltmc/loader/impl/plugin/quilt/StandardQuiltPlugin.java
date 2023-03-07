@@ -35,6 +35,11 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.gui.LoaderGuiClosed;
+import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
@@ -42,11 +47,9 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -84,15 +87,31 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	private void loadOverrides() {
+		Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
 		try {
-			Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
 			overrides = new QuiltOverrides(overrideFile);
 		} catch (ParseException | IOException e) {
-			QuiltDisplayedError error = context().reportError(
-				QuiltLoaderText.translate("error.quilt_overrides.io_parse.title")
-			);
+			String key = "error.quilt_overrides.io_parse.title";
+			QuiltDisplayedError error = context().reportError(QuiltLoaderText.translate(key));
 			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
 			error.appendThrowable(e);
+			error.addFileEditButton(QuiltLoaderText.translate("button.edit_file", overrideFile.getFileName()), overrideFile);
+			error.addActionButton(QuiltLoaderText.translate("button.reload"), () -> {
+				try {
+					overrides = new QuiltOverrides(overrideFile);
+					error.setFixed();
+				} catch (ParseException | IOException e2) {
+					e2.printStackTrace();
+				}
+			});
+
+			try {
+				QuiltLoaderGui.openErrorGui(error);
+			} catch (LoaderGuiException ex) {
+				e.addSuppressed(ex);
+			} catch (LoaderGuiClosed ex) {
+				throw new RuntimeException("Failed to read the quilt-loader-overrides.json file!", e);
+			}
 		}
 	}
 
@@ -183,7 +202,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, ModLocation location, boolean isZip,
+	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip,
 		PluginGuiTreeNode guiNode) throws IOException {
 
 		Path qmj = root.resolve("quilt.mod.json");

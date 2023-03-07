@@ -19,9 +19,9 @@ package org.quiltmc.loader.api.plugin;
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -48,10 +48,13 @@ public interface QuiltDisplayedError {
 	QuiltDisplayedError appendThrowable(Throwable t);
 
 	/** Defaults to {@link PluginGuiManager#iconLevelError()}. */
-	QuiltDisplayedError setIcon(PluginGuiIcon icon);
+	QuiltDisplayedError setIcon(QuiltLoaderIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
 	QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath);
+
+	/** Adds a button to this error, which will open a file editor, editing the given file. */
+	QuiltPluginButton addFileEditButton(QuiltLoaderText name, Path openedPath);
 
 	/** Adds a button to this error, which will open a file browser showing the selected folder. */
 	QuiltPluginButton addFolderViewButton(QuiltLoaderText name, Path openedFolder);
@@ -67,14 +70,12 @@ public interface QuiltDisplayedError {
 
 	QuiltPluginButton addActionButton(QuiltLoaderText name, Runnable action);
 
-	// /**
-	// * Changes this error message to be "fixed".
-	// */
-	// void setFixed();
+	/** Changes this error message to be "fixed". */
+	void setFixed();
 
 	@ApiStatus.NonExtendable
 	public interface QuiltPluginButton {
-		QuiltPluginButton icon(PluginGuiIcon icon);
+		QuiltPluginButton icon(QuiltLoaderIcon icon);
 
 		/** Enables this button. This is the default state. */
 		default void enable() {

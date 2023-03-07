@@ -18,35 +18,14 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.awt.GraphicsEnvironment;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.lang.ProcessBuilder.Redirect;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.QuiltLoader;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.LoaderGuiClosed;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
-import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -107,20 +86,19 @@ public final class QuiltGuiEntry {
 			String title = "Quilt Loader " + QuiltLoaderImpl.VERSION;
 			QuiltJsonGui tree = new QuiltJsonGui(title, mainText);
 
-			QuiltJsonGuiMessage crashMessage = new QuiltJsonGuiMessage();
-			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.unhandled"));
+			QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.unhandled"));
 			error.appendDescription(QuiltLoaderText.translate("error.unhandled_launch.desc"));
 			error.setOrdering(-100);
 			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_forum.user_support"), "https://forum.quiltmc.org/c/support/9");
-			tree.messages.add(error.toGuiMessage(tree));
+			tree.messages.add(error);
 
 			if (crashReportText != null) {
-				error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
+				error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
 				error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
 				error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
 				error.appendAdditionalInformation(QuiltLoaderText.translate("error.failed_to_save_crash_report.info"));
 				error.addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportText);
-				tree.messages.add(error.toGuiMessage(tree));
+				tree.messages.add(error);
 			}
 
 			if (crashReportFile != null) {
@@ -137,6 +115,8 @@ public final class QuiltGuiEntry {
 
 			try {
 				QuiltFork.openErrorGui(tree, true);
+			} catch (LoaderGuiClosed ignored) {
+				// That's expected as we're crashing anyway
 			} catch (Exception e) {
 				if (exitAfter) {
 					Log.warn(LogCategory.GUI, "Failed to open the error gui!", e);

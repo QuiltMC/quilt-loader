@@ -11,13 +11,16 @@ import java.lang.ProcessBuilder.Redirect;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.LoaderValue;
@@ -27,12 +30,33 @@ import org.quiltmc.loader.impl.util.LimitedInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** Client entry point for opening communication to a local server. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltForkComms {
 
 	private static final String SYS_PROP = "quiltmc.loader.fork.comms_port";
 
+	private static ForkSide side;
+	private static final AtomicReference<QuiltForkComms> currentComms = new AtomicReference<>();
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	enum ForkSide {
+		CLIENT,
+		SERVER;
+	}
+
+	public static boolean isServer() {
+		return side == ForkSide.SERVER;
+	}
+
+	public static boolean isClient() {
+		return side == ForkSide.CLIENT;
+	}
+
+	static QuiltForkComms getCurrentComms() {
+		return currentComms.get();
+	}
+
+	/** Client entry point for opening communication to a local server. */
 	public static QuiltForkComms connect(File medium, Consumer<LoaderValue> handler) throws IOException {
 
 		Integer overridePort = Integer.getInteger(SYS_PROP);
@@ -110,15 +134,26 @@ public class QuiltForkComms {
 	private volatile boolean closed;
 
 	QuiltForkComms(Consumer<LoaderValue> msgHandler) {
+		setSide(ForkSide.CLIENT);
 		this.msgHandler = msgHandler;
 
 		writerQueue = new LinkedBlockingQueue<>();
+		currentComms.set(this);
 	}
 
 	QuiltForkComms(Socket socket, Consumer<LoaderValue> msgHandler) {
+		setSide(ForkSide.SERVER);
 		this.msgHandler = msgHandler;
 		writerQueue = new LinkedBlockingQueue<>();
 		sender = new ReadySender(socket);
+		currentComms.set(this);
+	}
+
+	private static void setSide(ForkSide expectedSide) {
+		if (side != null && side != expectedSide) {
+			throw new IllegalStateException("Cannot change from " + side + " to " + expectedSide);
+		}
+		side = expectedSide;
 	}
 
 	public void send(LoaderValue value) {
@@ -139,10 +174,15 @@ public class QuiltForkComms {
 	public void close() {
 		closed = true;
 		writerQueue = null;
+		currentComms.compareAndSet(this, null);
 	}
 
 	public boolean isClosed() {
 		return closed;
+	}
+
+	private static LoaderValueFactory lvf() {
+		return LoaderValueFactory.getFactory();
 	}
 
 	private abstract class Sender {
@@ -232,9 +272,9 @@ public class QuiltForkComms {
 				while (true) {
 					try {
 						BlockingQueue<LoaderValue> queue = writerQueue;
-						LoaderValue value = queue == null ? LoaderValueFactory.getFactory().nul() : queue.take();
+						LoaderValue value = queue == null ? lvf().nul() : queue.take();
 						ByteArrayOutputStream baos = new ByteArrayOutputStream();
-						LoaderValueFactory.getFactory().write(value, baos);
+						lvf().write(value, baos);
 						byte[] written = baos.toByteArray();
 						stream.writeInt(written.length);
 						stream.write(written);
@@ -268,8 +308,8 @@ public class QuiltForkComms {
 				DataInputStream stream = new DataInputStream(watchStream);
 				while (true) {
 					int length = stream.readInt();
-					LoaderValue value = LoaderValueFactory.getFactory().read(new LimitedInputStream(stream, length));
-					handler.execute(() -> msgHandler.accept(value));
+					LoaderValue value = lvf().read(new LimitedInputStream(stream, length));
+					handler.execute(() -> readMessage(value));
 					if (value.type() == LType.NULL) {
 						close();
 						return;
@@ -291,6 +331,17 @@ public class QuiltForkComms {
 						exception.addSuppressed(e);
 					}
 				}
+			}
+		}
+
+		private void readMessage(LoaderValue value) {
+			try {
+				msgHandler.accept(value);
+			} catch (Throwable t) {
+				Map<String, LoaderValue> map = new HashMap<>();
+				map.put("__TYPE", lvf().string(ForkCommNames.ID_EXCEPTION));
+				send(lvf().object(map));
+				throw t;
 			}
 		}
 	}

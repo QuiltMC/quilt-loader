@@ -7,6 +7,9 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public final class ForkCommNames {
 	private ForkCommNames() {}
 
-	public static final String ID_OPEN_ERROR_GUI = "QuiltLoader:OpenErrorGui";
-	public static final String ID_ERROR_GUI_CLOSED = "QuiltLoader:OnErrorGuiClosed";
+	public static final String ID_EXCEPTION = "QuiltLoader:Exception";
+	public static final String ID_UPLOAD_ICON = "QuiltLoader:UploadIcon";
+	public static final String ID_GUI_OBJECT_CREATE = "QuiltLoader:GuiObjectCreate";
+	public static final String ID_GUI_OBJECT_UPDATE = "QuiltLoader:GuiObjectUpdate";
+	public static final String ID_GUI_OBJECT_DESTROY = "QuiltLoader:GuiObjectDestroy";
 }

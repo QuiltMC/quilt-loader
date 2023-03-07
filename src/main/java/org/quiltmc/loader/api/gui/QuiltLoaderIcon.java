@@ -14,21 +14,15 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.plugin.gui;
+package org.quiltmc.loader.api.gui;
 
-import org.quiltmc.loader.impl.plugin.gui.QuiltLoaderTextImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
-public interface QuiltLoaderText {
-	public static final QuiltLoaderText EMPTY = new QuiltLoaderTextImpl("", false);
+public interface QuiltLoaderIcon {
 
-	public static QuiltLoaderText translate(String translationKey, Object... extra) {
-		return new QuiltLoaderTextImpl(translationKey, true, extra);
-	}
-
-	public static QuiltLoaderText of(String text) {
-		return new QuiltLoaderTextImpl(text, false);
-	}
+	/** Returns a new icon with a sub-icon added to this main icon. The given sub-icon must not already have sub-icons.
+	 * If the given sub-icon is null then this is returned. */
+	QuiltLoaderIcon withDecoration(QuiltLoaderIcon subIcon);
 }

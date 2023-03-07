@@ -18,24 +18,23 @@ package org.quiltmc.loader.api.plugin.gui;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface PluginGuiTreeNode {
 
 	public enum WarningLevel {
 
-		/** A serious error that forces plugin loading to halt immediately, and display the current state of loading.
+		/** A serious error that forces loading to halt immediately, and display the current state of loading.
 		 * <p>
-		 * This should only be used if there's a bug in either quilt loader or a plugin, which needs a developer to
-		 * fix. */
+		 * This should only be used if there's a bug in either quilt loader, a plugin, or a mod, which needs a developer
+		 * to fix. */
 		FATAL,
 
-		/** If any {@link PluginGuiTreeNode} have this level then <em>loading will fail</em>. This indicates a critical
-		 * error occurred that the user needs to fix manually, or report to quilt-loader if it's an internal bug, in
-		 * order to run the game. */
+		/** If any {@link PluginGuiTreeNode} have this level then <em>loading will fail</em>. This indicates a
+		 * critical error occurred that the user needs to fix manually, or report to quilt-loader if it's an internal
+		 * bug, in order to run the game. */
 		ERROR,
 
 		/** Something that the user might want to know about. This (by default) forces the "files" window to open, which
@@ -65,8 +64,6 @@ public interface PluginGuiTreeNode {
 		ALPHABETICAL_ORDER,
 	}
 
-	PluginGuiManager manager();
-
 	@Nullable
 	PluginGuiTreeNode parent();
 
@@ -95,7 +92,6 @@ public interface PluginGuiTreeNode {
 
 	@Contract("_ -> this")
 	PluginGuiTreeNode setDirectLevel(WarningLevel level);
-
 
 	@Contract("-> this")
 	default PluginGuiTreeNode debug() {
@@ -140,21 +136,20 @@ public interface PluginGuiTreeNode {
 	/** @return The number of nodes (or sub-nodes) which have a {@link #getDirectLevel()} equal to the given level. */
 	int countOf(WarningLevel level);
 
-	PluginGuiIcon mainIcon();
+	QuiltLoaderIcon mainIcon();
 
 	@Contract("_ -> this")
-	PluginGuiTreeNode mainIcon(PluginGuiIcon icon);
+	PluginGuiTreeNode mainIcon(QuiltLoaderIcon icon);
 
 	@Nullable
-	PluginGuiIcon subIcon();
+	QuiltLoaderIcon subIcon();
 
 	@Contract("_ -> this")
-	PluginGuiTreeNode subIcon(PluginGuiIcon icon);
+	PluginGuiTreeNode subIcon(QuiltLoaderIcon icon);
 
-
-	/**
-	 * Whether the node is automatically expanded in the GUI. Defaults to {@code true} when {@link #getMaximumLevel()}
-	 * is {@link WarningLevel#CONCERN CONCERN} or higher, and {@code false} otherwise.
-	 */
+	/** Whether the node is automatically expanded in the GUI. Defaults to {@code true} when {@link #getMaximumLevel()}
+	 * is {@link WarningLevel#CONCERN CONCERN} or higher, and {@code false} otherwise. */
 	void expandByDefault(boolean autoCollapse);
+
+	PluginGuiManager manager();
 }

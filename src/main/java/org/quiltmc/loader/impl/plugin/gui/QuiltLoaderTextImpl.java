@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.plugin.gui;
 
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 

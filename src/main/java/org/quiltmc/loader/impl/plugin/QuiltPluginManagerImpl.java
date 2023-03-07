@@ -58,19 +58,19 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.NonZipException;
+import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -88,10 +88,11 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.GuiManagerImpl;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
 import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
@@ -165,7 +166,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public final TempQuilt2OldStatusNode guiModsRoot = new TempQuilt2OldStatusNode(guiManager);
 	private PluginGuiTreeNode guiNodeModsFromPlugins;
 	final Map<ModLoadOption, PluginGuiTreeNode> modGuiNodes = new HashMap<>();
-	final List<QuiltPluginErrorImpl> errors = new ArrayList<>();
+	final List<QuiltJsonGuiMessage> errors = new ArrayList<>();
 
 	/** Only written by {@link #runSingleCycle()}, only read during crash report generation. */
 	private PerCycleStep perCycleStep;
@@ -476,7 +477,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	public QuiltDisplayedError reportError(BasePluginContext reporter, QuiltLoaderText title) {
-		QuiltPluginErrorImpl error = new QuiltPluginErrorImpl(reporter.pluginId, title);
+		QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(null, reporter.pluginId, title);
 		errors.add(error);
 		return error;
 	}
@@ -492,7 +493,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return guiNodeModsFromPlugins;
 	}
 
-	public List<QuiltPluginErrorImpl> getErrors() {
+	public List<QuiltJsonGuiMessage> getErrors() {
 		Collections.sort(errors, Comparator.comparingInt(e -> e.ordering));
 		return Collections.unmodifiableList(errors);
 	}
@@ -555,7 +556,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		if (!errors.isEmpty()) {
 			int number = 1;
 
-			for (QuiltPluginErrorImpl error : errors) {
+			for (QuiltJsonGuiMessage error : errors) {
 				List<String> lines = error.toReportText();
 
 				report.addStringSection("Error " + number, error.ordering, lines.toArray(new String[0]));

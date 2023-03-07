@@ -22,14 +22,14 @@ import java.nio.file.Path;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.fabric.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
@@ -61,7 +61,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, ModLocation location, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
+	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
 		Path fmj = root.resolve("fabric.mod.json");
 		if (!FasterFiles.isRegularFile(fmj)) {
 			return null;

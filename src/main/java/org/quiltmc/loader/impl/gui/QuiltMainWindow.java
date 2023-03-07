@@ -29,6 +29,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.Desktop.Action;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -81,8 +82,9 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
@@ -100,31 +102,27 @@ class QuiltMainWindow {
 		System.setProperty("apple.awt.application.name", "Quilt Loader");
 	}
 
-	static CompletableFuture<Void> open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
+	static void open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
 		if (GraphicsEnvironment.isHeadless()) {
 			throw new HeadlessException();
 		}
 		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 
-		CompletableFuture<Void> future = new CompletableFuture<>();
-
 		SwingUtilities.invokeAndWait(() -> {
-			new QuiltMainWindow(future, tree).open();
+			new QuiltMainWindow(tree).open();
 		});
 
 		if (shouldWait) {
-			future.get();
+			tree.onClosedFuture.get();
 		}
-
-		return future;
 	}
 
 	final JFrame window;
-	final CompletableFuture<Void> onCloseFuture;
+	final QuiltJsonGui jsonGui;
 	final IconSet icons;
 
-	public QuiltMainWindow(CompletableFuture<Void> closeFuture, QuiltJsonGui tree) {
-		this.onCloseFuture = closeFuture;
+	public QuiltMainWindow(QuiltJsonGui tree) {
+		this.jsonGui = tree;
 		window = new JFrame();
 		window.setVisible(false);
 		window.setTitle(tree.title);
@@ -147,7 +145,7 @@ class QuiltMainWindow {
 		window.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				closeFuture.complete(null);
+				tree.onClosedFuture.complete(null);
 			}
 		});
 
@@ -164,7 +162,7 @@ class QuiltMainWindow {
 		icons = new IconSet(tree);
 
 		if (tree.tabs.isEmpty() && tree.messages.isEmpty()) {
-			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab("Opening Errors");
+			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab(null, "Opening Errors");
 			tab.addChild("No tabs provided! (Something is very broken)").setError();
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
 		} else if (tree.tabs.size() == 1 && tree.messages.isEmpty()) {
@@ -219,7 +217,7 @@ class QuiltMainWindow {
 
 			switch (button.action) {
 				case CONTINUE: {
-					onCloseFuture.complete(null);
+					jsonGui.onClosedFuture.complete(null);
 					window.dispose();
 					return;
 				}
@@ -239,6 +237,10 @@ class QuiltMainWindow {
 					openFile(button.arguments.get("file"));
 					return;
 				}
+				case EDIT_FILE: {
+					editFile(button.arguments.get("file"));
+					return;
+				}
 				case OPEN_WEB_URL: {
 					openWebUrl(button.arguments.get("url"));
 					return;
@@ -251,10 +253,12 @@ class QuiltMainWindow {
 					copyClipboardFile(button.arguments.get("file"));
 					return;
 				}
-				case PASTE_CLIPBOARD_FILE_SECTION:
-					break;
-				case RETURN_SIGNAL_MANY:
 				case RETURN_SIGNAL_ONCE:
+					button.enabled = false;
+				case RETURN_SIGNAL_MANY: {
+					button.sendClickToClient();
+					break;
+				}
 				default:
 					throw new IllegalStateException("Unknown / unimplemented action " + button.action);
 			}
@@ -370,6 +374,20 @@ class QuiltMainWindow {
 			Desktop.getDesktop().open(new File(file));
 		} catch (IOException | UnsupportedOperationException e) {
 			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			e.printStackTrace();
+		}
+	}
+
+	private void editFile(String file) {
+		try {
+			Desktop desktop = Desktop.getDesktop();
+			if (desktop.isSupported(Action.EDIT)) {
+				desktop.edit(new File(file));
+			} else {
+				desktop.open(new File(file));
+			}
+		} catch (IOException | UnsupportedOperationException e) {
+			JOptionPane.showMessageDialog(window, "Failed to edit '" + file + "'");
 			e.printStackTrace();
 		}
 	}
@@ -631,8 +649,8 @@ class QuiltMainWindow {
 
 		BufferedImage loadImage(String path, boolean isDecor, int scale) throws IOException {
 			if (path.startsWith("!")) {
-				// Custom icon
-				NavigableMap<Integer, BufferedImage> iconMap = tree.getCustomIcon(Integer.parseInt(path.substring(1)));
+				int iconId = Integer.parseInt(path.substring(1));
+				NavigableMap<Integer, BufferedImage> iconMap = QuiltForkServerMain.getCustomIcon(iconId);
 				if (iconMap.isEmpty()) {
 					return null;
 				}
@@ -725,6 +743,7 @@ class QuiltMainWindow {
 
 		public static IconInfo fromNode(QuiltStatusNode node) {
 			String[] split = node.iconType.split("\\+");
+			System.out.println(Arrays.toString(split));
 
 			if (split.length == 1 && split[0].isEmpty()) {
 				split = new String[0];

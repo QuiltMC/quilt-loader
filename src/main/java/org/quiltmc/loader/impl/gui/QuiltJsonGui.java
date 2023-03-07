@@ -18,13 +18,9 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.awt.datatransfer.Clipboard;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,34 +29,31 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.imageio.ImageIO;
 
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.LoaderValue.LType;
+import org.quiltmc.loader.api.LoaderValue.LObject;
+import org.quiltmc.loader.api.gui.LoaderGuiClosed;
+import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError.QuiltPluginButton;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.FormattedException;
-import org.quiltmc.loader.impl.plugin.gui.PluginIconImpl;
-import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class QuiltJsonGui {
+public final class QuiltJsonGui extends QuiltGuiSyncBase {
 	public enum QuiltTreeWarningLevel {
 		FATAL,
 		ERROR,
@@ -147,6 +140,7 @@ public final class QuiltJsonGui {
 		CLOSE(ICON_TYPE_DEFAULT),
 		CONTINUE(ICON_TYPE_CONTINUE),
 		VIEW_FILE(ICON_TYPE_GENERIC_FILE, "file"),
+		EDIT_FILE(ICON_TYPE_GENERIC_FILE, "file"),
 		VIEW_FOLDER(ICON_TYPE_FOLDER, "folder"),
 		OPEN_FILE(ICON_TYPE_GENERIC_FILE, "file"),
 
@@ -235,11 +229,10 @@ public final class QuiltJsonGui {
 	 * of {@link #ICON_TYPE_TICK} */
 	public static final String ICON_TYPE_LESSER_CROSS = "lesser_cross";
 
-	private static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
+	public final CompletableFuture<Void> onClosedFuture = new CompletableFuture<>();
 
 	public final String title;
 	public final String mainText;
-	private final List<NavigableMap<Integer, BufferedImage>> customIcons = new ArrayList<>();
 
 	public String messagesTabName = "_MESSAGES_";
 	public final List<QuiltJsonGuiMessage> messages = new ArrayList<>();
@@ -247,32 +240,13 @@ public final class QuiltJsonGui {
 	public final List<QuiltJsonButton> buttons = new ArrayList<>();
 
 	public QuiltJsonGui(String title, String mainText) {
+		super(null);
 		this.title = title;
 		this.mainText = mainText == null ? "" : mainText;
 	}
 
-	public int allocateCustomIcon(BufferedImage image) {
-		return allocateCustomIcon(Collections.singletonMap(image.getWidth(), image));
-	}
-
-	public int allocateCustomIcon(Map<Integer, BufferedImage> imageSizes) {
-		customIcons.add(new TreeMap<>(imageSizes));
-		return customIcons.size() - 1;
-	}
-
-	public NavigableMap<Integer, BufferedImage> getCustomIcon(int index) {
-		if (index < 0 || index >= customIcons.size()) {
-			return Collections.emptyNavigableMap();
-		}
-		return Collections.unmodifiableNavigableMap(customIcons.get(index));
-	}
-
-	public int getCustomIconCount() {
-		return customIcons.size();
-	}
-
 	public QuiltJsonGuiTreeTab addTab(String name) {
-		QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab(name);
+		QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab(this, name);
 		tabs.add(tab);
 		return tab;
 	}
@@ -282,75 +256,99 @@ public final class QuiltJsonGui {
 	}
 
 	public QuiltJsonButton addButton(String text, String icon, QuiltBasicButtonAction action) {
-		QuiltJsonButton button = new QuiltJsonButton(text, icon, action);
+		QuiltJsonButton button = new QuiltJsonButton(this, text, icon, action);
 		buttons.add(button);
 		return button;
 	}
 
-	public QuiltJsonGui(LoaderValue.LObject obj) throws IOException {
+	public QuiltJsonGui(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
+		super(null, obj);
+		if (parent != null) {
+			throw new IOException("Root guis can't have parents!");
+		}
+		onClosedFuture.thenRun(this::onClosed);
 		title = HELPER.expectString(obj, "title");
 		mainText = HELPER.expectString(obj, "mainText");
 
-		messagesTabName = HELPER.expectString(obj, "message_tab_name");
+		messagesTabName = HELPER.expectString(obj, "messagesTabName");
 		for (LoaderValue sub : HELPER.expectArray(obj, "messages")) {
-			messages.add(new QuiltJsonGuiMessage(HELPER.expectObject(sub)));
+			messages.add(readChild(sub, QuiltJsonGuiMessage.class));
 		}
 
 		for (LoaderValue sub : HELPER.expectArray(obj, "tabs")) {
-			tabs.add(new QuiltJsonGuiTreeTab(sub.asObject()));
+			tabs.add(readChild(sub, QuiltJsonGuiTreeTab.class));
 		}
 
 		for (LoaderValue sub : HELPER.expectArray(obj, "buttons")) {
-			buttons.add(new QuiltJsonButton(sub.asObject()));
-		}
-
-		for (LoaderValue sub : HELPER.expectArray(obj, "custom_icons")) {
-			NavigableMap<Integer, BufferedImage> map = new TreeMap<>();
-			for (Map.Entry<String, LoaderValue> entry : sub.asObject().entrySet()) {
-				int size = Integer.parseInt(entry.getKey());
-				String base64 = entry.getValue().asString();
-				byte[] bytes = Base64.getDecoder().decode(base64);
-				map.put(size, ImageIO.read(new ByteArrayInputStream(bytes)));
-			}
-			customIcons.add(map);
+			buttons.add(readChild(sub, QuiltJsonButton.class));
 		}
 	}
 
-	/** Writes this tree out as a single json object. */
-	public void write(JsonWriter writer) throws IOException {
-		writer.beginObject();
-		writer.name("title").value(title);
-		writer.name("mainText").value(mainText);
-		writer.name("message_tab_name").value(messagesTabName);
-		writer.name("messages").beginArray();
-		for (QuiltJsonGuiMessage sub : messages) {
-			sub.write(writer);
-		}
-		writer.endArray();
-		writer.name("tabs").beginArray();
-		for (QuiltJsonGuiTreeTab tab : tabs) {
-			tab.write(writer);
-		}
-		writer.endArray();
-		writer.name("buttons").beginArray();
-		for (QuiltJsonButton button : buttons) {
-			button.write(writer);
-		}
-		writer.endArray();
+	@Override
+	protected void write0(Map<String, LoaderValue> map) {
+		map.put("title", lvf().string(title));
+		map.put("mainText", lvf().string(mainText));
+		map.put("messagesTabName", lvf().string(messagesTabName));
+		map.put("messages", lvf().array(write(messages)));
+		map.put("tabs", lvf().array(write(tabs)));
+		map.put("buttons", lvf().array(write(buttons)));
+	}
 
-		writer.name("custom_icons").beginArray();
-		for (Map<Integer, BufferedImage> map : customIcons) {
-			writer.beginObject();
-			for (Entry<Integer, BufferedImage> entry : map.entrySet()) {
-				writer.name(entry.getKey().toString());
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				ImageIO.write(entry.getValue(), "png", baos);
-				writer.value(Base64.getEncoder().encodeToString(baos.toByteArray()));
-			}
-			writer.endObject();
+	@Override
+	String syncType() {
+		return "root_gui";
+	}
+
+	public void open() {
+		sendSignal("open");
+	}
+
+	public void onClosed() {
+		sendSignal("closed");
+	}
+
+	public void waitUntilClosed() throws LoaderGuiException, LoaderGuiClosed {
+		try {
+			onClosedFuture.get();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new LoaderGuiException(e);
+		} catch (ExecutionException e) {
+			throw new LoaderGuiException(e.getCause());
 		}
-		writer.endArray();
-		writer.endObject();
+
+		for (QuiltJsonGuiMessage message : messages) {
+			if (!message.fixed) {
+				throw LoaderGuiClosed.INSTANCE;
+			}
+		}
+	}
+
+	@Override
+	void handleUpdate(String name, LObject data) throws IOException {
+		switch (name) {
+			case "open": {
+				if (!QuiltForkComms.isServer()) {
+					throw new IOException("Can only open on the server!");
+				}
+
+				try {
+					QuiltMainWindow.open(this, false);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+				return;
+			}
+			case "closed": {
+				if (!QuiltForkComms.isClient()) {
+					throw new IOException("Can only receive 'closed' on the client!");
+				}
+				onClosedFuture.complete(null);
+			}
+			default: {
+				throw new IOException("Unknown update '" + name + "'");
+			}
+		}
 	}
 
 	public QuiltTreeWarningLevel getMaximumWarningLevel() {
@@ -380,13 +378,7 @@ public final class QuiltJsonGui {
 		}
 	}
 
-	public static final class QuiltJsonButton implements QuiltPluginButton {
-
-		static final AtomicInteger IDS = new AtomicInteger();
-
-		// Sync state
-		final int id;
-		boolean sent;
+	public static final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPluginButton {
 
 		// Normal state
 		public final String text;
@@ -400,41 +392,43 @@ public final class QuiltJsonGui {
 		String disabledText;
 		boolean enabled;
 
-		public QuiltJsonButton(String text, String icon, QuiltBasicButtonAction action) {
-			this(text, icon, action, null);
+		public QuiltJsonButton(QuiltGuiSyncBase parent, String text, String icon, QuiltBasicButtonAction action) {
+			this(parent, text, icon, action, null);
 		}
 
-		public QuiltJsonButton(String text, String icon, QuiltBasicButtonAction action, Runnable returnSignalAction) {
-			id = IDS.incrementAndGet();
+		public QuiltJsonButton(QuiltGuiSyncBase parent, String text, String icon, QuiltBasicButtonAction action, Runnable returnSignalAction) {
+			super(parent);
 			this.text = text;
 			this.icon = icon;
 			this.action = action;
 			this.returnSignalAction = returnSignalAction;
 		}
 
-		QuiltJsonButton(LoaderValue.LObject obj) throws IOException {
-			id = HELPER.expectNumber(obj, "id").intValue();
+		QuiltJsonButton(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
+			super(parent, obj);
 			text = HELPER.expectString(obj, "text");
 			icon = HELPER.expectString(obj, "icon");
 			action = QuiltBasicButtonAction.valueOf(HELPER.expectString(obj, "action"));
 			for (Map.Entry<String, LoaderValue> entry : HELPER.expectObject(obj, "arguments").entrySet()) {
-				arguments.put(entry.getKey(), entry.getValue().asString());
+				arguments.put(entry.getKey(), HELPER.expectString(entry.getValue()));
 			}
 		}
 
-		void write(JsonWriter writer) throws IOException {
-			writer.beginObject();
-			writer.name("text").value(text);
-			writer.name("icon").value(icon);
-			writer.name("action").value(action.name());
-			writer.name("arguments").beginObject();
+		@Override
+		protected void write0(Map<String, LoaderValue> map) {
+			map.put("text", lvf().string(text));
+			map.put("icon", lvf().string(icon));
+			map.put("action", lvf().string(action.name()));
+			Map<String, LoaderValue> argsMap = new HashMap<>();
 			for (Entry<String, String> entry : arguments.entrySet()) {
-				writer.name(entry.getKey()).value(entry.getValue());
+				argsMap.put(entry.getKey(), lvf().string(entry.getValue()));
 			}
-			writer.endObject();
-			writer.endObject();
+			map.put("arguments", lvf().object(argsMap));
+		}
 
-			sent = true;
+		@Override
+		String syncType() {
+			return "button";
 		}
 
 		public QuiltJsonButton arg(String key, String value) {
@@ -453,13 +447,13 @@ public final class QuiltJsonGui {
 		}
 
 		@Override
-		public QuiltPluginButton icon(PluginGuiIcon newIcon) {
+		public QuiltPluginButton icon(QuiltLoaderIcon newIcon) {
 			if (newIcon == null) {
 				this.icon = action.defaultIcon;
 			} else {
 				this.icon = PluginIconImpl.fromApi(newIcon).path;
 			}
-			if (sent) {
+			if (shouldSendUpdates()) {
 				// TODO: Send the new icon!
 			}
 			return this;
@@ -476,104 +470,24 @@ public final class QuiltJsonGui {
 				}
 			}
 
-			if (sent) {
+			if (shouldSendUpdates()) {
 				// TODO: Send the new state!
 			}
 		}
-	}
 
-	public static final class QuiltJsonGuiMessage {
-
-		/** The icon type. */
-		public String iconType = ICON_TYPE_DEFAULT;
-
-		public String title;
-
-		public final List<String> description = new ArrayList<>();
-		public final List<String> additionalInfo = new ArrayList<>();
-
-		public final List<QuiltJsonButton> buttons = new ArrayList<>();
-
-		public String subMessageHeader = "";
-		public final List<QuiltJsonGuiMessage> subMessages = new ArrayList<>();
-
-		public QuiltJsonGuiMessage() {
-
-		}
-
-		public QuiltJsonGuiMessage(LoaderValue.LObject obj) throws IOException {
-			title = HELPER.expectString(obj, "title");
-			iconType = HELPER.expectString(obj, "icon");
-			subMessageHeader = HELPER.expectString(obj, "sub_message_header");
-
-			for (LoaderValue sub : HELPER.expectArray(obj, "description")) {
-				description.add(sub.asString());
-			}
-
-			for (LoaderValue sub : HELPER.expectArray(obj, "info")) {
-				additionalInfo.add(sub.asString());
-			}
-
-			for (LoaderValue sub : HELPER.expectArray(obj, "buttons")) {
-				buttons.add(new QuiltJsonButton(sub.asObject()));
-			}
-
-			for (LoaderValue sub : HELPER.expectArray(obj, "sub_messages")) {
-				subMessages.add(new QuiltJsonGuiMessage(sub.asObject()));
-			}
-		}
-
-		void write(JsonWriter writer) throws IOException {
-			writer.beginObject();
-
-			writer.name("title");
-			writer.value(title);
-
-			writer.name("icon");
-			writer.value(iconType);
-
-			writer.name("description");
-			writer.beginArray();
-			for (String desc : description) {
-				writer.value(desc);
-			}
-			writer.endArray();
-
-			writer.name("info");
-			writer.beginArray();
-			for (String info : additionalInfo) {
-				writer.value(info);
-			}
-			writer.endArray();
-
-			writer.name("buttons");
-			writer.beginArray();
-			for (QuiltJsonButton btn : buttons) {
-				btn.write(writer);
-			}
-			writer.endArray();
-
-			writer.name("sub_message_header");
-			writer.value(subMessageHeader);
-
-			writer.name("sub_messages");
-			writer.beginArray();
-			for (QuiltJsonGuiMessage sub : subMessages) {
-				sub.write(writer);
-			}
-			writer.endArray();
-
-			writer.endObject();
+		public void sendClickToClient() {
+			sendSignal("click");
 		}
 	}
 
-	public static final class QuiltJsonGuiTreeTab {
+	public static final class QuiltJsonGuiTreeTab extends QuiltGuiSyncBase {
 		public final QuiltStatusNode node;
 
 		/** The minimum warning level to display for this tab. */
 		public QuiltTreeWarningLevel filterLevel = QuiltTreeWarningLevel.NONE;
 
-		public QuiltJsonGuiTreeTab(String name) {
+		public QuiltJsonGuiTreeTab(QuiltGuiSyncBase parent, String name) {
+			super(parent);
 			this.node = new QuiltStatusNode(null, name);
 		}
 
@@ -581,9 +495,21 @@ public final class QuiltJsonGui {
 			return node.addChild(name);
 		}
 
-		QuiltJsonGuiTreeTab(LoaderValue.LObject obj) throws IOException {
+		QuiltJsonGuiTreeTab(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
+			super(parent, obj);
 			filterLevel = QuiltTreeWarningLevel.read(HELPER.expectString(obj, "level"));
 			node = new QuiltStatusNode(null, HELPER.expectObject(obj, "node"));
+		}
+
+		@Override
+		protected void write0(Map<String, LoaderValue> map) {
+			map.put("level", lvf().string(filterLevel.lowerCaseName));
+//			map.put("node", node)
+		}
+
+		@Override
+		String syncType() {
+			return "tree_tab";
 		}
 
 		void write(JsonWriter writer) throws IOException {

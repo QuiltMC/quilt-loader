@@ -84,12 +84,12 @@ public final class JsonLoaderFactoryImpl implements LoaderValueFactory {
 	}
 
 	@Override
-	public LoaderValue array(LoaderValue[] values) {
+	public LoaderValue.LArray array(LoaderValue[] values) {
 		return new JsonLoaderValue.ArrayImpl(LOCATION, Arrays.asList(Arrays.copyOf(values, values.length)));
 	}
 
 	@Override
-	public LoaderValue object(Map<String, LoaderValue> map) {
+	public LoaderValue.LObject object(Map<String, LoaderValue> map) {
 		return new JsonLoaderValue.ObjectImpl(LOCATION, new HashMap<>(map));
 	}
 }

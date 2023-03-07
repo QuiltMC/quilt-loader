@@ -51,7 +51,7 @@ public interface LoaderValueFactory {
 
 	LoaderValue string(String value);
 
-	LoaderValue array(LoaderValue[] values);
+	LoaderValue.LArray array(LoaderValue[] values);
 
-	LoaderValue object(Map<String, LoaderValue> map);
+	LoaderValue.LObject object(Map<String, LoaderValue> map);
 }

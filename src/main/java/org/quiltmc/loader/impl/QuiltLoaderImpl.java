@@ -20,7 +20,6 @@ package org.quiltmc.loader.impl;
 import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -54,15 +53,14 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
-import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -77,9 +75,11 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -88,10 +88,8 @@ import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.patch.PatchLoader;
-import org.quiltmc.loader.impl.plugin.QuiltPluginErrorImpl;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
@@ -518,7 +516,6 @@ public final class QuiltLoaderImpl {
 			}
 
 			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, msg);
-			plugins.guiManager.putIcons(tree);
 			QuiltJsonGui.QuiltJsonGuiTreeTab tab = tree.addTab("Files");
 			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
 			plugins.guiFileRoot.toNode(tab.node, false);
@@ -561,28 +558,27 @@ public final class QuiltLoaderImpl {
 
 		String msg = "crash.during_setup." + provider.getGameId();
 		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, QuiltLoaderText.translate(msg).toString());
-		plugins.guiManager.putIcons(tree);
 		tree.messagesTabName = QuiltLoaderText.translate("tab.messages").toString();
 
 		if (fullCrashText != null) {
-			QuiltPluginErrorImpl error = new QuiltPluginErrorImpl("quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
+			QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
 			error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
 			error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
 			error.appendAdditionalInformation(QuiltLoaderText.translate("error.failed_to_save_crash_report.info"));
 			error.addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), fullCrashText);
-			tree.messages.add(error.toGuiMessage(tree));
+			tree.messages.add(error);
 		}
 
 		int number = 1;
-		List<QuiltPluginErrorImpl> pluginErrors = plugins.getErrors();
-		for (QuiltPluginErrorImpl error : pluginErrors) {
+		List<QuiltJsonGuiMessage> pluginErrors = plugins.getErrors();
+		for (QuiltJsonGuiMessage error : pluginErrors) {
 			if (number > 200) {
-				error = new QuiltPluginErrorImpl(MOD_ID, QuiltLoaderText.translate("error.too_many_errors"));
+				error = new QuiltJsonGuiMessage(tree, MOD_ID, QuiltLoaderText.translate("error.too_many_errors"));
 				error.appendDescription(QuiltLoaderText.translate("error.too_many_errors.desc", pluginErrors.size() - 200));
-				tree.messages.add(0, error.toGuiMessage(tree));
+				tree.messages.add(0, error);
 				break;
 			}
-			tree.messages.add(error.toGuiMessage(tree));
+			tree.messages.add(error);
 			number++;
 		}
 

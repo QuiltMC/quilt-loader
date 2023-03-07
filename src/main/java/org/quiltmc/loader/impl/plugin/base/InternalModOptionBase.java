@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.HashUtil;
@@ -36,12 +36,12 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	protected final Path from, resourceRoot;
 	protected final boolean mandatory;
 	protected final boolean requiresRemap;
-	protected final PluginGuiIcon fileIcon;
+	protected final QuiltLoaderIcon fileIcon;
 
 	byte[] hash;
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from,
-		PluginGuiIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
 
 		this.pluginContext = pluginContext;
 		this.metadata = meta;
@@ -63,7 +63,7 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	}
 
 	@Override
-	public PluginGuiIcon modFileIcon() {
+	public QuiltLoaderIcon modFileIcon() {
 		return fileIcon;
 	}
 

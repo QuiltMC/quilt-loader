@@ -14,21 +14,37 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.plugin.gui;
+package org.quiltmc.loader.impl.gui;
 
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import javax.imageio.ImageIO;
+
+import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class GuiManagerImpl implements PluginGuiManager {
+	private GuiManagerImpl(boolean unused) {}
+
+	@Deprecated
+	public GuiManagerImpl() {}
+
+	public static final GuiManagerImpl MANAGER = new GuiManagerImpl(true);
 
 	public static final PluginIconImpl ICON_NULL = new PluginIconImpl("null");
 
@@ -52,121 +68,173 @@ public class GuiManagerImpl implements PluginGuiManager {
 	public static final PluginIconImpl ICON_LEVEL_CONCERN = new PluginIconImpl("level_concern");
 	public static final PluginIconImpl ICON_LEVEL_INFO = new PluginIconImpl("level_info");
 
-	private final List<Map<Integer, BufferedImage>> customIcons = new ArrayList<>();
+	private static final AtomicInteger NEXT_ICON_KEY = new AtomicInteger();
+	private static final Map<Integer, Map<Integer, BufferedImage>> ICON_MAP = new ConcurrentHashMap<>();
+	private static final Map<String, QuiltLoaderIcon> MOD_ICON_CACHE = new ConcurrentHashMap<>();
 
 	// Icons
 
 	@Override
-	public PluginGuiIcon allocateIcon(Map<Integer, BufferedImage> image) {
-		int index = customIcons.size();
-		customIcons.add(image);
+	@Deprecated
+	public QuiltLoaderIcon allocateIcon(Map<Integer, BufferedImage> image) {
+		return allocateIcons(image);
+	}
+
+	public static QuiltLoaderIcon allocateIcons(Map<Integer, BufferedImage> imageSizeMap) {
+		int index = NEXT_ICON_KEY.incrementAndGet();
+		ICON_MAP.put(index, imageSizeMap);
+		QuiltFork.uploadIcon(index, imageSizeMap);
 		return new PluginIconImpl(index);
 	}
 
-	public void putIcons(QuiltJsonGui tree) {
-		for (int i = 0; i < customIcons.size(); i++) {
-			Map<Integer, BufferedImage> map = customIcons.get(i);
-			int index = tree.allocateCustomIcon(map);
-			if (index != i) {
-				throw new IllegalStateException("GuiManagerImpl.putIcons must be called first!");
+	public static QuiltLoaderIcon getModIcon(ModContainer mod) {
+		if (mod == null) {
+			return ICON_GENERIC_FILE;
+		}
+		String modid = mod == null ? "" : mod.metadata().id();
+		return MOD_ICON_CACHE.computeIfAbsent(modid, id -> {
+			return computeModIcon(mod);
+		});
+	}
+
+	private static QuiltLoaderIcon computeModIcon(ModContainer mod) {
+		Map<Integer, BufferedImage> map = new HashMap<>();
+		for (int size : new int[] { 16, 32 }) {
+			String pathStr = mod.metadata().icon(size);
+			if (pathStr == null) {
+				continue;
+			}
+			Path path = mod.getPath(pathStr);
+			if (!FasterFiles.isRegularFile(path)) {
+				continue;
+			}
+			try (InputStream stream = Files.newInputStream(path)) {
+				BufferedImage image = ImageIO.read(stream);
+				map.put(image.getWidth(), image);
+			} catch (IOException e) {
+				// TODO: Warn about this somewhere!
+				e.printStackTrace();
 			}
 		}
+		if (map.isEmpty()) {
+			return ICON_GENERIC_FILE;
+		}
+		return allocateIcons(map);
 	}
 
 	// Builtin
 
 	@Override
-	public PluginGuiIcon iconFolder() {
+	@Deprecated
+	public QuiltLoaderIcon iconFolder() {
 		return ICON_FOLDER;
 	}
 
 	@Override
-	public PluginGuiIcon iconUnknownFile() {
+	@Deprecated
+	public QuiltLoaderIcon iconUnknownFile() {
 		return ICON_GENERIC_FILE;
 	}
 
 	@Override
-	public PluginGuiIcon iconTextFile() {
+	@Deprecated
+	public QuiltLoaderIcon iconTextFile() {
 		return ICON_TEXT_FILE;
 	}
 
 	@Override
-	public PluginGuiIcon iconZipFile() {
+	@Deprecated
+	public QuiltLoaderIcon iconZipFile() {
 		return ICON_ZIP;
 	}
 
 	@Override
-	public PluginGuiIcon iconJarFile() {
+	@Deprecated
+	public QuiltLoaderIcon iconJarFile() {
 		return ICON_JAR;
 	}
 
 	@Override
-	public PluginGuiIcon iconJsonFile() {
+	@Deprecated
+	public QuiltLoaderIcon iconJsonFile() {
 		return ICON_JSON;
 	}
 
 	@Override
-	public PluginGuiIcon iconJavaClassFile() {
+	@Deprecated
+	public QuiltLoaderIcon iconJavaClassFile() {
 		return ICON_JAVA_CLASS;
 	}
 
 	@Override
-	public PluginGuiIcon iconPackage() {
+	@Deprecated
+	public QuiltLoaderIcon iconPackage() {
 		return ICON_PACKAGE;
 	}
 
 	@Override
-	public PluginGuiIcon iconJavaPackage() {
+	@Deprecated
+	public QuiltLoaderIcon iconJavaPackage() {
 		return ICON_JAVA_PACKAGE;
 	}
 
 	@Override
-	public PluginGuiIcon iconDisabled() {
+	@Deprecated
+	public QuiltLoaderIcon iconDisabled() {
 		return ICON_DISABLED;
 	}
 
 	@Override
-	public PluginGuiIcon iconQuilt() {
+	@Deprecated
+	public QuiltLoaderIcon iconQuilt() {
 		return ICON_QUILT;
 	}
 
 	@Override
-	public PluginGuiIcon iconFabric() {
+	@Deprecated
+	public QuiltLoaderIcon iconFabric() {
 		return ICON_FABRIC;
 	}
 
 	@Override
-	public PluginGuiIcon iconTick() {
+	@Deprecated
+	public QuiltLoaderIcon iconTick() {
 		return ICON_TICK;
 	}
 
 	@Override
-	public PluginGuiIcon iconCross() {
+	@Deprecated
+	public QuiltLoaderIcon iconCross() {
 		return ICON_CROSS;
 	}
 
 	@Override
-	public PluginGuiIcon iconLevelFatal() {
+	@Deprecated
+	public QuiltLoaderIcon iconLevelFatal() {
 		return ICON_LEVEL_FATAL;
 	}
 
 	@Override
-	public PluginGuiIcon iconLevelError() {
+	@Deprecated
+	public QuiltLoaderIcon iconLevelError() {
 		return ICON_LEVEL_ERROR;
 	}
 
 	@Override
-	public PluginGuiIcon iconLevelWarn() {
+	@Deprecated
+	public QuiltLoaderIcon iconLevelWarn() {
 		return ICON_LEVEL_WARN;
 	}
 
 	@Override
-	public PluginGuiIcon iconLevelConcern() {
+	@Deprecated
+	public QuiltLoaderIcon iconLevelConcern() {
 		return ICON_LEVEL_CONCERN;
 	}
 
 	@Override
-	public PluginGuiIcon iconLevelInfo() {
+	@Deprecated
+	public QuiltLoaderIcon iconLevelInfo() {
 		return ICON_LEVEL_INFO;
 	}
 }
