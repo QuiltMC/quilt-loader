@@ -14,8 +14,14 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 
 public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPluginButton {
 
+	interface QuiltButtonListener {
+		void onTextChanged();
+		void onIconChanged();
+		void onEnabledChanged();
+	}
+
 	// Normal state
-	public final String text;
+	public String text;
 	public String icon;
 	public final QuiltBasicButtonAction action;
 	public final Map<String, String> arguments = new HashMap<>();
@@ -25,6 +31,8 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 	Runnable returnSignalAction;
 	String disabledText;
 	boolean enabled;
+
+	QuiltButtonListener guiListener;
 
 	public QuiltJsonButton(QuiltGuiSyncBase parent, String text, String icon, QuiltBasicButtonAction action) {
 		this(parent, text, icon, action, null);
@@ -95,6 +103,20 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 	}
 
 	@Override
+	public QuiltPluginButton text(QuiltLoaderText newText) {
+		if (newText == null) {
+			throw new NullPointerException("text");
+		}
+		this.text = newText.toString();
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("text", lvf().string(text));
+			sendUpdate("set_text", lvf().object(map));
+		}
+		return this;
+	}
+
+	@Override
 	public QuiltPluginButton icon(QuiltLoaderIcon newIcon) {
 		if (newIcon == null) {
 			this.icon = action.defaultIcon;
@@ -102,7 +124,9 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 			this.icon = PluginIconImpl.fromApi(newIcon).path;
 		}
 		if (shouldSendUpdates()) {
-			// TODO: Send the new icon!
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("icon", lvf().string(icon));
+			sendUpdate("set_icon", lvf().object(map));
 		}
 		return this;
 	}
@@ -119,7 +143,13 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 		}
 
 		if (shouldSendUpdates()) {
-			sendSignal(enabled ? "enable" : "disable");
+			if (enabled) {
+				sendSignal("enable");
+			} else {
+				Map<String, LoaderValue> map = new HashMap<>();
+				map.put("disabled_text", lvf().string(disabledText));
+				sendUpdate("disable", lvf().object(map));
+			}
 		}
 	}
 
@@ -138,8 +168,26 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 				}
 				break;
 			}
+			case "set_text": {
+				this.text = HELPER.expectString(data, "text");
+				if (guiListener != null) {
+					guiListener.onTextChanged();
+				}
+				break;
+			}
+			case "set_icon": {
+				this.icon = HELPER.expectString(data, "icon");
+				if (guiListener != null) {
+					guiListener.onIconChanged();
+				}
+				break;
+			}
 			case "enable": {
-				
+				this.enabled = true;
+				if (guiListener != null) {
+					guiListener.onEnabledChanged();
+				}
+				break;
 			}
 			case "disable": {
 				// TODO: Implement enabled/disabled and propogate this to the actual swing gui!

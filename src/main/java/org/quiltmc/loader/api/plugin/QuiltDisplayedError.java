@@ -78,6 +78,8 @@ public interface QuiltDisplayedError {
 
 	@ApiStatus.NonExtendable
 	public interface QuiltPluginButton {
+		QuiltPluginButton text(QuiltLoaderText text);
+
 		QuiltPluginButton icon(QuiltLoaderIcon icon);
 
 		/** Enables this button. This is the default state. */

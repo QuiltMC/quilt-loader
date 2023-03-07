@@ -19,6 +19,12 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 
 public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements QuiltDisplayedError {
 
+	interface QuiltMessageListener {
+		default void onFixed() {}
+		default void onTitleChanged() {}
+		default void onIconChanged() {}
+	}
+
 	boolean fixed = false;
 
 	// Gui fields
@@ -31,6 +37,8 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	public String subMessageHeader = "";
 	public final List<QuiltJsonGuiMessage> subMessages = new ArrayList<>();
+
+	final List<QuiltMessageListener> listeners = new ArrayList<>();
 
 	// Report fields
 	final String reportingPlugin;
@@ -206,6 +214,9 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 			sendSignal("fixed");
 		}
 		fixed = true;
+		for (QuiltMessageListener l : listeners) {
+			l.onFixed();
+		}
 	}
 
 	public boolean isFixed() {
@@ -217,6 +228,9 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		switch (name) {
 			case "fixed": {
 				this.fixed = true;
+				for (QuiltMessageListener l : listeners) {
+					l.onFixed();
+				}
 				return;
 			}
 			default: {

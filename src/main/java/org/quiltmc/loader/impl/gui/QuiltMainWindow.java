@@ -85,6 +85,7 @@ import javax.swing.tree.TreeNode;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
@@ -208,6 +209,23 @@ class QuiltMainWindow {
 		JButton btn = button.icon.isEmpty() 
 			? new JButton(button.text) 
 			: new JButton(button.text, icons.get(IconInfo.parse(button.icon)));
+		button.guiListener = new QuiltJsonButton.QuiltButtonListener() {
+			@Override
+			public void onTextChanged() {
+				btn.setText(button.text);
+			}
+
+			@Override
+			public void onIconChanged() {
+				btn.setIcon(icons.get(IconInfo.parse(button.icon)));
+			}
+
+			@Override
+			public void onEnabledChanged() {
+				btn.setEnabled(button.enabled);
+				btn.setToolTipText(button.disabledText);
+			}
+		};
 
 		addTo.add(btn);
 		btn.addActionListener(event -> {
@@ -492,6 +510,14 @@ class QuiltMainWindow {
 			label.setFont(label.getFont().deriveFont(Font.ITALIC));
 			panel.add(label, BorderLayout.NORTH);
 		}
+
+		message.listeners.add(new QuiltJsonGuiMessage.QuiltMessageListener() {
+			@Override
+			public void onFixed() {
+				// temp
+				icon.setIcon(icons.get(IconInfo.parse("tick"), 32));
+			}
+		});
 
 		if (!message.buttons.isEmpty()) {
 			JPanel buttons = new JPanel();

@@ -24,10 +24,15 @@ import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -65,11 +70,25 @@ public class QuiltFork {
 
 	public static void openErrorGui(List<QuiltDisplayedError> errors) throws LoaderGuiException, LoaderGuiClosed {
 		QuiltJsonGui tree = new QuiltJsonGui("", "");
+		tree.buttons.add(QuiltJsonButton.createUserSupportButton(tree));
+		QuiltJsonButton continueButton = tree.addButton(QuiltLoaderText.of("button.ignore").toString(), QuiltBasicButtonAction.CONTINUE);
+		continueButton.icon(QuiltLoaderGui.iconContinueIgnoring());
 		for (QuiltDisplayedError error : errors) {
-			tree.messages.add((QuiltJsonGuiMessage) error);
+			QuiltJsonGuiMessage msg = (QuiltJsonGuiMessage) error;
+			msg.listeners.add(new QuiltJsonGuiMessage.QuiltMessageListener() {
+				@Override
+				public void onFixed() {
+					for (QuiltDisplayedError error : errors) {
+						if (!((QuiltJsonGuiMessage) error).isFixed()) {
+							return;
+						}
+						continueButton.text(QuiltLoaderText.of("button.continue"));
+						continueButton.icon(QuiltLoaderGui.iconContinue());
+					}
+				}
+			});
+			tree.messages.add(msg);
 		}
-//		tree.addButton(", action)
-//		tree.buttons.add()
 		openErrorGui(tree, true);
 	}
 

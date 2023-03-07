@@ -66,6 +66,14 @@ public class QuiltLoaderGui {
 
 	// Builtin Icons
 
+	public static QuiltLoaderIcon iconContinue() {
+		return GuiManagerImpl.ICON_CONTINUE;
+	}
+
+	public static QuiltLoaderIcon iconContinueIgnoring() {
+		return GuiManagerImpl.ICON_CONTINUE_BUT_IGNORE;
+	}
+
 	public static QuiltLoaderIcon iconFolder() {
 		return GuiManagerImpl.ICON_FOLDER;
 	}

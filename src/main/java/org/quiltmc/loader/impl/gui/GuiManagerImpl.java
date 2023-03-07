@@ -48,6 +48,8 @@ public class GuiManagerImpl implements PluginGuiManager {
 
 	public static final PluginIconImpl ICON_NULL = new PluginIconImpl("null");
 
+	public static final PluginIconImpl ICON_CONTINUE = new PluginIconImpl("continue");
+	public static final PluginIconImpl ICON_CONTINUE_BUT_IGNORE = new PluginIconImpl("continue_but_ignore");
 	public static final PluginIconImpl ICON_FOLDER = new PluginIconImpl("folder");
 	public static final PluginIconImpl ICON_TEXT_FILE = new PluginIconImpl("text_file");
 	public static final PluginIconImpl ICON_GENERIC_FILE = new PluginIconImpl("generic_file");
