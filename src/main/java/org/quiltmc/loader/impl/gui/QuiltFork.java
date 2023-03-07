@@ -69,7 +69,7 @@ public class QuiltFork {
 	}
 
 	public static void openErrorGui(List<QuiltDisplayedError> errors) throws LoaderGuiException, LoaderGuiClosed {
-		QuiltJsonGui tree = new QuiltJsonGui("", "");
+		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, "");
 		tree.buttons.add(QuiltJsonButton.createUserSupportButton(tree));
 		QuiltJsonButton continueButton = tree.addButton(QuiltLoaderText.of("button.ignore").toString(), QuiltBasicButtonAction.CONTINUE);
 		continueButton.icon(QuiltLoaderGui.iconContinueIgnoring());

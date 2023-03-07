@@ -97,6 +97,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			QuiltDisplayedError error = QuiltLoaderGui.createError(title);
 			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
 			error.appendThrowable(e);
+			error.addFileViewButton(QuiltLoaderText.translate("button.view_file", "config/"), overrideFile).icon(QuiltLoaderGui.iconFolder());
 			error.addFileEditButton(overrideFile).icon(QuiltLoaderGui.iconJsonFile());
 			error.addActionButton(QuiltLoaderText.translate("button.reload"), () -> {
 				try {
@@ -110,18 +111,21 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 			try {
 				QuiltLoaderGui.openErrorGui(error);
+				return;
 			} catch (LoaderGuiException ex) {
-				e.addSuppressed(ex);
+				mostRecentException[0].addSuppressed(ex);
 			} catch (LoaderGuiClosed closed) {
-				if (overrides == null) {
-					Exception ex = mostRecentException[0];
-					QuiltDisplayedError error2 = context().reportError(title);
-					error2.appendDescription(QuiltLoaderText.of(ex.getMessage()));
-					error2.addFileViewButton(overrideFile);
-					error2.appendReportText("Failed to read the quilt-loader-overrides.json file!");
-					error2.appendThrowable(ex);
-					context().haltLoading();
-				}
+				// Either closed correctly or ignored
+			}
+
+			if (overrides == null) {
+				Exception ex = mostRecentException[0];
+				QuiltDisplayedError error2 = context().reportError(title);
+				error2.appendDescription(QuiltLoaderText.of(ex.getMessage()));
+				error2.addFileViewButton(overrideFile);
+				error2.appendReportText("Failed to read the quilt-loader-overrides.json file!");
+				error2.appendThrowable(ex);
+				context().haltLoading();
 			}
 		}
 	}

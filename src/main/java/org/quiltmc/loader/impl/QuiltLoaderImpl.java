@@ -588,13 +588,17 @@ public final class QuiltLoaderImpl {
 		// TODO: Move tab creation to the plugin manager
 		// so that the plugin manager can have tabs of both the file list
 		// AND mod list!
-		QuiltJsonGuiTreeTab tab = tree.addTab("Files");
-		plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
-		plugins.guiFileRoot.toNode(tab.node, false);
+		if (plugins.guiFileRoot.hasChildren()) {
+			QuiltJsonGuiTreeTab tab = tree.addTab("Files");
+			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
+			plugins.guiFileRoot.toNode(tab.node, false);
+		}
 
-		QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
-		plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
-		plugins.guiModsRoot.toNode(tab2.node, false);
+		if (plugins.guiModsRoot.hasChildren()) {
+			QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
+			plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
+			plugins.guiModsRoot.toNode(tab2.node, false);
+		}
 
 		if (crashReportFile != null) {
 			tree.addButton(QuiltLoaderText.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//

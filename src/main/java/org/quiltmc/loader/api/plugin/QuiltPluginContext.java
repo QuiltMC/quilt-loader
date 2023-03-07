@@ -78,7 +78,9 @@ public interface QuiltPluginContext {
 	/** Reports an error, which will be shown in the error gui screen and saved in the crash report file. */
 	QuiltDisplayedError reportError(QuiltLoaderText title);
 
-	/** Stops loading as soon as possible. This normally means it will throw an internal exception.. */
+	/** Stops loading as soon as possible. This normally means it will throw an internal exception. This should be used
+	 * when you've reported an error via {@link #reportError(QuiltLoaderText)} and don't want to add an extra throwable
+	 * stacktrace to the crash report. */
 	void haltLoading();
 
 	// ##############

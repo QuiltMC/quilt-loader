@@ -483,6 +483,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	public void haltLoading(BasePluginContext reporter) {
+		// TODO: Check if we're actually in the middle of #runInternal() and throw a different exception if we're not.
+		// also if we're on a different thread then inform the main plugin manager that it should stop quickly
+		// (although this might just mean telling it to stop waiting for a plugin task?)
 		try {
 			checkForErrors();
 		} catch (TreeContainsModError | QuiltReportedError e) {

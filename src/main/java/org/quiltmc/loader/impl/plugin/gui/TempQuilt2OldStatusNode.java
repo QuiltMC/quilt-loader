@@ -241,4 +241,8 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 	public void expandByDefault(boolean autoCollapse) {
 		this.expandByDefault = autoCollapse;
 	}
+
+	public boolean hasChildren() {
+		return !childrenByAddition.isEmpty() || !childrenByAlphabetical.isEmpty();
+	}
 }
