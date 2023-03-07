@@ -172,6 +172,13 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	}
 
 	@Override
+	public QuiltPluginButton addOpenQuiltSupportButton() {
+		QuiltJsonButton button = QuiltJsonButton.createUserSupportButton(this);
+		buttons.add(button);
+		return button;
+	}
+
+	@Override
 	public QuiltPluginButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText) {
 		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_TEXT).arg("text", fullText);
 	}

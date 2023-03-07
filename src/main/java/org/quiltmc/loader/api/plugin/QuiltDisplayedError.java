@@ -62,6 +62,9 @@ public interface QuiltDisplayedError {
 	/** Adds a button to this error, which will open the specified URL in a browser window. */
 	QuiltPluginButton addOpenLinkButton(QuiltLoaderText name, String url);
 
+	/** Adds a button to this error, which opens the quilt user support forum. */
+	QuiltPluginButton addOpenQuiltSupportButton();
+
 	QuiltPluginButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText);
 
 	QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile);

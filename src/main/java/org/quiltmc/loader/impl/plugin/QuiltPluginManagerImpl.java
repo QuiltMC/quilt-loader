@@ -523,7 +523,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				.appendReportText("Unhandled ModSolvingError!")
 				.setOrdering(-100)
 				.appendThrowable(e)
-				.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
+				.addOpenQuiltSupportButton();
 
 			break outer;
 		} catch (TreeContainsModError e) {
@@ -537,7 +537,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				.appendReportText("Load timeout!")
 				.appendThrowable(e)
 				.setOrdering(-100)
-				.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
+				.addOpenQuiltSupportButton();
 			break outer;
 		} catch (QuiltReportedError e) {
 			report = e.report;
@@ -550,7 +550,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				.appendReportText("Unhandled Throwable!")
 				.setOrdering(-100)
 				.appendThrowable(t)
-				.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
+				.addOpenQuiltSupportButton();
 			break outer;
 		}
 

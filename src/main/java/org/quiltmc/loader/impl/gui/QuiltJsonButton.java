@@ -33,7 +33,7 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 	public QuiltJsonButton(QuiltGuiSyncBase parent, String text, String icon, QuiltBasicButtonAction action, Runnable returnSignalAction) {
 		super(parent);
 		this.text = text;
-		this.icon = icon;
+		this.icon = icon != null ? icon : action.defaultIcon;
 		this.action = action;
 		if (action == QuiltBasicButtonAction.RETURN_SIGNAL_ONCE || action == QuiltBasicButtonAction.RETURN_SIGNAL_MANY) {
 			if (returnSignalAction == null) {
@@ -53,6 +53,13 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 		for (Map.Entry<String, LoaderValue> entry : HELPER.expectObject(obj, "arguments").entrySet()) {
 			arguments.put(entry.getKey(), HELPER.expectString(entry.getValue()));
 		}
+	}
+
+	public static QuiltJsonButton createUserSupportButton(QuiltGuiSyncBase parent) {
+		QuiltLoaderText text = QuiltLoaderText.of("button.quilt_forum.user_support");
+		QuiltJsonButton button = new QuiltJsonButton(parent, text.toString(), null, QuiltBasicButtonAction.OPEN_WEB_URL);
+		button.arg("url", "https://forum.quiltmc.org/c/support/9");
+		return button;
 	}
 
 	@Override

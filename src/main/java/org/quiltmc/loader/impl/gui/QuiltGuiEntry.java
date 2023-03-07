@@ -89,7 +89,7 @@ public final class QuiltGuiEntry {
 			QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.unhandled"));
 			error.appendDescription(QuiltLoaderText.translate("error.unhandled_launch.desc"));
 			error.setOrdering(-100);
-			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_forum.user_support"), "https://forum.quiltmc.org/c/support/9");
+			error.addOpenQuiltSupportButton();
 			tree.messages.add(error);
 
 			if (crashReportText != null) {
