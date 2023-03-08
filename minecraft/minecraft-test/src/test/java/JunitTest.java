@@ -17,8 +17,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 public class JunitTest {
 	@BeforeAll
 	public static void setup() {
+		System.out.println("Initializing Minecraft");
 		SharedConstants.createGameVersion();
 		Bootstrap.initialize();
+		System.out.println("Minecraft initialized");
 	}
 
 	@Test
