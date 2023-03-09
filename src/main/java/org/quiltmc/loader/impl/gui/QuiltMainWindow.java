@@ -25,8 +25,6 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
-import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.Desktop.Action;
@@ -54,8 +52,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -71,21 +67,16 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
-import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
-import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
@@ -94,17 +85,8 @@ import org.quiltmc.loader.impl.util.StringUtil;
 class QuiltMainWindow {
 	static Icon missingIcon = null;
 
-	static {
-		// Set MacOS specific system props
-		System.setProperty("apple.awt.application.appearance", "system");
-		System.setProperty("apple.awt.application.name", "Quilt Loader");
-	}
-
 	static void open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		if (GraphicsEnvironment.isHeadless()) {
-			throw new HeadlessException();
-		}
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+		QuiltUI.init();
 
 		SwingUtilities.invokeAndWait(() -> {
 			new QuiltMainWindow(tree).open();
