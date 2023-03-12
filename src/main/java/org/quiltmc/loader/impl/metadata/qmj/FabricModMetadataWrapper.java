@@ -191,6 +191,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		return ModLoadType.IF_POSSIBLE;
 	}
 
+	@Override
+	public @Nullable ModPlugin plugin() {
+		return null;
+	}
+
 	private static Collection<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from) {
 		List<ModDependency> out = new ArrayList<>();
 		for (net.fabricmc.loader.api.metadata.ModDependency f : from) {
