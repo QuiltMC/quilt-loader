@@ -23,12 +23,12 @@ import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-class ModContributorImpl implements ModContributor {
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+public class ModContributorImpl implements ModContributor {
 	private final String name;
 	private final Collection<String> roles;
 
-	ModContributorImpl(String name, Collection<String> roles) {
+	public ModContributorImpl(String name, Collection<String> roles) {
 		this.name = name;
 		this.roles = Collections.unmodifiableCollection(roles);
 	}

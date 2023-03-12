@@ -20,12 +20,17 @@ package org.quiltmc.loader.api;
 import java.util.Collection;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.impl.metadata.qmj.ModContributorImpl;
 
 /**
  * A contributor to a mod.
  */
 @ApiStatus.NonExtendable
 public interface ModContributor {
+	static ModContributor of(String name, Collection<String> roles) {
+		return new ModContributorImpl(name, roles);
+	}
+
 	/**
 	 * @return the name of the contributor
 	 */
