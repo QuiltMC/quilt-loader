@@ -63,6 +63,7 @@ public final class SystemProperties {
 	public static final String DEBUG_DUMP_OVERRIDE_PATHS = "loader.debug.dump_override_paths";
 	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
+	public static final String DISABLE_STRICT_PARSING = "loader.workaround.disable_strict_parsing";
 	public static final String LOG_EARLY_CLASS_LOADS = "loader.debug.log_early_class_loads";
 	public static final String DEBUG_CLASS_TO_MOD = "loader.debug.dump_class_to_mod";
 	public static final String CACHE_SUFFIX = "loader.cache_suffix";

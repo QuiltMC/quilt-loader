@@ -30,7 +30,6 @@ import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.spongepowered.include.com.google.common.base.Charsets;
 
 /**
  * The central class used to read a {@code quilt.mod.json}.
