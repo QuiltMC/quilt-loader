@@ -748,7 +748,6 @@ class QuiltMainWindow {
 
 		public static IconInfo fromNode(QuiltStatusNode node) {
 			String[] split = node.iconType.split("\\+");
-			System.out.println(Arrays.toString(split));
 
 			if (split.length == 1 && split[0].isEmpty()) {
 				split = new String[0];
