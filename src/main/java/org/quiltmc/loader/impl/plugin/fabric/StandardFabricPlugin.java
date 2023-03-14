@@ -17,16 +17,15 @@
 package org.quiltmc.loader.impl.plugin.fabric;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
@@ -53,12 +52,12 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, guiNode.manager().iconJarFile(), location, true, guiNode);
+		return scan0(root, QuiltLoaderGui.iconJarFile(), location, true, guiNode);
 	}
 
 	@Override
 	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
+		return scan0(folder, QuiltLoaderGui.iconFolder(), location, false, guiNode);
 	}
 
 	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
@@ -92,7 +91,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 				if (!FasterFiles.exists(inner)) {
 					Log.warn(LogCategory.DISCOVERY, "Didn't find nested jar " + inner + " in " + context().manager().describePath(from));
 					PluginGuiTreeNode missingJij = guiNode.addChild(QuiltLoaderText.of(inner.toString()), SortOrder.ALPHABETICAL_ORDER);
-					missingJij.mainIcon(missingJij.manager().iconJarFile());
+					missingJij.mainIcon(QuiltLoaderGui.iconJarFile());
 					missingJij.addChild(QuiltLoaderText.translate("fabric.jar_in_jar.missing"))//
 						.setDirectLevel(WarningLevel.CONCERN);
 					continue;
@@ -114,10 +113,9 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			error.appendReportText("Invalid 'fabric.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
-			PluginGuiManager guiManager = context().manager().getGuiManager();
 			context().manager().getRealContainingFile(root).ifPresent(real ->
 					error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-					.icon(guiManager.iconJarFile().withDecoration(guiManager.iconFabric()))
+					.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconFabric()))
 			);
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//TODO: translate

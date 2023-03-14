@@ -30,7 +30,7 @@ import org.quiltmc.loader.impl.gui.QuiltFork;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
 
 /** Central API for dealing with opening guis on a separate process. Used since some games don't work properly on MacOS
- * if we open a swing window. */
+ * if we open a swing window in the main process. */
 public class QuiltLoaderGui {
 	private QuiltLoaderGui() {}
 

@@ -20,10 +20,14 @@ import java.awt.image.BufferedImage;
 import java.util.Collections;
 import java.util.Map;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/**
+ * @deprecated Replaced with {@link QuiltLoaderGui}, kept only until we clear out all uses of this from quilt's codebase.
+ */
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 @Deprecated
 public interface PluginGuiManager {

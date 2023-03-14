@@ -16,10 +16,11 @@
 
 package org.quiltmc.loader.api.gui;
 
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.jetbrains.annotations.ApiStatus;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
+/** A displayable icon that can be shown in {@link QuiltLoaderGui} related elements. These are created from
+ * {@link QuiltLoaderGui#createIcon(java.awt.image.BufferedImage)} (and related methods). */
+@ApiStatus.NonExtendable
 public interface QuiltLoaderIcon {
 
 	/** Returns a new icon with a sub-icon added to this main icon. The given sub-icon must not already have sub-icons.

@@ -151,5 +151,6 @@ public interface PluginGuiTreeNode {
 	 * is {@link WarningLevel#CONCERN CONCERN} or higher, and {@code false} otherwise. */
 	void expandByDefault(boolean autoCollapse);
 
+	@Deprecated
 	PluginGuiManager manager();
 }
