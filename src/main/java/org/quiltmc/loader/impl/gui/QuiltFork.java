@@ -98,9 +98,9 @@ public class QuiltFork {
 						if (!((QuiltJsonGuiMessage) error).isFixed()) {
 							return;
 						}
-						continueButton.text(QuiltLoaderText.of("button.continue"));
-						continueButton.icon(QuiltLoaderGui.iconContinue());
 					}
+					continueButton.text(QuiltLoaderText.of("button.continue"));
+					continueButton.icon(QuiltLoaderGui.iconContinue());
 				}
 			});
 			tree.messages.add(msg);
