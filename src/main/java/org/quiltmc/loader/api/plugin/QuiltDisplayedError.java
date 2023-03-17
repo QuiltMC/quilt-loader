@@ -19,11 +19,9 @@ package org.quiltmc.loader.api.plugin;
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A reported error during plugin loading, which is shown in the error screen. This doesn't necessarily indicate an
  * error - however reporting any errors will cause the plugin loading to halt at the end of the current cycle. */
@@ -47,7 +45,7 @@ public interface QuiltDisplayedError {
 	 * in the gui. */
 	QuiltDisplayedError appendThrowable(Throwable t);
 
-	/** Defaults to {@link PluginGuiManager#iconLevelError()}. */
+	/** Defaults to {@link QuiltLoaderGui#iconLevelError()}. */
 	QuiltDisplayedError setIcon(QuiltLoaderIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
