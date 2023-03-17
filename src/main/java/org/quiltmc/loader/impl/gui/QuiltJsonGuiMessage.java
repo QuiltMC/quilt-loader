@@ -175,17 +175,17 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	}
 
 	@Override
-	public QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath) {
+	public QuiltErrorButton addFileViewButton(QuiltLoaderText name, Path openedPath) {
 		return button(name, QuiltBasicButtonAction.VIEW_FILE).arg("file", openedPath.toString());
 	}
 
 	@Override
-	public QuiltPluginButton addFileEditButton(QuiltLoaderText name, Path openedPath) {
+	public QuiltErrorButton addFileEditButton(QuiltLoaderText name, Path openedPath) {
 		return button(name, QuiltBasicButtonAction.EDIT_FILE).arg("file", openedPath.toString());
 	}
 
 	@Override
-	public QuiltPluginButton addFolderViewButton(QuiltLoaderText name, Path openedFolder) {
+	public QuiltErrorButton addFolderViewButton(QuiltLoaderText name, Path openedFolder) {
 		if (FasterFiles.isRegularFile(openedFolder)) {
 			return addFileViewButton(name, openedFolder);
 		} else {
@@ -194,36 +194,36 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	}
 
 	@Override
-	public QuiltPluginButton addOpenLinkButton(QuiltLoaderText name, String url) {
+	public QuiltErrorButton addOpenLinkButton(QuiltLoaderText name, String url) {
 		return button(name, QuiltBasicButtonAction.OPEN_WEB_URL).arg("url", url);
 	}
 
 	@Override
-	public QuiltPluginButton addOpenQuiltSupportButton() {
+	public QuiltErrorButton addOpenQuiltSupportButton() {
 		QuiltJsonButton button = QuiltJsonButton.createUserSupportButton(this);
 		buttons.add(button);
 		return button;
 	}
 
 	@Override
-	public QuiltPluginButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText) {
+	public QuiltErrorButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText) {
 		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_TEXT).arg("text", fullText);
 	}
 
 	@Override
-	public QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile) {
+	public QuiltErrorButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile) {
 		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE).arg("file", openedFile.toString());
 	}
 
 	@Override
-	public QuiltPluginButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action) {
+	public QuiltErrorButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action) {
 		QuiltJsonButton button = button(name, QuiltBasicButtonAction.RETURN_SIGNAL_ONCE, action);
 		button.disabledText = disabledText.toString();
 		return button;
 	}
 
 	@Override
-	public QuiltPluginButton addActionButton(QuiltLoaderText name, Runnable action) {
+	public QuiltErrorButton addActionButton(QuiltLoaderText name, Runnable action) {
 		return button(name, QuiltBasicButtonAction.RETURN_SIGNAL_MANY, action);
 	}
 

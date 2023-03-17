@@ -46,46 +46,46 @@ public interface QuiltDisplayedError {
 	QuiltDisplayedError setIcon(QuiltLoaderIcon icon);
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
-	default QuiltPluginButton addFileViewButton(Path openedPath) {
+	default QuiltErrorButton addFileViewButton(Path openedPath) {
 		return addFileViewButton(QuiltLoaderText.translate("button.view_file", openedPath.getFileName()), openedPath);
 	}
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
-	QuiltPluginButton addFileViewButton(QuiltLoaderText name, Path openedPath);
+	QuiltErrorButton addFileViewButton(QuiltLoaderText name, Path openedPath);
 
 	/** Adds a button to this error, which will open a file editor, editing the given file. */
-	default QuiltPluginButton addFileEditButton(Path openedPath) {
+	default QuiltErrorButton addFileEditButton(Path openedPath) {
 		return addFileEditButton(QuiltLoaderText.translate("button.edit_file", openedPath.getFileName()), openedPath);
 	}
 
 	/** Adds a button to this error, which will open a file editor, editing the given file. */
-	QuiltPluginButton addFileEditButton(QuiltLoaderText name, Path openedPath);
+	QuiltErrorButton addFileEditButton(QuiltLoaderText name, Path openedPath);
 
 	/** Adds a button to this error, which will open a file browser showing the selected folder. */
-	QuiltPluginButton addFolderViewButton(QuiltLoaderText name, Path openedFolder);
+	QuiltErrorButton addFolderViewButton(QuiltLoaderText name, Path openedFolder);
 
 	/** Adds a button to this error, which will open the specified URL in a browser window. */
-	QuiltPluginButton addOpenLinkButton(QuiltLoaderText name, String url);
+	QuiltErrorButton addOpenLinkButton(QuiltLoaderText name, String url);
 
 	/** Adds a button to this error, which opens the quilt user support forum. */
-	QuiltPluginButton addOpenQuiltSupportButton();
+	QuiltErrorButton addOpenQuiltSupportButton();
 
-	QuiltPluginButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText);
+	QuiltErrorButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText);
 
-	QuiltPluginButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile);
+	QuiltErrorButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile);
 
-	QuiltPluginButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action);
+	QuiltErrorButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action);
 
-	QuiltPluginButton addActionButton(QuiltLoaderText name, Runnable action);
+	QuiltErrorButton addActionButton(QuiltLoaderText name, Runnable action);
 
 	/** Changes this error message to be "fixed". */
 	void setFixed();
 
 	@ApiStatus.NonExtendable
-	public interface QuiltPluginButton {
-		QuiltPluginButton text(QuiltLoaderText text);
+	public interface QuiltErrorButton {
+		QuiltErrorButton text(QuiltLoaderText text);
 
-		QuiltPluginButton icon(QuiltLoaderIcon icon);
+		QuiltErrorButton icon(QuiltLoaderIcon icon);
 
 		/** Enables this button. This is the default state. */
 		default void enable() {

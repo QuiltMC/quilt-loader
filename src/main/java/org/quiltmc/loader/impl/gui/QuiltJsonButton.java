@@ -25,13 +25,13 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltPluginButton;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPluginButton {
+public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltErrorButton {
 
 	interface QuiltButtonListener {
 		void onTextChanged();
@@ -122,7 +122,7 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 	}
 
 	@Override
-	public QuiltPluginButton text(QuiltLoaderText newText) {
+	public QuiltErrorButton text(QuiltLoaderText newText) {
 		if (newText == null) {
 			throw new NullPointerException("text");
 		}
@@ -136,7 +136,7 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltPlug
 	}
 
 	@Override
-	public QuiltPluginButton icon(QuiltLoaderIcon newIcon) {
+	public QuiltErrorButton icon(QuiltLoaderIcon newIcon) {
 		if (newIcon == null) {
 			this.icon = action.defaultIcon;
 		} else {
