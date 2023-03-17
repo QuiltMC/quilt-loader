@@ -17,9 +17,9 @@
 package org.quiltmc.loader.api.gui;
 
 import org.quiltmc.loader.impl.gui.QuiltLoaderTextImpl;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/** Text class for translating text into whatever language the user has selected. Currently only quilt-loader language
+ * entries are supported, but this will expand in the future to allow loading language entries from mods too. */
 public interface QuiltLoaderText {
 	public static final QuiltLoaderText EMPTY = new QuiltLoaderTextImpl("", false);
 

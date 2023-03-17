@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.plugin;
+package org.quiltmc.loader.api.gui;
 
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.api.gui.QuiltLoaderGui;
-import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
-import org.quiltmc.loader.api.gui.QuiltLoaderText;
 
 /** A reported error during plugin loading, which is shown in the error screen. This doesn't necessarily indicate an
  * error - however reporting any errors will cause the plugin loading to halt at the end of the current cycle. */

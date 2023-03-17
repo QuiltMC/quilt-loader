@@ -25,9 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;

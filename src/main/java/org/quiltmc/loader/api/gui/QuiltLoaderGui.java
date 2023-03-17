@@ -24,7 +24,6 @@ import java.util.Map;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
-import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltFork;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;

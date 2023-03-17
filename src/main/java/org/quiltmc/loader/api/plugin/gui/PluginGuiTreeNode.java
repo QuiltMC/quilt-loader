@@ -18,9 +18,9 @@ package org.quiltmc.loader.api.plugin.gui;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.plugin.QuiltDisplayedError;
 
 public interface PluginGuiTreeNode {
 
