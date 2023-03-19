@@ -1326,7 +1326,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	/** Processes {@link TentativeLoadOption}s.
-	 * 
+	 *
 	 * @return True if any tentative options were found, false otherwise. */
 	private boolean processTentatives(ModSolveResult partialResult) {
 
@@ -1921,26 +1921,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	void addSingleModOption(ModLoadOption mod, BasePluginContext provider, boolean only, PluginGuiTreeNode guiNode) {
-
-		PluginGuiTreeNode loadedBy = guiNode.addChild(QuiltLoaderText.translate("gui.text.mod_loaded_by", provider.pluginId()))//
-			.mainIcon(mod.modTypeIcon());
-
-		if (only) {
-			guiNode.subIcon(mod.modTypeIcon());
-			loadedBy.debug();
-		}
-
 		String id = mod.id();
 		Version version = mod.version();
 		Path from = mod.from();
-		modPaths.put(from, mod);
-		modProviders.put(mod, provider.pluginId());
-		modGuiNodes.put(mod, guiNode);
-
-		guiNode.addChild(QuiltLoaderText.translate("gui.text.id", id));
-		guiNode.addChild(QuiltLoaderText.translate("gui.text.version", version.raw()));
 
 		PotentialModSet set = modIds.computeIfAbsent(id, k -> new PotentialModSet());
+
+		ModLoadOption current = set.byVersionSingles.get(version);
+		if (current != null && current.isMandatory() && mod.isMandatory() && current.getClass() == mod.getClass() && QuiltLoader.isDevelopmentEnvironment()) {
+			Log.warn(LogCategory.SOLVING, String.format("Ignoring duplicate mod %s of the same version %s loaded from %s", id, version, from));
+			return;
+		}
+
 		List<ModLoadOption> already = set.byVersionAll.computeIfAbsent(version, v -> new ArrayList<>());
 		already.add(mod);
 		set.all.add(mod);
@@ -1956,6 +1948,21 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		if (!(mod instanceof TentativeLoadOption) && mod.metadata().plugin() != null) {
 			idsWithPlugins.add(id);
 		}
+
+		modPaths.put(from, mod);
+		modProviders.put(mod, provider.pluginId());
+		modGuiNodes.put(mod, guiNode);
+
+		PluginGuiTreeNode loadedBy = guiNode.addChild(QuiltLoaderText.translate("gui.text.mod_loaded_by", provider.pluginId()))//
+						.mainIcon(mod.modTypeIcon());
+
+		if (only) {
+			guiNode.subIcon(mod.modTypeIcon());
+			loadedBy.debug();
+		}
+
+		guiNode.addChild(QuiltLoaderText.translate("gui.text.id", id));
+		guiNode.addChild(QuiltLoaderText.translate("gui.text.version", version.raw()));
 
 		addLoadOption(mod, provider);
 	}
