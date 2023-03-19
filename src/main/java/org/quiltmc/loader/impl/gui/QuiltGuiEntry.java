@@ -155,7 +155,7 @@ public final class QuiltGuiEntry {
 					.arg("file", crashReportFile.toString());
 			}
 
-			tree.addButton(QuiltLoaderText.translate("Open Mods Folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
+			tree.addButton(QuiltLoaderText.translate("button.open_mods_folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
 				.arg("folder", QuiltLoaderImpl.INSTANCE.getModsDir().toString());
 
 			tree.addButton("Exit", QuiltJsonGui.QuiltBasicButtonAction.CLOSE);
