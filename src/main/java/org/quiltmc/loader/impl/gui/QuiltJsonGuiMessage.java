@@ -263,9 +263,7 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		lines.addAll(reportLines);
 
 		if (lines.isEmpty()) {
-			lines.add(
-				"The plugin that created this error (" + reportingPlugin + ") forgot to call 'appendReportText'!"
-			);
+			lines.add("The plugin that created this error (" + reportingPlugin + ") forgot to call 'appendReportText'!");
 			lines.add("The next stacktrace is where the plugin created the error, not the actual error.'");
 			exceptions.add(0, reportTrace);
 		}
