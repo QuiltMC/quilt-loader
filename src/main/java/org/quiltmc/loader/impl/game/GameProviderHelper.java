@@ -253,7 +253,11 @@ public final class GameProviderHelper {
 	}
 
 	private static Path getDeobfJarDir(Path gameDir, String gameId, String gameVersion) {
-		Path ret = gameDir.resolve(QuiltLoaderImpl.CACHE_DIR_NAME).resolve(QuiltLoaderImpl.REMAPPED_JARS_DIR_NAME);
+		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
+
+		loader.setGameDir(gameDir);
+		Path ret = loader.getCacheDir().resolve(QuiltLoaderImpl.CACHE_DIR_NAME).resolve(QuiltLoaderImpl.REMAPPED_JARS_DIR_NAME);
+
 		StringBuilder versionDirName = new StringBuilder();
 
 		if (!gameId.isEmpty()) {

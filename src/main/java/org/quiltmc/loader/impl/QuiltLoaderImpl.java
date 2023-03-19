@@ -122,12 +122,13 @@ public final class QuiltLoaderImpl {
 	public static final String VERSION = "0.18.5";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
+	public static final String DEFAULT_CACHE_DIR = ".cache";
 	public static final String DEFAULT_CONFIG_DIR = "config";
 
-	public static final String CACHE_DIR_NAME = ".quilt"; // relative to game dir
-	private static final String PROCESSED_MODS_DIR_NAME = "processedMods"; // relative to cache dir
-	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to cache dir
-	private static final String TMP_DIR_NAME = "tmp"; // relative to cache dir
+	public static final String CACHE_DIR_NAME = "quilt_loader"; // inside global cache dir
+	private static final String PROCESSED_MODS_DIR_NAME = "processedMods"; // relative to loader cache dir
+	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to loader cache dir
+	private static final String TMP_DIR_NAME = "tmp"; // relative to loader cache dir
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
@@ -148,6 +149,7 @@ public final class QuiltLoaderImpl {
 	/** The value of {@link Arguments#ADD_MODS}. This must be stored since we remove it before launching the game. */
 	private String argumentModsList;
 	private Path gameDir;
+	private Path cacheDir;
 	private Path configDir;
 	private Path modsDir;
 
@@ -187,10 +189,12 @@ public final class QuiltLoaderImpl {
 		argumentModsList = provider.getArguments().remove(Arguments.ADD_MODS);
 	}
 
-	private void setGameDir(Path gameDir) {
+	public void setGameDir(Path gameDir) {
 		this.gameDir = gameDir;
-		String configDir = System.getProperty(SystemProperties.CONFIG_DIRECTORY);
-		this.configDir = gameDir.resolve((configDir == null || configDir.isEmpty()) ? DEFAULT_CONFIG_DIR : configDir);
+
+		this.cacheDir = gameDir.resolve(System.getProperty(SystemProperties.CACHE_DIRECTORY, DEFAULT_CACHE_DIR));
+		this.configDir = gameDir.resolve(System.getProperty(SystemProperties.CONFIG_DIRECTORY, DEFAULT_CONFIG_DIR));
+
 		initializeModsDir(gameDir);
 	}
 
@@ -218,25 +222,36 @@ public final class QuiltLoaderImpl {
 		return gameDir;
 	}
 
-	/**
-	 * @return The game instance's configuration directory.
-	 */
-	public Path getConfigDir() {
-		if (configDir == null) {
-			// May be null during tests
+	private Path ensureDirExists(Path path, String name) {
+		if (path == null) {
+			// May be null during tests for cache and config directories
 			// If this is in production then things are about to go very wrong.
 			return null;
 		}
 
-		if (!Files.exists(configDir)) {
+		if (!Files.exists(path)) {
 			try {
-				Files.createDirectories(configDir);
+				Files.createDirectories(path);
 			} catch (IOException e) {
-				throw new RuntimeException(String.format("Failed to create config directory at '%s'", configDir), e);
+				throw new RuntimeException(String.format("Failed to create %s directory at '%s'", name, path), e);
 			}
 		}
 
-		return configDir;
+		return path;
+	}
+
+	/**
+	 * @return The game instance's cache directory.
+	 */
+	public Path getCacheDir() {
+		return ensureDirExists(cacheDir, "cache");
+	}
+
+	/**
+	 * @return The game instance's configuration directory.
+	 */
+	public Path getConfigDir() {
+		return ensureDirExists(configDir, "config");
 	}
 
 	public Path getModsDir() {
@@ -245,14 +260,7 @@ public final class QuiltLoaderImpl {
 			initializeModsDir(gameDir);
 		}
 
-		if (!Files.exists(modsDir)) {
-			try {
-				Files.createDirectories(modsDir);
-			} catch (IOException e) {
-				throw new RuntimeException(String.format("Failed to create mods directory at '%s'", modsDir), e);
-			}
-		}
-		return modsDir;
+		return ensureDirExists(modsDir, "mods");
 	}
 
 	public void load() {
@@ -305,7 +313,7 @@ public final class QuiltLoaderImpl {
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
 
-		Path transformCacheFolder = getGameDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
+		Path transformCacheFolder = getCacheDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
 		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, result);
 		QuiltZipPath transformedModBundle = cacheResult.transformCacheRoot;
 
