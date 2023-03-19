@@ -210,7 +210,6 @@ public final class QuiltLoader {
 	 * Get the current directory for temporary files.
 	 *
 	 * @return the cache directory
-	 * @since 0.18.3
 	 */
 	public static Path getCacheDir() {
 		return impl().getCacheDir();
