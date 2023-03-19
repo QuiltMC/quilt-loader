@@ -1927,8 +1927,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		PotentialModSet set = modIds.computeIfAbsent(id, k -> new PotentialModSet());
 
-		if (set.byVersionSingles.containsKey(version) && QuiltLoader.isDevelopmentEnvironment()) {
-			Log.debug(LogCategory.SOLVING, String.format("Ignoring duplicate mod %s of the same version %s loaded from %s", id, version, from));
+		ModLoadOption current = set.byVersionSingles.get(version);
+		if (current != null && current.isMandatory() && mod.isMandatory() && current.getClass() == mod.getClass() && QuiltLoader.isDevelopmentEnvironment()) {
+			Log.warn(LogCategory.SOLVING, String.format("Ignoring duplicate mod %s of the same version %s loaded from %s", id, version, from));
 			return;
 		}
 
