@@ -100,6 +100,7 @@ import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
+import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -627,7 +628,10 @@ public final class QuiltLoaderImpl {
 	public String createModTable() {
 		StringBuilder sb = new StringBuilder();
 		appendModTable(line -> {
-			sb.append(line);
+			for (int i = 0; i < 400; i++) {
+				line = line.replace("  ", " ");
+			}
+			sb.append(line.replace("| ", ", "));
 			sb.append("\n");
 		});
 		return sb.toString();
@@ -642,13 +646,16 @@ public final class QuiltLoaderImpl {
 		// - ID
 		// - version
 		// - loader plugin
+		// - hash (SHA-1)
 		// - source path(s)
 
 		int maxNameLength = "Mod".length();
 		int maxIdLength = "ID".length();
 		int maxVersionLength = "Version".length();
 		int maxPluginLength = "Plugin".length();
+		int maxHashLength = "Hash (SHA-1)".length();
 		List<Integer> maxSourcePathLengths = new ArrayList<>();
+		Map<ModContainerExt, String> hashes = new HashMap<>();
 		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
 		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
 
@@ -657,6 +664,17 @@ public final class QuiltLoaderImpl {
 			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
 			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
 			maxPluginLength = Math.max(maxPluginLength, mod.pluginId().length());
+
+			Path origin = mod.getSourcePaths().size() == 1 ? mod.getSourcePaths().get(0).size() == 1 ? mod.getSourcePaths().get(0).get(0) : null : null;
+			String hash = "";
+			try {
+				hash = origin == null || FasterFiles.isDirectory(origin) ? "" : HashUtil.hashToString(HashUtil.computeHash(origin));
+			} catch (IOException e) {
+				hash = "<" + e.getMessage() + ">";
+				e.printStackTrace();
+			}
+			hashes.put(mod, hash);
+			maxHashLength = Math.max(maxHashLength, hash.length());
 
 			for (List<Path> paths : mod.getSourcePaths()) {
 				for (int i = 0; i < paths.size(); i++) {
@@ -675,6 +693,7 @@ public final class QuiltLoaderImpl {
 		maxIdLength++;
 		maxVersionLength++;
 		maxPluginLength++;
+		maxHashLength++;
 
 		StringBuilder sbTab = new StringBuilder();
 		StringBuilder sbSep = new StringBuilder();
@@ -701,6 +720,12 @@ public final class QuiltLoaderImpl {
 		sbTab.append("| Plugin ");
 		sbSep.append("|--------");
 		for (int i = "Plugin".length(); i < maxPluginLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("| Hash (SHA-1) ");
+		sbSep.append("|--------------");
+		for (int i = "Hash (SHA-1)".length(); i < maxHashLength; i++) {
 			sbTab.append(" ");
 			sbSep.append("-");
 		}
@@ -732,6 +757,7 @@ public final class QuiltLoaderImpl {
 			// - ID
 			// - version
 			// - loader plugin
+			// - SHA-512
 			// - source path(s)
 			sbTab.append("| ");
 			String index = Integer.toString(mods.indexOf(mod));
@@ -752,6 +778,11 @@ public final class QuiltLoaderImpl {
 			}
 			sbTab.append(" | ").append(mod.pluginId());
 			for (int i = mod.pluginId().length(); i < maxPluginLength; i++) {
+				sbTab.append(" ");
+			}
+			String hash = hashes.get(mod);
+			sbTab.append(" | ").append(hash);
+			for (int i = hash.length(); i < maxHashLength; i++) {
 				sbTab.append(" ");
 			}
 

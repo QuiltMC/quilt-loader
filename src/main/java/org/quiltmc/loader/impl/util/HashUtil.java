@@ -37,7 +37,7 @@ public class HashUtil {
 			return currentDateAndTimeHash();
 		} else {
 			try {
-				MessageDigest digest = MessageDigest.getInstance("SHA-256");
+				MessageDigest digest = MessageDigest.getInstance("SHA-1");
 
 				final byte[] readCache = new byte[0x2000];
 
@@ -86,7 +86,6 @@ public class HashUtil {
 				sb.append("0");
 			}
 			sb.append(Integer.toHexString(i));
-			sb.append(" ");
 		}
 		return sb.toString();
 	}
