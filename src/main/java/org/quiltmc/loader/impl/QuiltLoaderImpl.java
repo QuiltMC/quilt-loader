@@ -628,10 +628,7 @@ public final class QuiltLoaderImpl {
 	public String createModTable() {
 		StringBuilder sb = new StringBuilder();
 		appendModTable(line -> {
-			for (int i = 0; i < 400; i++) {
-				line = line.replace("  ", " ");
-			}
-			sb.append(line.replace("| ", ", "));
+			sb.append(line);
 			sb.append("\n");
 		});
 		return sb.toString();
