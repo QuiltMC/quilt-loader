@@ -194,7 +194,7 @@ class KnotClassDelegate {
 			}
 		}
 
-		CachedUrl cachedUrl = new CachedUrl(name, allowFromParent);
+		URL url = getClassUrl(name, allowFromParent);
 
 		if (!allowFromParent && name.startsWith("org.slf4j.")) {
 			// Force slf4j itself to be loaded on a single classloader
@@ -209,9 +209,8 @@ class KnotClassDelegate {
 					URL codeSource = UrlUtil.getSource(classFileName, originalURL);
 					if (codeSource != null && !parentHiddenUrls.contains(codeSource.toString())) {
 						// Exists in parent, not hidden
-						URL alsoInMods = cachedUrl.get();
-						if (alsoInMods != null) {
-							Log.warn(LogCategory.GENERAL, "Rerouting classloading to the parent classloader instead of " + alsoInMods);
+						if (url != null) {
+							Log.warn(LogCategory.GENERAL, "Rerouting classloading to the parent classloader instead of " + url);
 						}
 						return null;
 					}
@@ -222,7 +221,6 @@ class KnotClassDelegate {
 		}
 
 		if (!allowedPrefixes.isEmpty()) {
-			URL url = cachedUrl.get();
 			String[] prefixes;
 
 			if (url != null
@@ -243,14 +241,14 @@ class KnotClassDelegate {
 			}
 		}
 
-		byte[] input = getPostMixinClassByteArray(cachedUrl, name);
+		byte[] input = getPostMixinClassByteArray(url, name);
 		if (input == null) return null;
 
 		if (allowFromParent) {
 			parentSourcedClasses.add(name);
 		}
 
-		KnotClassDelegate.Metadata metadata = getMetadata(name, cachedUrl.get());
+		KnotClassDelegate.Metadata metadata = getMetadata(name, url);
 
 		int pkgDelimiterPos = name.lastIndexOf('.');
 
@@ -269,7 +267,7 @@ class KnotClassDelegate {
 			// or where it causes a re-entrant classloading of itself
 			Log.warn(LogCategory.GENERAL, "Tried to define " + c + " but it was already loaded!");
 			Log.warn(LogCategory.GENERAL, "  - Already loaded source: " + UrlUtil.getCodeSource(c));
-			Log.warn(LogCategory.GENERAL, "  - Rejected (new) source: " + cachedUrl.get());
+			Log.warn(LogCategory.GENERAL, "  - Rejected (new) source: " + url);
 			return c;
 		}
 
@@ -436,12 +434,16 @@ class KnotClassDelegate {
 		});
 	}
 
-	public byte[] getPostMixinClassByteArray(String name, boolean allowFromParent) {
-		return getPostMixinClassByteArray(new CachedUrl(name, allowFromParent), name);
+	private URL getClassUrl(String name, boolean allowFromParent) {
+		return itf.getResource(LoaderUtil.getClassFileName(name), allowFromParent);
 	}
 
-	public byte[] getPostMixinClassByteArray(CachedUrl classFileURL, String name) {
-		byte[] transformedClassArray = getPreMixinClassByteArray(classFileURL, name);
+	public byte[] getPostMixinClassByteArray(String name, boolean allowFromParent) {
+		return getPostMixinClassByteArray(getClassUrl(name, allowFromParent), name);
+	}
+
+	public byte[] getPostMixinClassByteArray(URL url, String name) {
+		byte[] transformedClassArray = getPreMixinClassByteArray(url, name);
 
 		if (!transformInitialized || !canTransformClass(name)) {
 			return transformedClassArray;
@@ -465,13 +467,13 @@ class KnotClassDelegate {
 	 * Runs all the class transformers except mixin.
 	 */
 	public byte[] getPreMixinClassByteArray(String name, boolean allowFromParent) {
-		return getPreMixinClassByteArray(new CachedUrl(name, allowFromParent), name);
+		return getPreMixinClassByteArray(getClassUrl(name, allowFromParent), name);
 	}
 
 	/**
 	 * Runs all the class transformers except mixin.
 	 */
-	public byte[] getPreMixinClassByteArray(CachedUrl classFileURL, String name) {
+	public byte[] getPreMixinClassByteArray(URL classFileURL, String name) {
 		// some of the transformers rely on dot notation
 		name = name.replace('/', '.');
 
@@ -515,11 +517,11 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(String name, boolean allowFromParent) throws IOException {
-		return getRawClassByteArray(new CachedUrl(name, allowFromParent), name);
+		return getRawClassByteArray(getClassUrl(name, allowFromParent), name);
 	}
 
-	public byte[] getRawClassByteArray(CachedUrl urlCache, String name) throws IOException {
-		try (InputStream inputStream = urlCache.openStream()) {
+	public byte[] getRawClassByteArray(URL url, String name) throws IOException {
+		try (InputStream inputStream = (url != null ? url.openStream() : null)) {
 			if (inputStream == null) {
 				return null;
 			}
@@ -541,31 +543,5 @@ class KnotClassDelegate {
 
 	void hideParentUrl(URL parentPath) {
 		parentHiddenUrls.add(parentPath.toString());
-	}
-
-	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-	private final class CachedUrl {
-		final String className;
-		final boolean allowFromParent;
-		boolean hasLoaded = false;
-		URL url;
-
-		CachedUrl(String className, boolean allowFromParent) {
-			this.className = className;
-			this.allowFromParent = allowFromParent;
-		}
-
-		URL get() {
-			if (!hasLoaded) {
-				url = itf.getResource(LoaderUtil.getClassFileName(className), allowFromParent);
-				hasLoaded = true;
-			}
-			return url;
-		}
-
-		InputStream openStream() throws IOException {
-			URL u = get();
-			return u != null ? u.openStream() : null;
-		}
 	}
 }
