@@ -650,7 +650,7 @@ public final class QuiltLoaderImpl {
 		int maxIdLength = "ID".length();
 		int maxVersionLength = "Version".length();
 		int maxPluginLength = "Plugin".length();
-		int maxHashLength = "Hash (SHA-1)".length();
+		int maxHashLength = "File Hash (SHA-1)".length();
 		List<Integer> maxSourcePathLengths = new ArrayList<>();
 		Map<ModContainerExt, String> hashes = new HashMap<>();
 		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
@@ -720,12 +720,6 @@ public final class QuiltLoaderImpl {
 			sbTab.append(" ");
 			sbSep.append("-");
 		}
-		sbTab.append("| Hash (SHA-1) ");
-		sbSep.append("|--------------");
-		for (int i = "Hash (SHA-1)".length(); i < maxHashLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
 		sbTab.append("|");
 		sbSep.append("|");
 
@@ -743,6 +737,15 @@ public final class QuiltLoaderImpl {
 			sbSep.append("|");
 			start = "Sub-Files";
 		}
+
+		sbTab.append(" File Hash (SHA-1) ");
+		sbSep.append("-------------------");
+		for (int i = "File Hash (SHA-1)".length(); i < maxHashLength; i++) {
+			sbTab.append(" ");
+			sbSep.append("-");
+		}
+		sbTab.append("|");
+		sbSep.append("|");
 
 		to.accept(sbTab.toString());
 		sbTab.setLength(0);
@@ -775,11 +778,6 @@ public final class QuiltLoaderImpl {
 			}
 			sbTab.append(" | ").append(mod.pluginId());
 			for (int i = mod.pluginId().length(); i < maxPluginLength; i++) {
-				sbTab.append(" ");
-			}
-			String hash = hashes.get(mod);
-			sbTab.append(" | ").append(hash);
-			for (int i = hash.length(); i < maxHashLength; i++) {
 				sbTab.append(" ");
 			}
 
@@ -824,6 +822,14 @@ public final class QuiltLoaderImpl {
 				}
 				sbTab.append(" |");
 			}
+
+			String hash = hashes.get(mod);
+			sbTab.append(" ").append(hash);
+			for (int i = hash.length(); i < maxHashLength; i++) {
+				sbTab.append(" ");
+			}
+			sbTab.append(" |");
+
 			to.accept(sbTab.toString());
 			sbTab.setLength(0);
 		}
