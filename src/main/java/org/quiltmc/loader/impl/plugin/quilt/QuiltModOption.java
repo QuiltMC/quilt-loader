@@ -18,26 +18,26 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.nio.file.Path;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.base.InternalModOptionBase;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltModOption extends InternalModOptionBase {
 
-	public QuiltModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, PluginGuiIcon fileIcon,
+	public QuiltModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, QuiltLoaderIcon fileIcon,
 		Path resourceRoot, boolean mandatory, boolean requiresRemap) {
 
 		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, requiresRemap);
 	}
 
 	@Override
-	public PluginGuiIcon modTypeIcon() {
+	public QuiltLoaderIcon modTypeIcon() {
 		return GuiManagerImpl.ICON_QUILT;
 	}
 
@@ -45,5 +45,4 @@ public class QuiltModOption extends InternalModOptionBase {
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
 		return new QuiltModContainer(pluginContext, metadata, from, transformedResourceRoot);
 	}
-
 }

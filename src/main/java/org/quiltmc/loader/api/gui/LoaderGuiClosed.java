@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2023 QuiltMC
+ * Copyright 2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.plugin.gui;
+package org.quiltmc.loader.api.gui;
 
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+/** Thrown by {@link QuiltLoaderGui#openErrorGui} if the user closed the error gui without actually fixing the error.
+ * This generally means the game should crash. */
+public final class LoaderGuiClosed extends Exception {
+	public static final LoaderGuiClosed INSTANCE = new LoaderGuiClosed();
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
-public interface PluginGuiIcon {
-
-	/** Adds a sub-icon to this main icon. The given sub-icon must not already have sub-icons. If the given sub-icon is
-	 * null then this is returned. */
-	PluginGuiIcon withDecoration(PluginGuiIcon subIcon);
+	private LoaderGuiClosed() {
+		super(null, null, false, false);
+	}
 }

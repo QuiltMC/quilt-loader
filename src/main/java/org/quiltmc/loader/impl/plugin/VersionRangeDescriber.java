@@ -18,7 +18,7 @@ package org.quiltmc.loader.impl.plugin;
 
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.VersionRange;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 
 class VersionRangeDescriber {
 	static QuiltLoaderText describe(String modName, VersionRange range, String depName, boolean transitive) {

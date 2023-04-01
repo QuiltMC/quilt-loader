@@ -25,9 +25,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -82,7 +82,7 @@ public class ArgumentModCandidateFinder {
 		Path path = Paths.get(pathStr).toAbsolutePath().normalize();
 
 		if (!FasterFiles.exists(path)) { // missing
-			QuiltPluginError error = ctx.reportError(
+			QuiltDisplayedError error = ctx.reportError(
 				QuiltLoaderText.translate("error.arg_mods.missing.title", path.getFileName())
 			);
 			if (source == null) {
@@ -105,7 +105,7 @@ public class ArgumentModCandidateFinder {
 				ctx.addFolderToScan(path);
 				return;
 			}
-			QuiltPluginError error = ctx.reportError(
+			QuiltDisplayedError error = ctx.reportError(
 				QuiltLoaderText.translate("error.arg_mods.not_folder.title", path.getFileName())
 			);
 			if (source == null) {

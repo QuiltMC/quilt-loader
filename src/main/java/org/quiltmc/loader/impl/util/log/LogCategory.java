@@ -41,6 +41,7 @@ public final class LogCategory {
 	public static final LogCategory MIXIN = create("Mixin");
 	public static final LogCategory SOLVING = create("Solving");
 	public static final LogCategory TEST = create("Test");
+	public static final LogCategory COMMS = create("Comms");
 
 	public static final String SEPARATOR = "/";
 

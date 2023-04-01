@@ -16,9 +16,13 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -26,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.quiltmc.json5.JsonReader;
+import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -52,6 +57,13 @@ public final class JsonLoaderFactoryImpl implements LoaderValueFactory {
 	}
 
 	@Override
+	public void write(LoaderValue value, OutputStream to) throws IOException {
+		JsonWriter jw = JsonWriter.json(new BufferedWriter(new OutputStreamWriter(to, StandardCharsets.UTF_8)));
+		((JsonLoaderValue) value).write(jw);
+		jw.flush();
+	}
+
+	@Override
 	public LoaderValue nul() {
 		return new JsonLoaderValue.NullImpl(LOCATION);
 	}
@@ -72,12 +84,12 @@ public final class JsonLoaderFactoryImpl implements LoaderValueFactory {
 	}
 
 	@Override
-	public LoaderValue array(LoaderValue[] values) {
+	public LoaderValue.LArray array(LoaderValue[] values) {
 		return new JsonLoaderValue.ArrayImpl(LOCATION, Arrays.asList(Arrays.copyOf(values, values.length)));
 	}
 
 	@Override
-	public LoaderValue object(Map<String, LoaderValue> map) {
+	public LoaderValue.LObject object(Map<String, LoaderValue> map) {
 		return new JsonLoaderValue.ObjectImpl(LOCATION, new HashMap<>(map));
 	}
 }
