@@ -30,6 +30,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
@@ -298,7 +300,16 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 
 	public void waitUntilClosed() throws LoaderGuiException, LoaderGuiClosed {
 		try {
-			onClosedFuture.get();
+			while (true) {
+				try {
+					onClosedFuture.get(1, TimeUnit.SECONDS);
+					break;
+				} catch (TimeoutException e) {
+					if (QuiltForkComms.getCurrentComms() == null) {
+						throw new LoaderGuiException("Forked communication failure; check the log for details!", e);
+					}
+				}
+			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			throw new LoaderGuiException(e);

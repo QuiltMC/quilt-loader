@@ -137,7 +137,7 @@ abstract class QuiltGuiSyncBase {
 		map.put("syncType", lvf().string(syncType()));
 		map.put("data", data);
 
-		QuiltForkComms.getCurrentComms().send(lvf().object(map));
+		QuiltFork.sendRaw(lvf().object(map));
 	}
 
 	void handleUpdate(String name, LObject data) throws IOException {

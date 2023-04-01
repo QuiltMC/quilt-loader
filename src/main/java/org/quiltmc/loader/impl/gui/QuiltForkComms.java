@@ -241,6 +241,7 @@ public class QuiltForkComms {
 			}
 			// Crashed
 			QuiltForkComms.this.sender = QuiltForkComms.this.new FailedSender();
+			QuiltForkComms.this.close();
 		}
 	}
 
