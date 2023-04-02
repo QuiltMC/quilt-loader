@@ -98,7 +98,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 				}
 
 				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
-				context().addFileToScan(inner, jarNode);
+				context().addFileToScan(inner, jarNode, false);
 			}
 
 			boolean mandatory = location.isDirect();

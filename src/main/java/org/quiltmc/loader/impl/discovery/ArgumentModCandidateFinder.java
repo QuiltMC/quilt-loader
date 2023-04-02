@@ -121,7 +121,7 @@ public class ArgumentModCandidateFinder {
 				error.appendReportText(" (Inside the file " + source + ")");
 			}
 		} else {
-			ctx.addFileToScan(path, ctx.manager().getRootGuiNode().addChild(QuiltLoaderText.translate("")));
+			ctx.addFileToScan(path, ctx.manager().getRootGuiNode().addChild(QuiltLoaderText.translate("")), true);
 		}
 	}
 }

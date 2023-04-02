@@ -61,8 +61,9 @@ public interface QuiltPluginContext {
 	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
 	 * or vice versa. Or any mod type of which a loader plugin can load).
 	 * 
-	 * @param guiNode TODO */
-	void addFileToScan(Path file, PluginGuiTreeNode guiNode);
+	 * @param guiNode The GUI node to display the loaded mod details under
+	 * @param direct True if the file is directly loaded rather than being included in another mod (see {@link ModLocation#isDirect()}) */
+	void addFileToScan(Path file, PluginGuiTreeNode guiNode, boolean direct);
 
 	/** Adds an additional folder to scan for mods, which will be treated in the same way as the regular mods folder.
 	 *

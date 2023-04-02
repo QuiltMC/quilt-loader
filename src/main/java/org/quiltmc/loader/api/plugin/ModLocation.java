@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api.plugin;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -28,8 +29,8 @@ public interface ModLocation {
 	/** @return True if the mod is directly on the classpath, otherwise false. */
 	boolean onClasspath();
 
-	/** @return True if the mod was scanned as a direct result of
-	 *         {@link QuiltPluginContext#addFolderToScan(java.nio.file.Path)}, rather than being scanned as a sub-mod.
-	 *         This also returns true if {@link #onClasspath()} returns true. */
+	/** @return True if the mod was directly scanned as a file or folder, rather than being scanned as a sub-mod.
+	 *         This also returns true if {@link #onClasspath()} returns true.
+	 *         Influences {@link ModLoadOption#isMandatory()} in the built-in plugins. */
 	boolean isDirect();
 }
