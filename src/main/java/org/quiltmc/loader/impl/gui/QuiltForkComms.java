@@ -148,7 +148,6 @@ public class QuiltForkComms {
 	private volatile BlockingQueue<LoaderValue> writerQueue;
 
 	private Sender sender;
-	private volatile Throwable exception;
 	private volatile boolean closed;
 
 	QuiltForkComms(Consumer<LoaderValue> msgHandler) {
@@ -234,7 +233,6 @@ public class QuiltForkComms {
 						return;
 					} catch (IOException e) {
 						e.printStackTrace();
-						exception = e;
 					}
 					break;
 				}
@@ -288,6 +286,18 @@ public class QuiltForkComms {
 			reader.start();
 		}
 
+		private void closeAfterError() {
+			synchronized (QuiltForkComms.this) {
+				try {
+					socket.close();
+				} catch (IOException e) {
+					System.err.println("Failed to close the socket! (on the " + side + ")");
+					e.printStackTrace();
+				}
+				close();
+			}
+		}
+
 		private void runWriter() {
 			try {
 				DataOutputStream stream = new DataOutputStream(socket.getOutputStream());
@@ -312,14 +322,9 @@ public class QuiltForkComms {
 				if (closed) {
 					return;
 				}
+				System.err.println("Failed during write (on the " + side + ")");
 				e.printStackTrace();
-				synchronized (QuiltForkComms.this) {
-					if (exception == null) {
-						exception = e;
-					} else {
-						exception.addSuppressed(e);
-					}
-				}
+				closeAfterError();
 			}
 		}
 
@@ -342,17 +347,12 @@ public class QuiltForkComms {
 					return;
 				}
 				if (watchStream != null && watchStream.eof) {
-					closed = true;
+					closeAfterError();
 					return;
 				}
+				System.err.println("Failed during read (on the " + side + ")");
 				e.printStackTrace();
-				synchronized (QuiltForkComms.this) {
-					if (exception == null) {
-						exception = e;
-					} else {
-						exception.addSuppressed(e);
-					}
-				}
+				closeAfterError();
 			}
 		}
 
