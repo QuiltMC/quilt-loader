@@ -28,6 +28,7 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -37,6 +38,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 public class ArgumentModCandidateFinder {
 
 	public static void addMods(QuiltPluginContext ctx, String list, String source) {
+		PluginGuiTreeNode argModsNode = ctx.manager().getRootGuiNode().addChild(QuiltLoaderText.translate("gui.text.arg_mods"));
 		for (String pathStr : list.split(File.pathSeparator)) {
 			if (pathStr.isEmpty()) continue;
 
@@ -58,7 +60,7 @@ public class ArgumentModCandidateFinder {
 						line = line.trim();
 						if (line.isEmpty()) continue;
 
-						addMod(ctx, line, source, fileSource);
+						addMod(ctx, line, source, fileSource, argModsNode);
 					}
 				} catch (IOException e) {
 					throw new RuntimeException(
@@ -66,12 +68,12 @@ public class ArgumentModCandidateFinder {
 					);
 				}
 			} else {
-				addMod(ctx, pathStr, source, null);
+				addMod(ctx, pathStr, source, null, argModsNode);
 			}
 		}
 	}
 
-	private static void addMod(QuiltPluginContext ctx, String pathStr, String original, String source) {
+	private static void addMod(QuiltPluginContext ctx, String pathStr, String original, String source, PluginGuiTreeNode argModsNode) {
 
 		final boolean folder = pathStr.endsWith(File.separator + "*") || pathStr.endsWith("/*");
 
@@ -121,7 +123,7 @@ public class ArgumentModCandidateFinder {
 				error.appendReportText(" (Inside the file " + source + ")");
 			}
 		} else {
-			ctx.addFileToScan(path, ctx.manager().getRootGuiNode().addChild(QuiltLoaderText.translate("")), true);
+			ctx.addFileToScan(path, argModsNode.addChild(QuiltLoaderText.of(pathStr)), true);
 		}
 	}
 }
