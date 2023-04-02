@@ -153,6 +153,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	/** Every mod id that contained a plugin, at any point. Used to scan for plugins at the start of each cycle. */
 	final Set<String> idsWithPlugins = new HashSet<>();
+	boolean pluginIdsChanged = false;
 
 	final Sat4jWrapper solver = new Sat4jWrapper();
 
@@ -1117,6 +1118,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		PerCycleStep step = PerCycleStep.START;
 		this.perCycleStep = step;
+		this.pluginIdsChanged = false;
 
 		refreshPlugins();
 		checkForErrors();
@@ -1146,6 +1148,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					break;
 				}
 				case SOLVE: {
+
+					if (pluginIdsChanged) {
+						return null;
+					}
 
 					if (solver.hasSolution()) {
 						ModSolveResultImpl partialResult = getPartialSolution();
@@ -1969,7 +1975,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 
 		if (!(mod instanceof TentativeLoadOption) && mod.metadata().plugin() != null) {
-			idsWithPlugins.add(id);
+			pluginIdsChanged |= idsWithPlugins.add(id);
 		}
 
 		modPaths.put(from, mod);
