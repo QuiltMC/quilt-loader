@@ -67,7 +67,8 @@ public class QuiltFork {
 			COMMS = null;
 		} else {
 			try {
-				COMMS = QuiltForkComms.connect(new File(".quilt/comms"), QuiltFork::handleMessageFromServer);
+				File base = QuiltLoaderImpl.INSTANCE.getQuiltLoaderCacheDir().resolve("comms").toFile();
+				COMMS = QuiltForkComms.connect(base, QuiltFork::handleMessageFromServer);
 			} catch (IOException e) {
 				throw new Error(e);
 			}

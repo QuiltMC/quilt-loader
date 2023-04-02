@@ -219,6 +219,7 @@ class QuiltMainWindow {
 					return;
 				}
 				case CLOSE: {
+					jsonGui.onClosedFuture.complete(null);
 					window.dispose();
 					return;
 				}

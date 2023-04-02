@@ -249,6 +249,13 @@ public final class QuiltLoaderImpl {
 	}
 
 	/**
+	 * @return "{@link #getCacheDir()} / {@value #CACHE_DIR_NAME}"
+	 */
+	public Path getQuiltLoaderCacheDir() {
+		return ensureDirExists(getCacheDir().resolve(CACHE_DIR_NAME), "quilt loader cache");
+	}
+
+	/**
 	 * @return The game instance's configuration directory.
 	 */
 	public Path getConfigDir() {

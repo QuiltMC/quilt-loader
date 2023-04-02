@@ -110,7 +110,9 @@ public class QuiltForkComms {
 
 			Process process = pb.start();
 
-			ipc.sender = ipc.new ConnectingSender(portFile, readyFile, process);
+			ConnectingSender connecting = ipc.new ConnectingSender(portFile, readyFile, process);
+			ipc.sender = connecting;
+			connecting.start();
 		} else {
 			ipc.sender = ipc.new ReadySender(overridePort);
 		}
@@ -218,6 +220,9 @@ public class QuiltForkComms {
 			this.waitingProcess = waitingProcess;
 			this.waitingThread = new Thread(this::runWait, "Quilt IPC Launcher");
 			waitingThread.setDaemon(true);
+		}
+
+		private void start() {
 			waitingThread.start();
 		}
 
