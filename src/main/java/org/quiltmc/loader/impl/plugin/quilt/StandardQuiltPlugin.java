@@ -247,7 +247,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				}
 
 				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
-				context().addFileToScan(inner, jarNode);
+				context().addFileToScan(inner, jarNode, false);
 			}
 
 			// a mod needs to be remapped if we are in a development environment, and the mod
