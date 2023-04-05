@@ -52,6 +52,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -77,6 +79,7 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
@@ -470,43 +473,109 @@ class QuiltMainWindow {
 		title.setFont(title.getFont().deriveFont(Font.BOLD));
 		top.add(title, BorderLayout.CENTER);
 
-		JPanel panel = container;
+		AtomicReference<JPanel> currentOuterPanel = new AtomicReference<>();
 
-		for (String desc : message.description) {
-			JPanel outer = panel;
-			panel = new JPanel();
-			panel.setAlignmentY(0);
-			panel.setLayout(new BorderLayout());
-			outer.add(panel, BorderLayout.CENTER);
+		class MessageListener implements QuiltJsonGuiMessage.QuiltMessageListener {
 
-			panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
-		}
+			static final int FLAG_UPDATE_TITLE = 1 << 0;
+			static final int FLAG_UPDATE_ICON = 1 << 1;
+			static final int FLAG_UPDATE_DESC = 1 << 2;
 
-		for (String info : message.additionalInfo) {
-			JPanel outer = panel;
-			panel = new JPanel();
-			panel.setAlignmentY(0);
-			panel.setLayout(new BorderLayout());
-			outer.add(panel, BorderLayout.CENTER);
+			int updateFlags = 0;
+			String titleText = message.title;
+			String iconType = message.iconType;
+			String[] description = message.description.toArray(new String[0]);
+			String[] additionalInfo = message.additionalInfo.toArray(new String[0]);
 
-			JLabel label = new JLabel(applyWrapping(info));
-			label.setFont(label.getFont().deriveFont(Font.ITALIC));
-			panel.add(label, BorderLayout.NORTH);
-		}
-
-		message.listeners.add(new QuiltJsonGuiMessage.QuiltMessageListener() {
 			@Override
-			public void onFixed() {
-				// temp
-				icon.setIcon(icons.get(IconInfo.parse("tick"), 32));
+			public synchronized void onTitleChanged() {
+				titleText = message.title;
+				updateFlags |= FLAG_UPDATE_TITLE;
+				SwingUtilities.invokeLater(this::update);
 			}
-		});
+
+			@Override
+			public synchronized void onIconChanged() {
+				iconType = message.iconType;
+				updateFlags |= FLAG_UPDATE_ICON;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			@Override
+			public synchronized void onDescriptionChanged() {
+				description = message.description.toArray(new String[0]);
+				updateFlags |= FLAG_UPDATE_DESC;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			@Override
+			public synchronized void onAdditionalInfoChanged() {
+				additionalInfo = message.additionalInfo.toArray(new String[0]);
+				updateFlags |= FLAG_UPDATE_DESC;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			synchronized void update() {
+				if ((updateFlags & FLAG_UPDATE_TITLE) != 0) {
+					title.setText(titleText);
+				}
+
+				if ((updateFlags & FLAG_UPDATE_ICON) != 0) {
+					icon.setIcon(icons.get(IconInfo.parse(iconType), 32));
+				}
+
+				if ((updateFlags & FLAG_UPDATE_DESC) != 0) {
+					populateDescInfo();
+				}
+
+				updateFlags = 0;
+			}
+
+			void populateDescInfo() {
+				if (currentOuterPanel.get() != null) {
+					JPanel old = currentOuterPanel.getAndSet(null);
+					container.remove(old);
+				}
+
+				JPanel panel = container;
+				for (String desc : description) {
+					JPanel outer = panel;
+					panel = new JPanel();
+					panel.setAlignmentY(0);
+					panel.setLayout(new BorderLayout());
+					outer.add(panel, BorderLayout.CENTER);
+
+					panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
+				}
+
+				for (String info : additionalInfo) {
+					JPanel outer = panel;
+					panel = new JPanel();
+					panel.setAlignmentY(0);
+					panel.setLayout(new BorderLayout());
+					outer.add(panel, BorderLayout.CENTER);
+
+					JLabel label = new JLabel(applyWrapping(info));
+					label.setFont(label.getFont().deriveFont(Font.ITALIC));
+					panel.add(label, BorderLayout.NORTH);
+					currentOuterPanel.compareAndSet(null, panel);
+				}
+
+				container.validate();
+			}
+		}
+
+		MessageListener listener = new MessageListener();
+
+		listener.populateDescInfo();
+
+		message.listeners.add(listener);
 
 		if (!message.buttons.isEmpty()) {
 			JPanel buttons = new JPanel();
 			buttons.setAlignmentY(0);
 			buttons.setLayout(new FlowLayout(FlowLayout.LEADING));
-			panel.add(buttons, BorderLayout.CENTER);
+			container.add(buttons, BorderLayout.SOUTH);
 
 			for (QuiltJsonButton button : message.buttons) {
 				convertToJButton(buttons, button);

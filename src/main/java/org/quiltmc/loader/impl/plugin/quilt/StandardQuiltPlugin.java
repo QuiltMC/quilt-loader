@@ -106,6 +106,8 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				} catch (ParseException | IOException e2) {
 					mostRecentException[0] = e2;
 					e2.printStackTrace();
+					error.clearDescription();
+					error.appendDescription(QuiltLoaderText.of(e2.getMessage()));
 				}
 			}).icon(QuiltLoaderGui.iconReload());
 

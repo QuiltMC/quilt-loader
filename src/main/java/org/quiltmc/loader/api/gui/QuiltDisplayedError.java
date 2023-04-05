@@ -33,10 +33,18 @@ public interface QuiltDisplayedError {
 	/** Adds more lines of description. */
 	QuiltDisplayedError appendDescription(QuiltLoaderText... descriptions);
 
+	/** Removes all description text that was added by {@link #appendDescription(QuiltLoaderText...)}. Useful for
+	 * changing the description after the window has already been shown. */
+	QuiltDisplayedError clearDescription();
+
 	QuiltDisplayedError setOrdering(int priority);
 
 	/** Adds more lines of additional information, which is hidden from the user by default. */
 	QuiltDisplayedError appendAdditionalInformation(QuiltLoaderText... information);
+
+	/** Removes all additional text that was added by {@link #appendAdditionalInformation(QuiltLoaderText...)}. Useful
+	 * for changing the description after the window has already been shown. */
+	QuiltDisplayedError clearAdditionalInformation();
 
 	/** Adds a {@link Throwable} to this error - which will be included in the crash-report file, but will not be shown
 	 * in the gui. */
@@ -78,7 +86,8 @@ public interface QuiltDisplayedError {
 
 	QuiltErrorButton addActionButton(QuiltLoaderText name, Runnable action);
 
-	/** Changes this error message to be "fixed". */
+	/** Changes this error message to be "fixed". If {@link #setIcon(QuiltLoaderIcon)} hasn't been called then the icon
+	 * is set to {@link QuiltLoaderGui#iconTick()} */
 	void setFixed();
 
 	@ApiStatus.NonExtendable

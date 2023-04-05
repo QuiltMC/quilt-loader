@@ -22,15 +22,19 @@ import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -40,15 +44,19 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	interface QuiltMessageListener {
 		default void onFixed() {}
-		default void onTitleChanged() {}
 		default void onIconChanged() {}
+		default void onTitleChanged() {}
+		default void onDescriptionChanged() {}
+		default void onAdditionalInfoChanged() {}
 	}
+
+	private static final String DEFAULT_ICON = new String("level_error");
 
 	boolean fixed = false;
 
 	// Gui fields
 	public String title;
-	public String iconType = "level_error";
+	public String iconType = DEFAULT_ICON;
 	public final List<String> description = new ArrayList<>();
 	public final List<String> additionalInfo = new ArrayList<>();
 
@@ -131,8 +139,28 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	@Override
 	public QuiltDisplayedError appendDescription(QuiltLoaderText... descriptions) {
+		int fromIndex = description.size();
 		for (QuiltLoaderText text : descriptions) {
 			Collections.addAll(description, text.toString().split("\\n"));
+		}
+		if (shouldSendUpdates()) {
+			int toIndex = description.size();
+			Map<String, LoaderValue> map = new HashMap<>();
+			LoaderValue[] array = new LoaderValue[toIndex - fromIndex];
+			for (int i = 0; i < array.length; i++) {
+				array[i] = lvf().string(description.get(i + fromIndex));
+			}
+			map.put("add", lvf().array(array));
+			sendUpdate("description", lvf().object(map));
+		}
+		return this;
+	}
+
+	@Override
+	public QuiltDisplayedError clearDescription() {
+		description.clear();
+		if (shouldSendUpdates()) {
+			sendSignal("clear_description");
 		}
 		return this;
 	}
@@ -145,8 +173,28 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	@Override
 	public QuiltDisplayedError appendAdditionalInformation(QuiltLoaderText... information) {
+		int fromIndex = additionalInfo.size();
 		for (QuiltLoaderText text : information) {
 			Collections.addAll(additionalInfo, text.toString().split("\\n"));
+		}
+		if (shouldSendUpdates()) {
+			int toIndex = additionalInfo.size();
+			Map<String, LoaderValue> map = new HashMap<>();
+			LoaderValue[] array = new LoaderValue[toIndex - fromIndex];
+			for (int i = 0; i < array.length; i++) {
+				array[i] = lvf().string(additionalInfo.get(i + fromIndex));
+			}
+			map.put("add", lvf().array(array));
+			sendUpdate("additional_info", lvf().object(map));
+		}
+		return this;
+	}
+
+	@Override
+	public QuiltDisplayedError clearAdditionalInformation() {
+		additionalInfo.clear();
+		if (shouldSendUpdates()) {
+			sendSignal("clear_additional_info");
 		}
 		return this;
 	}
@@ -160,9 +208,13 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	@Override
 	public QuiltDisplayedError setIcon(QuiltLoaderIcon icon) {
 		this.iconType = PluginIconImpl.fromApi(icon).path;
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("icon", lvf().string(iconType));
+			sendUpdate("set_icon", lvf().object(map));
+		}
 		return this;
 	}
-
 
 	private QuiltJsonButton button(QuiltLoaderText name, QuiltBasicButtonAction action) {
 		return button(name, action, null);
@@ -229,10 +281,13 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	@Override
 	public void setFixed() {
+		fixed = true;
+		if (/* Intentional identity check */ iconType == DEFAULT_ICON) {
+			setIcon(QuiltLoaderGui.iconTick());
+		}
 		if (shouldSendUpdates()) {
 			sendSignal("fixed");
 		}
-		fixed = true;
 		for (QuiltMessageListener l : listeners) {
 			l.onFixed();
 		}
@@ -249,6 +304,46 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 				this.fixed = true;
 				for (QuiltMessageListener l : listeners) {
 					l.onFixed();
+				}
+				return;
+			}
+			case "clear_description": {
+				description.clear();
+				for (QuiltMessageListener l : listeners) {
+					l.onDescriptionChanged();
+				}
+				return;
+			}
+			case "clear_additional_info": {
+				additionalInfo.clear();
+				for (QuiltMessageListener l : listeners) {
+					l.onAdditionalInfoChanged();
+				}
+				return;
+			}
+			case "description":
+			case "additional_info": {
+				boolean isDescription = name.startsWith("d");
+
+				LArray lines = HELPER.expectArray(data, "add");
+				for (int i = 0; i < lines.size(); i++) {
+					String line = HELPER.expectString(lines.get(i));
+					(isDescription ? description : additionalInfo).add(line);
+				}
+
+				for (QuiltMessageListener l : listeners) {
+					if (isDescription) {
+						l.onDescriptionChanged();
+					} else {
+						l.onAdditionalInfoChanged();
+					}
+				}
+				return;
+			}
+			case "set_icon": {
+				iconType = HELPER.expectString(data, "icon");
+				for (QuiltMessageListener l : listeners) {
+					l.onIconChanged();
 				}
 				return;
 			}
