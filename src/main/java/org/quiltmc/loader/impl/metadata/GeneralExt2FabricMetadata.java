@@ -1,20 +1,4 @@
-/*
- * Copyright 2022, 2023 QuiltMC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package org.quiltmc.loader.impl.metadata.qmj;
+package org.quiltmc.loader.impl.metadata;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,16 +10,15 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.impl.fabric.metadata.CustomValueImpl;
 import org.quiltmc.loader.impl.fabric.metadata.MapBackedContactInformation;
 import org.quiltmc.loader.impl.fabric.metadata.SimplePerson;
-import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
-import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -51,11 +34,12 @@ import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import net.fabricmc.api.EnvType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
-	private final InternalModMetadata quiltMeta;
-	private final ModContainer quiltContainer;
-	private Version version;
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+public class GeneralExt2FabricMetadata implements FabricLoaderModMetadata {
+
+	final ModMetadataExt meta;
+	final ModContainerExt container;
+	private net.fabricmc.loader.api.Version version;
 	private final Collection<String> provides;
 	private final Collection<ModDependency> depsAndBreaks;
 	private final Collection<ModDependency> depends;
@@ -66,25 +50,26 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	private final Collection<String> licenses;
 	private final Map<String, CustomValue> customValues;
 
-	public QuiltModMetadataWrapperFabric(InternalModMetadata quiltMeta, ModContainer quiltContainer) {
-		this.quiltMeta = quiltMeta;
-		this.quiltContainer = quiltContainer;
+	public GeneralExt2FabricMetadata(ModMetadataExt meta, ModContainerExt container) {
+		this.meta = meta;
+		this.container = container;
+
 		ArrayList<String> provides = new ArrayList<>();
-		for (ProvidedMod provided : quiltMeta.provides()) {
+		for (ProvidedMod provided : meta.provides()) {
 			provides.add(provided.id());
 		}
 		this.provides = Collections.unmodifiableCollection(provides);
 		ArrayList<ModDependency> depsAndBreaks = new ArrayList<>();
 		ArrayList<ModDependency> depends = new ArrayList<>();
 		ArrayList<ModDependency> breaks = new ArrayList<>();
-		for (org.quiltmc.loader.api.ModDependency dep : quiltMeta.depends()) {
+		for (org.quiltmc.loader.api.ModDependency dep : meta.depends()) {
 			if (dep instanceof org.quiltmc.loader.api.ModDependency.Only) {
 				Quilt2FabricModDependency q2f = new Quilt2FabricModDependency(true, (org.quiltmc.loader.api.ModDependency.Only) dep);
 				depsAndBreaks.add(q2f);
 				depends.add(q2f);
 			}
 		}
-		for (org.quiltmc.loader.api.ModDependency dep : quiltMeta.breaks()) {
+		for (org.quiltmc.loader.api.ModDependency dep : meta.breaks()) {
 			if (dep instanceof org.quiltmc.loader.api.ModDependency.Only) {
 				Quilt2FabricModDependency q2f = new Quilt2FabricModDependency(false, (org.quiltmc.loader.api.ModDependency.Only) dep);
 				depsAndBreaks.add(q2f);
@@ -96,7 +81,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 		this.breaks = Collections.unmodifiableCollection(breaks);
 		ArrayList<Person> authors = new ArrayList<>();
 		ArrayList<Person> contributors = new ArrayList<>();
-		for (ModContributor contributor : quiltMeta.contributors()) {
+		for (ModContributor contributor : meta.contributors()) {
 			// "Owner" is the only defined role in the QMJ spec
 			if (contributor.roles().contains("Owner")) {
 				authors.add(new SimplePerson(contributor.name()));
@@ -106,15 +91,15 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 		}
 		this.authors = Collections.unmodifiableCollection(authors);
 		this.contributors = Collections.unmodifiableCollection(contributors);
-		this.contact = new MapBackedContactInformation(quiltMeta.contactInfo());
+		this.contact = new MapBackedContactInformation(meta.contactInfo());
 		ArrayList<String> licenses = new ArrayList<>();
-		for (ModLicense license : this.quiltMeta.licenses()) {
+		for (ModLicense license : this.meta.licenses()) {
 			licenses.add(license.id()); // Convention seems to be to use the IDs in fabric metadata
 		}
 		this.licenses = Collections.unmodifiableCollection(licenses);
 
 		HashMap<String, CustomValue> cvs = new HashMap<>();
-		quiltMeta.values().forEach((k, v) -> cvs.put(k, convertToCv(v)));
+		meta.values().forEach((k, v) -> cvs.put(k, convertToCv(v)));
 		this.customValues = Collections.unmodifiableMap(cvs);
 	}
 
@@ -142,8 +127,8 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	}
 
 	@Override
-	public InternalModMetadata asQuiltModMetadata() {
-		return quiltMeta;
+	public ModMetadataExt asQuiltModMetadata() {
+		return meta;
 	}
 
 	@Override
@@ -153,10 +138,10 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public String getType() {
-		if (quiltContainer == null) {
+		if (container == null) {
 			return "quilt";
 		}
-		switch (quiltContainer.getSourceType()) {
+		switch (container.getSourceType()) {
 			case BUILTIN:
 				return "builtin";
 			case NORMAL_FABRIC:
@@ -171,7 +156,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public String getId() {
-		return quiltMeta.id();
+		return meta.id();
 	}
 
 	@Override
@@ -183,7 +168,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	public Version getVersion() {
 		if (version == null) {
 			try {
-				version = Version.parse(quiltMeta.version().raw());
+				version = Version.parse(meta.version().raw());
 			} catch (VersionParsingException e) {
 				throw new Error(e);
 			}
@@ -193,7 +178,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public ModEnvironment getEnvironment() {
-		switch (quiltMeta.environment()) {
+		switch (meta.environment()) {
 			case CLIENT:
 				return ModEnvironment.CLIENT;
 			case SERVER:
@@ -242,12 +227,12 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public String getName() {
-		return quiltMeta.name();
+		return meta.name();
 	}
 
 	@Override
 	public String getDescription() {
-		return quiltMeta.description();
+		return meta.description();
 	}
 
 	@Override
@@ -272,7 +257,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Optional<String> getIconPath(int size) {
-		return Optional.ofNullable(quiltMeta.icon(size));
+		return Optional.ofNullable(meta.icon(size));
 	}
 
 	@Override
@@ -339,7 +324,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) {
 		List<EntrypointMetadata> list = new ArrayList<>();
-		Collection<AdapterLoadableClassEntry> quiltList = quiltMeta.getEntrypoints().get(type);
+		Collection<AdapterLoadableClassEntry> quiltList = meta.getEntrypoints().get(type);
 		if (quiltList == null) {
 			return list;
 		}
@@ -361,7 +346,7 @@ public class QuiltModMetadataWrapperFabric implements FabricLoaderModMetadata {
 
 	@Override
 	public Collection<String> getEntrypointKeys() {
-		return quiltMeta.getEntrypoints().keySet();
+		return meta.getEntrypoints().keySet();
 	}
 
 	@Override

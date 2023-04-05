@@ -29,6 +29,9 @@ import java.util.Optional;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.impl.metadata.GeneralExt2FabricMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -51,7 +54,11 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 
 	@Override
 	public LoaderModMetadata getInfo() {
-		return ((ConvertibleModMetadata) quilt.metadata()).asFabricModMetadata(quilt);
+		ModMetadataExt meta = (ModMetadataExt) quilt.metadata();
+		if (meta instanceof ConvertibleModMetadata) {
+			return ((ConvertibleModMetadata) meta).asFabricModMetadata((ModContainerExt) quilt);
+		}
+		return new GeneralExt2FabricMetadata(meta, (ModContainerExt) quilt);
 	}
 
 	@Override

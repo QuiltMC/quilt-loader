@@ -19,7 +19,6 @@ package org.quiltmc.loader.impl.plugin.quilt;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
-import org.quiltmc.loader.impl.discovery.ModCandidate;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 

@@ -30,6 +30,7 @@ import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -178,7 +179,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	}
 
 	@Override
-	public FabricLoaderModMetadata asFabricModMetadata(ModContainer quiltContainer) {
+	public FabricLoaderModMetadata asFabricModMetadata(ModContainerExt quiltContainer) {
 		if (cache2fabricWithContainer == null) {
 			cache2fabricNoContainer = cache2fabricWithContainer = new QuiltModMetadataWrapperFabric(this, quiltContainer);
 		}
