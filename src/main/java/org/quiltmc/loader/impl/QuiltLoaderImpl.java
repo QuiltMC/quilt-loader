@@ -90,6 +90,8 @@ import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
+import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
@@ -120,7 +122,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.19.0-beta.10";
+	public static final String VERSION = "0.19.0-beta.11";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -1027,7 +1029,7 @@ public final class QuiltLoaderImpl {
 				throw new ModSolvingError("Duplicate provided alias: " + provided + "!" /*+ " (" + modMap.get(meta.id()).getOriginPath().toFile() + ", " + origin + ")"*/);
 			}
 
-			modMap.put(provided.id(), mod);
+			modMap.put(provided.id(), new ProvidedModContainer(new ProvidedModMetadata(provided, meta), mod));
 		}
 	}
 
