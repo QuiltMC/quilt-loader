@@ -220,6 +220,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	@Override
 	public QuiltPluginTask<Path> loadZip(Path zip) {
+		if (config.singleThreadedLoading) {
+			try {
+				return QuiltPluginTask.createFinished(loadZip0(zip));
+			} catch (IOException | NonZipException e) {
+				return QuiltPluginTask.createFailed(e);
+			}
+		}
 		return submit(null, () -> loadZip0(zip));
 	}
 
