@@ -787,8 +787,10 @@ final class V1ModMetadataReader {
 						throw new VersionFormatException(String.format("Invalid version specifier \"%s\"", string));
 					}
 
-					Version.Semantic min = Version.Semantic.of(string.substring(0, string.length() -2));
-					Version.Semantic max = Version.Semantic.of(new int[] {min.versionComponent(0) + 1}, null, null);
+					Version.Semantic min = Version.Semantic.of(string.substring(0, string.length() - 2));
+					int[] components = min.versionComponents(); // Copies
+					components[components.length - 1]++;
+					Version.Semantic max = Version.Semantic.of(components, null, null);
 					return VersionRange.ofInterval(min, true, max, false);
 				} else {
 					Version v = Version.of(string);

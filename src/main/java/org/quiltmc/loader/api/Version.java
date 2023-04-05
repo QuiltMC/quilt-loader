@@ -129,7 +129,7 @@ public interface Version {
 		int versionComponent(int index);
 
 		/**
-		 * @return An array populated with every version component, except for trailing zeros.
+		 * @return A new array populated with every version component, except for trailing zeros.
 		 */
 		int[] versionComponents();
 
