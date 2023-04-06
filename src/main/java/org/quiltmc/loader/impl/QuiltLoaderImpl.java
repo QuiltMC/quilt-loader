@@ -743,7 +743,7 @@ public final class QuiltLoaderImpl {
 		sbTab.setLength(0);
 		to.accept(sbSep.toString());
 
-		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
+		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name().toLowerCase())).collect(Collectors.toList())) {
 			// - Index
 			// - Name
 			// - ID
