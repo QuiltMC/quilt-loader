@@ -61,6 +61,11 @@ public class ProvidedModContainer implements ModContainerExt {
 	}
 
 	@Override
+	public String modKind() {
+		return "Provided";
+	}
+
+	@Override
 	public boolean shouldAddToQuiltClasspath() {
 		return false;
 	}

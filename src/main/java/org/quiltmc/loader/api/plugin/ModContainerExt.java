@@ -26,7 +26,15 @@ public interface ModContainerExt extends ModContainer {
 	@Override
 	ModMetadataExt metadata();
 
+	/**
+	 * @return the id of the plugin providing this mod. This method MUST return the actual id of the plugin.
+	 */
 	String pluginId();
+
+	/**
+	 * @return friendly string that describes the "kind" of mod being loaded, like "Sponge", "Quilt", or "Fabric"
+	 */
+	String modKind();
 
 	/** @return True if quilt-loader should add {@link #rootPath()} to it's classpath, false otherwise. */
 	boolean shouldAddToQuiltClasspath();

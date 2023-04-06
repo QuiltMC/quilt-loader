@@ -43,7 +43,6 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, ModMetadataExt meta, Path from,
 		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
-
 		this.pluginContext = pluginContext;
 		this.metadata = meta;
 		this.from = from;
