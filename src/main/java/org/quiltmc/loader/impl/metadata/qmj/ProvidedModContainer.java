@@ -61,7 +61,7 @@ public class ProvidedModContainer implements ModContainerExt {
 	}
 
 	@Override
-	public String modKind() {
+	public String modType() {
 		return "Provided";
 	}
 

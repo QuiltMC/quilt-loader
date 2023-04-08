@@ -40,7 +40,7 @@ public class BuiltinModContainer extends InternalModContainerBase {
 	}
 
 	@Override
-	public String modKind() {
+	public String modType() {
 		return "Builtin";
 	}
 

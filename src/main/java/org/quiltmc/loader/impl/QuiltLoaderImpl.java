@@ -664,7 +664,7 @@ public final class QuiltLoaderImpl {
 		int maxNameLength = "Mod".length();
 		int maxIdLength = "ID".length();
 		int maxVersionLength = "Version".length();
-		int maxKindLength = "Kind".length();
+		int maxTypeLength = "Kind".length();
 		List<Integer> maxSourcePathLengths = new ArrayList<>();
 		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
 		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
@@ -673,7 +673,7 @@ public final class QuiltLoaderImpl {
 			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
 			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
 			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
-			maxKindLength = Math.max(maxKindLength, mod.modKind().length());
+			maxTypeLength = Math.max(maxTypeLength, mod.modType().length());
 
 			for (List<Path> paths : mod.getSourcePaths()) {
 				for (int i = 0; i < paths.size(); i++) {
@@ -691,7 +691,7 @@ public final class QuiltLoaderImpl {
 
 		maxIdLength++;
 		maxVersionLength++;
-		maxKindLength++;
+		maxTypeLength++;
 
 		StringBuilder sbTab = new StringBuilder();
 		StringBuilder sbSep = new StringBuilder();
@@ -715,9 +715,9 @@ public final class QuiltLoaderImpl {
 			sbTab.append(" ");
 			sbSep.append("-");
 		}
-		sbTab.append("| Kind ");
+		sbTab.append("| Type ");
 		sbSep.append("|------");
-		for (int i = "Kind".length(); i < maxKindLength; i++) {
+		for (int i = "Type".length(); i < maxTypeLength; i++) {
 			sbTab.append(" ");
 			sbSep.append("-");
 		}
@@ -748,7 +748,7 @@ public final class QuiltLoaderImpl {
 			// - Name
 			// - ID
 			// - version
-			// - plugin kind
+			// - mod type
 			// - source path(s)
 			sbTab.append("| ");
 			String index = Integer.toString(mods.indexOf(mod));
@@ -767,8 +767,8 @@ public final class QuiltLoaderImpl {
 			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
 				sbTab.append(" ");
 			}
-			sbTab.append(" | ").append(mod.modKind());
-			for (int i = mod.modKind().length(); i < maxKindLength; i++) {
+			sbTab.append(" | ").append(mod.modType());
+			for (int i = mod.modType().length(); i < maxTypeLength; i++) {
 				sbTab.append(" ");
 			}
 
@@ -793,7 +793,7 @@ public final class QuiltLoaderImpl {
 						sbTab.append(" ");
 					}
 					sbTab.append(" | ");
-					for (int i = 0; i < maxKindLength; i++) {
+					for (int i = 0; i < maxTypeLength; i++) {
 						sbTab.append(" ");
 					}
 				}
@@ -819,12 +819,12 @@ public final class QuiltLoaderImpl {
 
 		to.accept(sbSep.toString());
 		to.accept("");
-		to.accept("Mod-Table-Version: 2"); // Increment this when ANYTHING is changed in the table, or one of the values below the table changes meaning
+		to.accept("Mod Table Version: 2"); // Increment this when ANYTHING is changed in the table, or one of the values below the table changes meaning
 		HashMap<String, Set<String>> kinds = new HashMap<>();
 		for (ModContainerExt mod : mods) {
-			kinds.computeIfAbsent(mod.pluginId(), k -> new HashSet<>()).add(mod.modKind());
+			kinds.computeIfAbsent(mod.pluginId(), k -> new HashSet<>()).add(mod.modType());
 		}
-		to.accept("Plugin-Kinds: " + kinds);
+		to.accept("Plugin Types: " + kinds);
 	}
 
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {

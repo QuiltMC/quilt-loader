@@ -37,7 +37,7 @@ public class FabricModContainer extends InternalModContainerBase {
 	}
 
 	@Override
-	public String modKind() {
+	public String modType() {
 		return "Fabric";
 	}
 }

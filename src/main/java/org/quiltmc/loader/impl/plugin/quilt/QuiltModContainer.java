@@ -32,7 +32,7 @@ public class QuiltModContainer extends InternalModContainerBase {
 	}
 
 	@Override
-	public String modKind() {
+	public String modType() {
 		return "Quilt";
 	}
 

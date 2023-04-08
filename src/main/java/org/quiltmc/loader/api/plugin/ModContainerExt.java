@@ -32,9 +32,13 @@ public interface ModContainerExt extends ModContainer {
 	String pluginId();
 
 	/**
-	 * @return friendly string that describes the "kind" of mod being loaded, like "Sponge", "Quilt", or "Fabric"
+	 * A user-friendly, unique string that describes the "type" of mod being loaded.
+	 * <p>
+	 * Values returned by Quilt Loader (and therefore shouldn't be used by external plugins!) include "Fabric",
+	 * "Quilt", and "Builtin".
 	 */
-	String modKind();
+
+	String modType();
 
 	/** @return True if quilt-loader should add {@link #rootPath()} to it's classpath, false otherwise. */
 	boolean shouldAddToQuiltClasspath();
