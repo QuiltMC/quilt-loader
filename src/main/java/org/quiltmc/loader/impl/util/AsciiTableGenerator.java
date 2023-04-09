@@ -176,7 +176,6 @@ public class AsciiTableGenerator {
 		}
 
 		dst.accept(sep);
-		dst.accept("");
 	}
 
 	private static int computeAsciiWidth(String text) {
