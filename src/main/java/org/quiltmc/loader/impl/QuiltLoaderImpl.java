@@ -694,6 +694,7 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
+		table.appendTable(to);
 
 		HashMap<String, Set<String>> types = new HashMap<>();
 
@@ -701,10 +702,8 @@ public final class QuiltLoaderImpl {
 			types.computeIfAbsent(mod.pluginId(), k -> new HashSet<>()).add(mod.modType());
 		}
 
-		table.addExtraData("Mod Table Version: 2");
-		table.addExtraData("Plugin Types: " + types);
-
-		table.appendTable(to);
+		to.accept("Mod Table Version: 2");
+		to.accept("Plugin Types: " + types);
 	}
 
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
