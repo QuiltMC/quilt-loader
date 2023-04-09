@@ -156,6 +156,9 @@ public class Sat4jWrapper implements RuleContext {
 		}
 
 		for (Rule rule : rulesToRedefine) {
+			if (LOG) {
+				Log.info(CATEGORY, "Redefining rule " + rule + " because of added load option" + option);
+			}
 			redefine(rule);
 		}
 	}
@@ -197,6 +200,9 @@ public class Sat4jWrapper implements RuleContext {
 		}
 
 		for (Rule rule : rulesToRedefine) {
+			if (LOG) {
+				Log.info(CATEGORY, "Redefining rule " + rule + " because of removed load option " + option);
+			}
 			redefine(rule);
 		}
 	}
@@ -235,7 +241,7 @@ public class Sat4jWrapper implements RuleContext {
 	public void redefine(Rule rule) {
 
 		if (LOG) {
-			Log.info(CATEGORY, "Redefining rule " + rule);
+			Log.info(CATEGORY, "Doing redefine of rule " + rule);
 		}
 
 		validateCanAdd();

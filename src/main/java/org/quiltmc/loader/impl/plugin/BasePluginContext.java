@@ -114,7 +114,7 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
-	public <T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option) {
+	public <T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option, Class<T> clazz) {
 		addTentativeOption0(option);
 	}
 

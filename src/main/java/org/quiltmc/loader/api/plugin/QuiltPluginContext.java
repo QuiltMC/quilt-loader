@@ -142,7 +142,7 @@ public interface QuiltPluginContext {
 	 * {@link QuiltLoaderPlugin#resolve(QuiltPluginContext, TentativeLoadOption)}, if it is selected.
 	 * 
 	 * @param option */
-	<T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option);
+	<T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option, Class<T> clazz);
 
 	/** Only callable during {@link QuiltLoaderPlugin#handleError(java.util.List)} to identify the given rule as one
 	 * which can be removed for the purposes of error message generation. */

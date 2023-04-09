@@ -129,6 +129,10 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 
 	@Override
 	public void define(RuleDefiner definer) {
+		if (sources.isEmpty()) {
+			return;
+		}
+
 		boolean anyAreAlways = false;
 
 		for (ModLoadOption mod : sources) {

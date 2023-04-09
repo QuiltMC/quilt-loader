@@ -80,6 +80,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	private QuiltOverrides overrides;
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
+	private final Map<ModLoadOption, List<ModLoadOption>> providedMods = new HashMap<>();
 
 	@Override
 	public void load(QuiltPluginContext context, Map<String, LoaderValue> previousData) {
@@ -327,7 +328,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 					PluginGuiTreeNode guiNode = context().manager().getGuiNode(mod)//
 						.addChild(QuiltLoaderText.translate("gui.text.providing", provided.id()));
 					guiNode.mainIcon(guiNode.manager().iconUnknownFile());
-					context().addModLoadOption(new ProvidedModOption(mod, provided), guiNode);
+					ProvidedModOption providedOption = new ProvidedModOption(mod, provided);
+					providedMods.computeIfAbsent(mod, i -> new ArrayList<>(provides.size())).add(providedOption);
+					context().addModLoadOption(providedOption, guiNode);
 				}
 			}
 
@@ -364,7 +367,19 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 					}
 				}
 			}
+
 		}
+	}
+
+	@Override
+	public void onLoadOptionRemoved(LoadOption option) {
+		// remove provided options
+		if (providedMods.containsKey(option)) {
+			for (ModLoadOption modLoadOption : providedMods.get(option)) {
+				context().ruleContext().removeOption(modLoadOption);
+			}
+		}
+		providedMods.remove(option);
 	}
 
 	private static void warn(String msg) {
