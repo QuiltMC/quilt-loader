@@ -26,7 +26,19 @@ public interface ModContainerExt extends ModContainer {
 	@Override
 	ModMetadataExt metadata();
 
+	/**
+	 * @return the id of the plugin providing this mod. This method MUST return the actual id of the plugin.
+	 */
 	String pluginId();
+
+	/**
+	 * A user-friendly, unique string that describes the "type" of mod being loaded.
+	 * <p>
+	 * Values returned by Quilt Loader (and therefore shouldn't be used by external plugins!) include "Fabric",
+	 * "Quilt", and "Builtin".
+	 */
+
+	String modType();
 
 	/** @return True if quilt-loader should add {@link #rootPath()} to it's classpath, false otherwise. */
 	boolean shouldAddToQuiltClasspath();

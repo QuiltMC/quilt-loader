@@ -40,6 +40,11 @@ public class BuiltinModContainer extends InternalModContainerBase {
 	}
 
 	@Override
+	public String modType() {
+		return "Builtin";
+	}
+
+	@Override
 	public boolean shouldAddToQuiltClasspath() {
 		return addToClasspath;
 	}

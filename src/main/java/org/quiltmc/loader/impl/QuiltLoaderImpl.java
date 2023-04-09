@@ -664,19 +664,19 @@ public final class QuiltLoaderImpl {
 		AsciiTableColumn name = table.addColumn("Mod", false);
 		AsciiTableColumn id = table.addColumn("ID", false);
 		AsciiTableColumn version = table.addColumn("Version", false);
-		AsciiTableColumn plugin = table.addColumn("Plugin", false);
+		AsciiTableColumn type = table.addColumn("Type", false);
 		AsciiTableColumn primaryFile = table.addColumn("File(s)", false);
 		// Only add subFiles column if we'll actually use it
 		AsciiTableColumn subFile = mods.stream().anyMatch(i -> i.getSourcePaths().stream().anyMatch(paths -> paths.size() > 1)) ? table.addColumn("Sub-File", false) : null;
 
-		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
+		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name().toLowerCase())).collect(Collectors.toList())) {
 			AsciiTableRow row = table.addRow();
 
 			row.put(index, Integer.toString(mods.indexOf(mod)));
 			row.put(name, mod.metadata().name());
 			row.put(id, mod.metadata().id());
 			row.put(version, mod.metadata().version().toString());
-			row.put(plugin, mod.pluginId());
+			row.put(type, mod.modType());
 
 			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
 				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
@@ -704,6 +704,15 @@ public final class QuiltLoaderImpl {
 		}
 
 		table.appendTable(to);
+
+		HashMap<String, Set<String>> types = new HashMap<>();
+
+		for (ModContainerExt mod : mods) {
+			types.computeIfAbsent(mod.pluginId(), k -> new HashSet<>()).add(mod.modType());
+		}
+
+		to.accept("Mod Table Version: 2");
+		to.accept("Plugin Types: " + types);
 	}
 
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
