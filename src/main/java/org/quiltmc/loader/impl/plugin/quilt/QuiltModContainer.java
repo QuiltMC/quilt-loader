@@ -32,6 +32,11 @@ public class QuiltModContainer extends InternalModContainerBase {
 	}
 
 	@Override
+	public String modType() {
+		return "Quilt";
+	}
+
+	@Override
 	public BasicSourceType getSourceType() {
 		return BasicSourceType.NORMAL_QUILT;
 	}

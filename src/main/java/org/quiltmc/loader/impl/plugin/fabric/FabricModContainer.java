@@ -35,4 +35,9 @@ public class FabricModContainer extends InternalModContainerBase {
 	public BasicSourceType getSourceType() {
 		return BasicSourceType.NORMAL_FABRIC;
 	}
+
+	@Override
+	public String modType() {
+		return "Fabric";
+	}
 }
