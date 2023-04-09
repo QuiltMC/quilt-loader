@@ -101,6 +101,9 @@ import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -652,179 +655,46 @@ public final class QuiltLoaderImpl {
 
 	/** Appends each line of {@link #createModTable()} to the given consumer. */
 	public void appendModTable(Consumer<String> to) {
-
-		// Columns:
-		// - Index
-		// - Name
-		// - ID
-		// - version
-		// - plugin kind
-		// - source path(s)
-
-		int maxNameLength = "Mod".length();
-		int maxIdLength = "ID".length();
-		int maxVersionLength = "Version".length();
-		int maxTypeLength = "Kind".length();
-		List<Integer> maxSourcePathLengths = new ArrayList<>();
 		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
 		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
 
-		for (ModContainerExt mod : mods) {
-			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
-			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
-			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
-			maxTypeLength = Math.max(maxTypeLength, mod.modType().length());
+		AsciiTableGenerator table = new AsciiTableGenerator();
 
-			for (List<Path> paths : mod.getSourcePaths()) {
-				for (int i = 0; i < paths.size(); i++) {
-					String pathStr = prefixPath(absoluteGameDir, absoluteModsDir, paths.get(i));
-					if (maxSourcePathLengths.size() <= i) {
-						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
-						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
-					} else {
-						Integer old = maxSourcePathLengths.get(i);
-						maxSourcePathLengths.set(i, Math.max(old, pathStr.length() + 1));
-					}
-				}
-			}
-		}
-
-		maxIdLength++;
-		maxVersionLength++;
-		maxTypeLength++;
-
-		StringBuilder sbTab = new StringBuilder();
-		StringBuilder sbSep = new StringBuilder();
-
-		// Table header
-		sbTab.append("| Index | Mod ");
-		sbSep.append("|------:|-----");
-		for (int i = "Mod".length(); i < maxNameLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| ID ");
-		sbSep.append("|----");
-		for (int i = "ID".length(); i < maxIdLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Version ");
-		sbSep.append("|---------");
-		for (int i = "Version".length(); i < maxVersionLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Type ");
-		sbSep.append("|------");
-		for (int i = "Type".length(); i < maxTypeLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("|");
-		sbSep.append("|");
-
-		String start = "File(s)";
-
-		for (int len : maxSourcePathLengths) {
-			sbTab.append(" ").append(start);
-			for (int i = start.length(); i <= len; i++) {
-				sbTab.append(" ");
-			}
-			for (int i = -1; i <= len; i++) {
-				sbSep.append("-");
-			}
-			sbTab.append("|");
-			sbSep.append("|");
-			start = "Sub-Files";
-		}
-
-		to.accept(sbTab.toString());
-		sbTab.setLength(0);
-		to.accept(sbSep.toString());
+		AsciiTableColumn index = table.addColumn("Index", true);
+		AsciiTableColumn name = table.addColumn("Mod", false);
+		AsciiTableColumn id = table.addColumn("ID", false);
+		AsciiTableColumn version = table.addColumn("Version", false);
+		AsciiTableColumn type = table.addColumn("Type", false);
+		List<AsciiTableColumn> files = new ArrayList<>();
+		files.add(table.addColumn("File(s)", false));
 
 		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name().toLowerCase())).collect(Collectors.toList())) {
-			// - Index
-			// - Name
-			// - ID
-			// - version
-			// - mod type
-			// - source path(s)
-			sbTab.append("| ");
-			String index = Integer.toString(mods.indexOf(mod));
-			for (int i = index.length(); i < "Index".length(); i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(index).append(" | ").append(mod.metadata().name());
-			for (int i = mod.metadata().name().length(); i < maxNameLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.metadata().id());
-			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.metadata().version());
-			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.modType());
-			for (int i = mod.modType().length(); i < maxTypeLength; i++) {
-				sbTab.append(" ");
-			}
+			AsciiTableRow row = table.addRow();
+
+			row.put(index, Integer.toString(mods.indexOf(mod)));
+			row.put(name, mod.metadata().name());
+			row.put(id, mod.metadata().id());
+			row.put(version, mod.metadata().version().toString());
+			row.put(type, mod.modType());
 
 			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
 				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
 
 				if (pathsIndex != 0) {
-					sbTab.append("\n| ");
-					for (int i = 0; i < "Index".length(); i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxNameLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxIdLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxVersionLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxTypeLength; i++) {
-						sbTab.append(" ");
-					}
+					row = table.addRow();
 				}
 
-				for (int pathIndex = 0; pathIndex < maxSourcePathLengths.size(); pathIndex++) {
-					sbTab.append(" | ");
-					final String pathStr;
-					if (pathIndex < paths.size()) {
-						pathStr = prefixPath(absoluteGameDir, absoluteModsDir, paths.get(pathIndex));
-					} else {
-						pathStr = "";
+				for (int i = 0; i < paths.size(); i++) {
+					while (i >= files.size()) {
+						files.add(table.addColumn("Sub-Files", false));
 					}
-					sbTab.append(pathStr);
-					for (int i = pathStr.length(); i < maxSourcePathLengths.get(pathIndex); i++) {
-						sbTab.append(" ");
-					}
+					AsciiTableColumn column = files.get(i);
+					row.put(column, prefixPath(absoluteGameDir, absoluteModsDir, paths.get(i)));
 				}
-				sbTab.append(" |");
 			}
-			to.accept(sbTab.toString());
-			sbTab.setLength(0);
 		}
 
-		to.accept(sbSep.toString());
-		to.accept("");
-		to.accept("Mod Table Version: 2"); // Increment this when ANYTHING is changed in the table, or one of the values below the table changes meaning
-		HashMap<String, Set<String>> kinds = new HashMap<>();
-		for (ModContainerExt mod : mods) {
-			kinds.computeIfAbsent(mod.pluginId(), k -> new HashSet<>()).add(mod.modType());
-		}
-		to.accept("Plugin Types: " + kinds);
+		table.appendTable(to);
 	}
 
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {

@@ -52,6 +52,7 @@ import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -63,7 +64,7 @@ public class QuiltFork {
 
 	static {
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
-		if (!provider.canOpenGui()) {
+		if (Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || !provider.canOpenGui()) {
 			COMMS = null;
 		} else {
 			try {
