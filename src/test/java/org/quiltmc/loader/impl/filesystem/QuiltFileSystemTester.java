@@ -16,17 +16,24 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 public class QuiltFileSystemTester {
@@ -44,6 +51,42 @@ public class QuiltFileSystemTester {
 		try (QuiltMemoryFileSystem fs = new QuiltMemoryFileSystem.ReadWrite("test_basics", true)) {
 			testUnixLikeFileSystem(fs);
 		}
+	}
+
+	@Test
+	public void testGlob() throws IOException {
+		try (QuiltMemoryFileSystem fs = new QuiltMemoryFileSystem.ReadWrite("test_basics", true)) {
+			Path root = fs.root;
+
+			Files.createFile(root.resolve("hello"));
+			Files.createFile(root.resolve("hello.txt"));
+			Files.createFile(root.resolve("hello.java"));
+			Files.createFile(root.resolve("Files.java"));
+			Files.createFile(root.resolve("Files.class"));
+
+			Map<String, Set<String>> expected = new HashMap<>();
+			expected.put("*", set("/hello", "/hello.txt", "/hello.java", "/Files.java", "/Files.class"));
+			expected.put("*.java", set("/hello.java", "/Files.java"));
+			expected.put("hello.*", set("/hello.txt", "/hello.java"));
+			expected.put("hello.{txt,java}", set("/hello.txt", "/hello.java"));
+
+			for (Map.Entry<String, Set<String>> entry : expected.entrySet()) {
+				try (DirectoryStream<Path> stream = Files.newDirectoryStream(root, entry.getKey())) {
+					Set<String> set = new HashSet<>();
+					for (Path p : stream) {
+						set.add(p.toString());
+					}
+					eq(entry.getValue(), set);
+				}
+			}
+		}
+	}
+
+	@SafeVarargs
+	private static <T> Set<T> set(T... values) {
+		Set<T> set = new HashSet<>();
+		Collections.addAll(set, values);
+		return set;
 	}
 
 	/** Used to compare our file system implementation to a unix file system. This won't work when tested on a windows
