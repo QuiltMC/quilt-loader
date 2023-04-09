@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 public class AsciiTableGenerator {
 	private final List<AsciiTableColumn> columns = new ArrayList<>();
 	private final List<AsciiTableRow> rows = new ArrayList<>();
+	private final List<String> extraData = new ArrayList<>();
 
 	public static final class AsciiTableColumn {
 		AsciiTableCell name;
@@ -124,6 +125,13 @@ public class AsciiTableGenerator {
 		return row;
 	}
 
+	/**
+	 * Extra data to be printed below the mod table. Usually in the form of "Some Key: Value", but may be anything.
+	 */
+	public void addExtraData(String string) {
+		extraData.add(string);
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -176,6 +184,11 @@ public class AsciiTableGenerator {
 		}
 
 		dst.accept(sep);
+		dst.accept("");
+
+		for (String extra : extraData) {
+			dst.accept(extra);
+		}
 	}
 
 	private static int computeAsciiWidth(String text) {

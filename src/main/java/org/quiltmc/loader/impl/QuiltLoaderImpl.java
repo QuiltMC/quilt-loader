@@ -694,6 +694,16 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
+
+		HashMap<String, Set<String>> types = new HashMap<>();
+
+		for (ModContainerExt mod : mods) {
+			types.computeIfAbsent(mod.pluginId(), k -> new HashSet<>()).add(mod.modType());
+		}
+
+		table.addExtraData("Mod Table Version: 2");
+		table.addExtraData("Plugin Types: " + types);
+
 		table.appendTable(to);
 	}
 
