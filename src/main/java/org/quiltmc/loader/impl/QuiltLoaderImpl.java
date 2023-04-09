@@ -665,8 +665,9 @@ public final class QuiltLoaderImpl {
 		AsciiTableColumn id = table.addColumn("ID", false);
 		AsciiTableColumn version = table.addColumn("Version", false);
 		AsciiTableColumn plugin = table.addColumn("Plugin", false);
-		List<AsciiTableColumn> files = new ArrayList<>();
-		files.add(table.addColumn("File(s)", false));
+		AsciiTableColumn primaryFile = table.addColumn("File(s)", false);
+		// Only add subFiles column if we'll actually use it
+		AsciiTableColumn subFile = mods.stream().anyMatch(i -> i.getSourcePaths().stream().anyMatch(paths -> paths.size() > 1)) ? table.addColumn("Sub-File", false) : null;
 
 		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
 			AsciiTableRow row = table.addRow();
@@ -684,12 +685,20 @@ public final class QuiltLoaderImpl {
 					row = table.addRow();
 				}
 
-				for (int i = 0; i < paths.size(); i++) {
-					while (i >= files.size()) {
-						files.add(table.addColumn("Sub-Files", false));
+				row.put(primaryFile, prefixPath(absoluteGameDir, absoluteModsDir, paths.get(0)));
+
+				if (subFile != null) {
+					StringBuilder subPathStr = new StringBuilder();
+					Iterator<Path> pathsIter = paths.iterator();
+					pathsIter.next(); // skip first element
+					while (pathsIter.hasNext()) {
+						subPathStr.append(prefixPath(absoluteGameDir, absoluteModsDir, pathsIter.next()));
+						if (pathsIter.hasNext()) {
+							subPathStr.append("!");
+						}
 					}
-					AsciiTableColumn column = files.get(i);
-					row.put(column, prefixPath(absoluteGameDir, absoluteModsDir, paths.get(i)));
+
+					row.put(subFile, subPathStr.toString());
 				}
 			}
 		}
