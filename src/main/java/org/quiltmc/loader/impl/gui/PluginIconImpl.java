@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.plugin.gui;
+package org.quiltmc.loader.impl.gui;
 
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class PluginIconImpl implements PluginGuiIcon {
+public final class PluginIconImpl implements QuiltLoaderIcon {
 	public final String path;
 
 	PluginIconImpl(String path) {
@@ -32,18 +32,18 @@ public final class PluginIconImpl implements PluginGuiIcon {
 		this.path = "!" + index;
 	}
 
-	public static PluginIconImpl fromApi(PluginGuiIcon icon) {
+	public static PluginIconImpl fromApi(QuiltLoaderIcon icon) {
 		if (icon instanceof PluginIconImpl) {
 			return (PluginIconImpl) icon;
 		} else if (icon == null) {
 			return null;
 		} else {
-			throw new IllegalArgumentException(icon.getClass() + " implements PluginGuiIcon, even though this is disallowed!");
+			throw new IllegalArgumentException(icon.getClass() + " implements QuiltLoaderIcon, even though this is disallowed!");
 		}
 	}
 
 	@Override
-	public PluginIconImpl withDecoration(PluginGuiIcon subIcon) {
+	public PluginIconImpl withDecoration(QuiltLoaderIcon subIcon) {
 		if (subIcon == null) {
 			return this;
 		}

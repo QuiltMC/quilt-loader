@@ -46,6 +46,7 @@ public final class SystemProperties {
 	public static final String PATH_GROUPS = "loader.classPathGroups";
 	// system level libraries, matching code sources will not be assumed to be part of the game or mods and remain on the system class path (paths separated by path separator)
 	public static final String SYSTEM_LIBRARIES = "loader.systemLibraries";
+	public static final String DISABLE_FORKED_GUIS = "loader.disable_forked_guis";
 	public static final String DEBUG_LOG_LIB_CLASSIFICATION = "loader.debug.logLibClassification";
 	// throw exceptions from entrypoints, discovery etc. directly instead of gathering and attaching as suppressed
 	public static final String DEBUG_THROW_DIRECTLY = "loader.debug.throwDirectly";
@@ -63,6 +64,7 @@ public final class SystemProperties {
 	public static final String DEBUG_RESOLUTION_TIME_LIMIT = "loader.debug.resolutionTimeLimit";
 	public static final String DEBUG_DUMP_OVERRIDE_PATHS = "loader.debug.dump_override_paths";
 	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
+	public static final String ENABLE_EXPERIMENTAL_LOADING_PLUGINS = "loader.experimental.allow_loading_plugins";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
 	public static final String DISABLE_STRICT_PARSING = "loader.workaround.disable_strict_parsing";
 	public static final String LOG_EARLY_CLASS_LOADS = "loader.debug.log_early_class_loads";

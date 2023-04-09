@@ -19,12 +19,12 @@ package org.quiltmc.loader.impl.plugin.quilt;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
+import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.base.InternalModOptionBase;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -36,12 +36,12 @@ public class BuiltinModOption extends InternalModOptionBase {
 	}
 
 	@Override
-	public PluginGuiIcon modTypeIcon() {
+	public QuiltLoaderIcon modTypeIcon() {
 		return GuiManagerImpl.ICON_JAVA_PACKAGE;
 	}
 
 	@Override
-	public PluginGuiIcon modCompleteIcon() {
+	public QuiltLoaderIcon modCompleteIcon() {
 		return GuiManagerImpl.ICON_JAVA_PACKAGE;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2023 QuiltMC
+ * Copyright 2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.plugin.gui;
+package org.quiltmc.loader.impl.plugin;
 
-import org.quiltmc.loader.impl.plugin.gui.QuiltLoaderTextImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
-public interface QuiltLoaderText {
-	public static final QuiltLoaderText EMPTY = new QuiltLoaderTextImpl("", false);
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+final class HaltLoadingError extends Error {
+	static final HaltLoadingError INSTANCE = new HaltLoadingError();
 
-	public static QuiltLoaderText translate(String translationKey, Object... extra) {
-		return new QuiltLoaderTextImpl(translationKey, true, extra);
-	}
-
-	public static QuiltLoaderText of(String text) {
-		return new QuiltLoaderTextImpl(text, false);
+	private HaltLoadingError() {
+		super(null, null, false, false);
 	}
 }

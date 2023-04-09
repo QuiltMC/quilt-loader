@@ -35,18 +35,21 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.gui.LoaderGuiClosed;
+import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -61,6 +64,7 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.SpecificOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
+import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -84,15 +88,47 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	private void loadOverrides() {
+		Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
 		try {
-			Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
 			overrides = new QuiltOverrides(overrideFile);
 		} catch (ParseException | IOException e) {
-			QuiltPluginError error = context().reportError(
-				QuiltLoaderText.translate("error.quilt_overrides.io_parse.title")
-			);
+			Exception[] mostRecentException = { e };
+			QuiltLoaderText title = QuiltLoaderText.translate("error.quilt_overrides.io_parse.title");
+			QuiltDisplayedError error = QuiltLoaderGui.createError(title);
 			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
 			error.appendThrowable(e);
+			error.addFileViewButton(QuiltLoaderText.translate("button.view_file", "config/"), overrideFile).icon(QuiltLoaderGui.iconFolder());
+			error.addFileEditButton(overrideFile).icon(QuiltLoaderGui.iconJsonFile());
+			error.addActionButton(QuiltLoaderText.translate("button.reload"), () -> {
+				try {
+					overrides = new QuiltOverrides(overrideFile);
+					error.setFixed();
+				} catch (ParseException | IOException e2) {
+					mostRecentException[0] = e2;
+					e2.printStackTrace();
+					error.clearDescription();
+					error.appendDescription(QuiltLoaderText.of(e2.getMessage()));
+				}
+			}).icon(QuiltLoaderGui.iconReload());
+
+			try {
+				QuiltLoaderGui.openErrorGui(error);
+				return;
+			} catch (LoaderGuiException ex) {
+				mostRecentException[0].addSuppressed(ex);
+			} catch (LoaderGuiClosed closed) {
+				// Either closed correctly or ignored
+			}
+
+			if (overrides == null) {
+				Exception ex = mostRecentException[0];
+				QuiltDisplayedError error2 = context().reportError(title);
+				error2.appendDescription(QuiltLoaderText.of(ex.getMessage()));
+				error2.addFileViewButton(overrideFile);
+				error2.appendReportText("Failed to read the quilt-loader-overrides.json file!");
+				error2.appendThrowable(ex);
+				context().haltLoading();
+			}
 		}
 	}
 
@@ -172,6 +208,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Path parent = context().manager().getParent(root);
 
 		if (!parent.getFileName().toString().endsWith(".jar")) {
+			System.out.println("Found file " + parent);
 			return null;
 		}
 
@@ -183,7 +220,14 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, PluginGuiIcon fileIcon, ModLocation location, boolean isZip,
+	@Override
+	public ModLoadOption[] scanUnknownFile(Path file, ModLocation location, PluginGuiTreeNode guiNode)
+		throws IOException {
+		System.out.println("Found file " + file);
+		return null;
+	}
+
+	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip,
 		PluginGuiTreeNode guiNode) throws IOException {
 
 		Path qmj = root.resolve("quilt.mod.json");
@@ -213,7 +257,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				}
 
 				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
-				context().addFileToScan(inner, jarNode);
+				context().addFileToScan(inner, jarNode, false);
 			}
 
 			// a mod needs to be remapped if we are in a development environment, and the mod
@@ -226,7 +270,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			QuiltLoaderText title = QuiltLoaderText.translate(
 				"gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage()
 			);
-			QuiltPluginError error = context().reportError(title);
+			QuiltDisplayedError error = context().reportError(title);
 			String describedPath = context().manager().describePath(qmj);
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));

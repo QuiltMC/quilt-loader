@@ -53,6 +53,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -372,8 +373,10 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 			Map<QuiltMemoryPath, Set<QuiltMemoryPath>> folders = new HashMap<>();
 
+			boolean anyEntries = false;
 			ZipEntry entry;
 			while ((entry = zipFrom.getNextEntry()) != null) {
+				anyEntries = true;
 				String entryName = entry.getName();
 
 				if (!entryName.startsWith(zipPathPrefix)) {
@@ -398,6 +401,13 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 					files.put(path, qmf);
 					putParentFolders(folders, path);
 				}
+			}
+
+			if (!anyEntries) {
+				// Files that aren't zip files don't throw exceptions
+				// Instead they just return null from "ZipInputStream.getNextEntry()"
+				// TODO: Check for the zip header constants INSTEAD, since empty zip files also don't pass this
+				throw new IOException("No zip entries found!");
 			}
 
 			for (Map.Entry<QuiltMemoryPath, Set<QuiltMemoryPath>> folder : folders.entrySet()) {

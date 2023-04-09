@@ -63,7 +63,7 @@ public interface GameProvider {
 	Arguments getArguments();
 	String[] getLaunchArguments(boolean sanitize);
 
-	default boolean canOpenErrorGui() {
+	default boolean canOpenGui() {
 		return true;
 	}
 

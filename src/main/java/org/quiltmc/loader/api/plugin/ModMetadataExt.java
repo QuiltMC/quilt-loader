@@ -54,9 +54,7 @@ public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugi
 	}
 
 	@Nullable
-	default ModPlugin plugin() {
-		return null;
-	}
+	ModPlugin plugin();
 
 	public enum ModLoadType {
 		ALWAYS,

@@ -18,12 +18,12 @@ package org.quiltmc.loader.impl.plugin.fabric;
 
 import java.nio.file.Path;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.plugin.base.InternalModOptionBase;
-import org.quiltmc.loader.impl.plugin.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -31,14 +31,14 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class FabricModOption extends InternalModOptionBase {
 
 	public FabricModOption(QuiltPluginContext pluginContext, FabricLoaderModMetadata meta, Path from,
-		PluginGuiIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
 
 		super(pluginContext, meta.asQuiltModMetadata(), from, fileIcon, resourceRoot, mandatory, requiresRemap);
 	}
 
 	@Override
-	public PluginGuiIcon modTypeIcon() {
-		return GuiManagerImpl.ICON_FABRIC;
+	public QuiltLoaderIcon modTypeIcon() {
+		return QuiltLoaderGui.iconFabric();
 	}
 
 	@Override

@@ -53,7 +53,7 @@ public final class McVersionLookup {
 			+ "(Alpha|Beta) v?\\d+\\.\\d+(\\.\\d+)?[a-z]?(_\\d+)?[a-z]?|" // long alpha/beta names: Alpha v1.2.3_45
 			+ "Inf?dev (0\\.31 )?\\d+(-\\d+)?|" // long indev/infdev names: Infdev 12345678-9
 			+ "(rd|inf)-\\d+|" // early rd-123, inf-123
-			+ "1\\.RV-Pre1|3D Shareware v1\\.34|" // odd exceptions
+			+ "1\\.RV-Pre1|3D Shareware v1\\.34|23w13a_or_b" // odd exceptions
 			+ "(.*[Ee]xperimental [Ss]napshot )(\\d+)" // Experimental versions.
 			);
 	private static final Pattern RELEASE_PATTERN = Pattern.compile("\\d+\\.\\d+(\\.\\d+)?");
@@ -284,7 +284,9 @@ public final class McVersionLookup {
 			int year = Integer.parseInt(matcher.group(1));
 			int week = Integer.parseInt(matcher.group(2));
 
-			if (year == 23 && week >= 3) {
+			if (year >= 23 && week >= 12) {
+				return "1.20";
+			} else if (year == 23 && week >= 3) {
 				return "1.19.4";
 			} else if (year == 22 && week >= 42 || year >= 23) {
 				// 22w42a started not including a release_target again, hence the large gap
@@ -568,7 +570,9 @@ public final class McVersionLookup {
 			case "2point0_blue":
 				// 2.0 update version blue, forked from 1.5.1
 				return "1.5.2-blue";
-
+			case "23w13a_or_b":
+				// Minecraft 21w13a_or_b, forked from 23w13a
+				return "1.20-alpha.23.13.ab";
 			default:
 				return null; //Don't recognise the version
 		}

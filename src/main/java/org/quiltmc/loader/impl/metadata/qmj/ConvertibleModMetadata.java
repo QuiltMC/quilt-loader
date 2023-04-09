@@ -16,20 +16,25 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
-import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.api.plugin.ModContainerExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/**
+ * @deprecated Since we should probably use a different mechanism?
+ */
+@Deprecated
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface ConvertibleModMetadata {
 
-	/** Please use {@link #asFabricModMetadata(ModContainer)} instead. */
+	/** Please use {@link #asFabricModMetadata(ModContainerExt)} instead. */
 	FabricLoaderModMetadata asFabricModMetadata();
 
-	default FabricLoaderModMetadata asFabricModMetadata(ModContainer quiltContainer) {
+	default FabricLoaderModMetadata asFabricModMetadata(ModContainerExt quiltContainer) {
 		return asFabricModMetadata();
 	}
 
-	InternalModMetadata asQuiltModMetadata();
+	ModMetadataExt asQuiltModMetadata();
 }

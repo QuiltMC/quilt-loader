@@ -20,57 +20,63 @@ import java.awt.image.BufferedImage;
 import java.util.Collections;
 import java.util.Map;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/**
+ * @deprecated Replaced with {@link QuiltLoaderGui}, kept only until we clear out all uses of this from quilt's codebase.
+ */
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
+@Deprecated
 public interface PluginGuiManager {
 
 	// Icons
 
-	default PluginGuiIcon allocateIcon(BufferedImage image) {
+	default QuiltLoaderIcon allocateIcon(BufferedImage image) {
 		return allocateIcon(Collections.singletonMap(image.getWidth(), image));
 	}
 
-	PluginGuiIcon allocateIcon(Map<Integer, BufferedImage> image);
+	QuiltLoaderIcon allocateIcon(Map<Integer, BufferedImage> image);
 
 	// Builtin icons
 
-	PluginGuiIcon iconFolder();
+	QuiltLoaderIcon iconFolder();
 
-	PluginGuiIcon iconUnknownFile();
+	QuiltLoaderIcon iconUnknownFile();
 
-	PluginGuiIcon iconTextFile();
+	QuiltLoaderIcon iconTextFile();
 
-	PluginGuiIcon iconZipFile();
+	QuiltLoaderIcon iconZipFile();
 
-	PluginGuiIcon iconJarFile();
+	QuiltLoaderIcon iconJarFile();
 
-	PluginGuiIcon iconJsonFile();
+	QuiltLoaderIcon iconJsonFile();
 
-	PluginGuiIcon iconJavaClassFile();
+	QuiltLoaderIcon iconJavaClassFile();
 
-	PluginGuiIcon iconPackage();
+	QuiltLoaderIcon iconPackage();
 
-	PluginGuiIcon iconJavaPackage();
+	QuiltLoaderIcon iconJavaPackage();
 
-	PluginGuiIcon iconDisabled();
+	QuiltLoaderIcon iconDisabled();
 
-	PluginGuiIcon iconQuilt();
+	QuiltLoaderIcon iconQuilt();
 
-	PluginGuiIcon iconFabric();
+	QuiltLoaderIcon iconFabric();
 
-	PluginGuiIcon iconTick();
+	QuiltLoaderIcon iconTick();
 
-	PluginGuiIcon iconCross();
+	QuiltLoaderIcon iconCross();
 
-	PluginGuiIcon iconLevelFatal();
+	QuiltLoaderIcon iconLevelFatal();
 
-	PluginGuiIcon iconLevelError();
+	QuiltLoaderIcon iconLevelError();
 
-	PluginGuiIcon iconLevelWarn();
+	QuiltLoaderIcon iconLevelWarn();
 
-	PluginGuiIcon iconLevelConcern();
+	QuiltLoaderIcon iconLevelConcern();
 
-	PluginGuiIcon iconLevelInfo();
+	QuiltLoaderIcon iconLevelInfo();
 }

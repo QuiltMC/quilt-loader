@@ -24,14 +24,14 @@ import java.nio.file.Path;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiIcon;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -92,11 +92,11 @@ public abstract class ModLoadOption extends LoadOption {
 		return metadata().version();
 	}
 
-	public abstract PluginGuiIcon modFileIcon();
+	public abstract QuiltLoaderIcon modFileIcon();
 
-	public abstract PluginGuiIcon modTypeIcon();
+	public abstract QuiltLoaderIcon modTypeIcon();
 
-	public PluginGuiIcon modCompleteIcon() {
+	public QuiltLoaderIcon modCompleteIcon() {
 		return modFileIcon().withDecoration(modTypeIcon());
 	}
 

@@ -25,10 +25,9 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
-import java.awt.GraphicsEnvironment;
-import java.awt.HeadlessException;
 import java.awt.Image;
 import java.awt.Toolkit;
+import java.awt.Desktop.Action;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -53,7 +52,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Map.Entry;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
@@ -69,22 +69,17 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTree;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.ToolTipManager;
-import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonButton;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiMessage;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltJsonGuiTreeTab;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltStatusNode;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
@@ -94,36 +89,23 @@ class QuiltMainWindow {
 	static Icon missingIcon = null;
 
 	static void open(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		if (GraphicsEnvironment.isHeadless()) {
-			throw new HeadlessException();
-		}
-
-		// Set MacOS specific system props
-		System.setProperty("apple.awt.application.appearance", "system");
-		System.setProperty("apple.awt.application.name", "Quilt Loader");
-
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		open0(tree, shouldWait);
-	}
-
-	private static void open0(QuiltJsonGui tree, boolean shouldWait) throws Exception {
-		CountDownLatch guiTerminatedLatch = new CountDownLatch(1);
+		QuiltUI.init();
 
 		SwingUtilities.invokeAndWait(() -> {
-			new QuiltMainWindow(guiTerminatedLatch, tree).open();
+			new QuiltMainWindow(tree).open();
 		});
 
 		if (shouldWait) {
-			guiTerminatedLatch.await();
+			tree.onClosedFuture.get();
 		}
 	}
 
 	final JFrame window;
-	final CountDownLatch onCloseLatch;
+	final QuiltJsonGui jsonGui;
 	final IconSet icons;
 
-	public QuiltMainWindow(CountDownLatch onCloseLatch, QuiltJsonGui tree) {
-		this.onCloseLatch = onCloseLatch;
+	public QuiltMainWindow(QuiltJsonGui tree) {
+		this.jsonGui = tree;
 		window = new JFrame();
 		window.setVisible(false);
 		window.setTitle(tree.title);
@@ -146,7 +128,7 @@ class QuiltMainWindow {
 		window.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				onCloseLatch.countDown();
+				tree.onClosedFuture.complete(null);
 			}
 		});
 
@@ -163,7 +145,7 @@ class QuiltMainWindow {
 		icons = new IconSet(tree);
 
 		if (tree.tabs.isEmpty() && tree.messages.isEmpty()) {
-			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab("Opening Errors");
+			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab(null, "Opening Errors");
 			tab.addChild("No tabs provided! (Something is very broken)").setError();
 			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
 		} else if (tree.tabs.size() == 1 && tree.messages.isEmpty()) {
@@ -212,17 +194,35 @@ class QuiltMainWindow {
 		JButton btn = button.icon.isEmpty() 
 			? new JButton(button.text) 
 			: new JButton(button.text, icons.get(IconInfo.parse(button.icon)));
+		button.guiListener = new QuiltJsonButton.QuiltButtonListener() {
+			@Override
+			public void onTextChanged() {
+				btn.setText(button.text);
+			}
+
+			@Override
+			public void onIconChanged() {
+				btn.setIcon(icons.get(IconInfo.parse(button.icon)));
+			}
+
+			@Override
+			public void onEnabledChanged() {
+				btn.setEnabled(button.enabled);
+				btn.setToolTipText(button.disabledText);
+			}
+		};
 
 		addTo.add(btn);
 		btn.addActionListener(event -> {
 
 			switch (button.action) {
 				case CONTINUE: {
-					onCloseLatch.countDown();
+					jsonGui.onClosedFuture.complete(null);
 					window.dispose();
 					return;
 				}
 				case CLOSE: {
+					jsonGui.onClosedFuture.complete(null);
 					window.dispose();
 					return;
 				}
@@ -238,6 +238,10 @@ class QuiltMainWindow {
 					openFile(button.arguments.get("file"));
 					return;
 				}
+				case EDIT_FILE: {
+					editFile(button.arguments.get("file"));
+					return;
+				}
 				case OPEN_WEB_URL: {
 					openWebUrl(button.arguments.get("url"));
 					return;
@@ -250,10 +254,12 @@ class QuiltMainWindow {
 					copyClipboardFile(button.arguments.get("file"));
 					return;
 				}
-				case PASTE_CLIPBOARD_FILE_SECTION:
-					break;
-				case RETURN_SIGNAL_MANY:
 				case RETURN_SIGNAL_ONCE:
+					button.enabled = false;
+				case RETURN_SIGNAL_MANY: {
+					button.sendClickToClient();
+					break;
+				}
 				default:
 					throw new IllegalStateException("Unknown / unimplemented action " + button.action);
 			}
@@ -373,6 +379,20 @@ class QuiltMainWindow {
 		}
 	}
 
+	private void editFile(String file) {
+		try {
+			Desktop desktop = Desktop.getDesktop();
+			if (desktop.isSupported(Action.EDIT)) {
+				desktop.edit(new File(file));
+			} else {
+				desktop.open(new File(file));
+			}
+		} catch (IOException | UnsupportedOperationException e) {
+			JOptionPane.showMessageDialog(window, "Failed to edit '" + file + "'");
+			e.printStackTrace();
+		}
+	}
+
 	private void openWebUrl(String url) {
 		try {
 			URI uri = new URI(url);
@@ -411,10 +431,10 @@ class QuiltMainWindow {
 		JScrollPane pane = new JScrollPane();
 		pane.setOpaque(true);
 		pane.getVerticalScrollBar().setUnitIncrement(16);
-		pane.setBackground(Color.WHITE);
 
 		JPanel outerPanel = new JPanel();
 		outerPanel.setLayout(new BorderLayout());
+		outerPanel.setBackground(Color.WHITE);
 
 		JPanel panel = null;
 
@@ -453,35 +473,109 @@ class QuiltMainWindow {
 		title.setFont(title.getFont().deriveFont(Font.BOLD));
 		top.add(title, BorderLayout.CENTER);
 
-		JPanel panel = container;
+		AtomicReference<JPanel> currentOuterPanel = new AtomicReference<>();
 
-		for (String desc : message.description) {
-			JPanel outer = panel;
-			panel = new JPanel();
-			panel.setAlignmentY(0);
-			panel.setLayout(new BorderLayout());
-			outer.add(panel, BorderLayout.CENTER);
+		class MessageListener implements QuiltJsonGuiMessage.QuiltMessageListener {
 
-			panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
+			static final int FLAG_UPDATE_TITLE = 1 << 0;
+			static final int FLAG_UPDATE_ICON = 1 << 1;
+			static final int FLAG_UPDATE_DESC = 1 << 2;
+
+			int updateFlags = 0;
+			String titleText = message.title;
+			String iconType = message.iconType;
+			String[] description = message.description.toArray(new String[0]);
+			String[] additionalInfo = message.additionalInfo.toArray(new String[0]);
+
+			@Override
+			public synchronized void onTitleChanged() {
+				titleText = message.title;
+				updateFlags |= FLAG_UPDATE_TITLE;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			@Override
+			public synchronized void onIconChanged() {
+				iconType = message.iconType;
+				updateFlags |= FLAG_UPDATE_ICON;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			@Override
+			public synchronized void onDescriptionChanged() {
+				description = message.description.toArray(new String[0]);
+				updateFlags |= FLAG_UPDATE_DESC;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			@Override
+			public synchronized void onAdditionalInfoChanged() {
+				additionalInfo = message.additionalInfo.toArray(new String[0]);
+				updateFlags |= FLAG_UPDATE_DESC;
+				SwingUtilities.invokeLater(this::update);
+			}
+
+			synchronized void update() {
+				if ((updateFlags & FLAG_UPDATE_TITLE) != 0) {
+					title.setText(titleText);
+				}
+
+				if ((updateFlags & FLAG_UPDATE_ICON) != 0) {
+					icon.setIcon(icons.get(IconInfo.parse(iconType), 32));
+				}
+
+				if ((updateFlags & FLAG_UPDATE_DESC) != 0) {
+					populateDescInfo();
+				}
+
+				updateFlags = 0;
+			}
+
+			void populateDescInfo() {
+				if (currentOuterPanel.get() != null) {
+					JPanel old = currentOuterPanel.getAndSet(null);
+					container.remove(old);
+				}
+
+				JPanel panel = container;
+				for (String desc : description) {
+					JPanel outer = panel;
+					panel = new JPanel();
+					panel.setAlignmentY(0);
+					panel.setLayout(new BorderLayout());
+					outer.add(panel, BorderLayout.CENTER);
+
+					panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
+				}
+
+				for (String info : additionalInfo) {
+					JPanel outer = panel;
+					panel = new JPanel();
+					panel.setAlignmentY(0);
+					panel.setLayout(new BorderLayout());
+					outer.add(panel, BorderLayout.CENTER);
+
+					JLabel label = new JLabel(applyWrapping(info));
+					label.setFont(label.getFont().deriveFont(Font.ITALIC));
+					panel.add(label, BorderLayout.NORTH);
+					currentOuterPanel.compareAndSet(null, panel);
+				}
+
+				container.validate();
+			}
 		}
 
-		for (String info : message.additionalInfo) {
-			JPanel outer = panel;
-			panel = new JPanel();
-			panel.setAlignmentY(0);
-			panel.setLayout(new BorderLayout());
-			outer.add(panel, BorderLayout.CENTER);
+		MessageListener listener = new MessageListener();
 
-			JLabel label = new JLabel(applyWrapping(info));
-			label.setFont(label.getFont().deriveFont(Font.ITALIC));
-			panel.add(label, BorderLayout.NORTH);
-		}
+		listener.populateDescInfo();
+
+		message.listeners.add(listener);
 
 		if (!message.buttons.isEmpty()) {
 			JPanel buttons = new JPanel();
 			buttons.setAlignmentY(0);
 			buttons.setLayout(new FlowLayout(FlowLayout.LEADING));
-			panel.add(buttons, BorderLayout.CENTER);
+			container.add(buttons, BorderLayout.SOUTH);
 
 			for (QuiltJsonButton button : message.buttons) {
 				convertToJButton(buttons, button);
@@ -630,8 +724,8 @@ class QuiltMainWindow {
 
 		BufferedImage loadImage(String path, boolean isDecor, int scale) throws IOException {
 			if (path.startsWith("!")) {
-				// Custom icon
-				NavigableMap<Integer, BufferedImage> iconMap = tree.getCustomIcon(Integer.parseInt(path.substring(1)));
+				int iconId = Integer.parseInt(path.substring(1));
+				NavigableMap<Integer, BufferedImage> iconMap = QuiltForkServerMain.getCustomIcon(iconId);
 				if (iconMap.isEmpty()) {
 					return null;
 				}

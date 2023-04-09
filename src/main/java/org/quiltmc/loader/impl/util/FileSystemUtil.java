@@ -31,6 +31,8 @@ import java.util.zip.ZipError;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class FileSystemUtil {
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 	public static class FileSystemDelegate implements AutoCloseable {
 		private final FileSystem fileSystem;
 		private final boolean owner;

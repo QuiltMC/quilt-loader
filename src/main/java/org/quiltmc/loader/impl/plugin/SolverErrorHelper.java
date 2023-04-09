@@ -37,9 +37,9 @@ import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.VersionRange;
-import org.quiltmc.loader.api.plugin.QuiltPluginError;
-import org.quiltmc.loader.api.plugin.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -87,7 +87,7 @@ class SolverErrorHelper {
 			return;
 		}
 
-		QuiltPluginError error = manager.theQuiltPluginContext.reportError(
+		QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(
 			QuiltLoaderText.translate("error.unhandled_solver")
 		);
 		error.appendDescription(QuiltLoaderText.of("error.unhandled_solver.desc"));
@@ -325,7 +325,7 @@ class SolverErrorHelper {
 				}
 				QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
 				QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
-				QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
+				QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 
 				setIconFromMod(manager, mandatoryMod, error);
 
@@ -368,7 +368,7 @@ class SolverErrorHelper {
 	}
 
 	private static void setIconFromMod(QuiltPluginManagerImpl manager, ModLoadOption mandatoryMod,
-		QuiltPluginError error) {
+		QuiltDisplayedError error) {
 		// TODO: Only upload a ModLoadOption's icon once!
 		Map<Integer, BufferedImage> modIcons = new HashMap<>();
 		for (int size : new int[] { 16, 32 }) {
@@ -498,7 +498,7 @@ class SolverErrorHelper {
 		// With buttons to view each mod individually
 
 		QuiltLoaderText title = QuiltLoaderText.translate("error.duplicate_mandatory", bestName);
-		QuiltPluginError error = manager.theQuiltPluginContext.reportError(title);
+		QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 		error.appendReportText("Duplicate mandatory mod ids " + commonIds);
 		setIconFromMod(manager, firstMandatory, error);
 
