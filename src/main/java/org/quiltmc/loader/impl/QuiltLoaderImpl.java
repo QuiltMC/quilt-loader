@@ -101,6 +101,9 @@ import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.transformer.TransformCache;
 import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -652,171 +655,57 @@ public final class QuiltLoaderImpl {
 
 	/** Appends each line of {@link #createModTable()} to the given consumer. */
 	public void appendModTable(Consumer<String> to) {
-
-		// Columns:
-		// - Index
-		// - Name
-		// - ID
-		// - version
-		// - loader plugin
-		// - source path(s)
-
-		int maxNameLength = "Mod".length();
-		int maxIdLength = "ID".length();
-		int maxVersionLength = "Version".length();
-		int maxPluginLength = "Plugin".length();
-		int maxPrimaryPathLength = "File(s)".length();
-		int maxSubSourceLength = "Sub-File".length();
-		boolean printSubFile = false;
 		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
 		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
 
-		for (ModContainerExt mod : mods) {
-			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
-			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
-			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
-			maxPluginLength = Math.max(maxPluginLength, mod.pluginId().length());
+		AsciiTableGenerator table = new AsciiTableGenerator();
 
-			for (List<Path> paths : mod.getSourcePaths()) {
-				int secondaryMaxLength = 0;
-				for (int i = 0; i < paths.size(); i++) {
-					String pathStr = prefixPath(absoluteGameDir, absoluteModsDir, paths.get(i));
-
-					if (i == 0) {
-						maxPrimaryPathLength = Math.max(maxPrimaryPathLength, pathStr.length() + 1);
-					} else {
-						// all other sub-files are combined into one column
-						printSubFile = true;
-						secondaryMaxLength += pathStr.length() + 1; // for the !
-					}
-				}
-				maxSubSourceLength = Math.max(maxSubSourceLength, secondaryMaxLength);
-			}
-		}
-
-		maxIdLength++;
-		maxVersionLength++;
-		maxPluginLength++;
-
-		StringBuilder sbTab = new StringBuilder();
-		StringBuilder sbSep = new StringBuilder();
-
-		// Table header
-		sbTab.append("| Index | Mod ");
-		sbSep.append("|------:|-----");
-		for (int i = "Mod".length(); i < maxNameLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| ID ");
-		sbSep.append("|----");
-		for (int i = "ID".length(); i < maxIdLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Version ");
-		sbSep.append("|---------");
-		for (int i = "Version".length(); i < maxVersionLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Plugin ");
-		sbSep.append("|--------");
-		for (int i = "Plugin".length(); i < maxPluginLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-
-		sbTab.append("| File(s) ");
-		sbSep.append("|---------");
-		for (int i = "File(s)".length(); i < maxPrimaryPathLength; i++)	{
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-
-		if (printSubFile) {
-			sbTab.append("| Sub-File ");
-			sbSep.append("|----------");
-			for (int i = "Sub-File".length(); i < maxSubSourceLength; i++) {
-				sbTab.append(" ");
-				sbSep.append("-");
-			}
-		}
-		sbTab.append("|");
-		sbSep.append("|");
-		to.accept(sbTab.toString());
-		sbTab.setLength(0);
-		to.accept(sbSep.toString());
+		AsciiTableColumn index = table.addColumn("Index", true);
+		AsciiTableColumn name = table.addColumn("Mod", false);
+		AsciiTableColumn id = table.addColumn("ID", false);
+		AsciiTableColumn version = table.addColumn("Version", false);
+		AsciiTableColumn plugin = table.addColumn("Plugin", false);
+		AsciiTableColumn primaryFile = table.addColumn("File(s)", false);
+		// Only add subFiles column if we'll actually use it
+		AsciiTableColumn subFile = mods.stream().anyMatch(i -> i.getSourcePaths().stream().anyMatch(paths -> paths.size() > 1)) ? table.addColumn("Sub-File", false) : null;
 
 		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
-			// - Index
-			// - Name
-			// - ID
-			// - version
-			// - loader plugin
-			// - source path(s)
-			sbTab.append("| ");
-			String index = Integer.toString(mods.indexOf(mod));
-			applyPadding(sbTab, index.length(), "Index".length());
-			sbTab.append(index).append(" | ").append(mod.metadata().name());
-			applyPadding(sbTab, mod.metadata().name().length(), maxNameLength);
-			sbTab.append(" | ").append(mod.metadata().id());
-			applyPadding(sbTab, mod.metadata().id().length(), maxIdLength);
-			sbTab.append(" | ").append(mod.metadata().version());
-			applyPadding(sbTab, mod.metadata().version().toString().length(), maxVersionLength);
-			sbTab.append(" | ").append(mod.pluginId());
-			applyPadding(sbTab, mod.pluginId().length(), maxPluginLength);
+			AsciiTableRow row = table.addRow();
+
+			row.put(index, Integer.toString(mods.indexOf(mod)));
+			row.put(name, mod.metadata().name());
+			row.put(id, mod.metadata().id());
+			row.put(version, mod.metadata().version().toString());
+			row.put(plugin, mod.pluginId());
 
 			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
 				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
 
 				if (pathsIndex != 0) {
-					sbTab.append("\n| ");
-					applyPadding(sbTab, 0, "Index".length());
-					sbTab.append(" | ");
-					applyPadding(sbTab, 0, maxNameLength);
-					sbTab.append(" | ");
-					applyPadding(sbTab, 0, maxIdLength);
-					sbTab.append(" | ");
-					applyPadding(sbTab, 0, maxVersionLength);
-					sbTab.append(" | ");
-					applyPadding(sbTab, 0, maxPluginLength);
+					row = table.addRow();
 				}
 
-				sbTab.append(" | ");
-				final String pathStr = prefixPath(absoluteGameDir, absoluteModsDir, paths.get(0));
-				sbTab.append(pathStr);
-				applyPadding(sbTab, pathStr.length(), maxPrimaryPathLength);
-				if (printSubFile) {
-					sbTab.append(" | ");
+				row.put(primaryFile, prefixPath(absoluteGameDir, absoluteModsDir, paths.get(0)));
+
+				if (subFile != null) {
 					StringBuilder subPathStr = new StringBuilder();
 					Iterator<Path> pathsIter = paths.iterator();
-					pathsIter.next(); // already printed first element above
+					pathsIter.next(); // skip first element
 					while (pathsIter.hasNext()) {
 						subPathStr.append(prefixPath(absoluteGameDir, absoluteModsDir, pathsIter.next()));
 						if (pathsIter.hasNext()) {
-							subPathStr.append('!');
+							subPathStr.append("!");
 						}
 					}
 
-					sbTab.append(subPathStr);
-					applyPadding(sbTab, subPathStr.toString().length(), maxSubSourceLength);
+					row.put(subFile, subPathStr.toString());
 				}
-
-				sbTab.append(" |");
 			}
-			to.accept(sbTab.toString());
-			sbTab.setLength(0);
 		}
 
-		to.accept(sbSep.toString());
+		table.appendTable(to);
 	}
 
-	public static void applyPadding(StringBuilder sb, int current, int max) {
-		for (int i = current; i < max; i++) {
-			sb.append(' ');
-		}
-	}
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
 		String fsSep = path.getFileSystem().getSeparator();
 		path = path.toAbsolutePath().normalize();
