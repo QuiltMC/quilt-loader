@@ -757,7 +757,7 @@ public final class QuiltLoaderImpl {
 			// - ID
 			// - version
 			// - loader plugin
-			// - SHA-512
+			// - SHA-1
 			// - source path(s)
 			sbTab.append("| ");
 			String index = Integer.toString(mods.indexOf(mod));
