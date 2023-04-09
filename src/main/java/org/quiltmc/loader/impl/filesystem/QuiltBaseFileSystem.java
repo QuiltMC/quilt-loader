@@ -204,14 +204,17 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 
 	@Override
 	public PathMatcher getPathMatcher(String syntaxAndPattern) {
+		final String regex;
 		if (syntaxAndPattern.startsWith("regex:")) {
-			Pattern pattern = Pattern.compile(syntaxAndPattern.substring("regex:".length()));
-			return path -> pattern.matcher(path.toString()).matches();
+			regex = syntaxAndPattern.substring("regex:".length());
 		} else if (syntaxAndPattern.startsWith("glob:")) {
-			throw new AbstractMethodError("// TODO: Implement glob syntax matching!");
+			regex = GlobToRegex.toRegex(syntaxAndPattern.substring("glob:".length()), "/");
 		} else {
 			throw new UnsupportedOperationException("Unsupported syntax or pattern: '" + syntaxAndPattern + "'");
 		}
+
+		Pattern pattern = Pattern.compile(regex);
+		return path -> pattern.matcher(path.toString()).matches();
 	}
 
 	@Override
