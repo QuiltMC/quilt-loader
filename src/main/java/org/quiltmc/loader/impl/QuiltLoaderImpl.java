@@ -106,6 +106,7 @@ import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
+import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -665,6 +666,7 @@ public final class QuiltLoaderImpl {
 		AsciiTableColumn id = table.addColumn("ID", false);
 		AsciiTableColumn version = table.addColumn("Version", false);
 		AsciiTableColumn type = table.addColumn("Type", false);
+		AsciiTableColumn hash = table.addColumn("File Hash (SHA-1)", false);
 		AsciiTableColumn primaryFile = table.addColumn("File(s)", false);
 		// Only add subFiles column if we'll actually use it
 		AsciiTableColumn subFile = mods.stream().anyMatch(i -> i.getSourcePaths().stream().anyMatch(paths -> paths.size() > 1)) ? table.addColumn("Sub-File", false) : null;
@@ -677,6 +679,19 @@ public final class QuiltLoaderImpl {
 			row.put(id, mod.metadata().id());
 			row.put(version, mod.metadata().version().toString());
 			row.put(type, mod.modType());
+
+			if (mod.getSourcePaths().size() == 1 && mod.getSourcePaths().get(0).size() == 1) {
+				Path from = mod.getSourcePaths().get(0).get(0);
+				if (FasterFiles.isRegularFile(from)) {
+					String hashString;
+					try {
+						hashString = HashUtil.hashToString(HashUtil.computeHash(from));
+					} catch (IOException e) {
+						hashString = "<" + e.getMessage() + ">";
+					}
+					row.put(hash, hashString);
+				}
+			}
 
 			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
 				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
