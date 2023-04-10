@@ -20,17 +20,20 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
@@ -342,11 +345,28 @@ public final class ModResolvingTests {
 		try {
 			result = pluginManager.run(false);
 
-			return new ModSolveResultImpl(
+			ModSolveResult ret = new ModSolveResultImpl(
 				new HashMap<>(result.directModMap), //
 				new HashMap<>(result.providedModMap), //
 				new HashMap<>(result.extraResults)//
 			);
+
+			List<ModLoadOption> modsToRemove = new ArrayList<>();
+
+			for (QuiltLoaderPlugin quiltLoaderPlugin : pluginManager.plugins.keySet()) {
+				Collections.addAll(modsToRemove, quiltLoaderPlugin.vetoMods(result.directModMap.values()));
+			}
+
+			for (ModLoadOption modLoadOption : modsToRemove) {
+				ret.directMods().remove(modLoadOption.id());
+				// wish we had a bimap. sorry
+				ret.providedMods().entrySet().stream()
+						.filter(o -> o.getValue() == modLoadOption)
+						.findFirst()
+						.ifPresent(entry -> ret.providedMods().remove(entry.getKey()));
+			}
+
+			return ret;
 		} catch (QuiltReportedError error) {
 			StringWriter writer = new StringWriter();
 			error.report.write(new PrintWriter(writer));

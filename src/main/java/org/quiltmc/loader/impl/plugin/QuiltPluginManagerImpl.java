@@ -52,6 +52,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
@@ -144,7 +145,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private final StandardFabricPlugin theFabricPlugin;
 	private final BuiltinPluginContext theFabricPluginContext;
 
-	final Map<QuiltLoaderPlugin, BasePluginContext> plugins = new LinkedHashMap<>();
+	@VisibleForTesting
+	public final Map<QuiltLoaderPlugin, BasePluginContext> plugins = new LinkedHashMap<>();
 	final Map<String, QuiltPluginContextImpl> pluginsById = new HashMap<>();
 	final Map<String, QuiltPluginClassLoader> pluginsByPackage = new HashMap<>();
 

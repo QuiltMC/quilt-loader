@@ -9,10 +9,14 @@
       "main": [
         "net.fabricmc.minecraft.test.FabricEntrypointTest"
       ]
-    }
+    },
+    "load_type": "always"
   },
   "mixin": [
     "fabricmc.test.mixins.client.json"
   ],
+  "minecraft": {
+    "environment": "client"
+  },
   "experimental_chasm_transformers_disabled": "chasm_transformers"
 }
