@@ -262,7 +262,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 			OptionalModIdDefintion def = modDefinitions.get(mod.id());
 			if (def == null) {
-				def = new OptionalModIdDefintion(ctx, mod.id());
+				def = new OptionalModIdDefintion(context().manager(), ctx, mod.id());
 				modDefinitions.put(mod.id(), def);
 				ctx.addRule(def);
 			}
