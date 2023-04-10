@@ -135,8 +135,7 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 		boolean anyAreAlways = false;
 
 		for (ModLoadOption mod : sources) {
-			if (mod.metadata().loadType() == ModLoadType.ALWAYS  && mod.metadata().environment().matches(manager.
-																  getEnvironment()) ) {
+			if (mod.metadata().loadType() == ModLoadType.ALWAYS && mod.metadata().environment().matches(manager.getEnvironment())) {
 				anyAreAlways = true;
 				break;
 			}
