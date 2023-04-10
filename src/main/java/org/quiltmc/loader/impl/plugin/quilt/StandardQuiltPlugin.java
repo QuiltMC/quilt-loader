@@ -267,12 +267,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				ctx.addRule(def);
 			}
 
-			// TODO: this minecraft-specific extension should be moved to its own plugin
-			// If the mod's environment doesn't match the current one,
-			// then add a rule so that the mod is never loaded.
-			if (!metadata.environment().matches(context().manager().getEnvironment())) {
-				ctx.addRule(new DisabledModIdDefinition(mod));
-			} else if (mod.isMandatory()) {
+			if (mod.isMandatory()) {
 				ctx.addRule(new MandatoryModIdDefinition(mod));
 			}
 
@@ -321,6 +316,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				}
 			}
 		}
+	}
+
+	@Override
+	public ModLoadOption[] vetoMods(Collection<ModLoadOption> modList) {
+		// TODO: move to a Minecraft-specific plugin!
+		return modList.stream().filter(m -> !m.metadata().environment().matches(context().manager().getEnvironment())).toArray(ModLoadOption[]::new);
 	}
 
 	private static void warn(String msg) {

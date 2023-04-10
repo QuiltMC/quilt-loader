@@ -629,6 +629,23 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
+	public void vetoMods(List<ModLoadOption> modLoadOptions) {
+		List<ModLoadOption> toRemove = new ArrayList<>();
+		Collection<ModLoadOption> view = Collections.unmodifiableCollection(modLoadOptions);
+
+		for (QuiltLoaderPlugin plugin : plugins.keySet()) {
+			Collections.addAll(toRemove, plugin.vetoMods(view));
+		}
+
+		for (QuiltLoaderPlugin plugin : plugins.keySet()) {
+			for (ModLoadOption vetoedOption : toRemove) {
+				plugin.onModVeto(vetoedOption);
+			}
+		}
+
+		modLoadOptions.removeAll(toRemove);
+	}
+
 	public String createModTable() {
 		StringBuilder sb = new StringBuilder();
 		appendModTable(line -> {

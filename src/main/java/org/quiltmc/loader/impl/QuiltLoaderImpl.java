@@ -267,8 +267,9 @@ public final class QuiltLoaderImpl {
 	}
 
 	private void setup() throws ModResolutionException {
-
-		ModSolveResult result = runPlugins();
+		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), provider, config);
+		ModSolveResult result = runPlugins(plugins);
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
@@ -288,6 +289,8 @@ public final class QuiltLoaderImpl {
 		}
 
 		List<ModLoadOption> modList = new ArrayList<>(result.directMods().values());
+		plugins.vetoMods(modList); // removes vetoed mods directly from the list
+
 		Set<String> modIds = new HashSet<>();
 		for (ModLoadOption mod : modList) {
 			modIds.add(mod.id());
@@ -473,9 +476,9 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	private ModSolveResult runPlugins() {
-		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
-		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), provider, config);
+	private ModSolveResult runPlugins(QuiltPluginManagerImpl plugins) {
+
+
 
 		Path crashReportFile = null;
 		String fullCrashText = null;
@@ -488,7 +491,7 @@ public final class QuiltLoaderImpl {
 			}
 
 			boolean dev = isDevelopmentEnvironment();
-			boolean show = config.alwaysShowModStateWindow;
+			boolean show = plugins.config.alwaysShowModStateWindow;
 
 			if (!dev && !show) {
 				return result;
