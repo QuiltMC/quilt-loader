@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -46,11 +47,13 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 		return va.raw().compareTo(vb.raw());
 	};
 
+	final QuiltPluginManager manager;
 	final RuleContext ctx;
 	final String modid;
 	final List<ModLoadOption> sources = new ArrayList<>();
 
-	public OptionalModIdDefintion(RuleContext ctx, String modid) {
+	public OptionalModIdDefintion(QuiltPluginManager manager, RuleContext ctx, String modid) {
+		this.manager = manager;
 		this.ctx = ctx;
 		this.modid = modid;
 	}
@@ -132,7 +135,8 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 		boolean anyAreAlways = false;
 
 		for (ModLoadOption mod : sources) {
-			if (mod.metadata().loadType() == ModLoadType.ALWAYS) {
+			if (mod.metadata().loadType() == ModLoadType.ALWAYS  && mod.metadata().environment().matches(manager.
+																  getEnvironment()) ) {
 				anyAreAlways = true;
 				break;
 			}

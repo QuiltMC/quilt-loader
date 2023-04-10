@@ -227,6 +227,14 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	public void quiltLoadTypeAlways() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "quilt_load_type_always");
+
+		assertModPresent(modSet, "mod-resolving-tests-main", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void quiltIncludedDep() throws Exception {
 		ModSolveResult modSet = resolveModSet("valid", "quilt_included_dep");
 
