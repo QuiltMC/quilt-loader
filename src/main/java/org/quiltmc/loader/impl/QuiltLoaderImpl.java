@@ -119,7 +119,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.18.9";
+	public static final String VERSION = "0.18.10";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CONFIG_DIR = "config";
@@ -387,6 +387,7 @@ public final class QuiltLoaderImpl {
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
 	}
 
+	@SuppressWarnings("RedundantIfStatement")
 	private boolean shouldCopyToJar(ModLoadOption mod, Set<String> modIds) {
 		String id = mod.id();
 		if (id.equals("minecraft")) {
@@ -411,6 +412,11 @@ public final class QuiltLoaderImpl {
 			// Charm also (currently) requires the mod files are in .jars directly.
 			return true;
 		}
+
+		if ("charmonium".equals(id)) { // same issue as charm
+			return true;
+		}
+
 		return false;
 	}
 
