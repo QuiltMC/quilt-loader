@@ -409,6 +409,7 @@ public final class QuiltLoaderImpl {
 		Log.info(LogCategory.GENERAL, "Loading %d mod%s:%n%s", count, count != 1 ? "s" : "", createModTable());
 	}
 
+	@SuppressWarnings("RedundantIfStatement")
 	private boolean shouldCopyToJar(ModLoadOption mod, Set<String> modIds) {
 		String id = mod.id();
 		if (id.equals("minecraft")) {
@@ -433,6 +434,11 @@ public final class QuiltLoaderImpl {
 			// Charm also (currently) requires the mod files are in .jars directly.
 			return true;
 		}
+
+		if ("charmonium".equals(id)) { // same issue as charm
+			return true;
+		}
+
 		return false;
 	}
 
