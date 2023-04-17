@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 
-/*
- * jimfs is Copyright (C) 2013 Google Inc, under the Apache License Version 2.0 (the same as in the header above).
- *
- * The following changes have been applied:
- * - The file has been reformatted (2 space indent to tabs)
- * - Repackaged.
- * - "InternalCharMatcher" was partially copied into this file
- * - "com.google.common.base.Preconditions.checkNotNull" was replaced with "java.lang.Objects.requireNonNull"
- *
- * You may view the original, including its license header, here:
- * https://github.com/google/jimfs/blob/64b0b187221a529be531271d9e27627ad1954572/jimfs/src/main/java/com/google/common/jimfs/GlobToRegex.java
- * 
- * In addition the file "InternalCharMatcher" was partially copied into this file, under the same license, from here:
- * https://github.com/google/jimfs/blob/4739aee7e8e6ee9c66801541921f42f9af93387d/jimfs/src/main/java/com/google/common/jimfs/InternalCharMatcher.java
- */
-
 package org.quiltmc.loader.impl.filesystem;
 
 import java.util.ArrayDeque;
@@ -42,6 +26,22 @@ import java.util.regex.PatternSyntaxException;
  * Translates globs to regex patterns.
  *
  * @author Colin Decker
+ */
+
+/*
+ * jimfs is Copyright (C) 2013 Google Inc, under the Apache License Version 2.0 (the same as in the header above).
+ *
+ * The following changes have been applied:
+ * - The file has been reformatted (2 space indent to tabs)
+ * - Repackaged.
+ * - "InternalCharMatcher" was partially copied into this file
+ * - "com.google.common.base.Preconditions.checkNotNull" was replaced with "java.lang.Objects.requireNonNull"
+ *
+ * You may view the original, including its license header, here:
+ * https://github.com/google/jimfs/blob/64b0b187221a529be531271d9e27627ad1954572/jimfs/src/main/java/com/google/common/jimfs/GlobToRegex.java
+ *
+ * In addition the file "InternalCharMatcher" was partially copied into this file, under the same license, from here:
+ * https://github.com/google/jimfs/blob/4739aee7e8e6ee9c66801541921f42f9af93387d/jimfs/src/main/java/com/google/common/jimfs/InternalCharMatcher.java
  */
 final class GlobToRegex {
 
