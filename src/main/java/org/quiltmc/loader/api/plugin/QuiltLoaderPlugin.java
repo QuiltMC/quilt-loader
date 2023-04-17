@@ -174,4 +174,31 @@ public interface QuiltLoaderPlugin {
 	 * <p>
 	 * Most plugins are not expected to implement this. */
 	default void onLoadOptionRemoved(LoadOption option) {}
+
+	/**
+	 * This method allows removing load options from the mod list immediately before it is finalized and passed
+	 * to the transform cache, after solving.
+	 * The returned options are removed with no checks of any kind; they simply disappear from the mod list.
+	 * Since the solver will not be re-ran, no errors will occur due to missing dependencies or the like.
+	 * <p>
+	 *  Vetoes are performed in one pass: every plugin sees the initial mod list and provides vetoes, which are collected
+	 *  and applied together. Then, all plugins are made aware of vetoed mods (including the ones they vetoed themselves)
+	 *  through {@link #onModVeto(ModLoadOption)}.
+	 *  This is intended to allow plugins to "disable" mods that shouldn't load in the current environment, but need
+	 *  to be present during solving. <strong>Unless you have a very specific reason to use this, you should use
+	 *  {@link org.quiltmc.loader.api.plugin.solver.RuleContext#removeOption(LoadOption)} instead.</strong>
+	 * @param modList an immutable view of the mod list about to be loaded
+	 * @return the mods to be removed
+	 */
+	default ModLoadOption[] vetoMods(Collection<ModLoadOption> modList) {
+		return new ModLoadOption[0];
+	}
+
+	/**
+	 * Called after all vetoes from {@link #vetoMods(Collection)} of all plugins are collected and applied.
+	 * Plugins cannot undo vetoes or add mods to the mod list.
+	 * @param vetoedOption the option that was removed from the mod list
+	 */
+	default void onModVeto(ModLoadOption vetoedOption) {
+	}
 }
