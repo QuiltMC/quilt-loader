@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,12 +84,19 @@ public class QuiltForkComms {
 		if (overridePort == null) {
 			File portFile = new File(medium.toString() + ".port");
 			File readyFile = new File(medium.toString() + ".ready");
+			File classpath = new File(medium.toString() + ".cp");
 			if (portFile.exists()) {
 				portFile.delete();
 			}
 			if (readyFile.exists()) {
 				readyFile.delete();
 			}
+			if (classpath.exists()) {
+				classpath.delete();
+			}
+
+			// Write classpath to file
+			Files.write(classpath.toPath(), System.getProperty("java.class.path").getBytes(StandardCharsets.UTF_8));
 
 			List<String> commands = new ArrayList<>();
 			commands.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
@@ -98,7 +107,7 @@ public class QuiltForkComms {
 			commands.add("-XX:MaxHeapFreeRatio=10");
 			commands.add("-XX:MinHeapFreeRatio=2");
 			commands.add("-cp");
-			commands.add(System.getProperty("java.class.path"));
+			commands.add("@" + classpath.toString());
 			commands.add(QuiltForkServerMain.class.getName());
 
 			commands.add("--file");
