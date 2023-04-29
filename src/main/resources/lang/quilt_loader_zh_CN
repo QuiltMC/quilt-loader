@@ -1,0 +1,105 @@
+# It is standard Simplified Chinese (zh_CN).
+
+# Node names
+gui.text.classpath=类路径
+gui.text.floating_mods_from_plugins=来自插件的浮动模组
+gui.text.arg_mods=来自加载器参数
+# General text
+gui.text.plugin=插件: '%s'
+gui.text.loaded_by_plugin=由 %s 插件加载
+gui.text.id=id: '%s'
+gui.text.version=版本: '%s'
+gui.text.providing=提供了: '%s'
+gui.prefix.no_parent_dir=*无父目录* %s
+gui.prefix.no_parent_file=*无父文件* %s
+info.root_mod_loaded_from=%s 从 %s 加载
+tab.messages=错误
+tab.file_list=文件
+tab.mod_list=模组
+msg.load_state=模组加载状态 (供调试 - 这表示它正常运转!)
+msg.load_state.warns=模组加载状态 (供调试 - 这表示它正常运转!)\n%s 个警告.
+# Buttons
+button.view_file=查看 %s
+button.edit_file=编辑 %s
+button.open_crash_report=打开崩溃报告
+button.copy_crash_report=复制崩溃报告
+button.copy_section=复制报告
+button.mod_issue_tracker=打开 %s 的错误报告器
+button.quilt_loader_report=打开 Quilt 加载器的报告网页
+button.quilt_forum.user_support=打开 Quilt 的用户支持论坛
+button.open_mods_folder=打开模组目录
+button.continue=继续
+button.ignore=忽略
+button.reload=重新加载
+button.continue_to=继续加载 %s
+button.exit=退出
+# Warnings
+warn.sub_folders_disabled=已禁止从子目录加载, 所以这个目录被忽略。
+warn.sub_folder_ignored=此目录包含 "quilt_loader_ignored" 文件, 所以被忽略。
+warn.unhandled_mod=无法从此加载插件!
+# Errors
+crash.during_setup.minecraft=Minecraft 启动失败!
+error.failed_to_save_crash_report=无法保存该崩溃报告!
+error.failed_to_save_crash_report.desc=真糟糕! 如果需要它，请复制并手动保存。\n或者检查它有没有保存在日志文件里。
+error.failed_to_save_crash_report.info=Quilt 加载器不知道日志在哪里 :(
+error.unhandled=内部错误!
+error.unhandled.desc=加载模组时出现奇怪的问题\n请向 Quilt 加载器项目报告，这样才能修复它。
+error.unhandled_launch.desc=运行游戏时出现奇怪的问题\n请向 Quilt 论坛报告，这样才能修复它。
+error.too_many_errors=错误太多，难以全部显示!
+error.too_many_errors.desc=请先修复下面的错误, 然后再查看其它错误。\n(共 %s 个未显示错误)
+error.quilt_overrides.io_parse.title=无法读取覆盖配置文件!
+gui.text.ioexception_files_hidden=无法检查 %s 是否隐藏!
+gui.text.ioexception_files_hidden.desc.0=%s
+gui.error.zipexception=无法读取压缩文件: %s
+gui.error.zipexception.title=压缩文件损坏: %s
+gui.error.zipexception.desc.0=%s
+gui.error.zipexception.desc.1=试试重新下载?
+gui.error.ioexception=读取失败: %s
+gui.error.ioexception.title=无法读取: %s
+gui.error.ioexception.desc.0=%s
+gui.text.invalid_metadata=无效元数据: %s
+gui.text.invalid_metadata.title=无法读取 %s: %s
+gui.text.invalid_metadata.desc.0=从 %s
+error.unhandled_solver=未处理的解决器错误; 查看崩溃报告以获取更多信息
+error.unhandled_solver.desc=请尝试更新 Quilt 加载器。\n或者向 Quilt 加载器项目报告，这样才能修复它。
+fabric.jar_in_jar.missing=找不到理应包括的文件!
+error.duplicate_mandatory=重复的模组: %s
+error.duplicate_mandatory.mod=- %s
+error.duplicate_mandatory.desc=只留下一个。
+error.dep.join.title=%s, %s
+
+error.dep.direct.any.title=%s 需要任意版本的 %s
+error.dep.direct.exact.title=%s 需要 %s 版本的 %s
+error.dep.direct.ranged.title=%s 需要 %s 版本范围内的 %s
+error.dep.direct.greater.title=%s 需要任意 %s 版本以上的 %s
+error.dep.direct.greater_equal.title=%s 需要任意 %s 版本以上或该版本的 %s
+error.dep.direct.lesser.title=%s 需要任意 %s 版本以下的 %s
+error.dep.direct.lesser_equal.title=%s 需要任意 %s 版本以下或该版本的 %s
+error.dep.direct.range_inc_inc.title=%s 需要任意 %s (含) 到 %s (含) 版本的 %s
+error.dep.direct.range_inc_exc.title=%s 需要任意 %s (含) 到 %s (不含) 版本的 %s
+error.dep.direct.range_exc_inc.title=%s 需要任意 %s (不含) 到 %s (含) 版本的 %s
+error.dep.direct.range_exc_exc.title=%s 需要任意 %s (不含) 到 %s (不含) 版本的 %s
+
+error.dep.transitive.any.title=%s 间接需要任意版本的 %s
+error.dep.transitive.exact.title=%s 间接需要 %s 版本的 %s
+error.dep.transitive.greater.title=%s 间接需要任意 %s 版本以上的 %s
+error.dep.transitive.greater_equal.title=%s 间接需要任意 %s 版本以上或该版本的 %s
+error.dep.transitive.lesser.title=%s 间接需要任意 %s 版本以下的 %s
+error.dep.transitive.lesser_equal.title=%s 间接需要任意 %s 版本以下或该版本的 %s
+error.dep.transitive.range_inc_inc.title=%s 间接需要任意 %s (含) 到 %s (含) 版本的 %s
+error.dep.transitive.range_inc_exc.title=%s 间接需要任意 %s (含) 到 %s (不含) 版本的 %s
+error.dep.transitive.range_exc_inc.title=%s 间接需要任意 %s (不含) 到 %s (含) 版本的 %s
+error.dep.transitive.range_exc_exc.title=%s 间接需要任意 %s (不含) 到 %s (不含) 版本的 %s
+
+error.dep.missing.title=但是找不到!
+error.dep.single_mismatch.title=但是只有错误的版本: %s
+error.dep.multi_mismatch.title=但是只有错误的版本!
+error.unhandled_mod_file=mods 目录里的未知文件!
+error.unhandled_mod_file.title=未知模组: %s
+error.unhandled_mod_file.desc=要么:\n- 删除它。\n- 添加一个能加载它的插件。\n- 添加一个 ".disabled" 的后置来防止加载它。
+error.arg_mods.missing.title=找不到文件 %s!
+error.arg_mods.missing.desc=它由 %s 描述, 并且必须存在。\n完整路径: %s
+error.arg_mods.missing.by.desc=它由 %s(在 %s 里) 描述, 并且必须存在。\n完整路径: %s
+error.arg_mods.not_folder.title=描述了一个目录, 但是 %s 是文件!
+error.arg_mods.not_folder.desc=无法扫描子模组。\n它由 %s 描述, 并且必须存在。\n完整路径: %s
+error.arg_mods.not_folder.by.desc=无法扫描子模组。\n它由 %s(在 %s 里) 描述, 并且必须存在。\n完整路径: %s
