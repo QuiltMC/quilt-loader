@@ -82,11 +82,13 @@ public class TransformCache {
 		}
 
 		for (Entry<String, ModLoadOption> mod : result.directMods().entrySet()) {
+			ModLoadOption modOption = mod.getValue();
 			try {
-				byte[] hash = mod.getValue().computeOriginHash();
-				map.put("mod:" + mod.getKey(), HashUtil.hashToString(hash));
+				String name = modOption.from().getFileName().toString();
+				byte[] hash = modOption.computeOriginHash();
+				map.put("mod:" + mod.getKey(), name + " " + HashUtil.hashToString(hash));
 			} catch (IOException io) {
-				throw new ModResolutionException("Failed to compute the hash of " + mod.getValue(), io);
+				throw new ModResolutionException("Failed to compute the hash of " + modOption, io);
 			}
 		}
 
