@@ -96,7 +96,9 @@ public class QuiltForkComms {
 			}
 
 			// Write classpath to file
-			Files.write(classpath.toPath(), System.getProperty("java.class.path").getBytes(StandardCharsets.UTF_8));
+			Files.write(classpath.toPath(), System.getProperty("java.class.path")
+				.replace(" ", "\" \"")
+				.getBytes(StandardCharsets.UTF_8));
 
 			List<String> commands = new ArrayList<>();
 			commands.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
