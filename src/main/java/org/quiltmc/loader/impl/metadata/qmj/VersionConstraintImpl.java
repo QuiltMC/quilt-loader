@@ -33,6 +33,17 @@ public final class VersionConstraintImpl implements VersionConstraint {
 	private final Version versionObj;
 	private final Type type;
 
+	public static boolean isConstraintCharacter(char c) {
+		switch (c) {
+			case '<': return true;
+			case '>': return true;
+			case '=': return true;
+			case '~': return true;
+			case '*': return true;
+			case '^': return true;
+			default: return false;
+		}
+	}
 
 	public static VersionConstraintImpl parse(String raw) {
 		if (raw.equals("*")) {

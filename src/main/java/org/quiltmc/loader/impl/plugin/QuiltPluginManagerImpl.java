@@ -1623,7 +1623,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						}
 
 						char first = name.isEmpty() ? ' ' : name.charAt(0);
-						if (('0' <= first && first <= '9') || first == '>' || first == '<' || first == '=') {
+						if (('0' <= first && first <= '9') || VersionConstraintImpl.isConstraintCharacter(first)) {
 							// Might be a game version
 							if (config.restrictGameVersions && gameVersion != null) {
 								// TODO: Support "1.12.x" type version parsing...
