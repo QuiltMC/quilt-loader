@@ -62,6 +62,8 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TransformCache {
 
+	static final boolean SHOW_KEY_DIFFERENCE = Boolean.getBoolean(SystemProperties.LOG_CACHE_KEY_CHANGES);
+
 	/** Sub-folder for classes which are not associated with any mod in particular, but still need to be classloaded. */
 	public static final String TRANSFORM_CACHE_NONMOD_CLASSLOADABLE = "Unknown Mod";
 
@@ -173,23 +175,30 @@ public class TransformCache {
 				}
 
 				if (!oldOptions.isEmpty() || !newOptions.isEmpty() || !differingOptions.isEmpty()) {
-					Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it has different keys:");
+					if (SHOW_KEY_DIFFERENCE) {
+						Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it has different keys:");
 
-					for (Map.Entry<String, String> old : oldOptions.entrySet()) {
-						Log.info(LogCategory.CACHE, "  Missing: '" + old.getKey() + "': '" + old.getValue() + "'");
-					}
+						for (Map.Entry<String, String> old : oldOptions.entrySet()) {
+							Log.info(LogCategory.CACHE, "  Missing: '" + old.getKey() + "': '" + old.getValue() + "'");
+						}
 
-					for (Map.Entry<String, String> added : newOptions.entrySet()) {
-						Log.info(LogCategory.CACHE, "  Included: '" + added.getKey() + "': '" + added.getValue() + "'");
-					}
+						for (Map.Entry<String, String> added : newOptions.entrySet()) {
+							Log.info(LogCategory.CACHE, "  Included: '" + added.getKey() + "': '" + added.getValue() + "'");
+						}
 
-					for (Map.Entry<String, String> diff : differingOptions.entrySet()) {
-						String key = diff.getKey();
-						String oldValue = diff.getValue();
-						String newValue = options.get(key);
-						Log.info(
-							LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'"
-						);
+						for (Map.Entry<String, String> diff : differingOptions.entrySet()) {
+							String key = diff.getKey();
+							String oldValue = diff.getValue();
+							String newValue = options.get(key);
+							Log.info(
+								LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'"
+							);
+						}
+					} else {
+						Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it has "
+							+ (oldOptions.size() + newOptions.size() + differingOptions.size())
+							+ " different keys."
+							+ " (Add '-Dloader.transform_cache.log_changed_keys=true' to see all changes).");
 					}
 					erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 					return null;
