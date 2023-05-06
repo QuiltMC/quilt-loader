@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.TreeMap;
 
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -132,6 +133,13 @@ public class TransformCache {
 			erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 			return null;
 		}
+
+		if (QuiltLoader.isDevelopmentEnvironment()) {
+			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since we're in a development environment");
+			erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
+			return null;
+		}
+
 		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", cacheFile, "")) {
 			QuiltZipPath inner = fs.getRoot();
 			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
