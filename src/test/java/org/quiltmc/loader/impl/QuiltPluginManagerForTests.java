@@ -22,8 +22,8 @@ import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 
 public class QuiltPluginManagerForTests extends QuiltPluginManagerImpl {
 
-	public QuiltPluginManagerForTests(Path gameDir, Path configDir, Path modsDir) {
-		super(gameDir, configDir, modsDir, null, true, new QuiltLoaderConfig());
+	public QuiltPluginManagerForTests(Path gameDir, Path configDir, Path modsDir, Path cacheDir) {
+		super(gameDir, configDir, modsDir, cacheDir, null, true, new QuiltLoaderConfig());
 	}
 
 	@Override
