@@ -50,6 +50,8 @@ import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class SolverErrorHelper {
@@ -172,19 +174,33 @@ class SolverErrorHelper {
 		if (rootRule.to.size() != 1) {//
 			// This should always be the case, since a mandatory definition
 			// always defines to a single source
-			return false;
+			throw new IllegalStateException("Mandatory definition has multiple sources?");
 		}
 
 		// TODO: Put this whole thing in a loop
 		// and then check for transitive (and fully valid) dependency paths!
 
 		OptionLink modLink = rootRule.to.get(0);
+		// Move down the chain to the last mandatory mod.
+		while (modLink.to.size() == 1 && modLink.to.get(0).rule instanceof MandatoryModIdDefinition) {
+			RuleLink next = modLink.to.get(0);
+			if (next.to.size() != 1) {
+				throw new IllegalArgumentException("Mandatory definition has multiple sources?");
+			}
+
+
+			// TODO: While I believe this code is correct, I wasn't able to reproduce the bug it solves in a dev environment
+			// (because it's random). Will print this ugly message for now, so that hopefully we see it working in the wild
+			Log.info(LogCategory.SOLVING, "moving down mandatory chain in error");
+			modLink = next.to.get(0);
+		}
+
 		List<OptionLink> modLinks = Collections.singletonList(modLink);
-		Set<OptionLink> nextModLinks = new LinkedHashSet<>();
+		Set<OptionLink> nextModLinks;
 		List<List<OptionLink>> fullChain = new ArrayList<>();
 
-		String groupOn = null;
-		String modOn = null;
+		String groupOn;
+		String modOn;
 
 		while (true) {
 			groupOn = null;
@@ -196,7 +212,7 @@ class SolverErrorHelper {
 				if (link.to.isEmpty()) {
 					// Apparently nothing is stopping this mod from loading
 					// (so there's a bug here somewhere)
-					return false;
+					throw new IllegalStateException("Unexpected end of chain");
 				}
 
 				if (link.to.size() > 1) {
@@ -300,43 +316,32 @@ class SolverErrorHelper {
 					allInvalidOptions.addAll(dep.getWrongOptions());
 				}
 
-				boolean transitive = fullChain.size() > 1;
-				boolean missing = allInvalidOptions.isEmpty();
 
-				// Title:
-				// "BuildCraft" [transitively] requires [version 1.5.1] of "Quilt Standard Libraries", which is
-				// missing!
+				QuiltLoaderText second = VersionRangeDescriber.describe(fullRange);
 
-				// Description:
-				// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
-				String rootModName = mandatoryMod.metadata().name();
+				String firstKey = "error.dep.title.";
 
-				QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, fullRange, modOn, transitive);
-
-				Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
-				String secondKey = "error.dep.";
-				if (missing) {
-					secondKey += "missing";
-				} else if (allInvalidOptions.size() > 1) {
-					secondKey += "multi_mismatch";
+				if (allInvalidOptions.isEmpty()) {
+					firstKey += "missing";
+				} else if (allInvalidOptions.size() == 1) {
+					firstKey += "mismatch_single";
 				} else {
-					secondKey += "single_mismatch";
-					secondData[0] = allInvalidOptions.iterator().next().version().toString();
+					firstKey += "mismatch_multi";
 				}
-				QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
-				QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
+
+				QuiltLoaderText first = QuiltLoaderText.translate(firstKey, modOn);
+				QuiltLoaderText title = QuiltLoaderText.of(first + " " + second);
+
 				QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 
 				setIconFromMod(manager, mandatoryMod, error);
 
 				Path rootModPath = mandatoryMod.from();
-				Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
-				error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", rootModDescArgs));
 
-				for (List<OptionLink> list : fullChain.subList(1, fullChain.size())) {
-					OptionLink firstMod = list.get(0);
-					error.appendDescription(QuiltLoaderText.of("via " + ((ModLoadOption) firstMod.option).id()));
-				}
+//				for (List<OptionLink> list : fullChain.subList(1, fullChain.size())) {
+//					OptionLink firstMod = list.get(0);
+//					error.appendDescription(QuiltLoaderText.of("via " + ((ModLoadOption) firstMod.option).id()));
+//				}
 
 				error.addFileViewButton(QuiltLoaderText.translate("button.view_file", rootModPath.getFileName()), rootModPath)
 					.icon(mandatoryMod.modCompleteIcon());
@@ -346,19 +351,19 @@ class SolverErrorHelper {
 					error.addOpenLinkButton(QuiltLoaderText.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
 				}
 
-				StringBuilder report = new StringBuilder(rootModName);
-				if (transitive) {
-					report.append(" transitively");
-				}
-				report.append(" requires");
-				if (VersionRange.ANY.equals(fullRange)) {
-					report.append(" any version of ");
-				} else {
-					report.append(" version ").append(fullRange).append(" of ");
-				}
-				report.append(modOn);// TODO
-				report.append(", which is missing!");
-				error.appendReportText(report.toString(), rootModName + " is loaded from " + rootModPath);
+//				StringBuilder report = new StringBuilder(rootModName);
+//				if (transitive) {
+//					report.append(" transitively");
+//				}
+//				report.append(" requires");
+//				if (VersionRange.ANY.equals(fullRange)) {
+//					report.append(" any version of ");
+//				} else {
+//					report.append(" version ").append(fullRange).append(" of ");
+//				}
+//				report.append(modOn);// TODO
+//				report.append(", which is missing!");
+//				error.appendReportText(report.toString(), rootModName + " is loaded from " + rootModPath);
 
 				return true;
 			}

@@ -20,6 +20,8 @@ import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.plugin.gui.I18n;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.util.MissingFormatArgumentException;
 
@@ -33,7 +35,7 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 	public QuiltLoaderTextImpl(String key, boolean translate, Object... args) {
 		this.translationKey = key;
 		this.extra = args;
-		this.translate = true;
+		this.translate = translate;
 	}
 
 	@Override
@@ -41,7 +43,8 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 		try {
 			return String.format(translate ? I18n.translate(translationKey) : translationKey, extra);
 		} catch (MissingFormatArgumentException e) {
-			StringBuilder sb = new StringBuilder(translationKey);
+			Log.error(LogCategory.GENERAL, "Exception while translating string", e);
+			StringBuilder sb = new StringBuilder("*").append(translationKey); // * so that you can tell its missing an argument
 			for (Object o : extra) {
 				sb.append(' ').append(o);
 			}
