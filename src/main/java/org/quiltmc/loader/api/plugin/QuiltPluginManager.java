@@ -196,6 +196,9 @@ public interface QuiltPluginManager {
 	/** @return The current folder which will become {@link QuiltLoader#getConfigDir()}. */
 	Path getConfigDirectory();
 
+	/** @return The current folder which will become {@link QuiltLoader#getCacheDir()}. */
+	Path getCacheDirectory();
+
 	// #######
 	// # Gui #
 	// #######

@@ -128,7 +128,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final GameProvider game;
 	final Version gameVersion;
 
-	private final Path gameDir, configDir, modsDir;
+	private final Path gameDir, configDir, modsDir, cacheDir;
 	private final Path absGameDir, absModsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
@@ -180,11 +180,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// TEMP
 	final Deque<PluginGuiTreeNode> state = new ArrayDeque<>();
 
-	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, GameProvider game, QuiltLoaderConfig options) {
-		this(gameDir, configDir, modsDir, game, false, options);
+	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, Path cacheDir, GameProvider game, QuiltLoaderConfig options) {
+		this(gameDir, configDir, modsDir, cacheDir, game, false, options);
 	}
 
-	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, GameProvider game, boolean simulationOnly, QuiltLoaderConfig config) {
+	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, Path cacheDir, GameProvider game, boolean simulationOnly, QuiltLoaderConfig config) {
 		this.simulationOnly = simulationOnly;
 		this.game = game;
 		gameVersion = game == null ? null : Version.of(game.getNormalizedGameVersion());
@@ -192,6 +192,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		this.gameDir = gameDir;
 		this.configDir = configDir;
 		this.modsDir = modsDir;
+		this.cacheDir = cacheDir;
 		this.absGameDir = gameDir.toAbsolutePath().normalize();
 		this.absModsDir = modsDir.toAbsolutePath().normalize();
 
@@ -454,6 +455,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	@Override
 	public Path getConfigDirectory() {
 		return configDir;
+	}
+
+	@Override
+	public Path getCacheDirectory() {
+		return cacheDir;
 	}
 
 	@Override
