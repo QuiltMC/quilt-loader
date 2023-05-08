@@ -1179,7 +1179,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 						break;
 					} else {
-						handleSolverFailure();
+						SolverErrorHelper.reportErrors(handleSolverFailure(), this);
 						checkForErrors();
 						// If we reach this point then a plugin successfully handled the error
 						// so we should move on to the next cycle.
@@ -1204,7 +1204,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	}
 
-	private void handleSolverFailure() throws TimeoutException {
+	private Map<ModDependencyIdentifier, SolverErrorHelper.Error> handleSolverFailure() throws TimeoutException {
 		Map<ModDependencyIdentifier, SolverErrorHelper.Error> errors = new HashMap<>();
 
 		boolean failed = false;
@@ -1237,7 +1237,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						reportSolverError(rules, errors);
 						solver.removeRule(blamed);
 						reportError(theQuiltPluginContext, QuiltLoaderText.translate("plugin.illegal_state.recovered_and_blamed", ctx.pluginId));
-						return;
+						return errors;
 					}
 
 					if (blamed == null) {
@@ -1249,7 +1249,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 							break solver_error_iteration;
 						}
 						// And it's the first error, so we can just move on to the next cycle
-						return;
+						return errors;
 					}
 				} else if (blamed != null) {
 					failed = true;
@@ -1286,13 +1286,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		if (failed) {
 			// Okay, so we failed but we've reached the end of the list of problems
 			// Just return here since the cycle handles this
-			return;
+			return errors;
 		} else {
 			// This is an odd state where we encountered an error,
 			// but then found a solution, and DIDN'T exit from this method
 			// so something has gone wrong internally.
 			reportError(theQuiltPluginContext, QuiltLoaderText.translate("solver.illegal_state.TODO"));
-			return;
+			return errors;
 		}
 	}
 
@@ -1304,7 +1304,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	 * this is the case. */
 	private void checkForErrors() throws TreeContainsModError, QuiltReportedError {
 
-		errors.removeIf(QuiltJsonGuiMessage::isFixed);
+		Iterator<QuiltJsonGuiMessage> iterator = errors.iterator();
+		while (iterator.hasNext()) {
+			if (iterator.next().isFixed()) {
+				iterator.remove();
+			}
+		}
+
 
 		if (!errors.isEmpty()) {
 			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load"));

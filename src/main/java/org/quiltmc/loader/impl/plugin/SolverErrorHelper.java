@@ -207,7 +207,7 @@ class SolverErrorHelper {
 		}));
 
 		// TODO: right now we ignore when groups are specified for dependencies
-		return ends;
+		return ret;
 	}
 
 
@@ -225,12 +225,32 @@ class SolverErrorHelper {
 			if (ruleLink.to.isEmpty()) {
 				list.accept(ruleLink);
 			} else {
-				findEnds(list, link);
+				for (OptionLink option : ruleLink.to) {
+					findEnds(list, option);
+				}
 			}
 		}
 	}
 
-	static void reportErrors(QuiltPluginManagerImpl manager) {
+	static void reportErrors(Map<ModDependencyIdentifier, Error> errors, QuiltPluginManagerImpl manager) {
+		errors.forEach((id, error) -> {
+			QuiltLoaderText second = VersionRangeDescriber.describe(error.range);
+
+			String firstKey = "error.dep.title.missing";
+			// TODO
+//			if (allInvalidOptions.isEmpty()) {
+//				firstKey += "missing";
+//			} else if (allInvalidOptions.size() == 1) {
+//				firstKey += "mismatch_single";
+//			} else {
+//				firstKey += "mismatch_multi";
+//			}
+
+			QuiltLoaderText first = QuiltLoaderText.translate(firstKey, id);
+			QuiltLoaderText title = QuiltLoaderText.of(first + " " + second);
+
+			QuiltDisplayedError err = manager.theQuiltPluginContext.reportError(title);
+		});
 
 	}
 
