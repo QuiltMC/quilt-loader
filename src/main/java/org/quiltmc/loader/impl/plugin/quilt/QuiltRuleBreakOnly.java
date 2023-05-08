@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -34,12 +35,13 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltRuleBreakOnly extends QuiltRuleBreak {
-	final ModDependency.Only publicDep;
+	public final ModDependency.Only publicDep;
 	final List<ModLoadOption> conflictingOptions;
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
 
-	final QuiltRuleDep unless;
+	@Nullable
+	public final QuiltRuleDep unless;
 
 	public QuiltRuleBreakOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);

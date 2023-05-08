@@ -71,7 +71,21 @@ public interface VersionRange extends SortedSet<VersionInterval> {
 	}
 
 	/** @return A {@link VersionRange} that only matches versions which match both this range and the given range. */
-	VersionRange combineMatchingBoth(VersionRange other);
+	@Deprecated
+	default VersionRange combineMatchingBoth(VersionRange other) {
+		return and(other);
+	}
+
+	VersionRange and(VersionRange other);
+	default VersionRange not() {
+		// TODO: check this logic is sound
+		VersionRange ret = VersionRange.ANY;
+		for (VersionInterval versionInterval : this) {
+			ret = and(versionInterval.not());
+		}
+
+		return ret;
+	}
 
 	/** Converts this range into the deprecated {@link VersionConstraint} api. */
 	@Deprecated

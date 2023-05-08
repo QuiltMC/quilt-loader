@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
@@ -46,6 +47,7 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 	private final List<ModLoadOption> invalidOptions;
 	private final List<ModLoadOption> allOptions;
 
+	@Nullable
 	public final QuiltRuleDep unless;
 
 	public QuiltRuleDepOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {

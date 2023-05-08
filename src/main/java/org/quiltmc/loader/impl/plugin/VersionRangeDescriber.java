@@ -24,7 +24,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class VersionRangeDescriber {
-	private static final String titleKey = "error.dep.title.range";
+	private static final String titleKey = "range";
 	static QuiltLoaderText describe(VersionRange range) {
 
 		if (range.size() != 1) {

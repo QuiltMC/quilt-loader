@@ -124,7 +124,7 @@ public class VersionRangeImpl extends AbstractSet<VersionInterval> implements Ve
 			sb.append(iter.next());
 
 			while (iter.hasNext()) {
-				sb.append(" ∪ "); //TODO: there is probably a more logical way of notating this, but this is what i learned.
+				sb.append(" ∪ "); // set union
 				sb.append(iter.next());
 			}
 
@@ -135,7 +135,7 @@ public class VersionRangeImpl extends AbstractSet<VersionInterval> implements Ve
 	}
 
 	@Override
-	public VersionRange combineMatchingBoth(VersionRange other) {
+	public VersionRange and(VersionRange other) {
 		List<VersionInterval> combined = new ArrayList<>();
 		for (VersionInterval a : this) {
 			for (VersionInterval b : other) {

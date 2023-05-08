@@ -45,6 +45,7 @@ import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.plugin.quilt.DisabledModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -166,7 +167,6 @@ class SolverErrorHelper {
 		Map<RuleLink, List<RuleLink>> ends = new HashMap<>();
 
 		MandatoryModIdDefinition def = (MandatoryModIdDefinition) rootRule.rule;
-		ModLoadOption mandatoryMod = def.option;
 
 		if (rootRule.to.size() != 1) {
 			// This should always be the case since a mandatory mod always has a single source, right?
@@ -189,11 +189,27 @@ class SolverErrorHelper {
 			// TODO: when this works, make the logic not a complete mess
 			while (true) {
 				if (end.rule instanceof QuiltRuleDepOnly) {
+					// assert that we're dealing with a simple dependency, not anything complex.
+					if (end.from.size() != 1) {
+						break;
+					}
+					// coming directly from a ModLoadOption and not some other weird source
+					if (!(end.from.get(0).option instanceof ModLoadOption)) {
+						break;
+					}
+
 					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) end.rule;
+
+					// no unless
+					if (dep.unless != null) {
+						break;
+					}
+
 
 					Error err = errors.computeIfAbsent(dep.publicDep.id(), k->new Error());
 					err.rules.add(end);
-					err.range = err.range.combineMatchingBoth(dep.publicDep.versionRange());
+					err.ranges.put(end, dep.publicDep.versionRange());
+					err.range = err.range.and(dep.publicDep.versionRange());
 
 					return;
 				}
@@ -213,6 +229,7 @@ class SolverErrorHelper {
 
 	public static class Error {
 		List<RuleLink> rules = new ArrayList<>();
+		Map<RuleLink, VersionRange> ranges = new HashMap<>();
 		VersionRange range = VersionRange.ANY;
 	}
 
@@ -236,20 +253,39 @@ class SolverErrorHelper {
 		errors.forEach((id, error) -> {
 			QuiltLoaderText second = VersionRangeDescriber.describe(error.range);
 
-			String firstKey = "error.dep.title.missing";
-			// TODO
-//			if (allInvalidOptions.isEmpty()) {
-//				firstKey += "missing";
-//			} else if (allInvalidOptions.size() == 1) {
-//				firstKey += "mismatch_single";
-//			} else {
-//				firstKey += "mismatch_multi";
-//			}
+			String firstKey = "error.dep.title.";
+			List<LoadOption> allInvalidOptions = new ArrayList<>();
+			for (RuleLink rule : error.rules) {
+				for (OptionLink to : rule.to) {
+					if (!(to.option instanceof ModLoadOption)) {
+						throw new IllegalStateException("Expected option link to point to a ModLoadOption! If your plugin triggers this code, please report it!");
+					}
+					allInvalidOptions.add(to.option);
+				}
+			}
+
+			if (allInvalidOptions.isEmpty()) {
+				firstKey += "missing";
+			} else if (allInvalidOptions.size() == 1) {
+				firstKey += "mismatch_single";
+			} else {
+				firstKey += "mismatch_multi";
+			}
 
 			QuiltLoaderText first = QuiltLoaderText.translate(firstKey, id);
 			QuiltLoaderText title = QuiltLoaderText.of(first + " " + second);
 
 			QuiltDisplayedError err = manager.theQuiltPluginContext.reportError(title);
+
+			for (RuleLink rule : error.rules) {
+				if (rule.from.size() > 1 || !(rule.from.get(0).option instanceof ModLoadOption)) {
+					err.appendDescription(QuiltLoaderText.translate("error.dep.desc.required_unknown"));
+					continue;
+				}
+
+				ModLoadOption requiredBy = (ModLoadOption) rule.from.get(0).option;
+				err.appendDescription(QuiltLoaderText.translate("error.dep.desc.required", VersionRangeDescriber.describe(error.ranges.get(rule)), requiredBy.id(), "<unknown source>"));
+			}
 		});
 
 	}
