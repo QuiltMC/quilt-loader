@@ -152,17 +152,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 				@Override
 				public ModDependencyIdentifier id() {
-					return new ModDependencyIdentifier() {
-						@Override
-						public String mavenGroup() {
-							return "";
-						}
-
-						@Override
-						public String id() {
-							return "java";
-						}
-					};
+					return ModDependencyIdentifier.of("", "java");
 				}
 			});
 		}

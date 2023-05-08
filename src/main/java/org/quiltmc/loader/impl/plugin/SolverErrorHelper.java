@@ -22,16 +22,14 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import javax.imageio.ImageIO;
 
@@ -50,13 +48,13 @@ import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class SolverErrorHelper {
 
-	static void reportSolverError(QuiltPluginManagerImpl manager, Collection<Rule> rules) {
+	private static final boolean LOG_ERROR_REASONING = true;
+
+	static void reportSolverError(QuiltPluginManagerImpl manager, Map<ModDependencyIdentifier, Error> errors, Collection<Rule> rules) {
 
 		List<RuleLink> links = new ArrayList<>();
 		Map<LoadOption, OptionLink> option2Link = new HashMap<>();
@@ -85,7 +83,7 @@ class SolverErrorHelper {
 			}
 		}
 
-		if (reportKnownSolverError(manager, rootRules)) {
+		if (reportAndCollectKnownSolverError(manager, errors, rootRules)) {
 			return;
 		}
 
@@ -144,19 +142,15 @@ class SolverErrorHelper {
 		}
 	}
 
-	private static boolean reportKnownSolverError(QuiltPluginManagerImpl manager, List<RuleLink> rootRules) {
+	private static boolean reportAndCollectKnownSolverError(QuiltPluginManagerImpl manager, Map<ModDependencyIdentifier, Error> errors, List<RuleLink> rootRules) {
 		if (rootRules.isEmpty()) {
 			return false;
 		}
 
 		if (rootRules.size() == 1) {
 			RuleLink rootRule = rootRules.get(0);
-
-			if (rootRule.rule instanceof MandatoryModIdDefinition) {
-				return reportSingleMandatoryError(manager, rootRule);
-			}
-
-			return false;
+			// TODO: handle unreported errors better
+			return reportMandatoryErrors(manager, errors, rootRule).isEmpty();
 		}
 
 		if (reportDuplicateMandatoryMods(manager, rootRules)) {
@@ -166,211 +160,81 @@ class SolverErrorHelper {
 		return false;
 	}
 
-	/** Reports an error where there is only one root rule, of a {@link MandatoryModIdDefinition}. */
-	private static boolean reportSingleMandatoryError(QuiltPluginManagerImpl manager, RuleLink rootRule) {
+
+	private static Map<RuleLink, List<RuleLink>> reportMandatoryErrors(QuiltPluginManagerImpl manager, Map<ModDependencyIdentifier, Error> errors, RuleLink rootRule) {
+		// Map of roots to their ends
+		Map<RuleLink, List<RuleLink>> ends = new HashMap<>();
+
 		MandatoryModIdDefinition def = (MandatoryModIdDefinition) rootRule.rule;
 		ModLoadOption mandatoryMod = def.option;
 
-		if (rootRule.to.size() != 1) {//
-			// This should always be the case, since a mandatory definition
-			// always defines to a single source
-			throw new IllegalStateException("Mandatory definition has multiple sources?");
+		if (rootRule.to.size() != 1) {
+			// This should always be the case since a mandatory mod always has a single source, right?
+			throw new IllegalArgumentException("Mandatory definition has multiple sources?");
 		}
-
-		// TODO: Put this whole thing in a loop
-		// and then check for transitive (and fully valid) dependency paths!
 
 		OptionLink modLink = rootRule.to.get(0);
-		// Move down the chain to the last mandatory mod.
-		while (modLink.to.size() == 1 && modLink.to.get(0).rule instanceof MandatoryModIdDefinition) {
-			RuleLink next = modLink.to.get(0);
-			if (next.to.size() != 1) {
-				throw new IllegalArgumentException("Mandatory definition has multiple sources?");
-			}
 
-
-			// TODO: While I believe this code is correct, I wasn't able to reproduce the bug it solves in a dev environment
-			// (because it's random). Will print this ugly message for now, so that hopefully we see it working in the wild
-			Log.info(LogCategory.SOLVING, "moving down mandatory chain in error");
-			modLink = next.to.get(0);
+		if (modLink.to.isEmpty()) {
+			throw new IllegalStateException("Unexpected end of chain. Nothing is stopping this mod from loading?");
 		}
 
-		List<OptionLink> modLinks = Collections.singletonList(modLink);
-		Set<OptionLink> nextModLinks;
-		List<List<OptionLink>> fullChain = new ArrayList<>();
+		findEnds(r -> ends.computeIfAbsent(rootRule, (k) -> new ArrayList<>()).add(r), modLink);
 
-		String groupOn;
-		String modOn;
 
-		while (true) {
-			groupOn = null;
-			modOn = null;
-			Boolean areAllInvalid = null;
-			nextModLinks = new LinkedHashSet<>();
+		Map<RuleLink, List<RuleLink>> ret = new HashMap<>();
+		// go over each end and try to convert it to an error
+		ends.forEach((root, list) -> list.forEach(end -> {
+			// we have goto at home
+			// TODO: when this works, make the logic not a complete mess
+			while (true) {
+				if (end.rule instanceof QuiltRuleDepOnly) {
+					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) end.rule;
 
-			for (OptionLink link : modLinks) {
-				if (link.to.isEmpty()) {
-					// Apparently nothing is stopping this mod from loading
-					// (so there's a bug here somewhere)
-					throw new IllegalStateException("Unexpected end of chain");
+					Error err = errors.computeIfAbsent(dep.publicDep.id(), k->new Error());
+					err.rules.add(end);
+					err.range = err.range.combineMatchingBoth(dep.publicDep.versionRange());
+
+					return;
 				}
-
-				if (link.to.size() > 1) {
-					// FOR NOW
-					// just handle a single dependency / problem at a time
-					return false;
-				}
-
-				RuleLink rule = link.to.get(0);
-				if (rule.rule instanceof QuiltRuleDepOnly) {
-					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) rule.rule;
-
-					ModDependencyIdentifier id = dep.publicDep.id();
-					if (groupOn == null) {
-						if (!id.mavenGroup().isEmpty()) {
-							groupOn = id.mavenGroup();
-						}
-					} else if (!id.mavenGroup().isEmpty() && !groupOn.equals(id.mavenGroup())) {
-						// A previous dep targets a different group of the same mod, so this is a branching condition
-						return false;
-					}
-
-					if (modOn == null) {
-						modOn = id.id();
-					} else if (!modOn.equals(id.id())) {
-						// A previous dep targets a different mod, so this is a branching condition
-						return false;
-					}
-
-					if (dep.publicDep.unless() != null) {
-						// TODO: handle 'unless' clauses!
-						return false;
-					}
-
-					if (dep.getValidOptions().isEmpty()) {
-						// Loop exit condition!
-						if (areAllInvalid != null && areAllInvalid) {
-							continue;
-						} else if (nextModLinks.isEmpty()) {
-							areAllInvalid = true;
-							continue;
-						} else {
-							// Some deps are mismatched, others aren't
-							// so this isn't necessarily a flat dep chain
-							// (However it could be if the chain ends with a mandatory mod
-							// like minecraft, which doesn't have anything else at the end of the chain
-							return false;
-						}
-					}
-
-					if (dep.getAllOptions().size() != rule.to.size()) {
-						return false;
-					}
-
-					// Now check that they all match up
-					for (ModLoadOption option : dep.getAllOptions()) {
-						boolean found = false;
-						for (OptionLink link2 : rule.to) {
-							if (option == link2.option) {
-								found = true;
-								if (dep.getValidOptions().contains(option)) {
-									nextModLinks.add(link2);
-								}
-							}
-						}
-						if (!found) {
-							return false;
-						}
-					}
-
-				} else {
-					// TODO: Handle other conditions!
-					return false;
-				}
+				break;
 			}
 
-			fullChain.add(modLinks);
-
-			if (areAllInvalid != null && areAllInvalid) {
-				// Now we have validated that every mod in the previous list all depend on the same mod
-
-				// Technically we should think about how to handle multiple *conflicting* version deps.
-				// For example:
-				// buildcraft requires abstract_base *
-				// abstract_base 18 requires minecraft 1.18.x
-				// abstract_base 19 requires minecraft 1.19.x
-
-				// Technically we are just showing deps as "transitive" so
-				// we just say that buildcraft requires minecraft 1.18.x or 1.19.x
-				// so we need to make the required version list "bigger" rather than smaller
-
-				// This breaks down if "abstract_base" requires an additional library though.
-				// (Although we aren't handling that here)
-
-				VersionRange fullRange = VersionRange.NONE;
-				Set<ModLoadOption> allInvalidOptions = new HashSet<>();
-				for (OptionLink link : fullChain.get(fullChain.size() - 1)) {
-					// We validate all this earlier
-					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) link.to.get(0).rule;
-					fullRange = VersionRange.ofRanges(Arrays.asList(fullRange, dep.publicDep.versionRange()));
-					allInvalidOptions.addAll(dep.getWrongOptions());
-				}
 
 
-				QuiltLoaderText second = VersionRangeDescriber.describe(fullRange);
+			// exit case; unable to handle
+			ret.computeIfAbsent(root, k -> new ArrayList<>()).add(end);
+		}));
 
-				String firstKey = "error.dep.title.";
+		// TODO: right now we ignore when groups are specified for dependencies
+		return ends;
+	}
 
-				if (allInvalidOptions.isEmpty()) {
-					firstKey += "missing";
-				} else if (allInvalidOptions.size() == 1) {
-					firstKey += "mismatch_single";
-				} else {
-					firstKey += "mismatch_multi";
-				}
 
-				QuiltLoaderText first = QuiltLoaderText.translate(firstKey, modOn);
-				QuiltLoaderText title = QuiltLoaderText.of(first + " " + second);
+	public static class Error {
+		List<RuleLink> rules = new ArrayList<>();
+		VersionRange range = VersionRange.ANY;
+	}
 
-				QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 
-				setIconFromMod(manager, mandatoryMod, error);
-
-				Path rootModPath = mandatoryMod.from();
-
-//				for (List<OptionLink> list : fullChain.subList(1, fullChain.size())) {
-//					OptionLink firstMod = list.get(0);
-//					error.appendDescription(QuiltLoaderText.of("via " + ((ModLoadOption) firstMod.option).id()));
-//				}
-
-				error.addFileViewButton(QuiltLoaderText.translate("button.view_file", rootModPath.getFileName()), rootModPath)
-					.icon(mandatoryMod.modCompleteIcon());
-
-				String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
-				if (issuesUrl != null) {
-					error.addOpenLinkButton(QuiltLoaderText.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
-				}
-
-//				StringBuilder report = new StringBuilder(rootModName);
-//				if (transitive) {
-//					report.append(" transitively");
-//				}
-//				report.append(" requires");
-//				if (VersionRange.ANY.equals(fullRange)) {
-//					report.append(" any version of ");
-//				} else {
-//					report.append(" version ").append(fullRange).append(" of ");
-//				}
-//				report.append(modOn);// TODO
-//				report.append(", which is missing!");
-//				error.appendReportText(report.toString(), rootModName + " is loaded from " + rootModPath);
-
-				return true;
+	private static void findEnds(Consumer<RuleLink> list, OptionLink link) {
+		if (link.to.isEmpty()) {
+			link.from.forEach(list);
+		}
+		for (RuleLink ruleLink : link.to) {
+			if (ruleLink.to.isEmpty()) {
+				list.accept(ruleLink);
+			} else {
+				findEnds(list, link);
 			}
-
-			modLinks = new ArrayList<>(nextModLinks);
 		}
 	}
+
+	static void reportErrors(QuiltPluginManagerImpl manager) {
+
+	}
+
+
 
 	private static void setIconFromMod(QuiltPluginManagerImpl manager, ModLoadOption mandatoryMod,
 		QuiltDisplayedError error) {

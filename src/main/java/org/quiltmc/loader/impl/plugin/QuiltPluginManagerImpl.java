@@ -56,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
@@ -1204,6 +1205,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	private void handleSolverFailure() throws TimeoutException {
+		Map<ModDependencyIdentifier, SolverErrorHelper.Error> errors = new HashMap<>();
 
 		boolean failed = false;
 
@@ -1232,7 +1234,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						// Since this is an invalid state we'll report this error
 						// and report that the plugin did the wrong thing
 						failed = true;
-						reportSolverError(rules);
+						reportSolverError(rules, errors);
 						solver.removeRule(blamed);
 						reportError(theQuiltPluginContext, QuiltLoaderText.translate("plugin.illegal_state.recovered_and_blamed", ctx.pluginId));
 						return;
@@ -1251,7 +1253,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					}
 				} else if (blamed != null) {
 					failed = true;
-					reportSolverError(rules);
+					reportSolverError(rules, errors);
 					solver.removeRule(blamed);
 					continue solver_error_iteration;
 				}
@@ -1261,7 +1263,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// So we'll just pick one of them randomly and remove it.
 
 			failed = true;
-			reportSolverError(rules);
+			reportSolverError(rules, errors);
 
 			Rule pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleBreak).findAny().orElse(null);
 
@@ -1294,20 +1296,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	private void reportSolverError(Collection<Rule> rules) {
-		SolverErrorHelper.reportSolverError(this, rules);
+	private void reportSolverError(Collection<Rule> rules, Map<ModDependencyIdentifier, SolverErrorHelper.Error> errors) {
+		SolverErrorHelper.reportSolverError(this, errors, rules);
 	}
 
 	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if
 	 * this is the case. */
 	private void checkForErrors() throws TreeContainsModError, QuiltReportedError {
 
-		Iterator<QuiltJsonGuiMessage> iterator = errors.iterator();
-		while (iterator.hasNext()) {
-			if (iterator.next().isFixed()) {
-				iterator.remove();
-			}
-		}
+		errors.removeIf(QuiltJsonGuiMessage::isFixed);
 
 		if (!errors.isEmpty()) {
 			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load"));
