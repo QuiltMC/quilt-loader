@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +38,10 @@ import javax.imageio.ImageIO;
 
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -54,7 +56,29 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class SolverErrorHelper {
 
-	static void reportSolverError(QuiltPluginManagerImpl manager, Collection<Rule> rules) {
+	private final QuiltPluginManagerImpl manager;
+	private final List<SolverError> errors = new ArrayList<>();
+
+	SolverErrorHelper(QuiltPluginManagerImpl manager) {
+		this.manager = manager;
+	}
+
+	void reportErrors() {
+		for (SolverError error : errors) {
+			error.report(manager);
+		}
+	}
+
+	private void addError(SolverError error) {
+		for (SolverError e2 : errors) {
+			if (error.mergeInto(e2)) {
+				return;
+			}
+		}
+		errors.add(error);
+	}
+
+	void reportSolverError(Collection<Rule> rules) {
 
 		List<RuleLink> links = new ArrayList<>();
 		Map<LoadOption, OptionLink> option2Link = new HashMap<>();
@@ -64,12 +88,14 @@ class SolverErrorHelper {
 			links.add(ruleLink);
 
 			for (LoadOption from : rule.getNodesFrom()) {
+				from = getTarget(from);
 				OptionLink optionLink = option2Link.computeIfAbsent(from, OptionLink::new);
 				ruleLink.from.add(optionLink);
 				optionLink.to.add(ruleLink);
 			}
 
 			for (LoadOption from : rule.getNodesTo()) {
+				from = getTarget(from);
 				OptionLink optionLink = option2Link.computeIfAbsent(from, OptionLink::new);
 				ruleLink.to.add(optionLink);
 				optionLink.from.add(ruleLink);
@@ -83,28 +109,21 @@ class SolverErrorHelper {
 			}
 		}
 
-		if (reportKnownSolverError(manager, rootRules)) {
+		if (reportKnownSolverError(rootRules)) {
 			return;
 		}
 
-		QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(
-			QuiltLoaderText.translate("error.unhandled_solver")
-		);
-		error.appendDescription(QuiltLoaderText.of("error.unhandled_solver.desc"));
-		error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
-		error.appendReportText("Unhandled solver error involving the following rules:");
+		addError(new UnhandledError(rules));
+	}
 
-		StringBuilder sb = new StringBuilder();
-		int number = 1;
-		for (Rule rule : rules) {
-			error.appendReportText("Rule " + number++ + ":");
-			sb.setLength(0);
-			// TODO: Rename 'fallbackErrorDescription'
-			// to something like 'fallbackReportDescription'
-			// and then clean up all of the implementations to be more readable.
-			rule.fallbackErrorDescription(sb);
-			error.appendReportText(sb.toString());
+	private static LoadOption getTarget(LoadOption from) {
+		if (from instanceof AliasedLoadOption) {
+			LoadOption target = ((AliasedLoadOption) from).getTarget();
+			if (target != null) {
+				return target;
+			}
 		}
+		return from;
 	}
 
 	static class RuleLink {
@@ -142,7 +161,7 @@ class SolverErrorHelper {
 		}
 	}
 
-	private static boolean reportKnownSolverError(QuiltPluginManagerImpl manager, List<RuleLink> rootRules) {
+	private boolean reportKnownSolverError(List<RuleLink> rootRules) {
 		if (rootRules.isEmpty()) {
 			return false;
 		}
@@ -151,13 +170,13 @@ class SolverErrorHelper {
 			RuleLink rootRule = rootRules.get(0);
 
 			if (rootRule.rule instanceof MandatoryModIdDefinition) {
-				return reportSingleMandatoryError(manager, rootRule);
+				return reportSingleMandatoryError(rootRule);
 			}
 
 			return false;
 		}
 
-		if (reportDuplicateMandatoryMods(manager, rootRules)) {
+		if (reportDuplicateMandatoryMods(rootRules)) {
 			return true;
 		}
 
@@ -165,7 +184,7 @@ class SolverErrorHelper {
 	}
 
 	/** Reports an error where there is only one root rule, of a {@link MandatoryModIdDefinition}. */
-	private static boolean reportSingleMandatoryError(QuiltPluginManagerImpl manager, RuleLink rootRule) {
+	private boolean reportSingleMandatoryError(RuleLink rootRule) {
 		MandatoryModIdDefinition def = (MandatoryModIdDefinition) rootRule.rule;
 		ModLoadOption mandatoryMod = def.option;
 
@@ -185,6 +204,7 @@ class SolverErrorHelper {
 
 		String groupOn = null;
 		String modOn = null;
+		ModDependencyIdentifier modIdOn = null;
 
 		while (true) {
 			groupOn = null;
@@ -226,6 +246,8 @@ class SolverErrorHelper {
 						return false;
 					}
 
+					modIdOn = id;
+
 					if (dep.publicDep.unless() != null) {
 						// TODO: handle 'unless' clauses!
 						return false;
@@ -252,14 +274,13 @@ class SolverErrorHelper {
 					}
 
 					// Now check that they all match up
-					for (ModLoadOption option : dep.getAllOptions()) {
+					for (LoadOption option : dep.getAllOptions()) {
+						option = getTarget(option);
 						boolean found = false;
 						for (OptionLink link2 : rule.to) {
 							if (option == link2.option) {
 								found = true;
-								if (dep.getValidOptions().contains(option)) {
-									nextModLinks.add(link2);
-								}
+								nextModLinks.add(link2);
 							}
 						}
 						if (!found) {
@@ -300,65 +321,9 @@ class SolverErrorHelper {
 					allInvalidOptions.addAll(dep.getWrongOptions());
 				}
 
-				boolean transitive = fullChain.size() > 1;
-				boolean missing = allInvalidOptions.isEmpty();
-
-				// Title:
-				// "BuildCraft" [transitively] requires [version 1.5.1] of "Quilt Standard Libraries", which is
-				// missing!
-
-				// Description:
-				// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
-				String rootModName = mandatoryMod.metadata().name();
-
-				QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, fullRange, modOn, transitive);
-
-				Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
-				String secondKey = "error.dep.";
-				if (missing) {
-					secondKey += "missing";
-				} else if (allInvalidOptions.size() > 1) {
-					secondKey += "multi_mismatch";
-				} else {
-					secondKey += "single_mismatch";
-					secondData[0] = allInvalidOptions.iterator().next().version().toString();
+				for (OptionLink from : modLinks) {
+					addError(new DependencyError(modIdOn, fullRange, (ModLoadOption) from.option, allInvalidOptions));
 				}
-				QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
-				QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
-				QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
-
-				setIconFromMod(manager, mandatoryMod, error);
-
-				Path rootModPath = mandatoryMod.from();
-				Object[] rootModDescArgs = { rootModName, manager.describePath(rootModPath) };
-				error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", rootModDescArgs));
-
-				for (List<OptionLink> list : fullChain.subList(1, fullChain.size())) {
-					OptionLink firstMod = list.get(0);
-					error.appendDescription(QuiltLoaderText.of("via " + ((ModLoadOption) firstMod.option).id()));
-				}
-
-				error.addFileViewButton(QuiltLoaderText.translate("button.view_file", rootModPath.getFileName()), rootModPath)
-					.icon(mandatoryMod.modCompleteIcon());
-
-				String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
-				if (issuesUrl != null) {
-					error.addOpenLinkButton(QuiltLoaderText.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
-				}
-
-				StringBuilder report = new StringBuilder(rootModName);
-				if (transitive) {
-					report.append(" transitively");
-				}
-				report.append(" requires");
-				if (VersionRange.ANY.equals(fullRange)) {
-					report.append(" any version of ");
-				} else {
-					report.append(" version ").append(fullRange).append(" of ");
-				}
-				report.append(modOn);// TODO
-				report.append(", which is missing!");
-				error.appendReportText(report.toString(), rootModName + " is loaded from " + rootModPath);
 
 				return true;
 			}
@@ -400,7 +365,7 @@ class SolverErrorHelper {
 		}
 	}
 
-	private static boolean reportDuplicateMandatoryMods(QuiltPluginManagerImpl manager, List<RuleLink> rootRules) {
+	private boolean reportDuplicateMandatoryMods(List<RuleLink> rootRules) {
 		// N+1 root rules for N duplicated mods:
 		// 0 is the OptionalModIdDefintion
 		// 1..N is either MandatoryModIdDefinition or DisabledModIdDefinition (and the mod is mandatory)
@@ -516,5 +481,152 @@ class SolverErrorHelper {
 		error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.desc"));
 
 		return true;
+	}
+
+	/**
+	 * A solver error which might have multiple real errors merged into one for display.
+	 */
+	static abstract class SolverError {
+
+		/** Attempts to merge this error into the given error. This object itself shouldn't be modified.
+		 * 
+		 * @return True if the destination object was modified (and this was merged into it), false otherwise. */
+		abstract boolean mergeInto(SolverError into);
+
+		abstract void report(QuiltPluginManagerImpl manager);
+	}
+
+	static class UnhandledError extends SolverError {
+
+		final List<Collection<Rule>> errors = new ArrayList<>();
+
+		public UnhandledError(Collection<Rule> rules) {
+			errors.add(rules);
+		}
+
+		@Override
+		boolean mergeInto(SolverError into) {
+			if (into instanceof UnhandledError) {
+				((UnhandledError) into).errors.addAll(errors);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		void report(QuiltPluginManagerImpl manager) {
+			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(
+				QuiltLoaderText.translate("error.unhandled_solver")
+			);
+			error.appendDescription(QuiltLoaderText.of("error.unhandled_solver.desc"));
+			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
+			error.appendReportText("Unhandled solver error involving the following rules:");
+
+			StringBuilder sb = new StringBuilder();
+			int errorIndex = 1;
+			for (Collection<Rule> rules : errors) {
+				error.appendReportText("Error " + errorIndex++ + ":");
+				int number = 1;
+				for (Rule rule : rules) {
+					error.appendReportText("Rule " + number++ + ":");
+					sb.setLength(0);
+					// TODO: Rename 'fallbackErrorDescription'
+					// to something like 'fallbackReportDescription'
+					// and then clean up all of the implementations to be more readable.
+					rule.fallbackErrorDescription(sb);
+					error.appendReportText(sb.toString());
+				}
+				error.appendReportText("");
+			}
+		}
+	}
+
+	static class DependencyError extends SolverError {
+		final ModDependencyIdentifier modOn;
+		final VersionRange versionsOn;
+		final List<ModLoadOption> from = new ArrayList<>();
+		final Set<ModLoadOption> allInvalidOptions;
+
+		DependencyError(ModDependencyIdentifier modOn, VersionRange versionsOn, ModLoadOption from, Set<ModLoadOption> allInvalidOptions) {
+			this.modOn = modOn;
+			this.versionsOn = versionsOn;
+			this.from.add(from);
+			this.allInvalidOptions = allInvalidOptions;
+		}
+
+		@Override
+		boolean mergeInto(SolverError into) {
+			if (into instanceof DependencyError) {
+				DependencyError depDst = (DependencyError) into;
+				if (!modOn.equals(depDst.modOn) || !versionsOn.equals(depDst.versionsOn)) {
+					return false;
+				}
+				depDst.from.addAll(from);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		void report(QuiltPluginManagerImpl manager) {
+
+			boolean transitive = false;
+			boolean missing = allInvalidOptions.isEmpty();
+
+			// Title:
+			// "BuildCraft" requires [version 1.5.1] of "Quilt Standard Libraries", which is
+			// missing!
+
+			// Description:
+			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
+			ModLoadOption mandatoryMod = from.get(0);
+			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
+
+			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, versionsOn, modOn.id(), transitive);
+
+			Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
+			String secondKey = "error.dep.";
+			if (missing) {
+				secondKey += "missing";
+			} else if (allInvalidOptions.size() > 1) {
+				secondKey += "multi_mismatch";
+			} else {
+				secondKey += "single_mismatch";
+				secondData[0] = allInvalidOptions.iterator().next().version().toString();
+			}
+			QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
+			QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
+			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
+
+			setIconFromMod(manager, mandatoryMod, error);
+
+			Map<Path, ModLoadOption> realPaths = new LinkedHashMap<>();
+
+			for (ModLoadOption mod : from) {
+				Object[] modDescArgs = { mod.metadata().name(), manager.describePath(mod.from()) };
+				error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", modDescArgs));
+				manager.getRealContainingFile(mod.from()).ifPresent(p -> realPaths.putIfAbsent(p, mod));
+			}
+
+			for (Map.Entry<Path, ModLoadOption> entry : realPaths.entrySet()) {
+				error.addFileViewButton(entry.getKey()).icon(entry.getValue().modCompleteIcon());
+			}
+
+			String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
+			if (issuesUrl != null) {
+				error.addOpenLinkButton(QuiltLoaderText.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl);
+			}
+
+			StringBuilder report = new StringBuilder(rootModName);
+			report.append(" requires");
+			if (VersionRange.ANY.equals(versionsOn)) {
+				report.append(" any version of ");
+			} else {
+				report.append(" version ").append(versionsOn).append(" of ");
+			}
+			report.append(modOn);// TODO
+			report.append(", which is missing!");
+			error.appendReportText(report.toString());
+		}
 	}
 }
