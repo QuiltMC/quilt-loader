@@ -544,7 +544,7 @@ class SolverErrorHelper {
 	static class DependencyError extends SolverError {
 		final ModDependencyIdentifier modOn;
 		final VersionRange versionsOn;
-		final List<ModLoadOption> from = new ArrayList<>();
+		final Set<ModLoadOption> from = new LinkedHashSet<>();
 		final Set<ModLoadOption> allInvalidOptions;
 
 		DependencyError(ModDependencyIdentifier modOn, VersionRange versionsOn, ModLoadOption from, Set<ModLoadOption> allInvalidOptions) {
@@ -579,7 +579,7 @@ class SolverErrorHelper {
 
 			// Description:
 			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
-			ModLoadOption mandatoryMod = from.get(0);
+			ModLoadOption mandatoryMod = from.iterator().next();
 			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
 
 			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, versionsOn, modOn.id(), transitive);
