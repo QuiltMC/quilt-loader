@@ -24,7 +24,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.patch.PatchLoader;
@@ -41,7 +40,7 @@ public class ReflectionsClassPatcher extends PatchLoader {
 	static final String TARGET_PACKAGE = "org.quiltmc.loader.impl.patch.reflections.";
 
 	public static void load(Map<String, byte[]> patchedClasses) {
-		if (!QuiltLoader.isModLoaded("org_reflections_reflections")) {
+		if (QuiltLauncherBase.getLauncher().getResourceURL("/org/reflections/vfs/Vfs.class") == null) {
 			return;
 		}
 
