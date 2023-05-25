@@ -28,6 +28,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class MandatoryModIdDefinition extends ModIdDefinition {
 	public final ModLoadOption option;
+	private boolean optionGone = false;
 
 	public MandatoryModIdDefinition(ModLoadOption candidate) {
 		this.option = candidate;
@@ -45,7 +46,9 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public void define(RuleDefiner definer) {
-		definer.atLeastOneOf(option);
+		if (!optionGone) {
+			definer.atLeastOneOf(option);
+		}
 	}
 
 	@Override
@@ -55,7 +58,7 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public boolean onLoadOptionRemoved(LoadOption option) {
-		return false;
+		return optionGone = option == this.option;
 	}
 
 	@Override
@@ -74,5 +77,8 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 		errors.append(getFriendlyName());
 		errors.append(" v");
 		errors.append(option.metadata().version());
+		if (optionGone) {
+			errors.append(" (gone)");
+		}
 	}
 }

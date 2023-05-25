@@ -29,11 +29,11 @@ public abstract class Rule {
 	public Rule() {}
 
 	/** @return true if {@link #define(RuleDefiner)} needs to be called again, or false if the added option had no
-	 *         affect on this rule. */
+	 *         effect on this rule. */
 	public abstract boolean onLoadOptionAdded(LoadOption option);
 
 	/** @return true if {@link #define(RuleDefiner)} needs to be called again, or false if the removed option had no
-	 *         affect on this rule. */
+	 *         effect on this rule. */
 	public abstract boolean onLoadOptionRemoved(LoadOption option);
 
 	/** Called whenever a {@link LoadOption} is changed. Not all {@link Rule}s are expected to be able to update to all
