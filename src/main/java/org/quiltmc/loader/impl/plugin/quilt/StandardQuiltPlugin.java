@@ -315,9 +315,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			// If the mod's environment doesn't match the current one,
 			// then add a rule so that the mod is never loaded.
 			if (!metadata.environment().matches(context().manager().getEnvironment())) {
-				ctx.addRule(new DisabledModIdDefinition(mod));
+				ctx.addRule(new DisabledModIdDefinition(context(), mod));
 			} else if (mod.isMandatory()) {
-				ctx.addRule(new MandatoryModIdDefinition(mod));
+				ctx.addRule(new MandatoryModIdDefinition(context(), mod));
 			}
 
 			if (metadata.shouldQuiltDefineProvides()) {

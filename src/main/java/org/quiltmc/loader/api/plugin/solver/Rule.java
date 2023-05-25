@@ -17,8 +17,10 @@
 package org.quiltmc.loader.api.plugin.solver;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -70,4 +72,6 @@ public abstract class Rule {
 	public abstract Collection<? extends LoadOption> getNodesTo();
 
 	public abstract void fallbackErrorDescription(StringBuilder errors);
+
+	public abstract void appendRuleDescription(Consumer<QuiltLoaderText> to);
 }

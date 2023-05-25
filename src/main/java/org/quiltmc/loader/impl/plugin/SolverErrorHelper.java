@@ -498,18 +498,14 @@ class SolverErrorHelper {
 
 	static class UnhandledError extends SolverError {
 
-		final List<Collection<Rule>> errors = new ArrayList<>();
+		final Collection<Rule> rules;
 
 		public UnhandledError(Collection<Rule> rules) {
-			errors.add(rules);
+			this.rules = rules;
 		}
 
 		@Override
 		boolean mergeInto(SolverError into) {
-			if (into instanceof UnhandledError) {
-				((UnhandledError) into).errors.addAll(errors);
-				return true;
-			}
 			return false;
 		}
 
@@ -523,21 +519,19 @@ class SolverErrorHelper {
 			error.appendReportText("Unhandled solver error involving the following rules:");
 
 			StringBuilder sb = new StringBuilder();
-			int errorIndex = 1;
-			for (Collection<Rule> rules : errors) {
-				error.appendReportText("Error " + errorIndex++ + ":");
-				int number = 1;
-				for (Rule rule : rules) {
-					error.appendReportText("Rule " + number++ + ":");
-					sb.setLength(0);
-					// TODO: Rename 'fallbackErrorDescription'
-					// to something like 'fallbackReportDescription'
-					// and then clean up all of the implementations to be more readable.
-					rule.fallbackErrorDescription(sb);
-					error.appendReportText(sb.toString());
-				}
-				error.appendReportText("");
+			int number = 1;
+			for (Rule rule : rules) {
+				error.appendDescription(QuiltLoaderText.translate("error.unhandled_solver.desc.rule_n", number, rule.getClass()));
+				rule.appendRuleDescription(error::appendDescription);
+				error.appendReportText("Rule " + number++ + ":");
+				sb.setLength(0);
+				// TODO: Rename 'fallbackErrorDescription'
+				// to something like 'fallbackReportDescription'
+				// and then clean up all of the implementations to be more readable.
+				rule.fallbackErrorDescription(sb);
+				error.appendReportText(sb.toString());
 			}
+			error.appendReportText("");
 		}
 	}
 

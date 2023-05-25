@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.solver;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -34,5 +35,10 @@ final class NegatedLoadOption extends LoadOption {
 	@Override
 	public String toString() {
 		return "NOT " + not;
+	}
+
+	@Override
+	public QuiltLoaderText describe() {
+		return QuiltLoaderText.translate("solver.option.negated", not.describe());
 	}
 }

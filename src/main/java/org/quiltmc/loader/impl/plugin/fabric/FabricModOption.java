@@ -42,6 +42,11 @@ public class FabricModOption extends InternalModOptionBase {
 	}
 
 	@Override
+	protected String nameOfType() {
+		return "fabric";
+	}
+
+	@Override
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
 		return new FabricModContainer(pluginContext, metadata, from, transformedResourceRoot);
 	}

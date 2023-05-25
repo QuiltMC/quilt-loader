@@ -16,7 +16,10 @@
 
 package org.quiltmc.loader.impl.plugin.quilt;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -24,7 +27,10 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 /** Used to indicate part of a {@link ModDependency} from quilt.mod.json. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltModDepOption extends LoadOption {
+	private static final AtomicInteger IDS = new AtomicInteger();
+
 	public final ModDependency dep;
+	private final int id = IDS.incrementAndGet();
 
 	public QuiltModDepOption(ModDependency dep) {
 		this.dep = dep;
@@ -33,5 +39,10 @@ public class QuiltModDepOption extends LoadOption {
 	@Override
 	public String toString() {
 		return dep.toString();
+	}
+
+	@Override
+	public QuiltLoaderText describe() {
+		return QuiltLoaderText.translate("solver.option.dep_technical", id, dep.toString());
 	}
 }

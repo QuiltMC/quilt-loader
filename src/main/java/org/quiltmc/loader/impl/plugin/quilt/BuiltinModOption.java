@@ -46,6 +46,11 @@ public class BuiltinModOption extends InternalModOptionBase {
 	}
 
 	@Override
+	protected String nameOfType() {
+		return "builtin";
+	}
+
+	@Override
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
 		if (!transformedResourceRoot.equals(resourceRoot)) {
 			try {

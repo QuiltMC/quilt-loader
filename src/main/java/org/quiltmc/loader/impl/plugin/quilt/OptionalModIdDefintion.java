@@ -19,8 +19,10 @@ package org.quiltmc.loader.impl.plugin.quilt;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
@@ -172,6 +174,14 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 		for (ModLoadOption option : sources) {
 			errors.append("\n\t - ");
 			errors.append(option.getSpecificInfo());
+		}
+	}
+
+	@Override
+	public void appendRuleDescription(Consumer<QuiltLoaderText> to) {
+		to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional", modid, sources.size()));
+		for (ModLoadOption mod : sources) {
+			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", mod.describe()));
 		}
 	}
 }
