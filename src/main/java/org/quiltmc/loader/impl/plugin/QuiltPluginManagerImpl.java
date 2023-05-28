@@ -89,7 +89,6 @@ import org.quiltmc.loader.impl.filesystem.QuiltBaseFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem.ReadWrite;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
@@ -281,6 +280,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	class SourcePathGenerator {
 		final Map<FileSystem, QuiltMemoryFileSystem.ReadWrite> fsMap = new HashMap<>();
+		final Map<Path, List<List<Path>>> tmpPaths = new HashMap<>();
 		final Map<QuiltMemoryFileSystem.ReadWrite, QuiltMemoryFileSystem.ReadOnly> fsReadOnlyCopies = new HashMap<>();
 
 		void generate() {
@@ -289,12 +289,53 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				createFS(entry.getValue());
 			}
 
-			sourcePaths = new HashMap<>();
-
 			for (Map.Entry<Path, Path> entry : pathParents.entrySet()) {
 				generate(entry.getKey());
 				generate(entry.getValue());
 			}
+
+			for (QuiltMemoryFileSystem.ReadWrite rw : fsMap.values()) {
+				fsReadOnlyCopies.put(rw, rw.replaceWithReadOnly(false));
+			}
+
+			sourcePaths = new HashMap<>();
+
+			for (Map.Entry<Path, List<List<Path>>> entry : tmpPaths.entrySet()) {
+				List<List<Path>> oldList = entry.getValue();
+				List<List<Path>> newList = new ArrayList<>();
+				for (List<Path> oldPaths : oldList) {
+					List<Path> newPaths = new ArrayList<>();
+					for (Path oldPath : oldPaths) {
+						FileSystem oldFS = oldPath.getFileSystem();
+						QuiltMemoryFileSystem.ReadOnly newFS = fsReadOnlyCopies.get(oldFS);
+						if (newFS == null) {
+							newPaths.add(oldPath);
+						} else {
+							newPaths.add(newFS.getPath(oldPath.toString()));
+						}
+					}
+					newList.add(unmodifiableList(newPaths));
+				}
+				sourcePaths.put(entry.getKey(), unmodifiableList(newList));
+			}
+		}
+
+		private <T> List<T> unmodifiableList(List<T> from) {
+			switch (from.size()) {
+				case 0: {
+					return Collections.emptyList();
+				}
+				case 1: {
+					return Collections.singletonList(from.get(0));
+				}
+				default: {
+					return Collections.unmodifiableList(Arrays.asList((T[]) from.toArray(new Object[0])));
+				}
+			}
+		}
+
+		void generate(Path path) {
+			tmpPaths.put(path, walkSourcePaths(path));
 		}
 
 		void createFS(Path path) {
@@ -311,7 +352,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 				QuiltMemoryFileSystem.ReadWrite gnFS;
 				fsMap.put(fs, gnFS = new QuiltMemoryFileSystem.ReadWrite("shadow_" + name, true));
-				System.out.println("Generating filesystem for " + path + " " + path.getFileSystem() + " as " + gnFS);
 			}
 		}
 
@@ -340,7 +380,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			} catch (IOException e) {
 				throw new IllegalStateException("Failed to create the file!", e);
 			}
-			System.out.println("Mapping " + fs + from + " to " + real.getFileSystem() + real);
 			return real;
 		}
 
@@ -363,7 +402,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						paths.add(Collections.unmodifiableList(fullList));
 					}
 				}
-				return Collections.unmodifiableList(paths);
+				return unmodifiableList(paths);
 			}
 
 			Path parent = getParent(fromRoot);
@@ -378,14 +417,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					fullList.add(map(from));
 					paths.add(Collections.unmodifiableList(fullList));
 				}
-				return Collections.unmodifiableList(paths);
+				return unmodifiableList(paths);
 			}
-		}
-
-		void generate(Path path) {
-			List<List<Path>> walked = walkSourcePaths(path);
-			System.out.println("Generated " + path + " as " + walked);
-			sourcePaths.put(path, walked);
 		}
 	}
 
