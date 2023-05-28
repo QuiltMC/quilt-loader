@@ -88,7 +88,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 	}
 
 	@Override
-	public FileSystemProvider provider() {
+	public QuiltMemoryFileSystemProvider provider() {
 		return QuiltMemoryFileSystemProvider.instance();
 	}
 

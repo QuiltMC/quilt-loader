@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
@@ -80,6 +81,21 @@ public interface QuiltPluginManager {
 	 *
 	 * @return The root {@link Path} of the newly allocated {@link FileSystem} */
 	Path copyToReadOnlyFileSystem(String name, Path folderRoot, boolean compress) throws IOException;
+
+	/** Gets the return value of {@link ModContainer#getSourcePaths()}. All {@link ModContainer} implementations are
+	 * recommended to use this method.
+	 * 
+	 * @param path The "load source" path that a mod was loaded from. This must be the "source" path as passed in to:
+	 *            <ul>
+	 *            <li>{@link QuiltLoaderPlugin#scanFolder(Path, ModLocation, PluginGuiTreeNode)}</li>
+	 *            <li>{@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)}</li>
+	 *            <li>{@link #getParent(Path)} of the path passed into
+	 *            {@link QuiltLoaderPlugin#scanZip(Path, ModLocation, PluginGuiTreeNode)}.</li>
+	 *            </ul>
+	 * @throws IllegalStateException if called outside of a {@link ModLoadOption#convertToMod(Path)} call. (Loader must
+	 *             intern all paths for consistencies sake, which doesn't work very well if you call this too late or
+	 *             early). */
+	List<List<Path>> convertToSourcePaths(Path path);
 
 	// #################
 	// Identifying Paths

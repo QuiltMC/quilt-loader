@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -84,9 +85,11 @@ import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.filesystem.QuiltBaseFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem.ReadWrite;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
@@ -133,6 +136,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
 	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
+	Map<Path, List<List<Path>>> sourcePaths;
 
 	final Map<Path, String> modFolders = new LinkedHashMap<>();
 	final Map<Path, ModLoadOption> modPaths = new LinkedHashMap<>();
@@ -256,6 +260,135 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public Path copyToReadOnlyFileSystem(String name, Path folderRoot, boolean compress) throws IOException {
 		return new QuiltMemoryFileSystem.ReadOnly(name, true, folderRoot, compress).getRoot();
 	}
+
+	@Override
+	public List<List<Path>> convertToSourcePaths(Path path) {
+		if (sourcePaths == null) {
+			throw new IllegalStateException("Called too early - we haven't been able to generate the paths yet!");
+		}
+		if (path.getFileSystem() == FileSystems.getDefault()) {
+			return Collections.singletonList(Collections.singletonList(path));
+		}
+		List<List<Path>> sources = sourcePaths.get(path);
+		if (sources == null) {
+			throw new IllegalArgumentException(
+				"Unknown source path " + path + " " + path.getFileSystem()
+					+ " - you can only call this for known paths!"
+			);
+		}
+		return sources;
+	}
+
+	class SourcePathGenerator {
+		final Map<FileSystem, QuiltMemoryFileSystem.ReadWrite> fsMap = new HashMap<>();
+		final Map<QuiltMemoryFileSystem.ReadWrite, QuiltMemoryFileSystem.ReadOnly> fsReadOnlyCopies = new HashMap<>();
+
+		void generate() {
+			for (Map.Entry<Path, Path> entry : pathParents.entrySet()) {
+				createFS(entry.getKey());
+				createFS(entry.getValue());
+			}
+
+			sourcePaths = new HashMap<>();
+
+			for (Map.Entry<Path, Path> entry : pathParents.entrySet()) {
+				generate(entry.getKey());
+				generate(entry.getValue());
+			}
+		}
+
+		void createFS(Path path) {
+			FileSystem fs = path.getFileSystem();
+			if (fs == FileSystems.getDefault()) {
+				return;
+			}
+			if (!fsMap.containsKey(fs)) {
+				String name;
+				if (fs instanceof QuiltBaseFileSystem) {
+					name = ((QuiltBaseFileSystem<?, ?>) fs).getName();
+				} else {
+					name = fs.toString();
+				}
+				QuiltMemoryFileSystem.ReadWrite gnFS;
+				fsMap.put(fs, gnFS = new QuiltMemoryFileSystem.ReadWrite("shadow_" + name, true));
+				System.out.println("Generating filesystem for " + path + " " + path.getFileSystem() + " as " + gnFS);
+			}
+		}
+
+		Path map(Path from) {
+			FileSystem fs = from.getFileSystem();
+			if (fs == FileSystems.getDefault()) {
+				return from;
+			}
+			QuiltMemoryFileSystem.ReadWrite shadowFs = fsMap.get(fs);
+			if (shadowFs == null) {
+				throw new IllegalStateException("Missing file system " + fs);
+			}
+			Path real = shadowFs.getPath(from.toString().replace(fs.getSeparator(), shadowFs.getSeparator()));
+			Path parent = real.getParent();
+			if (parent != null) {
+				try {
+					shadowFs.createDirectories(parent);
+				} catch (IOException e) {
+					throw new IllegalStateException("Failed to create reasonable parents!", e);
+				}
+			}
+			try {
+				if (Files.isRegularFile(from) && !Files.exists(real)) {
+					shadowFs.createFile(real);
+				}
+			} catch (IOException e) {
+				throw new IllegalStateException("Failed to create the file!", e);
+			}
+			System.out.println("Mapping " + fs + from + " to " + real.getFileSystem() + real);
+			return real;
+		}
+
+		List<List<Path>> walkSourcePaths(Path from) {
+			if (from.getFileSystem() == FileSystems.getDefault()) {
+				return Collections.singletonList(Collections.singletonList(from));
+			}
+
+			Path fromRoot = from.getFileSystem().getPath("/");
+			Collection<Path> joinedPaths = getJoinedPaths(fromRoot);
+
+			if (joinedPaths != null) {
+				// TODO: Test joined paths!
+				List<List<Path>> paths = new ArrayList<>();
+				for (Path path : joinedPaths) {
+					for (List<Path> upper : walkSourcePaths(path)) {
+						List<Path> fullList = new ArrayList<>();
+						fullList.addAll(upper);
+						fullList.add(map(from));
+						paths.add(Collections.unmodifiableList(fullList));
+					}
+				}
+				return Collections.unmodifiableList(paths);
+			}
+
+			Path parent = getParent(fromRoot);
+			if (parent == null) {
+				// That's not good
+				return Collections.singletonList(Collections.singletonList(map(from)));
+			} else {
+				List<List<Path>> paths = new ArrayList<>();
+				for (List<Path> upper : walkSourcePaths(parent)) {
+					List<Path> fullList = new ArrayList<>();
+					fullList.addAll(upper);
+					fullList.add(map(from));
+					paths.add(Collections.unmodifiableList(fullList));
+				}
+				return Collections.unmodifiableList(paths);
+			}
+		}
+
+		void generate(Path path) {
+			List<List<Path>> walked = walkSourcePaths(path);
+			System.out.println("Generated " + path + " as " + walked);
+			sourcePaths.put(path, walked);
+		}
+	}
+
 
 	// #################
 	// Identifying Paths
@@ -1087,6 +1220,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			ModSolveResultImpl result = runSingleCycle();
 			checkForErrors();
 			if (result != null) {
+				new SourcePathGenerator().generate();
 				populateModsGuiTab(result);
 				return result;
 			}
