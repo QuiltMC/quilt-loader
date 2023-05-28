@@ -515,7 +515,7 @@ class SolverErrorHelper {
 				QuiltLoaderText.translate("error.unhandled_solver")
 			);
 			error.appendDescription(QuiltLoaderText.of("error.unhandled_solver.desc"));
-			error.addOpenLinkButton(QuiltLoaderText.of("button.quilt_loader_report"), "https://github.com/QuiltMC/quilt-loader/issues");
+			error.addOpenQuiltSupportButton();
 			error.appendReportText("Unhandled solver error involving the following rules:");
 
 			StringBuilder sb = new StringBuilder();
