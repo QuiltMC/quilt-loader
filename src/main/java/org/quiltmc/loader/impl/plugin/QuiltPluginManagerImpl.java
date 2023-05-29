@@ -1372,6 +1372,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private void handleSolverFailure() throws TimeoutException {
 
+		SolverErrorHelper helper = new SolverErrorHelper(this);
 		boolean failed = false;
 
 		solver_error_iteration: do {
@@ -1399,7 +1400,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						// Since this is an invalid state we'll report this error
 						// and report that the plugin did the wrong thing
 						failed = true;
-						reportSolverError(rules);
+						helper.reportSolverError(rules);
 						solver.removeRule(blamed);
 						reportError(theQuiltPluginContext, QuiltLoaderText.translate("plugin.illegal_state.recovered_and_blamed", ctx.pluginId));
 						return;
@@ -1418,7 +1419,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					}
 				} else if (blamed != null) {
 					failed = true;
-					reportSolverError(rules);
+					helper.reportSolverError(rules);
 					solver.removeRule(blamed);
 					continue solver_error_iteration;
 				}
@@ -1428,7 +1429,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// So we'll just pick one of them randomly and remove it.
 
 			failed = true;
-			reportSolverError(rules);
+			helper.reportSolverError(rules);
 
 			Rule pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleBreak).findAny().orElse(null);
 
@@ -1448,6 +1449,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		} while (!solver.hasSolution());
 
+		helper.reportErrors();
+
 		if (failed) {
 			// Okay, so we failed but we've reached the end of the list of problems
 			// Just return here since the cycle handles this
@@ -1459,10 +1462,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			reportError(theQuiltPluginContext, QuiltLoaderText.translate("solver.illegal_state.TODO"));
 			return;
 		}
-	}
-
-	private void reportSolverError(Collection<Rule> rules) {
-		SolverErrorHelper.reportSolverError(this, rules);
 	}
 
 	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if

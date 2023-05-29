@@ -16,6 +16,10 @@
 
 package org.quiltmc.loader.impl.plugin.quilt;
 
+import java.util.function.Consumer;
+
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
@@ -26,9 +30,11 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class DisabledModIdDefinition extends ModIdDefinition {
 	public final ModLoadOption option;
+	private final QuiltPluginContext ctx;
 
-	public DisabledModIdDefinition(ModLoadOption candidate) {
+	public DisabledModIdDefinition(QuiltPluginContext ctx, ModLoadOption candidate) {
 		this.option = candidate;
+		this.ctx = ctx;
 	}
 
 	@Override
@@ -72,5 +78,11 @@ public final class DisabledModIdDefinition extends ModIdDefinition {
 		errors.append(getFriendlyName());
 		errors.append(" v");
 		errors.append(option.metadata().version());
+	}
+
+	@Override
+	public void appendRuleDescription(Consumer<QuiltLoaderText> to) {
+		String from = ctx.manager().describePath(option.from());
+		to.accept(QuiltLoaderText.translate("solver.rule.mod_def.disabled", getModId(), option.metadata().version(), from));
 	}
 }

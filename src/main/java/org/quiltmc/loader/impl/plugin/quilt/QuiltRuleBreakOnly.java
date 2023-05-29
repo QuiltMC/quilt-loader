@@ -20,13 +20,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.plugin.VersionRangeDescriber;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -170,6 +173,25 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 
 		for (ModLoadOption option : okayOptions) {
 			errors.append("\n\t+ " + option.fullString());
+		}
+	}
+
+	@Override
+	public void appendRuleDescription(Consumer<QuiltLoaderText> to) {
+		StringBuilder id = new StringBuilder(publicDep.id().mavenGroup());
+		if (id.length() > 0) {
+			id.append(":");
+		}
+		id.append(publicDep.id().id());
+		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false);
+		to.accept(QuiltLoaderText.translate("solver.rule.break.only", on));
+		to.accept(QuiltLoaderText.translate("solver.rule.break.only.conflicting", conflictingOptions.size()));
+		for (ModLoadOption option : conflictingOptions) {
+			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", option.describe()));
+		}
+		to.accept(QuiltLoaderText.translate("solver.rule.break.only.invalid", okayOptions.size()));
+		for (ModLoadOption option : okayOptions) {
+			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", option.describe()));
 		}
 	}
 }

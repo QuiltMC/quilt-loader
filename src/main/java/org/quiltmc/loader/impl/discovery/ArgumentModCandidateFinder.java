@@ -117,7 +117,7 @@ public class ArgumentModCandidateFinder {
 					QuiltLoaderText.translate("error.arg_mods.not_folder.by.desc", original, source, path)
 				);
 			}
-			error.appendReportText("The file " + path + " is missing!");
+			error.appendReportText("The folder " + path + " is missing!");
 			error.appendReportText(" (It is specified by " + original + ")");
 			if (source != null) {
 				error.appendReportText(" (Inside the file " + source + ")");

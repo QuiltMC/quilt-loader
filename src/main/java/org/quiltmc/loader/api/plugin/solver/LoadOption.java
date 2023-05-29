@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -24,4 +25,6 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class LoadOption {
 
+	/** @return A description of this load option, to be shown in the error gui when this load option is involved in a solver error. */
+	public abstract QuiltLoaderText describe();
 }

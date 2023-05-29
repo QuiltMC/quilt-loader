@@ -33,6 +33,9 @@ import org.quiltmc.loader.impl.metadata.qmj.ModDependencyIdentifierImpl;
 @ApiStatus.NonExtendable
 // TODO: document and make inner class
 public interface ModDependencyIdentifier {
+	static ModDependencyIdentifier of(String mavenGroup, String id) {
+		return new ModDependencyIdentifierImpl(mavenGroup, id);
+	}
 	/**
 	 * @return the maven group, or an empty string where no group requirement is specified
 	 */

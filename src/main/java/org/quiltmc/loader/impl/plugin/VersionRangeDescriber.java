@@ -19,13 +19,20 @@ package org.quiltmc.loader.impl.plugin;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-class VersionRangeDescriber {
-	static QuiltLoaderText describe(String modName, VersionRange range, String depName, boolean transitive) {
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+public class VersionRangeDescriber {
+	public static QuiltLoaderText describe(String modName, VersionRange range, String depName, boolean transitive) {
+		return describe(QuiltLoaderText.of(modName), range, depName, transitive);
+	}
+
+	public static QuiltLoaderText describe(QuiltLoaderText modFrom, VersionRange range, String depName, boolean transitive) {
 		String titleKey = "error.dep." + (transitive ? "transitive." : "direct.");
 
 		if (range.size() != 1) {
-			return QuiltLoaderText.translate(getTransKey(titleKey, "ranged"), modName, range, depName);
+			return QuiltLoaderText.translate(getTransKey(titleKey, "ranged"), modFrom, range, depName);
 		}
 
 		VersionInterval interval = range.first();
@@ -34,25 +41,25 @@ class VersionRangeDescriber {
 		if (interval.getMin() == null) {
 			// Positive infinity
 			if (interval.getMax() == null) {
-				return QuiltLoaderText.translate(getTransKey(titleKey, "any"), modName, depName);
+				return QuiltLoaderText.translate(getTransKey(titleKey, "any"), modFrom, depName);
 			} else {
-				return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMaxInclusive() ? "lesser_equal" : "lesser"), modName, interval.getMax(), depName);
+				return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMaxInclusive() ? "lesser_equal" : "lesser"), modFrom, interval.getMax(), depName);
 			}
 		}
 
 		// positive infinity
 		if (interval.getMax() == null) {
-			return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMinInclusive() ? "greater_equal" : "greater"), modName, interval.getMin(), depName);
+			return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMinInclusive() ? "greater_equal" : "greater"), modFrom, interval.getMin(), depName);
 		}
 
 		if (interval.getMax().equals(interval.getMin())) {
-			return QuiltLoaderText.translate(getTransKey(titleKey, "exact"), modName, interval.getMax(), depName);
+			return QuiltLoaderText.translate(getTransKey(titleKey, "exact"), modFrom, interval.getMax(), depName);
 		}
 
 		// ranged
 		String extra = "range_" + (interval.isMinInclusive() ? "inc_" : "exc_") + (interval.isMaxInclusive() ? "inc" : "exc");
 
-		return QuiltLoaderText.translate(getTransKey(titleKey, extra), modName, interval.getMin(), interval.getMax(), depName);
+		return QuiltLoaderText.translate(getTransKey(titleKey, extra), modFrom, interval.getMin(), interval.getMax(), depName);
 	}
 
 	private static String getTransKey(String titleKey, String extra) {

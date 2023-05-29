@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.ModDependency;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
@@ -116,6 +118,14 @@ public class QuiltRuleDepAny extends QuiltRuleDep {
 			errors.append("\n\t-");
 			errors.append(on.source);
 			errors.append(" ");
+		}
+	}
+
+	@Override
+	public void appendRuleDescription(Consumer<QuiltLoaderText> to) {
+		to.accept(QuiltLoaderText.translate("solver.rule.dep.any", source.describe()));
+		for (QuiltRuleDepOnly on : options) {
+			to.accept(on.source.describe());
 		}
 	}
 }
