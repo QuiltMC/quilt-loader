@@ -1,0 +1,44 @@
+Features:
+
+- Updated provided version of Fabric Loader to 0.14.21
+
+- [#262] Added a way for mods to display error messages in QuiltLoaderGui.
+    - These errors can have buttons to act on the error, potentially fixing them
+    - Errors in the `quilt-loader-overrides.json` file use this error system.
+- [#255] Added `QuiltLoader.getCacheDir`, which defaults to `<game>/.cache`
+    - Any new quilt-loader caches will use this directory. Older files will not be removed.
+      If you want to remove any older files you can delete the `.quilt_loader` folder.
+- [#263, #267] Added some French translations (Mysterious-Dev)
+- [#259] Added the system property `loader.disable_forked_guis` to disable all swing guis shown via loader.
+- [#283] Only use a single Sub-File column, drasticaly reducing the width of the mod table in crash reports and logs.
+- [#280] Switch to mod "kind" in the mod table instead of the plugin which loaded that mod.
+- [#272] Added SHA-1 hashes of mod files to the mods table.
+    - This is primarily to support automatic analysis by tools like cozy.
+- Tweaks to the transform cache:
+    - Always disable using the previous transform cache in a development environment.
+    - Add the mod file name to the cache entry, to make it easier to debug why the cache changed.
+    - Hide detailed cache key changes behind a new system property `loader.transform_cache.log_changed_keys`
+- [#312] Improved the solver error messages:
+    - Removed "transitively" wording from long dependency chain error messages.
+    - Collapsed multiple identical dependences into a single error message.
+    - Show the full detail of unhandled solver errors, now called "Complex" errors.
+
+Bug Fixes:
+
+- Fix mod dependencies interpreting "1.17.x" as [1.17, 2) rather than [1.17, 1.18)
+- [#279] Fixed `provides` not exposing the provided version.
+    - This fixes an issue where Essential didn't recognise Quilt Kotlin Libraries
+      providing a newer version of Fabric Language Kotlin, and redownloading FLK,
+      which caused a crash on the next launch.
+- [#285] Fixed QuiltBaseFileSystem not supporting `glob` syntax matching.
+- Switched loaders forked gui system to use a file for the classpath, which 
+  prevents crashes from the command line being too long.
+- Fixed the reflections patch not being applied in a development environment.
+
+Optimisations:
+
+- Optimised QuiltBasePath by folding two boolen fields into the int field.
+    - This saves about 2 MB in large packs.
+- Fixed the memory file systems being kept in-memory by the path references from `ModContainer.getSourcePaths`
+    - This saves about 400 MB in large packs, but this depends heavily on
+      how big the mods are and what version you're updating from.
