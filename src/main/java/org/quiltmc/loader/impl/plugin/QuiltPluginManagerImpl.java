@@ -289,9 +289,17 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				createFS(entry.getValue());
 			}
 
+			for (Path from : modPaths.keySet()) {
+				createFS(from);
+			}
+
 			for (Map.Entry<Path, Path> entry : pathParents.entrySet()) {
 				generate(entry.getKey());
 				generate(entry.getValue());
+			}
+
+			for (Path from : modPaths.keySet()) {
+				generate(from);
 			}
 
 			for (QuiltMemoryFileSystem.ReadWrite rw : fsMap.values()) {
@@ -392,7 +400,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			Collection<Path> joinedPaths = getJoinedPaths(fromRoot);
 
 			if (joinedPaths != null) {
-				// TODO: Test joined paths!
 				List<List<Path>> paths = new ArrayList<>();
 				for (Path path : joinedPaths) {
 					for (List<Path> upper : walkSourcePaths(path)) {
