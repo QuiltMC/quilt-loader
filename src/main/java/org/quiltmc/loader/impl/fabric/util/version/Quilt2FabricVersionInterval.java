@@ -44,7 +44,7 @@ public final class Quilt2FabricVersionInterval implements VersionInterval {
 	}
 
 	public Quilt2FabricVersionInterval(org.quiltmc.loader.api.VersionInterval quilt) {
-		this.quilt = quilt;
+		this.quilt = Objects.requireNonNull(quilt);
 	}
 
 	@Override
