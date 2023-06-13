@@ -60,7 +60,11 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.api.VersionInterval;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -93,6 +97,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataReader;
 import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
@@ -1789,20 +1794,20 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 							}
 						}
 
-						node.mainIcon(node.manager().iconFolder());
+						node.mainIcon(QuiltLoaderGui.iconFolder());
 
 						guiNodeMap.put(dir, node);
 
 						if (!dir.equals(path) && !config.loadSubFolders) {
-							node.subIcon(node.manager().iconDisabled());
+							node.subIcon(QuiltLoaderGui.iconDisabled());
 							node.addChild(QuiltLoaderText.translate("warn.sub_folders_disabled"))//
 								.setDirectLevel(WarningLevel.WARN)//
-								.subIcon(node.manager().iconDisabled());
+								.subIcon(QuiltLoaderGui.iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
 						char first = name.isEmpty() ? ' ' : name.charAt(0);
-						if (('0' <= first && first <= '9') || VersionConstraintImpl.isConstraintCharacter(first)) {
+						if ('0' <= first && first <= '9' || V1ModMetadataReader.isConstraintCharacter(first)) {
 							// Might be a game version
 							if (config.restrictGameVersions && gameVersion != null) {
 								// TODO: Support "1.12.x" type version parsing...
@@ -1811,25 +1816,43 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 										continue;
 									}
 
-									if (!VersionConstraintImpl.parse(sub).matches(gameVersion)) {
-										node.subIcon(node.manager().iconDisabled());
-										node.addChild(QuiltLoaderText.translate("gui.text.game_version_mismatch"))
-											.setDirectLevel(WarningLevel.INFO)//
-											.subIcon(node.manager().iconDisabled());
+									char c = sub.charAt(0);
+
+									if ('0' <= c && c <= '9') {
+										sub = "=" + sub;
+									}
+
+									try {
+										if (V1ModMetadataReader.readVersionSpecifier(sub).isSatisfiedBy(gameVersion)) {
+											node.subIcon(QuiltLoaderGui.iconTick());
+											node.addChild(QuiltLoaderText.translate("gui.text.game_version_match", gameVersion))
+												.mainIcon(QuiltLoaderGui.iconTick());
+										} else {
+											node.subIcon(QuiltLoaderGui.iconDisabled());
+											node.addChild(QuiltLoaderText.translate("gui.text.game_version_mismatch", gameVersion))
+												.setDirectLevel(WarningLevel.INFO)//
+												.subIcon(QuiltLoaderGui.iconDisabled());
+											return FileVisitResult.SKIP_SUBTREE;
+										}
+									} catch (VersionFormatException e) {
+										Log.warn(LogCategory.DISCOVERY, "Invalid game version specifier '" + sub + "'", e);
+										node.setDirectLevel(WarningLevel.WARN);
+										node.addChild(QuiltLoaderText.translate("warn.invalid_version_specifier", e.getMessage()))
+											.setDirectLevel(WarningLevel.WARN);
 										return FileVisitResult.SKIP_SUBTREE;
 									}
 								}
 							} else {
-								node.subIcon(node.manager().iconDisabled());
+								node.subIcon(QuiltLoaderGui.iconDisabled());
 								node.addChild(QuiltLoaderText.translate("gui.text.game_versions_disabled"))
 									.setDirectLevel(WarningLevel.WARN)//
-									.subIcon(node.manager().iconDisabled());
+									.subIcon(QuiltLoaderGui.iconDisabled());
 								return FileVisitResult.SKIP_SUBTREE;
 							}
 						}
 
 						if (name.endsWith(".disabled")) {
-							node.subIcon(node.manager().iconDisabled());
+							node.subIcon(QuiltLoaderGui.iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 

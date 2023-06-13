@@ -54,7 +54,7 @@ import org.quiltmc.loader.impl.util.SystemProperties;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-final class V1ModMetadataReader {
+public final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
@@ -663,7 +663,7 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	public static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
+	static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
@@ -716,13 +716,30 @@ final class V1ModMetadataReader {
 		}
 	}
 
+	public static boolean isConstraintCharacter(char c) {
+		switch (c) {
+			case '<': return true;
+			case '>': return true;
+			case '=': return true;
+			case '~': return true;
+			case '*': return true;
+			case '^': return true;
+			default: return false;
+		}
+	}
 
 	private static VersionRange readVersionSpecifier(JsonLoaderValue value) throws VersionFormatException {
 		if (value == null) {
 			return VersionRange.ANY;
 		}
 
-		String string = value.asString();
+		return readVersionSpecifier(value.asString());
+	}
+
+	public static VersionRange readVersionSpecifier(String string) throws VersionFormatException {
+		if (string == null) {
+			return VersionRange.ANY;
+		}
 
 		if (string.equals("*")) {
 			return VersionRange.ANY;
