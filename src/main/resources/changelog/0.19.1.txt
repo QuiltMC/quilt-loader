@@ -1,3 +1,4 @@
 Bug Fixes:
 
 - Fixed a crash when generating source paths for class path groups.
+- [#318] Fixed icons being prepared on the server when creating an error message.
