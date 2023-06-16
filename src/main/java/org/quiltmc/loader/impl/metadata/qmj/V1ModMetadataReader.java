@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +44,12 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -51,11 +57,17 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
+		return read(root, null, null, null);
+	}
+
+	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root, Path path, QuiltPluginManager manager, PluginGuiTreeNode parentNode) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -67,7 +79,7 @@ public final class V1ModMetadataReader {
 			throw parseException(quiltLoader, "quilt_loader field must be an object");
 		}
 
-		return readFields(root);
+		return new V1ModMetadataReader(path, manager, parentNode).readFields(root);
 	}
 
 	private static class QLKeys {
@@ -94,7 +106,18 @@ public final class V1ModMetadataReader {
 		}
 	}
 
-	private static V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
+	final Path from;
+	final QuiltPluginManager manager;
+	final PluginGuiTreeNode warningNode;
+	PluginGuiTreeNode modJsonNode = null;
+
+	private V1ModMetadataReader(Path from, QuiltPluginManager manager, PluginGuiTreeNode warningNode) {
+		this.from = from;
+		this.manager = manager;
+		this.warningNode = warningNode;
+	}
+
+	private V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
 		V1ModMetadataBuilder builder = new V1ModMetadataBuilder();
 		builder.setRoot(root);
 
@@ -663,25 +686,19 @@ public final class V1ModMetadataReader {
 		}
 	}
 
-	static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
+	static ModDependency readDependencyObject(Path from, boolean isAny, JsonLoaderValue value) {
+		return new V1ModMetadataReader(from, null, null).readDependencyObject(isAny, value);
+	}
+
+	ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
-			List<VersionRange> versions = new ArrayList<>();
+			final VersionRange range;
 			try {
 				JsonLoaderValue versionsValue = obj.get("versions");
-				if (versionsValue != null) {
-					if (versionsValue.type().equals(LType.ARRAY)) {
-						for (LoaderValue loaderValue : versionsValue.asArray()) {
-							versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
-						}
-					} else {
-						versions.add(readVersionSpecifier(versionsValue));
-					}
-				} else {
-					versions.add(VersionRange.ANY);
-				}
+				range = readVersionsValue(versionsValue);
 			} catch (VersionFormatException e) {
 				throw parseException(obj.get("versions"), "Unable to parse version range", e);
 			}
@@ -694,7 +711,7 @@ public final class V1ModMetadataReader {
 				unless = readDependencyObject(true, unlessObj);
 			}
 
-			return new ModDependencyImpl.OnlyImpl(value.location(), id, VersionRange.ofRanges(versions), reason, optional, unless);
+			return new ModDependencyImpl.OnlyImpl(value.location(), id, range, reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
 			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
@@ -714,6 +731,113 @@ public final class V1ModMetadataReader {
 					"Dependency object must be an object or string to represent a single dependency or an array to represent any dependency"
 			);
 		}
+	}
+
+	private VersionRange readVersionsValue(LoaderValue versionsValue) throws VersionFormatException {
+
+		if (versionsValue == null) {
+			return VersionRange.ANY;
+		}
+
+		switch (versionsValue.type()) {
+			case OBJECT: {
+				return readVersionsObject(versionsValue.asObject());
+			}
+			case ARRAY: {
+				List<VersionRange> versions = new ArrayList<>();
+				for (LoaderValue loaderValue : versionsValue.asArray()) {
+					versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
+				}
+				if (from != null) {
+					String describedPath = manager != null ? manager.describePath(from) : from.toString();
+					Log.warn(LogCategory.DISCOVERY, "The mod (below) uses deprecated array format for declaring dependency versions.");
+					Log.warn(LogCategory.DISCOVERY, "-  See https://github.com/QuiltMC/rfcs/pull/56 for more information.");
+					Log.warn(LogCategory.DISCOVERY, "-  " + describedPath);
+				}
+				if (warningNode != null) {
+					PluginGuiTreeNode sub = createModJsonNode()
+						.addChild(QuiltLoaderText.of("Uses deprecated array format for declaring dependencies"))
+						.setDirectLevel(WarningLevel.WARN);
+				}
+				return VersionRange.ofRanges(versions);
+			}
+			case STRING: {
+				return readVersionSpecifier(versionsValue.asString());
+			}
+			default: {
+				throw new VersionFormatException("Expected to find a string, object, or array but found " + versionsValue);
+			}
+		}
+	}
+
+	private PluginGuiTreeNode createModJsonNode() {
+		if (warningNode == null) {
+			throw new IllegalStateException("Check 'warningNode' first!");
+		}
+		if (modJsonNode == null) {
+			modJsonNode = warningNode.addChild(QuiltLoaderText.of("quilt.mod.json"));
+			modJsonNode.mainIcon(QuiltLoaderGui.iconJsonFile()).subIcon(QuiltLoaderGui.iconQuilt());
+			modJsonNode.setDirectLevel(WarningLevel.WARN);
+		}
+		return modJsonNode;
+	}
+
+	private VersionRange readVersionsObject(LoaderValue.LObject obj) throws VersionFormatException {
+		LoaderValue any = obj.get("any");
+		LoaderValue all = obj.get("all");
+		if (any == null && all == null) {
+			throw new VersionFormatException("Expected to find either 'any' or 'all', but found '" + obj + "'");
+		}
+
+		LoaderValue value = any != null ? any : all;
+
+		if (value.type() != LType.ARRAY) {
+			String name = any != null ? "any" : "all";
+			throw new VersionFormatException("Expected the value of " + name + " to be an array, but was " + value);
+		}
+
+		LoaderValue.LArray array = value.asArray();
+
+		VersionRange range = null;
+
+		for (LoaderValue arrayValue : array) {
+			final VersionRange thisRange;
+			switch (arrayValue.type()) {
+				case STRING: {
+					thisRange = readVersionSpecifier(arrayValue.asString());
+					break;
+				}
+				case OBJECT: {
+					thisRange = readVersionsObject(arrayValue.asObject());
+					break;
+				}
+				default: {
+					throw new VersionFormatException("Expected to find either a string or an object, but found " + arrayValue);
+				}
+			}
+
+			if (range == null) {
+				range = thisRange;
+			} else if (any != null) {
+				range = VersionRange.ofRanges(Arrays.asList(range, thisRange));
+			} else {
+				range = range.combineMatchingBoth(thisRange);
+			}
+		}
+
+		if (range == null) {
+			throw new VersionFormatException("Expected the 'versions' array to be non-empty at " + value.location());
+		}
+
+		if (range == VersionRange.NONE) {
+			throw new VersionFormatException("Expected the 'versions' array to match at least one version, but it doesn't! " + value.location());
+		}
+
+		if (range == VersionRange.ANY) {
+			throw new VersionFormatException("Expected the 'versions' array to restrict some versions, but it doesn't! " + value.location());
+		}
+
+		return range;
 	}
 
 	public static boolean isConstraintCharacter(char c) {
@@ -827,8 +951,5 @@ public final class V1ModMetadataReader {
 				}
 			}
 		}
-	}
-
-	private V1ModMetadataReader() {
 	}
 }

@@ -64,7 +64,7 @@ public class QuiltOverrides {
 		int version = schemaVersion.asNumber().intValue();
 		switch (version) {
 			case 1:
-				parseV1(rootObject);
+				parseV1(file, rootObject);
 				break;
 			default: {
 				throw parseException(
@@ -74,7 +74,7 @@ public class QuiltOverrides {
 		}
 	}
 
-	private void parseV1(JsonLoaderValue.ObjectImpl rootObject) throws ParseException {
+	private void parseV1(Path file, JsonLoaderValue.ObjectImpl rootObject) throws ParseException {
 		// "overrides": array of objects:
 		// // "path": full path (Like <game>/mods/buildcraft-9.0.0.jar!libblockattributes-1.0.0.jar)
 		// // "version": // new version
@@ -114,14 +114,14 @@ public class QuiltOverrides {
 				mod.newVersion = version.asString();
 			}
 
-			readDepends(overrideObject, true, "depends", mod.dependsOverrides);
-			readDepends(overrideObject, false, "breaks", mod.breakOverrides);
+			readDepends(file, overrideObject, true, "depends", mod.dependsOverrides);
+			readDepends(file, overrideObject, false, "breaks", mod.breakOverrides);
 
 			this.overrides.put(pathStr, mod);
 		}
 	}
 
-	private static void readDepends(LObject obj, boolean isAny, String name, SpecificOverrides dst) {
+	private static void readDepends(Path file, LObject obj, boolean isAny, String name, SpecificOverrides dst) {
 		LoaderValue sub = obj.get(name);
 		if (sub == null) {
 			return;
@@ -129,10 +129,10 @@ public class QuiltOverrides {
 		if (sub.type() == LType.ARRAY) {
 			LArray array = sub.asArray();
 			for (int i = 0; i < array.size(); i++) {
-				readSingleDepends(array.get(i), isAny, dst);
+				readSingleDepends(file, array.get(i), isAny, dst);
 			}
 		} else if (sub.type() == LType.OBJECT) {
-			readSingleDepends(sub, isAny, dst);
+			readSingleDepends(file, sub, isAny, dst);
 		} else {
 			throw parseException(sub, "Must be either an object or an array of objects!");
 		}
@@ -143,7 +143,7 @@ public class QuiltOverrides {
 	private static final int REPLACE = 1 << 2;
 	private static final int WITH = 1 << 3;
 
-	private static void readSingleDepends(LoaderValue value, boolean isAny, SpecificOverrides dst) {
+	private static void readSingleDepends(Path file, LoaderValue value, boolean isAny, SpecificOverrides dst) {
 		if (value.type() != LType.OBJECT) {
 			throw parseException(value, "Must be an object!");
 		}
@@ -161,16 +161,16 @@ public class QuiltOverrides {
 
 		if (flags == ADD) {
 
-			dst.additions.add(V1ModMetadataReader.readDependencyObject(isAny, add));
+			dst.additions.add(V1ModMetadataReader.readDependencyObject(file, isAny, add));
 
 		} else if (flags == REMOVE) {
 
-			dst.removals.add(V1ModMetadataReader.readDependencyObject(isAny, remove));
+			dst.removals.add(V1ModMetadataReader.readDependencyObject(file, isAny, remove));
 
 		} else if (flags == (REPLACE | WITH)) {
 
-			ModDependency fromDep = V1ModMetadataReader.readDependencyObject(isAny, replace);
-			dst.replacements.put(fromDep, V1ModMetadataReader.readDependencyObject(isAny, with));
+			ModDependency fromDep = V1ModMetadataReader.readDependencyObject(file, isAny, replace);
+			dst.replacements.put(fromDep, V1ModMetadataReader.readDependencyObject(file, isAny, with));
 
 		} else {
 			throw parseException(

@@ -236,7 +236,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		}
 
 		try {
-			InternalModMetadata meta = ModMetadataReader.read(qmj);
+			InternalModMetadata meta = ModMetadataReader.read(qmj, context().manager(), guiNode);
 
 			Path from = root;
 			if (isZip) {
