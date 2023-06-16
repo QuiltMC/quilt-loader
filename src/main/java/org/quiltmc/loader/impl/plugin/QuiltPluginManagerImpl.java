@@ -2018,8 +2018,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.1"));
 			error.appendThrowable(e);
 			getRealContainingFile(file).ifPresent(real -> {
-				error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-					.icon(guiManager.iconZipFile());
+				error.addFileViewButton(real).icon(QuiltLoaderGui.iconZipFile());
 			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.zipexception", e.getMessage()))// TODO: translate
@@ -2033,8 +2032,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(QuiltLoaderText.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
 			getRealContainingFile(file).ifPresent(real -> {
-				error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-					.icon(guiManager.iconZipFile());
+				error.addFileViewButton(real).icon(QuiltLoaderGui.iconZipFile());
 			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.ioexception", e.getMessage()))// TODO: translate
@@ -2042,7 +2040,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		} catch (NonZipException e) {
 
-			guiNode.mainIcon(guiNode.manager().iconUnknownFile());
+			guiNode.mainIcon(QuiltLoaderGui.iconUnknownFile());
 
 			if (this.config.singleThreadedLoading) {
 				scanUnknownFile(file, location, guiNode);

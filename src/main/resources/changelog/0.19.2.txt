@@ -1,0 +1,11 @@
+Features:
+
+- Updated quilt.mod.json handling to be up-to-date with RFC 56:
+    - Deprecated array values for "versions" in dependencies.
+    - Added a more understandable "any" / "all" object system 
+    - See https://github.com/QuiltMC/rfcs/pull/56 for more details.
+
+Bug Fixes:
+
+- [#321] "button.view_file" not translated in some places
+- Fixed QuiltLoaderText not shouting loudly enough when something is wrong with the args.

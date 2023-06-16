@@ -41,7 +41,11 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 		try {
 			return String.format(translate ? I18n.translate(translationKey) : translationKey, extra);
 		} catch (MissingFormatArgumentException e) {
-			StringBuilder sb = new StringBuilder(translationKey);
+			StringBuilder sb = new StringBuilder();
+			sb.append("Bad Args for '");
+			sb.append(translationKey);
+			sb.append(" ");
+			sb.append(e);
 			for (Object o : extra) {
 				sb.append(' ').append(o);
 			}
