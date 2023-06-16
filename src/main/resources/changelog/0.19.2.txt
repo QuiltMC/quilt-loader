@@ -4,6 +4,7 @@ Features:
     - Deprecated array values for "versions" in dependencies.
     - Added a more understandable "any" / "all" object system 
     - See https://github.com/QuiltMC/rfcs/pull/56 for more details.
+- Added warnings when encountering dependency constraints that are unnecessary.
 
 Bug Fixes:
 

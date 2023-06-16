@@ -47,7 +47,6 @@ import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
@@ -64,7 +63,6 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.SpecificOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
-import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -212,12 +210,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, guiNode.manager().iconJarFile(), location, true, guiNode);
+		return scan0(root, QuiltLoaderGui.iconJarFile(), location, true, guiNode);
 	}
 
 	@Override
 	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
+		return scan0(folder, QuiltLoaderGui.iconFolder(), location, false, guiNode);
 	}
 
 	@Override
@@ -275,11 +273,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
-			PluginGuiManager guiManager = context().manager().getGuiManager();
-				context().manager().getRealContainingFile(root).ifPresent(real ->
-						error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-								.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()))
-				);
+			context().manager().getRealContainingFile(root).ifPresent(real ->
+					error.addFileViewButton(real)
+							.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconQuilt()))
+			);
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//
 				.setError(parse, error);
@@ -326,7 +323,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				for (ProvidedMod provided : provides) {
 					PluginGuiTreeNode guiNode = context().manager().getGuiNode(mod)//
 						.addChild(QuiltLoaderText.translate("gui.text.providing", provided.id()));
-					guiNode.mainIcon(guiNode.manager().iconUnknownFile());
+					guiNode.mainIcon(QuiltLoaderGui.iconUnknownFile());
 					context().addModLoadOption(new ProvidedModOption(mod, provided), guiNode);
 				}
 			}

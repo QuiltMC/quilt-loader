@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
@@ -110,6 +112,8 @@ public final class V1ModMetadataReader {
 	final QuiltPluginManager manager;
 	final PluginGuiTreeNode warningNode;
 	PluginGuiTreeNode modJsonNode = null;
+	boolean loggedAnyWarnings = false;
+	boolean loggedDeprecatedArrayDepends = false;
 
 	private V1ModMetadataReader(Path from, QuiltPluginManager manager, PluginGuiTreeNode warningNode) {
 		this.from = from;
@@ -733,7 +737,10 @@ public final class V1ModMetadataReader {
 		}
 	}
 
+	static final String RFC_56_LINK = "https://github.com/QuiltMC/rfcs/pull/56";
+
 	private VersionRange readVersionsValue(LoaderValue versionsValue) throws VersionFormatException {
+
 
 		if (versionsValue == null) {
 			return VersionRange.ANY;
@@ -745,21 +752,29 @@ public final class V1ModMetadataReader {
 			}
 			case ARRAY: {
 				List<VersionRange> versions = new ArrayList<>();
-				for (LoaderValue loaderValue : versionsValue.asArray()) {
+				LoaderValue.LArray versionsArray = versionsValue.asArray();
+				for (LoaderValue loaderValue : versionsArray) {
 					versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
 				}
-				if (from != null) {
-					String describedPath = manager != null ? manager.describePath(from) : from.toString();
-					Log.warn(LogCategory.DISCOVERY, "The mod (below) uses deprecated array format for declaring dependency versions.");
-					Log.warn(LogCategory.DISCOVERY, "-  See https://github.com/QuiltMC/rfcs/pull/56 for more information.");
-					Log.warn(LogCategory.DISCOVERY, "-  " + describedPath);
+				if (!loggedDeprecatedArrayDepends) {
+					loggedDeprecatedArrayDepends = true;
+					if (from != null) {
+						logWarningHeader();
+						Log.warn(LogCategory.DISCOVERY, "- Deprecated array format for dependencies: see " + RFC_56_LINK + " for more information.");
+					}
+					if (warningNode != null) {
+						createModJsonNode()
+							.addChild(QuiltLoaderText.of("Uses deprecated array format for declaring dependencies."))
+							.setDirectLevel(WarningLevel.CONCERN)
+							.addChild(QuiltLoaderText.of("See " + RFC_56_LINK + " for more information on how to fix this"));
+					}
 				}
-				if (warningNode != null) {
-					PluginGuiTreeNode sub = createModJsonNode()
-						.addChild(QuiltLoaderText.of("Uses deprecated array format for declaring dependencies"))
-						.setDirectLevel(WarningLevel.WARN);
-				}
-				return VersionRange.ofRanges(versions);
+
+				VersionRange result = VersionRange.ofRanges(versions);
+
+				checkUnnecessaryVersions(versions, versionsArray, result, VersionJoiner.ANY);
+
+				return result;
 			}
 			case STRING: {
 				return readVersionSpecifier(versionsValue.asString());
@@ -768,6 +783,63 @@ public final class V1ModMetadataReader {
 				throw new VersionFormatException("Expected to find a string, object, or array but found " + versionsValue);
 			}
 		}
+	}
+
+	private enum VersionJoiner {
+		ANY {
+			@Override
+			VersionRange join(List<VersionRange> versions) {
+				return VersionRange.ofRanges(versions);
+			}
+		},
+		ALL {
+			@Override
+			VersionRange join(List<VersionRange> versions) {
+				VersionRange range = null;
+				for (VersionRange sub : versions) {
+					range = range == null ? sub : sub.combineMatchingBoth(range);
+				}
+				return range;
+			}
+		};
+
+		abstract VersionRange join(List<VersionRange> versions);
+	}
+
+	private void checkUnnecessaryVersions(List<VersionRange> versions, LoaderValue.LArray versionsArray,
+		VersionRange result, VersionJoiner concat) {
+		if (from != null || warningNode != null) {
+			// Check to see if any of them are unnecessary
+			for (int i = 0; i < versions.size(); i++) {
+				List<VersionRange> joined = new ArrayList<>();
+				joined.addAll(versions.subList(0, i));
+				joined.addAll(versions.subList(i + 1, versions.size()));
+				VersionRange smaller = concat.join(joined);
+				if (result.equals(smaller)) {
+					String msg = "Unnecessary dependency range " + versionsArray.get(i) + " (resolves as " //
+						+ versions.get(i) + "), since it doesn't affect the result " + result;
+					if (from != null) {
+						logWarningHeader();
+						Log.warn(LogCategory.DISCOVERY, "- " + msg);
+					}
+					if (warningNode != null) {
+						createModJsonNode()
+							.addChild(QuiltLoaderText.of(msg))
+							.setDirectLevel(WarningLevel.CONCERN)
+							.addChild(QuiltLoaderText.of("See " + RFC_56_LINK + " for more information on how to fix this"));
+					}
+				}
+			}
+		}
+	}
+
+	private void logWarningHeader() {
+		if (loggedAnyWarnings) {
+			return;
+		}
+		loggedAnyWarnings = true;
+		String describedPath = manager != null ? manager.describePath(from) : from.toString();
+		Log.warn(LogCategory.DISCOVERY, "Warnings for quilt.mod.json at: '" + describedPath + "'");
 	}
 
 	private PluginGuiTreeNode createModJsonNode() {
@@ -798,7 +870,7 @@ public final class V1ModMetadataReader {
 
 		LoaderValue.LArray array = value.asArray();
 
-		VersionRange range = null;
+		List<VersionRange> versions = new ArrayList<>();
 
 		for (LoaderValue arrayValue : array) {
 			final VersionRange thisRange;
@@ -815,15 +887,11 @@ public final class V1ModMetadataReader {
 					throw new VersionFormatException("Expected to find either a string or an object, but found " + arrayValue);
 				}
 			}
-
-			if (range == null) {
-				range = thisRange;
-			} else if (any != null) {
-				range = VersionRange.ofRanges(Arrays.asList(range, thisRange));
-			} else {
-				range = range.combineMatchingBoth(thisRange);
-			}
+			versions.add(thisRange);
 		}
+
+		VersionJoiner concat = any != null ? VersionJoiner.ANY : VersionJoiner.ALL;
+		VersionRange range = concat.join(versions);
 
 		if (range == null) {
 			throw new VersionFormatException("Expected the 'versions' array to be non-empty at " + value.location());
@@ -836,6 +904,8 @@ public final class V1ModMetadataReader {
 		if (range == VersionRange.ANY) {
 			throw new VersionFormatException("Expected the 'versions' array to restrict some versions, but it doesn't! " + value.location());
 		}
+
+		checkUnnecessaryVersions(versions, array, range, concat);
 
 		return range;
 	}

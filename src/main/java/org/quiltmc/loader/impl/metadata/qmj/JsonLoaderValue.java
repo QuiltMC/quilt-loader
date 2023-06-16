@@ -188,6 +188,11 @@ interface JsonLoaderValue extends LoaderValue {
 		public int hashCode() {
 			return value.hashCode();
 		}
+
+		@Override
+		public String toString() {
+			return value + location();
+		}
 	}
 
 	final class NumberImpl implements JsonLoaderValue {
@@ -223,6 +228,11 @@ interface JsonLoaderValue extends LoaderValue {
 		public int hashCode() {
 			return value.hashCode();
 		}
+
+		@Override
+		public String toString() {
+			return value + " @ " + location();
+		}
 	}
 
 	final class BooleanImpl implements JsonLoaderValue {
@@ -257,6 +267,11 @@ interface JsonLoaderValue extends LoaderValue {
 		@Override
 		public int hashCode() {
 			return Boolean.hashCode(value);
+		}
+
+		@Override
+		public String toString() {
+			return value + " @ " + location();
 		}
 	}
 
