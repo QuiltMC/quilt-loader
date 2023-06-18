@@ -11,3 +11,4 @@ Bug Fixes:
 - [#321] "button.view_file" not translated in some places
 - Fixed QuiltLoaderText not shouting loudly enough when something is wrong with the args.
 - [#322] Fixed not being able to handle non-overlapping dependencies in fabric.mod.json files.
+- Fixed French localisation not loading correctly all the time due to file encoding issues.

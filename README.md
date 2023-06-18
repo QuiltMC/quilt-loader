@@ -12,6 +12,7 @@ The `license.json` included in loader to generate SPDX license instances is lice
 
 When adding NEW classes (that you wrote yourself) they should use the quilt-only header file (`/codeformat/HEADER`)
 When adding classes that contain code from fabric-loader they should use the modified header file (`/codeformat/FABRIC_MODIFIED_HEADER`)
+All files are expected to be encoded in UTF-8.
 
 ## Source folder layout
 
