@@ -79,6 +79,10 @@ public class AsciiTableGenerator {
 			AsciiTableCell oldCell = entries.put(column, newCell);
 			column.includeCell(oldCell, newCell);
 		}
+
+		public void put(AsciiTableColumn column, Object value) {
+			put(column, value.toString());
+		}
 	}
 
 	public static final class AsciiTableCell {

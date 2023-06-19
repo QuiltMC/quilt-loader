@@ -112,6 +112,10 @@ import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator;
+import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -852,170 +856,76 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		// - loader plugin
 		// - source path(s)
 
-		int maxNameLength = "Mod".length();
-		int maxIdLength = "ID".length();
-		int maxVersionLength = "Version".length();
-		int maxPluginLength = "Plugin".length();
-		List<Integer> maxSourcePathLengths = new ArrayList<>();
+		AsciiTableGenerator table = new AsciiTableGenerator();
+
+		AsciiTableColumn modColumn = table.addColumn("Mod", false);
+		AsciiTableColumn id = table.addColumn("ID", false);
+		AsciiTableColumn version = table.addColumn("Version", false);
+		AsciiTableColumn plugin = table.addColumn("Plugin", false);
+		AsciiTableColumn hash = table.addColumn("File Hash (SHA-1)", false);
+		AsciiTableColumn file = table.addColumn("File(s)", false);
+		AsciiTableColumn subFile = null;
 
 		List<ModLoadOption> mods = new ArrayList<>();
-		Map<ModLoadOption, List<List<Path>>> sourcePathMap = new HashMap<>();
 
 		for (PotentialModSet set : this.modIds.values()) {
 			mods.addAll(set.all);
 		}
 
-		for (ModLoadOption mod : mods) {
-			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
-			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
-			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
-			maxPluginLength = Math.max(maxPluginLength, mod.loader().pluginId().length());
-
-			List<List<Path>> sourcePaths = InternalModContainerBase.walkSourcePaths(this, mod.from());
-			sourcePathMap.put(mod, sourcePaths);
-
-			for (List<Path> paths : sourcePaths) {
-				for (int i = 0; i < paths.size(); i++) {
-					String pathStr = QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(i));
-					if (maxSourcePathLengths.size() <= i) {
-						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
-						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
-					} else {
-						Integer old = maxSourcePathLengths.get(i);
-						maxSourcePathLengths.set(i, Math.max(old, pathStr.length() + 1));
-					}
-				}
-			}
-		}
-
-		maxIdLength++;
-		maxVersionLength++;
-		maxPluginLength++;
-
-		StringBuilder sbTab = new StringBuilder();
-		StringBuilder sbSep = new StringBuilder();
-
-		// Table header
-		sbTab.append("| Mod ");
-		sbSep.append("|-----");
-		for (int i = "Mod".length(); i < maxNameLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| ID ");
-		sbSep.append("|----");
-		for (int i = "ID".length(); i < maxIdLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Version ");
-		sbSep.append("|---------");
-		for (int i = "Version".length(); i < maxVersionLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Plugin ");
-		sbSep.append("|--------");
-		for (int i = "Plugin".length(); i < maxPluginLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("|");
-		sbSep.append("|");
-
-		String start = "File(s)";
-
-		for (int len : maxSourcePathLengths) {
-			sbTab.append(" ").append(start);
-			for (int i = start.length(); i <= len; i++) {
-				sbTab.append(" ");
-			}
-			for (int i = -1; i <= len; i++) {
-				sbSep.append("-");
-			}
-			sbTab.append("|");
-			sbSep.append("|");
-			start = "Sub-Files";
-		}
-
-		to.accept(sbTab.toString());
-		sbTab.setLength(0);
-		to.accept(sbSep.toString());
-
 		for (ModLoadOption mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
-			// - Index
+			AsciiTableRow row = table.addRow();
 			// - Name
 			// - ID
 			// - version
 			// - loader plugin
 			// - source path(s)
-			sbTab.append("| ").append(mod.metadata().name());
-			for (int i = mod.metadata().name().length(); i < maxNameLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.metadata().id());
-			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.metadata().version());
-			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.loader().pluginId());
-			for (int i = mod.loader().pluginId().length(); i < maxPluginLength; i++) {
-				sbTab.append(" ");
-			}
+			row.put(modColumn, mod.metadata().name());
+			row.put(id, mod.metadata().id());
+			row.put(version, mod.metadata().version());
+			row.put(plugin, mod.loader().pluginId());
 
-			List<List<Path>> allPaths = sourcePathMap.get(mod);
+			List<List<Path>> allPaths = InternalModContainerBase.walkSourcePaths(this, mod.from());
 
 			for (int pathsIndex = 0; pathsIndex < allPaths.size(); pathsIndex++) {
 				List<Path> paths = allPaths.get(pathsIndex);
 
-				if (pathsIndex != 0) {
-					to.accept(sbTab.toString());
-					sbTab.setLength(0);
-					sbTab.append("| ");
-					for (int i = 0; i < "Index".length(); i++) {
-						sbTab.append(" ");
+				Path from = paths.get(0);
+				if (FasterFiles.isRegularFile(from)) {
+					String hashString;
+					try {
+						hashString = HashUtil.hashToString(HashUtil.computeHash(from));
+					} catch (IOException e) {
+						hashString = "<" + e.getMessage() + ">";
 					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxNameLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxIdLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxVersionLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxPluginLength; i++) {
-						sbTab.append(" ");
-					}
+					row.put(hash, hashString);
 				}
 
-				for (int pathIndex = 0; pathIndex < maxSourcePathLengths.size(); pathIndex++) {
-					sbTab.append(" | ");
-					final String pathStr;
-					if (pathIndex < paths.size()) {
-						pathStr = QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(pathIndex));
-					} else {
-						pathStr = "";
-					}
-					sbTab.append(pathStr);
-					for (int i = pathStr.length(); i < maxSourcePathLengths.get(pathIndex); i++) {
-						sbTab.append(" ");
-					}
+				if (pathsIndex != 0) {
+					row = table.addRow();
 				}
-				sbTab.append(" |");
+
+				row.put(file, QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(0)));
+
+				if (paths.size() > 1) {
+					if (subFile == null) {
+						subFile = table.addColumn("Sub-File", false);
+					}
+					StringBuilder subPathStr = new StringBuilder();
+					Iterator<Path> pathsIter = paths.iterator();
+					pathsIter.next(); // skip first element
+					while (pathsIter.hasNext()) {
+						subPathStr.append(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, pathsIter.next()));
+						if (pathsIter.hasNext()) {
+							subPathStr.append("!");
+						}
+					}
+
+					row.put(subFile, subPathStr.toString());
+				}
 			}
-			to.accept(sbTab.toString());
-			sbTab.setLength(0);
 		}
 
-		to.accept(sbSep.toString());
+		table.appendTable(to);
 	}
 
 	public String createModDetails() {

@@ -686,8 +686,10 @@ public final class QuiltLoaderImpl {
 			row.put(version, mod.metadata().version().toString());
 			row.put(type, mod.modType());
 
-			if (mod.getSourcePaths().size() == 1 && mod.getSourcePaths().get(0).size() == 1) {
-				Path from = mod.getSourcePaths().get(0).get(0);
+			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
+				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
+
+				Path from = paths.get(0);
 				if (FasterFiles.isRegularFile(from)) {
 					String hashString;
 					try {
@@ -697,10 +699,6 @@ public final class QuiltLoaderImpl {
 					}
 					row.put(hash, hashString);
 				}
-			}
-
-			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
-				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
 
 				if (pathsIndex != 0) {
 					row = table.addRow();
