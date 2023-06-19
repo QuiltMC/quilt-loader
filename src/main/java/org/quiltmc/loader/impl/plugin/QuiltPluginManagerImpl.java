@@ -153,7 +153,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	final Map<TentativeLoadOption, BasePluginContext> tentativeLoadOptions = new LinkedHashMap<>();
 
-	private final StandardQuiltPlugin theQuiltPlugin;
+	public final StandardQuiltPlugin theQuiltPlugin;
 	private final StandardFabricPlugin theFabricPlugin;
 
 	BuiltinPluginContext theQuiltPluginContext;
@@ -862,6 +862,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		AsciiTableColumn id = table.addColumn("ID", false);
 		AsciiTableColumn version = table.addColumn("Version", false);
 		AsciiTableColumn plugin = table.addColumn("Plugin", false);
+		AsciiTableColumn flags = table.addColumn("Flags", false);
 		AsciiTableColumn hash = table.addColumn("File Hash (SHA-1)", false);
 		AsciiTableColumn file = table.addColumn("File(s)", false);
 		AsciiTableColumn subFile = null;
@@ -883,6 +884,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			row.put(id, mod.metadata().id());
 			row.put(version, mod.metadata().version());
 			row.put(plugin, mod.loader().pluginId());
+			StringBuilder flagStr = new StringBuilder();
+			flagStr.append(theQuiltPlugin.hasDepsChanged(mod) ? QuiltLoaderImpl.FLAG_DEPS_CHANGED : '.');
+			flagStr.append(theQuiltPlugin.hasDepsRemoved(mod) ? QuiltLoaderImpl.FLAG_DEPS_REMOVED : '.');
+			row.put(flags, flagStr);
 
 			List<List<Path>> allPaths = InternalModContainerBase.walkSourcePaths(this, mod.from());
 

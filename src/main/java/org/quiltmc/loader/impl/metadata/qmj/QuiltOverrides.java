@@ -31,7 +31,6 @@ import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
-import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -189,11 +188,27 @@ public class QuiltOverrides {
 		public String newVersion;
 		public final SpecificOverrides dependsOverrides = new SpecificOverrides();
 		public final SpecificOverrides breakOverrides = new SpecificOverrides();
+
+		public boolean hasDepsChanged() {
+			return dependsOverrides.hasDepsChanged() || breakOverrides.hasDepsChanged();
+		}
+
+		public boolean hasDepsRemoved() {
+			return dependsOverrides.hasDepsRemoved() || breakOverrides.hasDepsRemoved();
+		}
 	}
 
 	public static class SpecificOverrides {
 		public final Map<ModDependency, ModDependency> replacements = new HashMap<>();
 		public final List<ModDependency> additions = new ArrayList<>();
 		public final List<ModDependency> removals = new ArrayList<>();
+
+		public boolean hasDepsChanged() {
+			return !additions.isEmpty() || !replacements.isEmpty() || !removals.isEmpty();
+		}
+
+		public boolean hasDepsRemoved() {
+			return !removals.isEmpty();
+		}
 	}
 }

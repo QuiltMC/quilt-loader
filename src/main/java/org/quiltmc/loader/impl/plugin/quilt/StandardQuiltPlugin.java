@@ -130,6 +130,16 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		}
 	}
 
+	public boolean hasDepsChanged(ModLoadOption mod) {
+		ModOverrides modOverrides = overrides.overrides.get(context().manager().describePath(mod.from()));
+		return modOverrides != null && modOverrides.hasDepsChanged();
+	}
+
+	public boolean hasDepsRemoved(ModLoadOption mod) {
+		ModOverrides modOverrides = overrides.overrides.get(context().manager().describePath(mod.from()));
+		return modOverrides != null && modOverrides.hasDepsRemoved();
+	}
+
 	public void addBuiltinMods(GameProvider game) {
 		int gameIndex = 1;
 		for (BuiltinMod mod : game.getBuiltinMods()) {

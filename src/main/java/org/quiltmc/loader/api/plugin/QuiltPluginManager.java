@@ -223,5 +223,6 @@ public interface QuiltPluginManager {
 
 	PluginGuiTreeNode getRootGuiNode();
 
+	@Deprecated
 	PluginGuiManager getGuiManager();
 }

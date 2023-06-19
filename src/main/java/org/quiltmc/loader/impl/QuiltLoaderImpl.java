@@ -92,6 +92,7 @@ import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
+import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
@@ -136,6 +137,10 @@ public final class QuiltLoaderImpl {
 	private static final String PROCESSED_MODS_DIR_NAME = "processedMods"; // relative to loader cache dir
 	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to loader cache dir
 	private static final String TMP_DIR_NAME = "tmp"; // relative to loader cache dir
+
+	// Mod table flags
+	public static final char FLAG_DEPS_CHANGED = 'o';
+	public static final char FLAG_DEPS_REMOVED = 'R';
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
