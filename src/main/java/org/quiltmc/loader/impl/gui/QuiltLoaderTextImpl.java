@@ -16,12 +16,12 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.util.IllegalFormatException;
+
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.plugin.gui.I18n;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-
-import java.util.MissingFormatArgumentException;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltLoaderTextImpl implements QuiltLoaderText {
@@ -40,7 +40,7 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 	public String toString() {
 		try {
 			return String.format(translate ? I18n.translate(translationKey) : translationKey, extra);
-		} catch (MissingFormatArgumentException e) {
+		} catch (IllegalFormatException e) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Bad Args for '");
 			sb.append(translationKey);
