@@ -73,6 +73,7 @@ public final class SystemProperties {
 	public static final String DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE = "loader.transform_cache.disable_optimised_compression";
 	public static final String DISABLE_PRELOAD_TRANSFORM_CACHE = "loader.transform_cache.disable_preload";
 	public static final String LOG_CACHE_KEY_CHANGES = "loader.transform_cache.log_changed_keys";
+	public static final String DISABLE_BEACON = "loader.disable_beacon";
 
 	private SystemProperties() {
 	}

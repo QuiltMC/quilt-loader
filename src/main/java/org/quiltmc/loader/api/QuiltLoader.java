@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.GlobalPaths;
 
 import net.fabricmc.api.EnvType;
 
@@ -222,6 +223,20 @@ public final class QuiltLoader {
 	 */
 	public static Path getConfigDir() {
 		return impl().getConfigDir();
+	}
+
+	/**
+	 * Get the global (per-user) directory for cached files.
+	 */
+	public static Path getGlobalCacheDir() {
+		return GlobalPaths.getCacheDir();
+	}
+
+	/**
+	 * Get the global (per-user) directory for configuration files.
+	 */
+	public static Path getGlobalConfigDir() {
+		return GlobalPaths.getConfigDir();
 	}
 
 	/**
