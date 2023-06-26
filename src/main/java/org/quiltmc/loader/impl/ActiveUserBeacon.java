@@ -39,7 +39,7 @@ class ActiveUserBeacon {
 	private static final String ENVIRONMENT = "QUILT_LOADER_DISABLE_BEACON";
 	private static final String ENVIRONMENT_CI = "CI";
 
-	private static final String INFO_SUFFIX = " # Last sent month for the active user beacon. See [BLOG_LINK] for details.";
+	private static final String INFO_SUFFIX = " # Last sent month for the active user beacon. See https://quiltmc.org/en/blog/2023-06-26-mau-beacon/ for details.";
 
 	static Path configFile;
 	static byte[] thisMonthBytes = new byte[0];
