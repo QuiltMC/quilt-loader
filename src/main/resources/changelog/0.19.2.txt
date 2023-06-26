@@ -6,6 +6,8 @@ Features:
     - See https://github.com/QuiltMC/rfcs/pull/56 for more details.
 - Added warnings when encountering dependency constraints that are unnecessary.
 - [#326] Added an Active User Beacon, outlined in RFC 81.
+    - Please see the RFC for details: https://github.com/QuiltMC/rfcs/blob/main/specification/0081-active-user-beacon.md
+    - Or the blog post: https://quiltmc.org/en/blog/2023-06-26-mau-beacon/
 - Added global config and cache paths to the QuiltLoader api class:
     - "getGlobalConfigDir" and "getGlobalCacheDir".
     - The config path depends on the operating system:
