@@ -5,6 +5,7 @@ Features:
     - Added a more understandable "any" / "all" object system 
     - See https://github.com/QuiltMC/rfcs/pull/56 for more details.
 - Added warnings when encountering dependency constraints that are unnecessary.
+- [#326] Added an Active User Beacon, outlined in RFC 81.
 
 Bug Fixes:
 
