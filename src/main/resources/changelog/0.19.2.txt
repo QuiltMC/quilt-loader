@@ -6,6 +6,11 @@ Features:
     - See https://github.com/QuiltMC/rfcs/pull/56 for more details.
 - Added warnings when encountering dependency constraints that are unnecessary.
 - [#326] Added an Active User Beacon, outlined in RFC 81.
+- Added "flags" to the mod table.
+    - 'o' means that a mod has had one of its dependencies changed
+    - 'R' means that a mod has had one of its dependencies removed.
+    - These are only shown in the "plugin" mod table right now, they will be 
+    added to the main mod table in the future.
 
 Bug Fixes:
 
