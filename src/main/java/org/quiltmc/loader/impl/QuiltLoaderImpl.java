@@ -199,6 +199,8 @@ public final class QuiltLoaderImpl {
 
 		setGameDir(provider.getLaunchDirectory());
 		argumentModsList = provider.getArguments().remove(Arguments.ADD_MODS);
+
+		ActiveUserBeacon.run();
 	}
 
 	public void setGameDir(Path gameDir) {
@@ -234,7 +236,7 @@ public final class QuiltLoaderImpl {
 		return gameDir;
 	}
 
-	private Path ensureDirExists(Path path, String name) {
+	public static Path ensureDirExists(Path path, String name) {
 		if (path == null) {
 			// May be null during tests for cache and config directories
 			// If this is in production then things are about to go very wrong.
