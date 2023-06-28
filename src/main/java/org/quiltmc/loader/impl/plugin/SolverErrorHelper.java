@@ -620,7 +620,11 @@ class SolverErrorHelper {
 			}
 			report.append(modOn);// TODO
 			report.append(", which is missing!");
-			error.appendReportText(report.toString());
+			error.appendReportText(report.toString(), "");
+
+			for (ModLoadOption mod : from) {
+				error.appendReportText("- " + manager.describePath(mod.from()));
+			}
 		}
 	}
 }

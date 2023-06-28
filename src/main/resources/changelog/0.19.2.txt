@@ -32,3 +32,4 @@ Bug Fixes:
 - Fixed QuiltLoaderText not shouting loudly enough when something is wrong with the args.
 - [#322] Fixed not being able to handle non-overlapping dependencies in fabric.mod.json files.
 - Fixed French localisation not loading correctly all the time due to file encoding issues.
+- Fixed the report for mod dependencies not including the list of mods which require that particular version.
