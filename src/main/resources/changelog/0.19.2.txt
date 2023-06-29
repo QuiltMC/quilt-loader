@@ -25,6 +25,10 @@ Features:
     - 'R' means that a mod has had one of its dependencies removed.
     - These are only shown in the "plugin" mod table right now, they will be 
     added to the main mod table in the future.
+- Added more flexibility to the override file format:
+    - When "path" matching you can omit the version to match on a single dependency (Fuzzy matching)
+    - Added "id" matching, which matches against all mods with that id. This disallows fuzzy version matching.
+    - Added "pattern" matching, which matches against a regular expression. This disallows fuzzy version matching.
 
 Bug Fixes:
 
