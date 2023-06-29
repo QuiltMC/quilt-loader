@@ -232,7 +232,9 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		// TODO: Test:
 		// 1: how expensive the "packing" is
 		// 2: how much space we gain or perf we gain?
-		private static final boolean PACK_FILE_DATA = true;
+		// Disabled by default after testing - it doesn't save much memory
+		// and adds a HUGE memory requirement bump during launch.
+		private static final boolean PACK_FILE_DATA = false;
 
 		private static final int STAT_UNCOMPRESSED = 0;
 		private static final int STAT_USED = 1;
