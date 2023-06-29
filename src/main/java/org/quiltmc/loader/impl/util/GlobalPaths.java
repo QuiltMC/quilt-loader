@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.util;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
@@ -35,10 +34,6 @@ public class GlobalPaths {
 			if (os.contains("win")) {
 				String configHome = System.getenv("LOCALAPPDATA");
 				Path base = Paths.get(configHome);
-				if (!Files.exists(base)) {
-					throw new Error("Bad LOCALAPPDATA '" + configHome + "'");
-				}
-
 				config = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods");
 
 			} else if (os.contains("mac")) {
@@ -50,7 +45,7 @@ public class GlobalPaths {
 
 			} else {
 				String configHome = System.getenv("XDG_CONFIG_HOME");
-				if (configHome == null) {
+				if (configHome == null || configHome.isEmpty()) {
 					configHome = System.getProperty("user.home");
 					if (!configHome.endsWith("/")) {
 						configHome += "/";
@@ -58,10 +53,6 @@ public class GlobalPaths {
 					configHome += ".config";
 				}
 				Path base = Paths.get(configHome);
-				if (!Files.exists(base)) {
-					throw new Error("Bad XDG_CONFIG_HOME '" + configHome + "'");
-				}
-
 				config = base.resolve("quilt_loader_and_mods");
 			}
 
@@ -77,10 +68,6 @@ public class GlobalPaths {
 			if (os.contains("win")) {
 				String configHome = System.getenv("LOCALAPPDATA");
 				Path base = Paths.get(configHome);
-				if (!Files.exists(base)) {
-					throw new Error("Bad LOCALAPPDATA '" + configHome + "'");
-				}
-
 				cache = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods").resolve("Cache");
 
 			} else if (os.contains("mac")) {
@@ -92,7 +79,7 @@ public class GlobalPaths {
 
 			} else {
 				String cacheHome = System.getenv("XDG_CACHE_HOME");
-				if (cacheHome == null) {
+				if (cacheHome == null || cacheHome.isEmpty()) {
 					cacheHome = System.getProperty("user.home");
 					if (!cacheHome.endsWith("/")) {
 						cacheHome += "/";
@@ -100,10 +87,6 @@ public class GlobalPaths {
 					cacheHome += ".cache";
 				}
 				Path base = Paths.get(cacheHome);
-				if (!Files.exists(base)) {
-					throw new Error("Bad XDG_CACHE_HOME '" + cacheHome + "'");
-				}
-
 				cache = base.resolve("quilt_loader_and_mods");
 			}
 
