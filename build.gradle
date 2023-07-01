@@ -107,7 +107,8 @@ dependencies {
 
 	shadow "com.electronwill.night-config:core:${project.night_config}"
 	shadow "com.electronwill.night-config:toml:${project.night_config}"
-	shadow "org.quiltmc.qup:json:${project.qup}"
+	shadow "org.quiltmc.parsers:json:${project.quilt_parsers}"
+	include "org.quiltmc.parsers:json:${project.quilt_parsers}"
 	include "com.unascribed:flexver-java:${project.flexver}"
 	shadow "com.unascribed:flexver-java:${project.flexver}"
 

@@ -41,10 +41,10 @@ import org.quiltmc.config.api.values.ValueTreeNode;
 import org.quiltmc.config.impl.tree.TrackedValueImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.qup.json.JsonFormat;
-import org.quiltmc.qup.json.JsonReader;
-import org.quiltmc.qup.json.JsonToken;
-import org.quiltmc.qup.json.JsonWriter;
+import org.quiltmc.parsers.json.JsonFormat;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.JsonToken;
+import org.quiltmc.parsers.json.JsonWriter;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class JsonFamilySerializer implements Serializer {
