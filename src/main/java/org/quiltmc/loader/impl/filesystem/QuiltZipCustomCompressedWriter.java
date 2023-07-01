@@ -193,7 +193,7 @@ final class QuiltZipCustomCompressedWriter {
 				if (exception == null) {
 					exception = new InterruptedIOException();
 				} else {
-					// The interruption was probably because of the exception, so ignore it
+					exception.addSuppressed(new InterruptedIOException());
 				}
 			}
 

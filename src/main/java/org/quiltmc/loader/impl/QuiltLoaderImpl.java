@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl;
 
 import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -44,6 +46,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -92,7 +96,6 @@ import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
-import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
@@ -127,7 +130,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.19.2-beta.6";
+	public static final String VERSION = "0.19.2-beta.7";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -346,6 +349,7 @@ public final class QuiltLoaderImpl {
 			throw new RuntimeException(e);
 		}
 
+		boolean copyAllMods = Boolean.getBoolean(SystemProperties.JAR_COPY_ALL_MODS);
 		Set<String> modsToCopy = new HashSet<>();
 		String jarCopiedMods = System.getProperty(SystemProperties.JAR_COPIED_MODS);
 		if (jarCopiedMods != null) {
@@ -396,7 +400,14 @@ public final class QuiltLoaderImpl {
 			}
 
 			String modid2 = modOption.id();
-			if (modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds)) {
+
+			boolean copyThis = false;
+
+			if (resourceRoot.getFileSystem() != FileSystems.getDefault() && !"jar".equals(resourceRoot.getFileSystem().provider().getScheme())) {
+				copyThis = copyAllMods || modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds);
+			}
+
+			if (copyThis) {
 				long start = System.nanoTime();
 				resourceRoot = copyToJar(transformCacheFolder, modOption, resourceRoot);
 				jarCopyTotal += System.nanoTime() - start;
@@ -485,8 +496,26 @@ public final class QuiltLoaderImpl {
 						if (FasterFiles.isDirectory(path)) {
 							zip.putNextEntry(new ZipEntry(pathStr + "/"));
 						} else {
+							if (pathStr.startsWith("META-INF/") && pathStr.lastIndexOf('/') == 8 && pathStr.endsWith(".SF")) {
+								continue;
+							}
+							byte[] bytes = Files.readAllBytes(path);
+							if ("META-INF/MANIFEST.MF".equals(pathStr)) {
+								boolean changed = false;
+								Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
+								for (Attributes attributes : manifest.getEntries().values()) {
+									if (attributes.remove(new Attributes.Name("SHA-256-Digest")) != null) {
+										changed = true;
+									}
+								}
+								if (changed) {
+									ByteArrayOutputStream baos = new ByteArrayOutputStream();
+									manifest.write(baos);
+									bytes = baos.toByteArray();
+								}
+							}
 							zip.putNextEntry(new ZipEntry(pathStr));
-							zip.write(Files.readAllBytes(path));
+							zip.write(bytes);
 						}
 						zip.closeEntry();
 					}
