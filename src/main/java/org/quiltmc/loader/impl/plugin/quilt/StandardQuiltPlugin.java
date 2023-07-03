@@ -242,12 +242,44 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		PluginGuiTreeNode guiNode) throws IOException {
 
 		Path qmj = root.resolve("quilt.mod.json");
-		if (!FasterFiles.isRegularFile(qmj)) {
+		Path qmj5 = root.resolve("quilt.mod.json5");
+		Path usedQmj = qmj;
+
+		if (FasterFiles.exists(qmj5)) {
+			boolean enableQmj5 = QuiltLoader.isDevelopmentEnvironment() || Boolean.getBoolean(SystemProperties.ENABLE_QUILT_MOD_JSON5);
+			if (!QuiltLoader.isDevelopmentEnvironment() && !enableQmj5) {
+				QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj5_on_production.title");
+				QuiltDisplayedError error = context().reportError(title);
+				String describedPath = context().manager().describePath(usedQmj);
+				error.appendReportText(
+						"An attempt to read a 'quilt.mod.json5' file was detected: " + describedPath,
+						"'quilt.mod.json5' files can't be used outside of a development environment without converting to a 'quilt.mod.json' file!"
+				);
+				error.appendDescription(
+						QuiltLoaderText.translate("gui.text.qmj5_on_production.desc.0"),
+						QuiltLoaderText.translate("gui.text.qmj5_on_production.desc.1"),
+						QuiltLoaderText.translate("gui.text.qmj5_on_production.desc.2", describedPath)
+				);
+				context().manager().getRealContainingFile(root).ifPresent(real ->
+						error.addFileViewButton(real)
+								.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconQuilt()))
+				);
+
+				guiNode.addChild(QuiltLoaderText.translate("gui.text.qmj5_on_production"));
+				return null;
+			}
+
+			if (enableQmj5) {
+				usedQmj = qmj5;
+			}
+		}
+
+		if (!FasterFiles.isRegularFile(usedQmj)) {
 			return null;
 		}
 
 		try {
-			InternalModMetadata meta = ModMetadataReader.read(qmj, context().manager(), guiNode);
+			InternalModMetadata meta = ModMetadataReader.read(usedQmj, context().manager(), guiNode);
 
 			Path from = root;
 			if (isZip) {
@@ -282,8 +314,8 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				"gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage()
 			);
 			QuiltDisplayedError error = context().reportError(title);
-			String describedPath = context().manager().describePath(qmj);
-			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
+			String describedPath = context().manager().describePath(usedQmj);
+			error.appendReportText("Invalid 'quilt.mod.json' metadata file: " + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			context().manager().getRealContainingFile(root).ifPresent(real ->

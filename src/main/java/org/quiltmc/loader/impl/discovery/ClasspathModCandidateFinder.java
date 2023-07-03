@@ -60,6 +60,23 @@ public class ClasspathModCandidateFinder {
 			try {
 				Enumeration<URL> fabricMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
 				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
+				Enumeration<URL> quiltQmj5Mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json5");
+				while (quiltQmj5Mods.hasMoreElements()) {
+					URL url = quiltQmj5Mods.nextElement();
+
+					try {
+						Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, "quilt.mod.json5"));
+						List<Path> paths = pathGroups.get(path);
+
+						if (paths == null) {
+							out.addMod(Collections.singletonList(path));
+						} else {
+							out.addMod(paths);
+						}
+					} catch (UrlConversionException e) {
+						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json5 from %s", url, e);
+					}
+				}
 				while (quiltMods.hasMoreElements()) {
 					URL url = quiltMods.nextElement();
 
