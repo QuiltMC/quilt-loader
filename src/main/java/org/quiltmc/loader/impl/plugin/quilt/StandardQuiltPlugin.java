@@ -246,8 +246,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Path usedQmj = qmj;
 
 		if (FasterFiles.exists(qmj5)) {
-			boolean enableQmj5 = QuiltLoader.isDevelopmentEnvironment() || Boolean.getBoolean(SystemProperties.ENABLE_QUILT_MOD_JSON5);
-			if (!QuiltLoader.isDevelopmentEnvironment() && !enableQmj5) {
+			if (QuiltLoader.isDevelopmentEnvironment()) {
+				usedQmj = qmj5;
+			} else {
 				QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj5_on_production.title");
 				QuiltDisplayedError error = context().reportError(title);
 				String describedPath = context().manager().describePath(usedQmj);
@@ -267,10 +268,6 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 				guiNode.addChild(QuiltLoaderText.translate("gui.text.qmj5_on_production"));
 				return null;
-			}
-
-			if (enableQmj5) {
-				usedQmj = qmj5;
 			}
 		}
 
