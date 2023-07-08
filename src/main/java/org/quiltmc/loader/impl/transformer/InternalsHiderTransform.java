@@ -314,7 +314,11 @@ class InternalsHiderTransform {
 				return value;
 
 			} catch (ClassNotFoundException e) {
+				Log.warn(LogCategory.GENERAL, "Failed to load " + owner, e);
 				// Not illegal
+			} catch (NoClassDefFoundError e) {
+				Log.warn(LogCategory.GENERAL, "Failed to load " + owner, e);
+				throw e;
 			}
 		}
 

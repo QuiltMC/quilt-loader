@@ -37,7 +37,6 @@ public interface ModContainerExt extends ModContainer {
 	 * Values returned by Quilt Loader (and therefore shouldn't be used by external plugins!) include "Fabric",
 	 * "Quilt", and "Builtin".
 	 */
-
 	String modType();
 
 	/** @return True if quilt-loader should add {@link #rootPath()} to it's classpath, false otherwise. */

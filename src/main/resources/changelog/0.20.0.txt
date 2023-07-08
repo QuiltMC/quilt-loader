@@ -1,0 +1,3 @@
+Bug Fixes:
+
+* Fixed the mods table being empty if quilt-loader crashed too early.

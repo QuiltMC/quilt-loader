@@ -172,6 +172,12 @@ public final class QuiltLoaderImpl {
 	 * and {@link #copyToJar(ModLoadOption, Path)}. */
 	private final Map<String, File> copiedToJarMods = new HashMap<>();
 
+	/** Stores the result from running plugins. This is useful if we crash after selecting which mods to load, but
+	 * before fully loading those mods. */
+	private ModSolveResult temporaryPluginSolveResult;
+	private ModLoadOption[] temporaryOrderedModList;
+	private Map<Path, List<List<Path>>> temporarySourcePaths;
+
 	protected QuiltLoaderImpl() {
 	}
 
@@ -301,6 +307,7 @@ public final class QuiltLoaderImpl {
 	private void setup() throws ModResolutionException {
 
 		ModSolveResult result = runPlugins();
+		temporaryPluginSolveResult = result;
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
@@ -333,6 +340,7 @@ public final class QuiltLoaderImpl {
 		// TODO: reorder libraries to be first in the classloader order
 		// (after we actually transform & load them with chasm)
 		performLoadLateReordering(modList);
+		temporaryOrderedModList = modList.toArray(new ModLoadOption[0]);
 
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
@@ -415,6 +423,10 @@ public final class QuiltLoaderImpl {
 
 			addMod(modOption.convertToMod(resourceRoot));
 		}
+
+		temporaryPluginSolveResult = null;
+		temporaryOrderedModList = null;
+		temporarySourcePaths = null;
 
 		long modAddEnd = System.nanoTime();
 
@@ -546,6 +558,11 @@ public final class QuiltLoaderImpl {
 
 		try {
 			ModSolveResultImpl result = plugins.run(true);
+
+			temporarySourcePaths = new HashMap<>();
+			for (ModLoadOption mod : result.directMods().values()) {
+				temporarySourcePaths.put(mod.from(), plugins.convertToSourcePaths(mod.from()));
+			}
 
 			if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 				return result;
@@ -698,8 +715,8 @@ public final class QuiltLoaderImpl {
 
 	/** Appends each line of {@link #createModTable()} to the given consumer. */
 	public void appendModTable(Consumer<String> to) {
-		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
-		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
+		Path absoluteGameDir = gameDir != null ? gameDir.toAbsolutePath().normalize() : null;
+		Path absoluteModsDir = modsDir != null ? modsDir.toAbsolutePath().normalize() : null;
 
 		AsciiTableGenerator table = new AsciiTableGenerator();
 
@@ -713,17 +730,82 @@ public final class QuiltLoaderImpl {
 		// Only add subFiles column if we'll actually use it
 		AsciiTableColumn subFile = mods.stream().anyMatch(i -> i.getSourcePaths().stream().anyMatch(paths -> paths.size() > 1)) ? table.addColumn("Sub-File", false) : null;
 
-		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name().toLowerCase())).collect(Collectors.toList())) {
+		/** Map<String, ModContainerExt|ModLoadOption> */
+		Map<String, Object> bestModSource = new HashMap<>();
+		for (ModContainerExt mod : mods) {
+			bestModSource.put(mod.metadata().id(), mod);
+		}
+
+		if (temporaryOrderedModList != null) {
+			for (ModLoadOption mod : temporaryOrderedModList) {
+				bestModSource.putIfAbsent(mod.id(), mod);
+			}
+		} else if (temporaryPluginSolveResult != null) {
+			for (ModLoadOption mod : temporaryPluginSolveResult.directMods().values()) {
+				bestModSource.putIfAbsent(mod.id(), mod);
+			}
+		}
+
+		if (!bestModSource.containsKey(MOD_ID)) {
 			AsciiTableRow row = table.addRow();
+			row.put(name, "Quilt Loader");
+			row.put(id, MOD_ID);
+			row.put(version, VERSION);
+			row.put(type, "!missing!");
+		}
 
-			row.put(index, Integer.toString(mods.indexOf(mod)));
-			row.put(name, mod.metadata().name());
-			row.put(id, mod.metadata().id());
-			row.put(version, mod.metadata().version().toString());
-			row.put(type, mod.modType());
+		Comparator<Object> comparator = Comparator.comparing(obj -> {
+			if (obj instanceof ModContainerExt) {
+				return ((ModContainerExt) obj).metadata().name().toLowerCase(Locale.ROOT);
+			} else {
+				return ((ModLoadOption) obj).metadata().name().toLowerCase(Locale.ROOT);
+			}
+		});
 
-			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
-				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
+		for (Object modRepresent : bestModSource.values().stream().sorted(comparator).toArray()) {
+			final int modIndex;
+			final String modType;
+			final ModMetadataExt metadata;
+			final List<List<Path>> sourcePaths;
+
+			if (modRepresent instanceof ModContainerExt) {
+				ModContainerExt container = (ModContainerExt) modRepresent;
+				modIndex = mods.indexOf(container);
+				modType = container.modType();
+				metadata = container.metadata();
+				sourcePaths = container.getSourcePaths();
+			} else {
+				ModLoadOption option = (ModLoadOption) modRepresent;
+				if (temporaryOrderedModList != null) {
+					int idx = -1;
+					for (int i = 0; i < temporaryOrderedModList.length; i++) {
+						if (temporaryOrderedModList[i] == option) {
+							idx = i;
+							break;
+						}
+					}
+					modIndex = idx;
+				} else {
+					modIndex = -1;
+				}
+				modType = "pl:" + option.loader().pluginId();
+				metadata = option.metadata();
+				if (temporarySourcePaths != null) {
+					sourcePaths = temporarySourcePaths.get(option.from());
+				} else {
+					sourcePaths = new ArrayList<>();
+				}
+			}
+
+			AsciiTableRow row = table.addRow();
+			row.put(index, Integer.toString(modIndex));
+			row.put(name, metadata.name());
+			row.put(id, metadata.id());
+			row.put(version, metadata.version().toString());
+			row.put(type, modType);
+
+			for (int pathsIndex = 0; pathsIndex < sourcePaths.size(); pathsIndex++) {
+				List<Path> paths = sourcePaths.get(pathsIndex);
 
 				Path from = paths.get(0);
 				if (FasterFiles.isRegularFile(from)) {
@@ -773,10 +855,10 @@ public final class QuiltLoaderImpl {
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
 		String fsSep = path.getFileSystem().getSeparator();
 		path = path.toAbsolutePath().normalize();
-		if (path.startsWith(modsDir)) {
+		if (modsDir != null && path.startsWith(modsDir)) {
 			return "<mods>" + fsSep + modsDir.relativize(path);
 		}
-		if (path.startsWith(gameDir)) {
+		if (gameDir != null && path.startsWith(gameDir)) {
 			return "<game>" + fsSep + gameDir.relativize(path);
 		}
 		String pathStr = path.toString();
