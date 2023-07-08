@@ -33,6 +33,9 @@ public class GlobalPaths {
 
 			if (os.contains("win")) {
 				String configHome = System.getenv("LOCALAPPDATA");
+				if (configHome == null) {
+					throw new RuntimeException("Missing env 'LOCALAPPATA' for '" + os + "'");
+				}
 				Path base = Paths.get(configHome);
 				config = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods");
 
@@ -67,6 +70,9 @@ public class GlobalPaths {
 
 			if (os.contains("win")) {
 				String configHome = System.getenv("LOCALAPPDATA");
+				if (configHome == null) {
+					throw new RuntimeException("Missing env 'LOCALAPPATA' for '" + os + "'");
+				}
 				Path base = Paths.get(configHome);
 				cache = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods").resolve("Cache");
 
