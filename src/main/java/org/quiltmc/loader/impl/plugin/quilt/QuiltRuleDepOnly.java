@@ -21,15 +21,18 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.VersionInterval;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.plugin.VersionRangeDescriber;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -218,6 +221,25 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 
 		for (ModLoadOption option : invalidOptions) {
 			errors.append("\n\tx " + option.fullString());
+		}
+	}
+
+	@Override
+	public void appendRuleDescription(Consumer<QuiltLoaderText> to) {
+		StringBuilder id = new StringBuilder(publicDep.id().mavenGroup());
+		if (id.length() > 0) {
+			id.append(":");
+		}
+		id.append(publicDep.id().id());
+		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false);
+		to.accept(QuiltLoaderText.translate("solver.rule.dep.only", on));
+		to.accept(QuiltLoaderText.translate("solver.rule.dep.only.matching", validOptions.size()));
+		for (ModLoadOption option : validOptions) {
+			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", option.describe()));
+		}
+		to.accept(QuiltLoaderText.translate("solver.rule.dep.only.invalid", invalidOptions.size()));
+		for (ModLoadOption option : invalidOptions) {
+			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", option.describe()));
 		}
 	}
 }

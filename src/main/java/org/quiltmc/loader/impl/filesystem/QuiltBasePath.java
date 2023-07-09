@@ -52,6 +52,10 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	static final String NAME_SELF = ".";
 	static final String NAME_PARENT = "..";
 
+	private static final int FLAG_IS_ABSOLUTE = 1 << 0;
+	private static final int FLAG_IS_NORMALIZED = 1 << 1;
+	private static final int NAME_COUNT_OFFSET = 2;
+
 	final @NotNull FS fs;
 	final @Nullable P parent;
 
@@ -59,12 +63,15 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	 * {@link #NAME_PARENT}, or {@link #NAME_SELF} if it matches. */
 	final String name;
 
-	/** {@link #isAbsolute()} */
-	final boolean absolute;
-
-	/** If true then {@link #normalize()} will return this. */
-	final boolean normalized;
-	final int nameCount;
+	/** Packed data field, which stores:
+	 * <ol>
+	 * <li>{@link #isAbsolute()} as a flag ({@link #FLAG_IS_ABSOLUTE})</li>
+	 * <li>{@link #FLAG_IS_NORMALIZED} to make {@link #normalize()} fast for the common case of an already-normalized
+	 * path</li>
+	 * <li>The total number of name elements, offset by {@link #NAME_COUNT_OFFSET}</li>
+	 * </ol>
+	 */
+	private final int data;
 
 	final int hash;
 
@@ -80,9 +87,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 				throw new IllegalArgumentException("Root paths cannot have a parent!");
 			}
 			this.name = NAME_ROOT;
-			this.nameCount = 0;
-			this.absolute = true;
-			this.normalized = true;
+			this.data = FLAG_IS_ABSOLUTE | FLAG_IS_NORMALIZED;
 		} else {
 			if (name.equals(NAME_PARENT)) {
 				this.name = NAME_PARENT;
@@ -93,21 +98,22 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			}
 			int count = 0;
 			if (parent != null) {
-				count += parent.nameCount;
+				count += parent.getNameCount();
 			}
 			if (!name.isEmpty()) {
 				count++;
 			}
-			this.nameCount = count;
+
+			int data = count << NAME_COUNT_OFFSET;
 
 			boolean isNormalName = !name.equals(NAME_PARENT) && !name.equals(NAME_SELF);
 
 			if (parent == null) {
-				absolute = false;
-				normalized = isNormalName;
+				this.data = data | (isNormalName ? FLAG_IS_NORMALIZED : 0);
 			} else {
-				absolute = parent.absolute;
-				normalized = parent.normalized && isNormalName;
+				boolean absolute = parent.isAbsolute();
+				boolean normalized = parent.isNormalized() && isNormalName;
+				this.data = data | (absolute ? FLAG_IS_ABSOLUTE : 0) | (normalized ? FLAG_IS_NORMALIZED : 0);
 			}
 		}
 
@@ -137,7 +143,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			return false;
 		}
 		QuiltBasePath<?, ?> o = (QuiltBasePath<?, ?>) obj;
-		return fs == o.fs && nameCount == o.nameCount && name.equals(o.name) && Objects.equals(parent, o.parent);
+		return fs == o.fs && data == o.data && name.equals(o.name) && Objects.equals(parent, o.parent);
 	}
 
 	@Override
@@ -147,7 +153,11 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	@Override
 	public boolean isAbsolute() {
-		return absolute;
+		return (data & FLAG_IS_ABSOLUTE) != 0;
+	}
+
+	public boolean isNormalized() {
+		return (data & FLAG_IS_NORMALIZED) != 0;
 	}
 
 	@Override
@@ -210,24 +220,24 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	@Override
 	public int getNameCount() {
-		return nameCount;
+		return data >>> NAME_COUNT_OFFSET;
 	}
 
 	@Override
 	public P getName(int index) {
-		if (index < 0 || index >= nameCount) {
+		if (index < 0 || index >= getNameCount()) {
 			throw new IllegalArgumentException("index out of bounds");
 		}
 
 		if (index == 0 && parent == null) {
 			return getThisPath();
 		}
-		if (index == nameCount - 1) {
+		if (index == getNameCount() - 1) {
 			return fs.createPath(null, name);
 		}
 
 		P p = getThisPath();
-		for (int i = index + 1; i < nameCount; i++) {
+		for (int i = index + 1; i < getNameCount(); i++) {
 			p = p.parent;
 		}
 
@@ -240,13 +250,13 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			throw new IllegalArgumentException("beginIndex < 0!");
 		}
 
-		if (endIndex > nameCount) {
+		if (endIndex > getNameCount()) {
 			throw new IllegalArgumentException("endIndex > getNameCount()!");
 		}
 
 		P end = getThisPath();
 
-		for (int i = nameCount; i > endIndex; i--) {
+		for (int i = getNameCount(); i > endIndex; i--) {
 			end = end.parent;
 		}
 
@@ -276,10 +286,10 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	public boolean startsWith(Path other) {
 		if (fs.pathClass.isInstance(other)) {
 			P o = fs.pathClass.cast(other);
-			if (absolute != o.absolute) {
+			if (isAbsolute() != o.isAbsolute()) {
 				return false;
 			}
-			if (o.nameCount > nameCount) {
+			if (o.getNameCount() > getNameCount()) {
 				return false;
 			}
 
@@ -333,7 +343,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	@Override
 	public P normalize() {
-		if (normalized) {
+		if (isNormalized()) {
 			return getThisPath();
 		}
 
@@ -430,7 +440,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			return fs.createPath(null, "");
 		}
 
-		if (absolute != o.absolute) {
+		if (isAbsolute() != o.isAbsolute()) {
 			throw new IllegalArgumentException(
 				"You can only relativize paths if they are both absolute, OR both relative - not one and the other!"
 			);
@@ -519,7 +529,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 				return Collections.singletonList(name);
 			}
 		}
-		List<String> list = new ArrayList<>(nameCount);
+		List<String> list = new ArrayList<>(getNameCount());
 		P p = getThisPath();
 		do {
 			if (p.isRoot()) {
@@ -540,7 +550,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 				return Collections.<Path> singleton(this).iterator();
 			}
 		}
-		List<Path> list = new ArrayList<>(nameCount);
+		List<Path> list = new ArrayList<>(getNameCount());
 		P p = getThisPath();
 		do {
 			if (p.isRoot()) {

@@ -7,6 +7,8 @@ import org.junit.platform.launcher.LauncherSessionListener;
 import org.quiltmc.loader.impl.launch.knot.Knot;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
+import java.util.Locale;
+
 public class QuiltLoaderLauncherSessionListener implements LauncherSessionListener {
 	static {
 		System.setProperty(SystemProperties.DEVELOPMENT, "true");
@@ -23,7 +25,7 @@ public class QuiltLoaderLauncherSessionListener implements LauncherSessionListen
 		final ClassLoader originalClassLoader = currentThread.getContextClassLoader();
 
 		try {
-			knot = new Knot(EnvType.CLIENT);
+			knot = new Knot(EnvType.valueOf(System.getProperty(SystemProperties.SIDE, EnvType.CLIENT.name().toUpperCase(Locale.ROOT))));
 			classLoader = knot.init(new String[]{});
 		} finally {
 			// Knot.init sets the context class loader, revert it back for now.

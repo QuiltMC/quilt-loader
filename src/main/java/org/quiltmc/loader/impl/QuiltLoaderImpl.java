@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl;
 
 import java.awt.GraphicsEnvironment;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -44,6 +46,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -126,7 +130,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.19.0-beta.13";
+	public static final String VERSION = "0.20.0-beta.3";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -136,6 +140,10 @@ public final class QuiltLoaderImpl {
 	private static final String PROCESSED_MODS_DIR_NAME = "processedMods"; // relative to loader cache dir
 	public static final String REMAPPED_JARS_DIR_NAME = "remappedJars"; // relative to loader cache dir
 	private static final String TMP_DIR_NAME = "tmp"; // relative to loader cache dir
+
+	// Mod table flags
+	public static final char FLAG_DEPS_CHANGED = 'o';
+	public static final char FLAG_DEPS_REMOVED = 'R';
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
@@ -163,6 +171,12 @@ public final class QuiltLoaderImpl {
 	/** Stores every mod which has been copied into a temporary jar file: see {@link #shouldCopyToJar(ModLoadOption)}
 	 * and {@link #copyToJar(ModLoadOption, Path)}. */
 	private final Map<String, File> copiedToJarMods = new HashMap<>();
+
+	/** Stores the result from running plugins. This is useful if we crash after selecting which mods to load, but
+	 * before fully loading those mods. */
+	private ModSolveResult temporaryPluginSolveResult;
+	private ModLoadOption[] temporaryOrderedModList;
+	private Map<Path, List<List<Path>>> temporarySourcePaths;
 
 	protected QuiltLoaderImpl() {
 	}
@@ -194,6 +208,8 @@ public final class QuiltLoaderImpl {
 
 		setGameDir(provider.getLaunchDirectory());
 		argumentModsList = provider.getArguments().remove(Arguments.ADD_MODS);
+
+		ActiveUserBeacon.run();
 	}
 
 	public void setGameDir(Path gameDir) {
@@ -229,7 +245,7 @@ public final class QuiltLoaderImpl {
 		return gameDir;
 	}
 
-	private Path ensureDirExists(Path path, String name) {
+	public static Path ensureDirExists(Path path, String name) {
 		if (path == null) {
 			// May be null during tests for cache and config directories
 			// If this is in production then things are about to go very wrong.
@@ -291,6 +307,7 @@ public final class QuiltLoaderImpl {
 	private void setup() throws ModResolutionException {
 
 		ModSolveResult result = runPlugins();
+		temporaryPluginSolveResult = result;
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
 
@@ -323,6 +340,7 @@ public final class QuiltLoaderImpl {
 		// TODO: reorder libraries to be first in the classloader order
 		// (after we actually transform & load them with chasm)
 		performLoadLateReordering(modList);
+		temporaryOrderedModList = modList.toArray(new ModLoadOption[0]);
 
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
@@ -339,6 +357,7 @@ public final class QuiltLoaderImpl {
 			throw new RuntimeException(e);
 		}
 
+		boolean copyAllMods = Boolean.getBoolean(SystemProperties.JAR_COPY_ALL_MODS);
 		Set<String> modsToCopy = new HashSet<>();
 		String jarCopiedMods = System.getProperty(SystemProperties.JAR_COPIED_MODS);
 		if (jarCopiedMods != null) {
@@ -389,7 +408,14 @@ public final class QuiltLoaderImpl {
 			}
 
 			String modid2 = modOption.id();
-			if (modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds)) {
+
+			boolean copyThis = false;
+
+			if (resourceRoot.getFileSystem() != FileSystems.getDefault() && !"jar".equals(resourceRoot.getFileSystem().provider().getScheme())) {
+				copyThis = copyAllMods || modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds);
+			}
+
+			if (copyThis) {
 				long start = System.nanoTime();
 				resourceRoot = copyToJar(transformCacheFolder, modOption, resourceRoot);
 				jarCopyTotal += System.nanoTime() - start;
@@ -397,6 +423,10 @@ public final class QuiltLoaderImpl {
 
 			addMod(modOption.convertToMod(resourceRoot));
 		}
+
+		temporaryPluginSolveResult = null;
+		temporaryOrderedModList = null;
+		temporarySourcePaths = null;
 
 		long modAddEnd = System.nanoTime();
 
@@ -478,8 +508,26 @@ public final class QuiltLoaderImpl {
 						if (FasterFiles.isDirectory(path)) {
 							zip.putNextEntry(new ZipEntry(pathStr + "/"));
 						} else {
+							if (pathStr.startsWith("META-INF/") && pathStr.lastIndexOf('/') == 8 && pathStr.endsWith(".SF")) {
+								continue;
+							}
+							byte[] bytes = Files.readAllBytes(path);
+							if ("META-INF/MANIFEST.MF".equals(pathStr)) {
+								boolean changed = false;
+								Manifest manifest = new Manifest(new ByteArrayInputStream(bytes));
+								for (Attributes attributes : manifest.getEntries().values()) {
+									if (attributes.remove(new Attributes.Name("SHA-256-Digest")) != null) {
+										changed = true;
+									}
+								}
+								if (changed) {
+									ByteArrayOutputStream baos = new ByteArrayOutputStream();
+									manifest.write(baos);
+									bytes = baos.toByteArray();
+								}
+							}
 							zip.putNextEntry(new ZipEntry(pathStr));
-							zip.write(Files.readAllBytes(path));
+							zip.write(bytes);
 						}
 						zip.closeEntry();
 					}
@@ -503,13 +551,18 @@ public final class QuiltLoaderImpl {
 
 	private ModSolveResult runPlugins() {
 		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
-		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), provider, config);
+		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), getCacheDir(), provider, config);
 
 		Path crashReportFile = null;
 		String fullCrashText = null;
 
 		try {
 			ModSolveResultImpl result = plugins.run(true);
+
+			temporarySourcePaths = new HashMap<>();
+			for (ModLoadOption mod : result.directMods().values()) {
+				temporarySourcePaths.put(mod.from(), plugins.convertToSourcePaths(mod.from()));
+			}
 
 			if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 				return result;
@@ -662,8 +715,8 @@ public final class QuiltLoaderImpl {
 
 	/** Appends each line of {@link #createModTable()} to the given consumer. */
 	public void appendModTable(Consumer<String> to) {
-		Path absoluteGameDir = gameDir.toAbsolutePath().normalize();
-		Path absoluteModsDir = modsDir.toAbsolutePath().normalize();
+		Path absoluteGameDir = gameDir != null ? gameDir.toAbsolutePath().normalize() : null;
+		Path absoluteModsDir = modsDir != null ? modsDir.toAbsolutePath().normalize() : null;
 
 		AsciiTableGenerator table = new AsciiTableGenerator();
 
@@ -677,17 +730,84 @@ public final class QuiltLoaderImpl {
 		// Only add subFiles column if we'll actually use it
 		AsciiTableColumn subFile = mods.stream().anyMatch(i -> i.getSourcePaths().stream().anyMatch(paths -> paths.size() > 1)) ? table.addColumn("Sub-File", false) : null;
 
-		for (ModContainerExt mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name().toLowerCase())).collect(Collectors.toList())) {
+		/** Map<String, ModContainerExt|ModLoadOption> */
+		Map<String, Object> bestModSource = new HashMap<>();
+		for (ModContainerExt mod : mods) {
+			bestModSource.put(mod.metadata().id(), mod);
+		}
+
+		if (temporaryOrderedModList != null) {
+			for (ModLoadOption mod : temporaryOrderedModList) {
+				bestModSource.putIfAbsent(mod.id(), mod);
+			}
+		} else if (temporaryPluginSolveResult != null) {
+			for (ModLoadOption mod : temporaryPluginSolveResult.directMods().values()) {
+				bestModSource.putIfAbsent(mod.id(), mod);
+			}
+		}
+
+		if (!bestModSource.containsKey(MOD_ID)) {
 			AsciiTableRow row = table.addRow();
+			row.put(name, "Quilt Loader");
+			row.put(id, MOD_ID);
+			row.put(version, VERSION);
+			row.put(type, "!missing!");
+		}
 
-			row.put(index, Integer.toString(mods.indexOf(mod)));
-			row.put(name, mod.metadata().name());
-			row.put(id, mod.metadata().id());
-			row.put(version, mod.metadata().version().toString());
-			row.put(type, mod.modType());
+		Comparator<Object> comparator = Comparator.comparing(obj -> {
+			if (obj instanceof ModContainerExt) {
+				return ((ModContainerExt) obj).metadata().name().toLowerCase(Locale.ROOT);
+			} else {
+				return ((ModLoadOption) obj).metadata().name().toLowerCase(Locale.ROOT);
+			}
+		});
 
-			if (mod.getSourcePaths().size() == 1 && mod.getSourcePaths().get(0).size() == 1) {
-				Path from = mod.getSourcePaths().get(0).get(0);
+		for (Object modRepresent : bestModSource.values().stream().sorted(comparator).toArray()) {
+			final int modIndex;
+			final String modType;
+			final ModMetadataExt metadata;
+			final List<List<Path>> sourcePaths;
+
+			if (modRepresent instanceof ModContainerExt) {
+				ModContainerExt container = (ModContainerExt) modRepresent;
+				modIndex = mods.indexOf(container);
+				modType = container.modType();
+				metadata = container.metadata();
+				sourcePaths = container.getSourcePaths();
+			} else {
+				ModLoadOption option = (ModLoadOption) modRepresent;
+				if (temporaryOrderedModList != null) {
+					int idx = -1;
+					for (int i = 0; i < temporaryOrderedModList.length; i++) {
+						if (temporaryOrderedModList[i] == option) {
+							idx = i;
+							break;
+						}
+					}
+					modIndex = idx;
+				} else {
+					modIndex = -1;
+				}
+				modType = "pl:" + option.loader().pluginId();
+				metadata = option.metadata();
+				if (temporarySourcePaths != null) {
+					sourcePaths = temporarySourcePaths.get(option.from());
+				} else {
+					sourcePaths = new ArrayList<>();
+				}
+			}
+
+			AsciiTableRow row = table.addRow();
+			row.put(index, Integer.toString(modIndex));
+			row.put(name, metadata.name());
+			row.put(id, metadata.id());
+			row.put(version, metadata.version().toString());
+			row.put(type, modType);
+
+			for (int pathsIndex = 0; pathsIndex < sourcePaths.size(); pathsIndex++) {
+				List<Path> paths = sourcePaths.get(pathsIndex);
+
+				Path from = paths.get(0);
 				if (FasterFiles.isRegularFile(from)) {
 					String hashString;
 					try {
@@ -697,10 +817,6 @@ public final class QuiltLoaderImpl {
 					}
 					row.put(hash, hashString);
 				}
-			}
-
-			for (int pathsIndex = 0; pathsIndex < mod.getSourcePaths().size(); pathsIndex++) {
-				List<Path> paths = mod.getSourcePaths().get(pathsIndex);
 
 				if (pathsIndex != 0) {
 					row = table.addRow();
@@ -739,10 +855,10 @@ public final class QuiltLoaderImpl {
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
 		String fsSep = path.getFileSystem().getSeparator();
 		path = path.toAbsolutePath().normalize();
-		if (path.startsWith(modsDir)) {
+		if (modsDir != null && path.startsWith(modsDir)) {
 			return "<mods>" + fsSep + modsDir.relativize(path);
 		}
-		if (path.startsWith(gameDir)) {
+		if (gameDir != null && path.startsWith(gameDir)) {
 			return "<game>" + fsSep + gameDir.relativize(path);
 		}
 		String pathStr = path.toString();

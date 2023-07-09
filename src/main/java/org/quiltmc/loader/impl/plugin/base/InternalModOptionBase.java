@@ -21,6 +21,7 @@ import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -96,6 +97,13 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	@Override
 	public String getSpecificInfo() {
 		return toString();
+	}
+
+	protected abstract String nameOfType();
+
+	@Override
+	public QuiltLoaderText describe() {
+		return QuiltLoaderText.translate("solver.option.mod.quilt_impl", nameOfType(), metadata.id(), pluginContext.manager().describePath(from));
 	}
 
 	@Override

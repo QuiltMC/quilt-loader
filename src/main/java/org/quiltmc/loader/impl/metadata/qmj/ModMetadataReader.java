@@ -28,6 +28,8 @@ import org.quiltmc.json5.JsonReader;
 import org.quiltmc.json5.JsonToken;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -44,7 +46,17 @@ public final class ModMetadataReader {
 	private static final String SCHEMA_VERSION = "schema_version";
 
 	public static InternalModMetadata read(Path json) throws IOException, ParseException {
-		return read(Files.newInputStream(json));
+		return read(json, null, null);
+	}
+
+	public static InternalModMetadata read(Path json, QuiltPluginManager manager, PluginGuiTreeNode warningNode) throws IOException, ParseException {
+		return read(Files.newInputStream(json), json, manager, warningNode);
+	}
+
+	/** @deprecated Kept since this class is only LEGACY_EXPOSED. */
+	@Deprecated
+	public static InternalModMetadata read(InputStream json) throws IOException, ParseException {
+		return read(json, null, null, null);
 	}
 
 	/**
@@ -56,7 +68,7 @@ public final class ModMetadataReader {
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
 	@SuppressWarnings("SwitchStatementWithTooFewBranches") // Switch statement intentionally used for future expandability
-	public static InternalModMetadata read(InputStream json) throws IOException, ParseException {
+	public static InternalModMetadata read(InputStream json, Path path, QuiltPluginManager manager, PluginGuiTreeNode warningNode) throws IOException, ParseException {
 		JsonLoaderValue value;
 
 		try (JsonReader reader = JsonReader.json(new InputStreamReader(json, StandardCharsets.UTF_8))) {
@@ -90,7 +102,7 @@ public final class ModMetadataReader {
 
 		switch (version) {
 		case 1:
-			return V1ModMetadataReader.read(root);
+			return V1ModMetadataReader.read(root, path, manager, warningNode);
 		default:
 			if (version < 0) {
 				throw parseException(schemaVersion, "schema_version must not be negative");

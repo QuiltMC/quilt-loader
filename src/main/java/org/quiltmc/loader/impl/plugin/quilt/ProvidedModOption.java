@@ -81,6 +81,11 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
+	public QuiltLoaderText describe() {
+		return QuiltLoaderText.translate("solver.option.mod.quilt_impl", "provided", id() + " " + version(), provider.describe());
+	}
+
+	@Override
 	@NotNull
 	public ModLoadOption getTarget() {
 		return provider;

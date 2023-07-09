@@ -28,7 +28,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.FasterFiles;
@@ -43,11 +45,11 @@ import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
@@ -64,7 +66,6 @@ import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.ModOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.QuiltOverrides.SpecificOverrides;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
-import org.quiltmc.loader.impl.util.ExceptionUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -130,6 +131,16 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				context().haltLoading();
 			}
 		}
+	}
+
+	public boolean hasDepsChanged(ModLoadOption mod) {
+		ModOverrides modOverrides = overrides.pathOverrides.get(context().manager().describePath(mod.from()));
+		return modOverrides != null && modOverrides.hasDepsChanged();
+	}
+
+	public boolean hasDepsRemoved(ModLoadOption mod) {
+		ModOverrides modOverrides = overrides.pathOverrides.get(context().manager().describePath(mod.from()));
+		return modOverrides != null && modOverrides.hasDepsRemoved();
 	}
 
 	public void addBuiltinMods(GameProvider game) {
@@ -212,12 +223,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			return null;
 		}
 
-		return scan0(root, guiNode.manager().iconJarFile(), location, true, guiNode);
+		return scan0(root, QuiltLoaderGui.iconJarFile(), location, true, guiNode);
 	}
 
 	@Override
 	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
-		return scan0(folder, guiNode.manager().iconFolder(), location, false, guiNode);
+		return scan0(folder, QuiltLoaderGui.iconFolder(), location, false, guiNode);
 	}
 
 	@Override
@@ -236,7 +247,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		}
 
 		try {
-			InternalModMetadata meta = ModMetadataReader.read(qmj);
+			InternalModMetadata meta = ModMetadataReader.read(qmj, context().manager(), guiNode);
 
 			Path from = root;
 			if (isZip) {
@@ -275,11 +286,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			error.appendReportText("Invalid 'quilt.mod.json' metadata file:" + describedPath);
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
-			PluginGuiManager guiManager = context().manager().getGuiManager();
-				context().manager().getRealContainingFile(root).ifPresent(real ->
-						error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-								.icon(guiManager.iconJarFile().withDecoration(guiManager.iconQuilt()))
-				);
+			context().manager().getRealContainingFile(root).ifPresent(real ->
+					error.addFileViewButton(real)
+							.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconQuilt()))
+			);
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//
 				.setError(parse, error);
@@ -315,9 +325,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			// If the mod's environment doesn't match the current one,
 			// then add a rule so that the mod is never loaded.
 			if (!metadata.environment().matches(context().manager().getEnvironment())) {
-				ctx.addRule(new DisabledModIdDefinition(mod));
+				ctx.addRule(new DisabledModIdDefinition(context(), mod));
 			} else if (mod.isMandatory()) {
-				ctx.addRule(new MandatoryModIdDefinition(mod));
+				ctx.addRule(new MandatoryModIdDefinition(context(), mod));
 			}
 
 			if (metadata.shouldQuiltDefineProvides()) {
@@ -326,7 +336,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				for (ProvidedMod provided : provides) {
 					PluginGuiTreeNode guiNode = context().manager().getGuiNode(mod)//
 						.addChild(QuiltLoaderText.translate("gui.text.providing", provided.id()));
-					guiNode.mainIcon(guiNode.manager().iconUnknownFile());
+					guiNode.mainIcon(QuiltLoaderGui.iconUnknownFile());
 					context().addModLoadOption(new ProvidedModOption(mod, provided), guiNode);
 				}
 			}
@@ -342,14 +352,26 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				Collection<ModDependency> depends = metadata.depends();
 				Collection<ModDependency> breaks = metadata.breaks();
 
-				ModOverrides override = overrides.overrides.get(described);
+				List<SingleOverrideEntry> overrideList = new ArrayList<>();
+				ModOverrides byPath = overrides.pathOverrides.get(described);
+				if (byPath != null) {
+					overrideList.add(new SingleOverrideEntry(byPath, true));
+				}
 
-				if (override != null) {
-					depends = new HashSet<>(depends);
-					breaks = new HashSet<>(breaks);
+				for (Entry<Pattern, ModOverrides> entry : overrides.patternOverrides.entrySet()) {
+					if (!entry.getKey().matcher(mod.id()).matches()) {
+						continue;
+					}
 
-					replace(override.dependsOverrides, depends);
-					replace(override.breakOverrides, breaks);
+					overrideList.add(new SingleOverrideEntry(entry.getValue(), false));
+				}
+
+				depends = new HashSet<>(depends);
+				breaks = new HashSet<>(breaks);
+
+				for (SingleOverrideEntry override : overrideList) {
+					replace(override.fuzzy, override.overrides.dependsOverrides, depends);
+					replace(override.fuzzy, override.overrides.breakOverrides, breaks);
 				}
 
 				for (ModDependency dep : depends) {
@@ -371,23 +393,67 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Log.warn(LogCategory.DISCOVERY, "'" + msg);
 	}
 
-	private static void replace(SpecificOverrides overrides, Collection<ModDependency> in) {
+	static final class SingleOverrideEntry {
+		final ModOverrides overrides;
+		final boolean fuzzy;
+
+		public SingleOverrideEntry(ModOverrides overrides, boolean fuzzy) {
+			this.overrides = overrides;
+			this.fuzzy = fuzzy;
+		}
+	}
+
+	private static void replace(boolean fuzzy, SpecificOverrides overrides, Collection<ModDependency> in) {
 		for (Map.Entry<ModDependency, ModDependency> entry : overrides.replacements.entrySet()) {
-			if (remove(in, entry.getKey(), "replace")) {
+			if (remove(fuzzy, in, entry.getKey(), "replace")) {
 				in.add(entry.getValue());
 			}
 		}
 
 		for (ModDependency removal : overrides.removals) {
-			remove(in, removal, "remove");
+			remove(fuzzy, in, removal, "remove");
 		}
 
 		in.addAll(overrides.additions);
 	}
 
-	private static boolean remove(Collection<ModDependency> in, ModDependency removal, String name) {
+	private static boolean remove(boolean fuzzy, Collection<ModDependency> in, ModDependency removal, String name) {
 		if (in.remove(removal)) {
 			return true;
+		}
+
+		if (fuzzy && removal instanceof ModDependency.Only) {
+			ModDependency.Only specific = (ModDependency.Only) removal;
+			if (specific.versionRange() == VersionRange.ANY && specific.unless() == null) {
+				List<ModDependency> matches = new ArrayList<>();
+				for (ModDependency dep : in) {
+					if (!(dep instanceof ModDependency.Only)) {
+						continue;
+					}
+					ModDependency.Only current = (ModDependency.Only) dep;
+					if (!current.id().equals(specific.id())) {
+						continue;
+					}
+					matches.add(current);
+				}
+
+				if (matches.size() == 1) {
+					in.remove(matches.get(0));
+					return true;
+				} else if (matches.size() > 1) {
+					warn("Found multiple matching ModDependency " + name + " when using using fuzzy matching!");
+					logModDep("", "", removal);
+					warn("Comparison:");
+					if (in.isEmpty()) {
+						warn("  (None left)");
+					}
+					int index = 0;
+					for (ModDependency with : in) {
+						logCompare(" ", "[" + index++ + "]: ", removal, with);
+					}
+					return false;
+				}
+			}
 		}
 
 		warn("Failed to find the ModDependency 'from' to " + name + "!");

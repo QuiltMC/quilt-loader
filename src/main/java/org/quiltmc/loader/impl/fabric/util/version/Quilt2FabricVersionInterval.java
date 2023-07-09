@@ -44,7 +44,7 @@ public final class Quilt2FabricVersionInterval implements VersionInterval {
 	}
 
 	public Quilt2FabricVersionInterval(org.quiltmc.loader.api.VersionInterval quilt) {
-		this.quilt = quilt;
+		this.quilt = Objects.requireNonNull(quilt);
 	}
 
 	@Override
@@ -90,9 +90,11 @@ public final class Quilt2FabricVersionInterval implements VersionInterval {
 	public static VersionInterval and(VersionInterval a, VersionInterval b) {
 		if (a == null || b == null) return null;
 
-		return new Quilt2FabricVersionInterval(
-			VersionIntervalImpl.and(((Quilt2FabricVersionInterval) a).quilt, ((Quilt2FabricVersionInterval) b).quilt)
-		);
+		org.quiltmc.loader.api.VersionInterval and = VersionIntervalImpl.and(((Quilt2FabricVersionInterval) a).quilt, ((Quilt2FabricVersionInterval) b).quilt);
+		if (and == null) {
+			return null;
+		}
+		return new Quilt2FabricVersionInterval(and);
 	}
 
 	public static List<VersionInterval> and(Collection<VersionInterval> a, Collection<VersionInterval> b) {

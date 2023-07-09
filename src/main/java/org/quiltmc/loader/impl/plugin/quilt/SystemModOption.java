@@ -37,6 +37,11 @@ public class SystemModOption extends BuiltinModOption {
 	}
 
 	@Override
+	protected String nameOfType() {
+		return "system";
+	}
+
+	@Override
 	public byte[] computeOriginHash() throws IOException {
 		return new byte[] { 0, 1, 2, 3 };
 	}

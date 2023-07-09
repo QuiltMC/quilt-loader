@@ -152,17 +152,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 				@Override
 				public ModDependencyIdentifier id() {
-					return new ModDependencyIdentifier() {
-						@Override
-						public String mavenGroup() {
-							return "";
-						}
-
-						@Override
-						public String id() {
-							return "java";
-						}
-					};
+					return ModDependencyIdentifier.of("", "java");
 				}
 			});
 		}
@@ -252,6 +242,13 @@ public class MinecraftGameProvider implements GameProvider {
 
 			if (commonGameJar != null && !commonGameJar.equals(envGameJar)) {
 				gameJars.add(commonGameJar);
+			}
+
+			// see https://github.com/FabricMC/fabric-loader/pull/793
+			Path assetsJar = classifier.getOrigin(McLibrary.MC_ASSETS_ROOT);
+
+			if (assetsJar != null && !assetsJar.equals(commonGameJar) && !assetsJar.equals(envGameJar)) {
+				gameJars.add(assetsJar);
 			}
 
 			entrypoint = classifier.getClassName(envGameLib);

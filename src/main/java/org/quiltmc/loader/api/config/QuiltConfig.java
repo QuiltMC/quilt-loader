@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import org.quiltmc.config.api.Config;
 import org.quiltmc.config.api.WrappedConfig;
 import org.quiltmc.config.api.annotations.ConfigFieldAnnotationProcessor;
-import org.quiltmc.config.api.annotations.ConfigFieldAnnotationProcessors;
 import org.quiltmc.config.api.values.ValueList;
 import org.quiltmc.config.api.values.ValueMap;
 import org.quiltmc.config.impl.ConfigImpl;
@@ -31,6 +30,7 @@ import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 /**
  * Class containing helper methods that mods should use to create config files as part of Quilt's config system.
  */
+@Deprecated
 public final class QuiltConfig {
 	/**
 	 * Creates and registers a config file
@@ -73,7 +73,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -105,7 +105,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -136,7 +136,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the configs id
@@ -167,7 +167,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -197,7 +197,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -226,7 +226,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -254,7 +254,7 @@ public final class QuiltConfig {
 	 *
 	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
 	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessors#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id

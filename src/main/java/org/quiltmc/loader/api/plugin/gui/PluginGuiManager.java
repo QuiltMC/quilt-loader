@@ -28,7 +28,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 /**
  * @deprecated Replaced with {@link QuiltLoaderGui}, kept only until we clear out all uses of this from quilt's codebase.
  */
-@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
+@QuiltLoaderInternal(value = QuiltLoaderInternalType.PLUGIN_API, replacements = QuiltLoaderGui.class)
 @Deprecated
 public interface PluginGuiManager {
 

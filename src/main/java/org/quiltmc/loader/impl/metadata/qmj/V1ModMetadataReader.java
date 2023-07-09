@@ -19,9 +19,11 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import static org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader.parseException;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +37,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
@@ -43,7 +46,12 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
+import org.quiltmc.loader.api.plugin.QuiltPluginManager;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -51,11 +59,17 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-final class V1ModMetadataReader {
+public final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
+		return read(root, null, null, null);
+	}
+
+	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root, Path path, QuiltPluginManager manager, PluginGuiTreeNode parentNode) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -67,7 +81,7 @@ final class V1ModMetadataReader {
 			throw parseException(quiltLoader, "quilt_loader field must be an object");
 		}
 
-		return readFields(root);
+		return new V1ModMetadataReader(path, manager, parentNode).readFields(root);
 	}
 
 	private static class QLKeys {
@@ -94,7 +108,20 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	private static V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
+	final Path from;
+	final QuiltPluginManager manager;
+	final PluginGuiTreeNode warningNode;
+	PluginGuiTreeNode modJsonNode = null;
+	boolean loggedAnyWarnings = false;
+	boolean loggedDeprecatedArrayDepends = false;
+
+	private V1ModMetadataReader(Path from, QuiltPluginManager manager, PluginGuiTreeNode warningNode) {
+		this.from = from;
+		this.manager = manager;
+		this.warningNode = warningNode;
+	}
+
+	private V1ModMetadataImpl readFields(JsonLoaderValue.ObjectImpl root) {
 		V1ModMetadataBuilder builder = new V1ModMetadataBuilder();
 		builder.setRoot(root);
 
@@ -663,25 +690,19 @@ final class V1ModMetadataReader {
 		}
 	}
 
-	public static ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
+	static ModDependency readDependencyObject(Path from, boolean isAny, JsonLoaderValue value) {
+		return new V1ModMetadataReader(from, null, null).readDependencyObject(isAny, value);
+	}
+
+	ModDependency readDependencyObject(boolean isAny, JsonLoaderValue value) {
 		switch (value.type()) {
 		case OBJECT:
 			JsonLoaderValue.ObjectImpl obj = value.asObject();
 			ModDependencyIdentifier id = new ModDependencyIdentifierImpl(requiredString(obj, "id"));
-			List<VersionRange> versions = new ArrayList<>();
+			final VersionRange range;
 			try {
 				JsonLoaderValue versionsValue = obj.get("versions");
-				if (versionsValue != null) {
-					if (versionsValue.type().equals(LType.ARRAY)) {
-						for (LoaderValue loaderValue : versionsValue.asArray()) {
-							versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
-						}
-					} else {
-						versions.add(readVersionSpecifier(versionsValue));
-					}
-				} else {
-					versions.add(VersionRange.ANY);
-				}
+				range = readVersionsValue(versionsValue);
 			} catch (VersionFormatException e) {
 				throw parseException(obj.get("versions"), "Unable to parse version range", e);
 			}
@@ -694,7 +715,7 @@ final class V1ModMetadataReader {
 				unless = readDependencyObject(true, unlessObj);
 			}
 
-			return new ModDependencyImpl.OnlyImpl(value.location(), id, VersionRange.ofRanges(versions), reason, optional, unless);
+			return new ModDependencyImpl.OnlyImpl(value.location(), id, range, reason, optional, unless);
 		case STRING:
 			// Single dependency, any version matching id
 			return new ModDependencyImpl.OnlyImpl(value.location(),new ModDependencyIdentifierImpl(value.asString()));
@@ -716,13 +737,203 @@ final class V1ModMetadataReader {
 		}
 	}
 
+	static final String RFC_56_LINK = "https://github.com/QuiltMC/rfcs/pull/56";
+
+	private VersionRange readVersionsValue(LoaderValue versionsValue) throws VersionFormatException {
+
+
+		if (versionsValue == null) {
+			return VersionRange.ANY;
+		}
+
+		switch (versionsValue.type()) {
+			case OBJECT: {
+				return readVersionsObject(versionsValue.asObject());
+			}
+			case ARRAY: {
+				List<VersionRange> versions = new ArrayList<>();
+				LoaderValue.LArray versionsArray = versionsValue.asArray();
+				for (LoaderValue loaderValue : versionsArray) {
+					versions.add(readVersionSpecifier((JsonLoaderValue) loaderValue));
+				}
+				if (!loggedDeprecatedArrayDepends) {
+					loggedDeprecatedArrayDepends = true;
+					if (from != null) {
+						logWarningHeader();
+						Log.warn(LogCategory.DISCOVERY, "- Deprecated array format for dependencies: see " + RFC_56_LINK + " for more information.");
+					}
+					if (warningNode != null) {
+						createModJsonNode()
+							.addChild(QuiltLoaderText.of("Uses deprecated array format for declaring dependencies."))
+							.setDirectLevel(WarningLevel.CONCERN)
+							.addChild(QuiltLoaderText.of("See " + RFC_56_LINK + " for more information on how to fix this"));
+					}
+				}
+
+				VersionRange result = VersionRange.ofRanges(versions);
+
+				checkUnnecessaryVersions(versions, versionsArray, result, VersionJoiner.ANY);
+
+				return result;
+			}
+			case STRING: {
+				return readVersionSpecifier(versionsValue.asString());
+			}
+			default: {
+				throw new VersionFormatException("Expected to find a string, object, or array but found " + versionsValue);
+			}
+		}
+	}
+
+	private enum VersionJoiner {
+		ANY {
+			@Override
+			VersionRange join(List<VersionRange> versions) {
+				return VersionRange.ofRanges(versions);
+			}
+		},
+		ALL {
+			@Override
+			VersionRange join(List<VersionRange> versions) {
+				VersionRange range = null;
+				for (VersionRange sub : versions) {
+					range = range == null ? sub : sub.combineMatchingBoth(range);
+				}
+				return range;
+			}
+		};
+
+		abstract VersionRange join(List<VersionRange> versions);
+	}
+
+	private void checkUnnecessaryVersions(List<VersionRange> versions, LoaderValue.LArray versionsArray,
+		VersionRange result, VersionJoiner concat) {
+		if (from != null || warningNode != null) {
+			// Check to see if any of them are unnecessary
+			for (int i = 0; i < versions.size(); i++) {
+				List<VersionRange> joined = new ArrayList<>();
+				joined.addAll(versions.subList(0, i));
+				joined.addAll(versions.subList(i + 1, versions.size()));
+				VersionRange smaller = concat.join(joined);
+				if (result.equals(smaller)) {
+					String msg = "Unnecessary dependency range " + versionsArray.get(i) + " (resolves as " //
+						+ versions.get(i) + "), since it doesn't affect the result " + result;
+					if (from != null) {
+						logWarningHeader();
+						Log.warn(LogCategory.DISCOVERY, "- " + msg);
+					}
+					if (warningNode != null) {
+						createModJsonNode()
+							.addChild(QuiltLoaderText.of(msg))
+							.setDirectLevel(WarningLevel.CONCERN)
+							.addChild(QuiltLoaderText.of("See " + RFC_56_LINK + " for more information on how to fix this"));
+					}
+				}
+			}
+		}
+	}
+
+	private void logWarningHeader() {
+		if (loggedAnyWarnings) {
+			return;
+		}
+		loggedAnyWarnings = true;
+		String describedPath = manager != null ? manager.describePath(from) : from.toString();
+		Log.warn(LogCategory.DISCOVERY, "Warnings for quilt.mod.json at: '" + describedPath + "'");
+	}
+
+	private PluginGuiTreeNode createModJsonNode() {
+		if (warningNode == null) {
+			throw new IllegalStateException("Check 'warningNode' first!");
+		}
+		if (modJsonNode == null) {
+			modJsonNode = warningNode.addChild(QuiltLoaderText.of("quilt.mod.json"));
+			modJsonNode.mainIcon(QuiltLoaderGui.iconJsonFile()).subIcon(QuiltLoaderGui.iconQuilt());
+			modJsonNode.setDirectLevel(WarningLevel.WARN);
+		}
+		return modJsonNode;
+	}
+
+	private VersionRange readVersionsObject(LoaderValue.LObject obj) throws VersionFormatException {
+		LoaderValue any = obj.get("any");
+		LoaderValue all = obj.get("all");
+		if (any == null && all == null) {
+			throw new VersionFormatException("Expected to find either 'any' or 'all', but found '" + obj + "'");
+		}
+
+		LoaderValue value = any != null ? any : all;
+
+		if (value.type() != LType.ARRAY) {
+			String name = any != null ? "any" : "all";
+			throw new VersionFormatException("Expected the value of " + name + " to be an array, but was " + value);
+		}
+
+		LoaderValue.LArray array = value.asArray();
+
+		List<VersionRange> versions = new ArrayList<>();
+
+		for (LoaderValue arrayValue : array) {
+			final VersionRange thisRange;
+			switch (arrayValue.type()) {
+				case STRING: {
+					thisRange = readVersionSpecifier(arrayValue.asString());
+					break;
+				}
+				case OBJECT: {
+					thisRange = readVersionsObject(arrayValue.asObject());
+					break;
+				}
+				default: {
+					throw new VersionFormatException("Expected to find either a string or an object, but found " + arrayValue);
+				}
+			}
+			versions.add(thisRange);
+		}
+
+		VersionJoiner concat = any != null ? VersionJoiner.ANY : VersionJoiner.ALL;
+		VersionRange range = concat.join(versions);
+
+		if (range == null) {
+			throw new VersionFormatException("Expected the 'versions' array to be non-empty at " + value.location());
+		}
+
+		if (range == VersionRange.NONE) {
+			throw new VersionFormatException("Expected the 'versions' array to match at least one version, but it doesn't! " + value.location());
+		}
+
+		if (range == VersionRange.ANY) {
+			throw new VersionFormatException("Expected the 'versions' array to restrict some versions, but it doesn't! " + value.location());
+		}
+
+		checkUnnecessaryVersions(versions, array, range, concat);
+
+		return range;
+	}
+
+	public static boolean isConstraintCharacter(char c) {
+		switch (c) {
+			case '<': return true;
+			case '>': return true;
+			case '=': return true;
+			case '~': return true;
+			case '*': return true;
+			case '^': return true;
+			default: return false;
+		}
+	}
 
 	private static VersionRange readVersionSpecifier(JsonLoaderValue value) throws VersionFormatException {
 		if (value == null) {
 			return VersionRange.ANY;
 		}
 
-		String string = value.asString();
+		return readVersionSpecifier(value.asString());
+	}
+
+	public static VersionRange readVersionSpecifier(String string) throws VersionFormatException {
+		if (string == null) {
+			return VersionRange.ANY;
+		}
 
 		if (string.equals("*")) {
 			return VersionRange.ANY;
@@ -810,8 +1021,5 @@ final class V1ModMetadataReader {
 				}
 			}
 		}
-	}
-
-	private V1ModMetadataReader() {
 	}
 }

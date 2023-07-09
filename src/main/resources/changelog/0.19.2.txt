@@ -1,0 +1,41 @@
+Features:
+
+- Updated quilt.mod.json handling to be up-to-date with RFC 56:
+    - Deprecated array values for "versions" in dependencies.
+    - Added a more understandable "any" / "all" object system 
+    - See https://github.com/QuiltMC/rfcs/pull/56 for more details.
+- Added warnings when encountering dependency constraints that are unnecessary.
+- [#326] Added an Active User Beacon, outlined in RFC 81.
+    - Please see the RFC for details: https://github.com/QuiltMC/rfcs/blob/main/specification/0081-active-user-beacon.md
+    - Or the blog post: https://quiltmc.org/en/blog/2023-06-26-mau-beacon/
+- Added global config and cache paths to the QuiltLoader api class:
+    - "getGlobalConfigDir" and "getGlobalCacheDir".
+    - The config path depends on the operating system:
+        - "%LOCALAPPDATA%\QuiltMC\QuiltLoaderAndMods" on windows
+        - "~/Library/Application Support/org.quiltmc.QuiltLoaderAndMods" on mac os
+        - "XDG_CONFIG_HOME/quilt_loader_and_mods" on linux.
+            - If XDG_CONFIG_HOME is not defined then it defaults to "~/.config"
+    - Cache directories are similar:
+        - "%LOCALAPPDATA%\QuiltMC\QuiltLoaderAndMods/Cache" on windows
+        - "~/Library/Cache/org.quiltmc.QuiltLoaderAndMods" on mac os
+        - "XDG_CACHE_HOME/quilt_loader_and_mods" on linux.
+            - If "XDG_CACHE_HOME" is not defined then it defaults to "~/.cache"
+- Added "flags" to the mod table.
+    - 'o' means that a mod has had one of its dependencies changed
+    - 'R' means that a mod has had one of its dependencies removed.
+    - These are only shown in the "plugin" mod table right now, they will be 
+    added to the main mod table in the future.
+- Added more flexibility to the override file format:
+    - When "path" matching you can omit the version to match on a single dependency (Fuzzy matching)
+    - Added "id" matching, which matches against all mods with that id. This disallows fuzzy version matching.
+    - Added "pattern" matching, which matches against a regular expression. This disallows fuzzy version matching.
+- Added a new system property "loader.workaround.jar_copy_all_mods", for issues where mods require that every
+  mod is in a jar file. This is very slow in large packs, so it's recommended that mods are fixed to not require this.
+
+Bug Fixes:
+
+- [#321] "button.view_file" not translated in some places
+- Fixed QuiltLoaderText not shouting loudly enough when something is wrong with the args.
+- [#322] Fixed not being able to handle non-overlapping dependencies in fabric.mod.json files.
+- Fixed French localisation not loading correctly all the time due to file encoding issues.
+- Fixed the report for mod dependencies not including the list of mods which require that particular version.

@@ -342,10 +342,11 @@ public final class ModResolvingTests {
 
 		Path game = testLocation.resolve("game_dir");
 		Path config = testLocation.resolve("config_dir");
+		Path cache = testLocation.resolve(".cache");
 		Path modRoot = testLocation.resolve(type).resolve(subpath);
 		final ModSolveResultImpl result;
 
-		QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(game, config, modRoot);
+		QuiltPluginManagerImpl pluginManager = new QuiltPluginManagerForTests(game, config, modRoot, cache);
 
 		try {
 			result = pluginManager.run(false);

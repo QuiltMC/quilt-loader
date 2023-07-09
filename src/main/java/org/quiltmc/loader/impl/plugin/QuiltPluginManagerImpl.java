@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -59,7 +60,11 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.api.VersionInterval;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
@@ -84,6 +89,7 @@ import org.quiltmc.loader.impl.discovery.ArgumentModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ClasspathModCandidateFinder;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.filesystem.QuiltBaseFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
@@ -91,6 +97,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataReader;
 import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
@@ -105,6 +112,10 @@ import org.quiltmc.loader.impl.report.QuiltStringSection;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator;
+import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -128,11 +139,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final GameProvider game;
 	final Version gameVersion;
 
-	private final Path gameDir, configDir, modsDir;
+	private final Path gameDir, configDir, modsDir, cacheDir;
 	private final Path absGameDir, absModsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
 	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
+	Map<Path, List<List<Path>>> sourcePaths;
 
 	final Map<Path, String> modFolders = new LinkedHashMap<>();
 	final Map<Path, ModLoadOption> modPaths = new LinkedHashMap<>();
@@ -141,7 +153,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	final Map<TentativeLoadOption, BasePluginContext> tentativeLoadOptions = new LinkedHashMap<>();
 
-	private final StandardQuiltPlugin theQuiltPlugin;
+	public final StandardQuiltPlugin theQuiltPlugin;
 	private final StandardFabricPlugin theFabricPlugin;
 
 	BuiltinPluginContext theQuiltPluginContext;
@@ -180,11 +192,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// TEMP
 	final Deque<PluginGuiTreeNode> state = new ArrayDeque<>();
 
-	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, GameProvider game, QuiltLoaderConfig options) {
-		this(gameDir, configDir, modsDir, game, false, options);
+	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, Path cacheDir, GameProvider game, QuiltLoaderConfig options) {
+		this(gameDir, configDir, modsDir, cacheDir, game, false, options);
 	}
 
-	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, GameProvider game, boolean simulationOnly, QuiltLoaderConfig config) {
+	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, Path cacheDir, GameProvider game, boolean simulationOnly, QuiltLoaderConfig config) {
 		this.simulationOnly = simulationOnly;
 		this.game = game;
 		gameVersion = game == null ? null : Version.of(game.getNormalizedGameVersion());
@@ -192,6 +204,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		this.gameDir = gameDir;
 		this.configDir = configDir;
 		this.modsDir = modsDir;
+		this.cacheDir = cacheDir;
 		this.absGameDir = gameDir.toAbsolutePath().normalize();
 		this.absModsDir = modsDir.toAbsolutePath().normalize();
 
@@ -255,6 +268,176 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public Path copyToReadOnlyFileSystem(String name, Path folderRoot, boolean compress) throws IOException {
 		return new QuiltMemoryFileSystem.ReadOnly(name, true, folderRoot, compress).getRoot();
 	}
+
+	@Override
+	public List<List<Path>> convertToSourcePaths(Path path) {
+		if (sourcePaths == null) {
+			throw new IllegalStateException("Called too early - we haven't been able to generate the paths yet!");
+		}
+		if (path.getFileSystem() == FileSystems.getDefault()) {
+			return Collections.singletonList(Collections.singletonList(path));
+		}
+		List<List<Path>> sources = sourcePaths.get(path);
+		if (sources == null) {
+			throw new IllegalArgumentException(
+				"Unknown source path " + path + " " + path.getFileSystem()
+					+ " - you can only call this for known paths!"
+			);
+		}
+		return sources;
+	}
+
+	class SourcePathGenerator {
+		final Map<FileSystem, QuiltMemoryFileSystem.ReadWrite> fsMap = new HashMap<>();
+		final Map<Path, List<List<Path>>> tmpPaths = new HashMap<>();
+		final Map<QuiltMemoryFileSystem.ReadWrite, QuiltMemoryFileSystem.ReadOnly> fsReadOnlyCopies = new HashMap<>();
+
+		void generate() {
+			for (Map.Entry<Path, Path> entry : pathParents.entrySet()) {
+				createFS(entry.getKey());
+				createFS(entry.getValue());
+			}
+
+			for (Path from : modPaths.keySet()) {
+				createFS(from);
+			}
+
+			for (Map.Entry<Path, Path> entry : pathParents.entrySet()) {
+				generate(entry.getKey());
+				generate(entry.getValue());
+			}
+
+			for (Path from : modPaths.keySet()) {
+				generate(from);
+			}
+
+			for (QuiltMemoryFileSystem.ReadWrite rw : fsMap.values()) {
+				fsReadOnlyCopies.put(rw, rw.replaceWithReadOnly(false));
+			}
+
+			sourcePaths = new HashMap<>();
+
+			for (Map.Entry<Path, List<List<Path>>> entry : tmpPaths.entrySet()) {
+				List<List<Path>> oldList = entry.getValue();
+				List<List<Path>> newList = new ArrayList<>();
+				for (List<Path> oldPaths : oldList) {
+					List<Path> newPaths = new ArrayList<>();
+					for (Path oldPath : oldPaths) {
+						FileSystem oldFS = oldPath.getFileSystem();
+						QuiltMemoryFileSystem.ReadOnly newFS = fsReadOnlyCopies.get(oldFS);
+						if (newFS == null) {
+							newPaths.add(oldPath);
+						} else {
+							newPaths.add(newFS.getPath(oldPath.toString()));
+						}
+					}
+					newList.add(unmodifiableList(newPaths));
+				}
+				sourcePaths.put(entry.getKey(), unmodifiableList(newList));
+			}
+		}
+
+		private <T> List<T> unmodifiableList(List<T> from) {
+			switch (from.size()) {
+				case 0: {
+					return Collections.emptyList();
+				}
+				case 1: {
+					return Collections.singletonList(from.get(0));
+				}
+				default: {
+					return Collections.unmodifiableList(Arrays.asList((T[]) from.toArray(new Object[0])));
+				}
+			}
+		}
+
+		void generate(Path path) {
+			tmpPaths.put(path, walkSourcePaths(path));
+		}
+
+		void createFS(Path path) {
+			FileSystem fs = path.getFileSystem();
+			if (fs == FileSystems.getDefault()) {
+				return;
+			}
+			if (!fsMap.containsKey(fs)) {
+				String name;
+				if (fs instanceof QuiltBaseFileSystem) {
+					name = ((QuiltBaseFileSystem<?, ?>) fs).getName();
+				} else {
+					name = fs.toString();
+				}
+				QuiltMemoryFileSystem.ReadWrite gnFS;
+				fsMap.put(fs, gnFS = new QuiltMemoryFileSystem.ReadWrite("shadow_" + name, true));
+			}
+		}
+
+		Path map(Path from) {
+			FileSystem fs = from.getFileSystem();
+			if (fs == FileSystems.getDefault()) {
+				return from;
+			}
+			QuiltMemoryFileSystem.ReadWrite shadowFs = fsMap.get(fs);
+			if (shadowFs == null) {
+				throw new IllegalStateException("Missing file system " + fs);
+			}
+			Path real = shadowFs.getPath(from.toString().replace(fs.getSeparator(), shadowFs.getSeparator()));
+			Path parent = real.getParent();
+			if (parent != null) {
+				try {
+					shadowFs.createDirectories(parent);
+				} catch (IOException e) {
+					throw new IllegalStateException("Failed to create reasonable parents!", e);
+				}
+			}
+			try {
+				if (Files.isRegularFile(from) && !Files.exists(real)) {
+					shadowFs.createFile(real);
+				}
+			} catch (IOException e) {
+				throw new IllegalStateException("Failed to create the file!", e);
+			}
+			return real;
+		}
+
+		List<List<Path>> walkSourcePaths(Path from) {
+			if (from.getFileSystem() == FileSystems.getDefault()) {
+				return Collections.singletonList(Collections.singletonList(from));
+			}
+
+			Path fromRoot = from.getFileSystem().getPath("/");
+			Collection<Path> joinedPaths = getJoinedPaths(fromRoot);
+
+			if (joinedPaths != null) {
+				List<List<Path>> paths = new ArrayList<>();
+				for (Path path : joinedPaths) {
+					for (List<Path> upper : walkSourcePaths(path)) {
+						List<Path> fullList = new ArrayList<>();
+						fullList.addAll(upper);
+						fullList.add(map(from));
+						paths.add(Collections.unmodifiableList(fullList));
+					}
+				}
+				return unmodifiableList(paths);
+			}
+
+			Path parent = getParent(fromRoot);
+			if (parent == null) {
+				// That's not good
+				return Collections.singletonList(Collections.singletonList(map(from)));
+			} else {
+				List<List<Path>> paths = new ArrayList<>();
+				for (List<Path> upper : walkSourcePaths(parent)) {
+					List<Path> fullList = new ArrayList<>();
+					fullList.addAll(upper);
+					fullList.add(map(from));
+					paths.add(Collections.unmodifiableList(fullList));
+				}
+				return unmodifiableList(paths);
+			}
+		}
+	}
+
 
 	// #################
 	// Identifying Paths
@@ -454,6 +637,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	@Override
 	public Path getConfigDirectory() {
 		return configDir;
+	}
+
+	@Override
+	public Path getCacheDirectory() {
+		return cacheDir;
 	}
 
 	@Override
@@ -668,170 +856,89 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		// - loader plugin
 		// - source path(s)
 
-		int maxNameLength = "Mod".length();
-		int maxIdLength = "ID".length();
-		int maxVersionLength = "Version".length();
-		int maxPluginLength = "Plugin".length();
-		List<Integer> maxSourcePathLengths = new ArrayList<>();
+		AsciiTableGenerator table = new AsciiTableGenerator();
+
+		AsciiTableColumn modColumn = table.addColumn("Mod", false);
+		AsciiTableColumn id = table.addColumn("ID", false);
+		AsciiTableColumn version = table.addColumn("Version", false);
+		AsciiTableColumn plugin = table.addColumn("Plugin", false);
+		AsciiTableColumn flags = table.addColumn("Flags", false);
+		AsciiTableColumn hash = table.addColumn("File Hash (SHA-1)", false);
+		AsciiTableColumn file = table.addColumn("File(s)", false);
+		AsciiTableColumn subFile = null;
 
 		List<ModLoadOption> mods = new ArrayList<>();
-		Map<ModLoadOption, List<List<Path>>> sourcePathMap = new HashMap<>();
+
+		if (!modIds.containsKey(QuiltLoaderImpl.MOD_ID)) {
+			AsciiTableRow row = table.addRow();
+			row.put(modColumn, "Quilt Loader");
+			row.put(id, QuiltLoaderImpl.MOD_ID);
+			row.put(version, QuiltLoaderImpl.VERSION);
+			row.put(plugin, "!missing!");
+		}
 
 		for (PotentialModSet set : this.modIds.values()) {
 			mods.addAll(set.all);
 		}
 
-		for (ModLoadOption mod : mods) {
-			maxNameLength = Math.max(maxNameLength, mod.metadata().name().length());
-			maxIdLength = Math.max(maxIdLength, mod.metadata().id().length());
-			maxVersionLength = Math.max(maxVersionLength, mod.metadata().version().toString().length());
-			maxPluginLength = Math.max(maxPluginLength, mod.loader().pluginId().length());
-
-			List<List<Path>> sourcePaths = InternalModContainerBase.walkSourcePaths(this, mod.from());
-			sourcePathMap.put(mod, sourcePaths);
-
-			for (List<Path> paths : sourcePaths) {
-				for (int i = 0; i < paths.size(); i++) {
-					String pathStr = QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(i));
-					if (maxSourcePathLengths.size() <= i) {
-						int old = (i == 0 ? "File(s)" : "Sub-Files").length();
-						maxSourcePathLengths.add(Math.max(old, pathStr.length() + 1));
-					} else {
-						Integer old = maxSourcePathLengths.get(i);
-						maxSourcePathLengths.set(i, Math.max(old, pathStr.length() + 1));
-					}
-				}
-			}
-		}
-
-		maxIdLength++;
-		maxVersionLength++;
-		maxPluginLength++;
-
-		StringBuilder sbTab = new StringBuilder();
-		StringBuilder sbSep = new StringBuilder();
-
-		// Table header
-		sbTab.append("| Mod ");
-		sbSep.append("|-----");
-		for (int i = "Mod".length(); i < maxNameLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| ID ");
-		sbSep.append("|----");
-		for (int i = "ID".length(); i < maxIdLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Version ");
-		sbSep.append("|---------");
-		for (int i = "Version".length(); i < maxVersionLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("| Plugin ");
-		sbSep.append("|--------");
-		for (int i = "Plugin".length(); i < maxPluginLength; i++) {
-			sbTab.append(" ");
-			sbSep.append("-");
-		}
-		sbTab.append("|");
-		sbSep.append("|");
-
-		String start = "File(s)";
-
-		for (int len : maxSourcePathLengths) {
-			sbTab.append(" ").append(start);
-			for (int i = start.length(); i <= len; i++) {
-				sbTab.append(" ");
-			}
-			for (int i = -1; i <= len; i++) {
-				sbSep.append("-");
-			}
-			sbTab.append("|");
-			sbSep.append("|");
-			start = "Sub-Files";
-		}
-
-		to.accept(sbTab.toString());
-		sbTab.setLength(0);
-		to.accept(sbSep.toString());
-
 		for (ModLoadOption mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
-			// - Index
+			AsciiTableRow row = table.addRow();
 			// - Name
 			// - ID
 			// - version
 			// - loader plugin
 			// - source path(s)
-			sbTab.append("| ").append(mod.metadata().name());
-			for (int i = mod.metadata().name().length(); i < maxNameLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.metadata().id());
-			for (int i = mod.metadata().id().length(); i < maxIdLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.metadata().version());
-			for (int i = mod.metadata().version().toString().length(); i < maxVersionLength; i++) {
-				sbTab.append(" ");
-			}
-			sbTab.append(" | ").append(mod.loader().pluginId());
-			for (int i = mod.loader().pluginId().length(); i < maxPluginLength; i++) {
-				sbTab.append(" ");
-			}
+			row.put(modColumn, mod.metadata().name());
+			row.put(id, mod.metadata().id());
+			row.put(version, mod.metadata().version());
+			row.put(plugin, mod.loader().pluginId());
+			StringBuilder flagStr = new StringBuilder();
+			flagStr.append(theQuiltPlugin.hasDepsChanged(mod) ? QuiltLoaderImpl.FLAG_DEPS_CHANGED : '.');
+			flagStr.append(theQuiltPlugin.hasDepsRemoved(mod) ? QuiltLoaderImpl.FLAG_DEPS_REMOVED : '.');
+			row.put(flags, flagStr);
 
-			List<List<Path>> allPaths = sourcePathMap.get(mod);
+			List<List<Path>> allPaths = InternalModContainerBase.walkSourcePaths(this, mod.from());
 
 			for (int pathsIndex = 0; pathsIndex < allPaths.size(); pathsIndex++) {
 				List<Path> paths = allPaths.get(pathsIndex);
 
-				if (pathsIndex != 0) {
-					to.accept(sbTab.toString());
-					sbTab.setLength(0);
-					sbTab.append("| ");
-					for (int i = 0; i < "Index".length(); i++) {
-						sbTab.append(" ");
+				Path from = paths.get(0);
+				if (FasterFiles.isRegularFile(from)) {
+					String hashString;
+					try {
+						hashString = HashUtil.hashToString(HashUtil.computeHash(from));
+					} catch (IOException e) {
+						hashString = "<" + e.getMessage() + ">";
 					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxNameLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxIdLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxVersionLength; i++) {
-						sbTab.append(" ");
-					}
-					sbTab.append(" | ");
-					for (int i = 0; i < maxPluginLength; i++) {
-						sbTab.append(" ");
-					}
+					row.put(hash, hashString);
 				}
 
-				for (int pathIndex = 0; pathIndex < maxSourcePathLengths.size(); pathIndex++) {
-					sbTab.append(" | ");
-					final String pathStr;
-					if (pathIndex < paths.size()) {
-						pathStr = QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(pathIndex));
-					} else {
-						pathStr = "";
-					}
-					sbTab.append(pathStr);
-					for (int i = pathStr.length(); i < maxSourcePathLengths.get(pathIndex); i++) {
-						sbTab.append(" ");
-					}
+				if (pathsIndex != 0) {
+					row = table.addRow();
 				}
-				sbTab.append(" |");
+
+				row.put(file, QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(0)));
+
+				if (paths.size() > 1) {
+					if (subFile == null) {
+						subFile = table.addColumn("Sub-File", false);
+					}
+					StringBuilder subPathStr = new StringBuilder();
+					Iterator<Path> pathsIter = paths.iterator();
+					pathsIter.next(); // skip first element
+					while (pathsIter.hasNext()) {
+						subPathStr.append(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, pathsIter.next()));
+						if (pathsIter.hasNext()) {
+							subPathStr.append("!");
+						}
+					}
+
+					row.put(subFile, subPathStr.toString());
+				}
 			}
-			to.accept(sbTab.toString());
-			sbTab.setLength(0);
 		}
 
-		to.accept(sbSep.toString());
+		table.appendTable(to);
 	}
 
 	public String createModDetails() {
@@ -1081,6 +1188,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			ModSolveResultImpl result = runSingleCycle();
 			checkForErrors();
 			if (result != null) {
+				new SourcePathGenerator().generate();
 				populateModsGuiTab(result);
 				return result;
 			}
@@ -1199,6 +1307,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private void handleSolverFailure() throws TimeoutException {
 
+		SolverErrorHelper helper = new SolverErrorHelper(this);
 		boolean failed = false;
 
 		solver_error_iteration: do {
@@ -1226,7 +1335,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						// Since this is an invalid state we'll report this error
 						// and report that the plugin did the wrong thing
 						failed = true;
-						reportSolverError(rules);
+						helper.reportSolverError(rules);
 						solver.removeRule(blamed);
 						reportError(theQuiltPluginContext, QuiltLoaderText.translate("plugin.illegal_state.recovered_and_blamed", ctx.pluginId));
 						return;
@@ -1245,7 +1354,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					}
 				} else if (blamed != null) {
 					failed = true;
-					reportSolverError(rules);
+					helper.reportSolverError(rules);
 					solver.removeRule(blamed);
 					continue solver_error_iteration;
 				}
@@ -1255,7 +1364,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// So we'll just pick one of them randomly and remove it.
 
 			failed = true;
-			reportSolverError(rules);
+			helper.reportSolverError(rules);
 
 			Rule pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleBreak).findAny().orElse(null);
 
@@ -1275,6 +1384,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		} while (!solver.hasSolution());
 
+		helper.reportErrors();
+
 		if (failed) {
 			// Okay, so we failed but we've reached the end of the list of problems
 			// Just return here since the cycle handles this
@@ -1286,10 +1397,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			reportError(theQuiltPluginContext, QuiltLoaderText.translate("solver.illegal_state.TODO"));
 			return;
 		}
-	}
-
-	private void reportSolverError(Collection<Rule> rules) {
-		SolverErrorHelper.reportSolverError(this, rules);
 	}
 
 	/** Checks for any {@link WarningLevel#FATAL} or {@link WarningLevel#ERROR} gui nodes, and throws an exception if
@@ -1610,20 +1717,20 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 							}
 						}
 
-						node.mainIcon(node.manager().iconFolder());
+						node.mainIcon(QuiltLoaderGui.iconFolder());
 
 						guiNodeMap.put(dir, node);
 
 						if (!dir.equals(path) && !config.loadSubFolders) {
-							node.subIcon(node.manager().iconDisabled());
+							node.subIcon(QuiltLoaderGui.iconDisabled());
 							node.addChild(QuiltLoaderText.translate("warn.sub_folders_disabled"))//
 								.setDirectLevel(WarningLevel.WARN)//
-								.subIcon(node.manager().iconDisabled());
+								.subIcon(QuiltLoaderGui.iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
 						char first = name.isEmpty() ? ' ' : name.charAt(0);
-						if (('0' <= first && first <= '9') || first == '>' || first == '<' || first == '=') {
+						if ('0' <= first && first <= '9' || V1ModMetadataReader.isConstraintCharacter(first)) {
 							// Might be a game version
 							if (config.restrictGameVersions && gameVersion != null) {
 								// TODO: Support "1.12.x" type version parsing...
@@ -1632,25 +1739,43 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 										continue;
 									}
 
-									if (!VersionConstraintImpl.parse(sub).matches(gameVersion)) {
-										node.subIcon(node.manager().iconDisabled());
-										node.addChild(QuiltLoaderText.translate("gui.text.game_version_mismatch"))
-											.setDirectLevel(WarningLevel.INFO)//
-											.subIcon(node.manager().iconDisabled());
+									char c = sub.charAt(0);
+
+									if ('0' <= c && c <= '9') {
+										sub = "=" + sub;
+									}
+
+									try {
+										if (V1ModMetadataReader.readVersionSpecifier(sub).isSatisfiedBy(gameVersion)) {
+											node.subIcon(QuiltLoaderGui.iconTick());
+											node.addChild(QuiltLoaderText.translate("gui.text.game_version_match", gameVersion))
+												.mainIcon(QuiltLoaderGui.iconTick());
+										} else {
+											node.subIcon(QuiltLoaderGui.iconDisabled());
+											node.addChild(QuiltLoaderText.translate("gui.text.game_version_mismatch", gameVersion))
+												.setDirectLevel(WarningLevel.INFO)//
+												.subIcon(QuiltLoaderGui.iconDisabled());
+											return FileVisitResult.SKIP_SUBTREE;
+										}
+									} catch (VersionFormatException e) {
+										Log.warn(LogCategory.DISCOVERY, "Invalid game version specifier '" + sub + "'", e);
+										node.setDirectLevel(WarningLevel.WARN);
+										node.addChild(QuiltLoaderText.translate("warn.invalid_version_specifier", e.getMessage()))
+											.setDirectLevel(WarningLevel.WARN);
 										return FileVisitResult.SKIP_SUBTREE;
 									}
 								}
 							} else {
-								node.subIcon(node.manager().iconDisabled());
+								node.subIcon(QuiltLoaderGui.iconDisabled());
 								node.addChild(QuiltLoaderText.translate("gui.text.game_versions_disabled"))
 									.setDirectLevel(WarningLevel.WARN)//
-									.subIcon(node.manager().iconDisabled());
+									.subIcon(QuiltLoaderGui.iconDisabled());
 								return FileVisitResult.SKIP_SUBTREE;
 							}
 						}
 
 						if (name.endsWith(".disabled")) {
-							node.subIcon(node.manager().iconDisabled());
+							node.subIcon(QuiltLoaderGui.iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
@@ -1816,8 +1941,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(QuiltLoaderText.translate("gui.error.zipexception.desc.1"));
 			error.appendThrowable(e);
 			getRealContainingFile(file).ifPresent(real -> {
-				error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-					.icon(guiManager.iconZipFile());
+				error.addFileViewButton(real).icon(QuiltLoaderGui.iconZipFile());
 			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.zipexception", e.getMessage()))// TODO: translate
@@ -1831,8 +1955,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			error.appendDescription(QuiltLoaderText.translate("gui.error.ioexception.desc.0", describePath(file)));
 			error.appendThrowable(e);
 			getRealContainingFile(file).ifPresent(real -> {
-				error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
-					.icon(guiManager.iconZipFile());
+				error.addFileViewButton(real).icon(QuiltLoaderGui.iconZipFile());
 			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.ioexception", e.getMessage()))// TODO: translate
@@ -1840,7 +1963,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		} catch (NonZipException e) {
 
-			guiNode.mainIcon(guiNode.manager().iconUnknownFile());
+			guiNode.mainIcon(QuiltLoaderGui.iconUnknownFile());
 
 			if (this.config.singleThreadedLoading) {
 				scanUnknownFile(file, location, guiNode);

@@ -33,7 +33,6 @@ public final class VersionConstraintImpl implements VersionConstraint {
 	private final Version versionObj;
 	private final Type type;
 
-
 	public static VersionConstraintImpl parse(String raw) {
 		if (raw.equals("*")) {
 			return ANY;

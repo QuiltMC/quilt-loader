@@ -131,6 +131,9 @@ public class QuiltFork {
 	}
 
 	static void uploadIcon(int index, Map<Integer, BufferedImage> images) {
+		if (COMMS == null) {
+			return;
+		}
 		Map<String, LoaderValue> map = new HashMap<>();
 		map.put("__TYPE", lvf().string(ForkCommNames.ID_UPLOAD_ICON));
 		map.put("index", lvf().number(index));

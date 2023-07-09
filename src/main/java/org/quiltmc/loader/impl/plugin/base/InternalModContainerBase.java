@@ -43,7 +43,7 @@ public abstract class InternalModContainerBase implements ModContainerExt {
 		this.metadata = metadata;
 		this.resourceRoot = resourceRoot;
 
-		sourcePaths = walkSourcePaths(pluginContext, from);
+		sourcePaths = pluginContext.manager().convertToSourcePaths(from);
 	}
 
 	public static List<List<Path>> walkSourcePaths(QuiltPluginContext pluginContext, Path from) {

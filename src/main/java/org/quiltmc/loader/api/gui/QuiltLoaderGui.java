@@ -97,7 +97,7 @@ public class QuiltLoaderGui {
 		return GuiManagerImpl.ICON_FOLDER;
 	}
 
-	public QuiltLoaderIcon iconUnknownFile() {
+	public static QuiltLoaderIcon iconUnknownFile() {
 		return GuiManagerImpl.ICON_GENERIC_FILE;
 	}
 

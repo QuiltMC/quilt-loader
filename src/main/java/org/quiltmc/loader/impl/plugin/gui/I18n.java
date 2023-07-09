@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl.plugin.gui;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.PropertyResourceBundle;
@@ -51,7 +53,7 @@ public class I18n {
 
 			try (InputStream stream = loader.getResourceAsStream(resourceName)) {
 				if (stream != null) {
-					return new PropertyResourceBundle(stream);
+					return new PropertyResourceBundle(new InputStreamReader(stream, StandardCharsets.UTF_8));
 				}
 			}
 
