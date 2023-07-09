@@ -247,6 +247,28 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 		if (FasterFiles.exists(qmj5)) {
 			if (QuiltLoader.isDevelopmentEnvironment()) {
+				if (FasterFiles.exists(qmj)) {
+					QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.title");
+					QuiltDisplayedError error = context().reportError(title);
+					String describedPath = context().manager().describePath(usedQmj);
+					error.appendReportText(
+							"A coexistence of 'quilt.mod.json5' and 'quilt.mod.json' has been detected at " + describedPath,
+							"These metadata files cannot coexist with each other due to their conflicting purposes!"
+					);
+					error.appendDescription(
+							QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.0"),
+							QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.1"),
+							QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.2", describedPath)
+					);
+					context().manager().getRealContainingFile(root).ifPresent(real ->
+							error.addFileViewButton(real)
+									.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconQuilt()))
+					);
+
+					guiNode.addChild(QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence"));
+					return null;
+				}
+
 				usedQmj = qmj5;
 			} else {
 				QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj5_on_production.title");
