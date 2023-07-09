@@ -55,6 +55,7 @@ public class ClasspathModCandidateFinder {
 	public static void findCandidatesStatic(ModAdder out) {
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
+			List<List<Path>> alreadyParsedMods = new ArrayList<>();
 
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
@@ -69,9 +70,12 @@ public class ClasspathModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
+							List<Path> wrappedPath = Collections.singletonList(path);
+							out.addMod(wrappedPath);
+							alreadyParsedMods.add(wrappedPath);
 						} else {
 							out.addMod(paths);
+							alreadyParsedMods.add(paths);
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json5 from %s", url, e);
@@ -85,9 +89,14 @@ public class ClasspathModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
+							List<Path> wrappedPath = Collections.singletonList(path);
+							if (!alreadyParsedMods.contains(wrappedPath)) {
+								out.addMod(wrappedPath);
+							}
 						} else {
-							out.addMod(paths);
+							if (!alreadyParsedMods.contains(paths)) {
+								out.addMod(paths);
+							}
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json from %s", url, e);
@@ -101,9 +110,14 @@ public class ClasspathModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
+							List<Path> wrappedPath = Collections.singletonList(path);
+							if (!alreadyParsedMods.contains(wrappedPath)) {
+								out.addMod(wrappedPath);
+							}
 						} else {
-							out.addMod(paths);
+							if (!alreadyParsedMods.contains(paths)) {
+								out.addMod(paths);
+							}
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for fabric.mod.json from %s", url, e);
