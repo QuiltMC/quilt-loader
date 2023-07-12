@@ -62,6 +62,7 @@ public class ClasspathModCandidateFinder {
 				Enumeration<URL> fabricMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
 				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
 				Enumeration<URL> quiltQmj5Mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json5");
+				// We unconditionally enable QMJ5 finding here in order to output the loader plugin's errors
 				while (quiltQmj5Mods.hasMoreElements()) {
 					URL url = quiltQmj5Mods.nextElement();
 

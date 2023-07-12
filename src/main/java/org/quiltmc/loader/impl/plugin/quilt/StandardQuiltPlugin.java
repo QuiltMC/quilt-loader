@@ -247,29 +247,52 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 		if (FasterFiles.exists(qmj5)) {
 			if (QuiltLoader.isDevelopmentEnvironment()) {
-				if (FasterFiles.exists(qmj)) {
-					QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.title");
+				if (Boolean.parseBoolean(System.getProperty(SystemProperties.ENABLE_QUILT_MOD_JSON5_IN_DEV_ENV))) {
+					if (FasterFiles.exists(qmj)) {
+						QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.title");
+						QuiltDisplayedError error = context().reportError(title);
+						String describedPath = context().manager().describePath(usedQmj);
+						error.appendReportText(
+								"A coexistence of 'quilt.mod.json5' and 'quilt.mod.json' has been detected at " + describedPath,
+								"These metadata files cannot coexist with each other due to their conflicting purposes!"
+						);
+						error.appendDescription(
+								QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.0"),
+								QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.1"),
+								QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.2", describedPath)
+						);
+						context().manager().getRealContainingFile(root).ifPresent(real ->
+								error.addFileViewButton(real)
+										.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconQuilt()))
+						);
+
+						guiNode.addChild(QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence"));
+						return null;
+					}
+
+					usedQmj = qmj5;
+				} else {
+					QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj5_in_dev_env_not_enabled.title");
 					QuiltDisplayedError error = context().reportError(title);
 					String describedPath = context().manager().describePath(usedQmj);
 					error.appendReportText(
-							"A coexistence of 'quilt.mod.json5' and 'quilt.mod.json' has been detected at " + describedPath,
-							"These metadata files cannot coexist with each other due to their conflicting purposes!"
+							"Attempted to read a 'quilt.mod.json5' file at " + describedPath + " without the support being enabled!",
+							"If regenerating your run configurations doesn't fix this issue, then your build system doesn't support 'quilt.mod.json5' files!"
 					);
 					error.appendDescription(
-							QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.0"),
-							QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.1"),
-							QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence.desc.2", describedPath)
+							QuiltLoaderText.translate("gui.text.qmj5_in_dev_env_not_enabled.desc.0"),
+							QuiltLoaderText.translate("gui.text.qmj5_in_dev_env_not_enabled.desc.1"),
+							QuiltLoaderText.translate("gui.text.qmj5_in_dev_env_not_enabled.desc.2"),
+							QuiltLoaderText.translate("gui.text.qmj5_in_dev_env_not_enabled.desc.3", describedPath)
 					);
 					context().manager().getRealContainingFile(root).ifPresent(real ->
 							error.addFileViewButton(real)
 									.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconQuilt()))
 					);
 
-					guiNode.addChild(QuiltLoaderText.translate("gui.text.qmj_and_qmj5_coexistence"));
+					guiNode.addChild(QuiltLoaderText.translate("gui.text.qmj5_in_dev_env_not_enabled"));
 					return null;
 				}
-
-				usedQmj = qmj5;
 			} else {
 				QuiltLoaderText title = QuiltLoaderText.translate("gui.text.qmj5_on_production.title");
 				QuiltDisplayedError error = context().reportError(title);
