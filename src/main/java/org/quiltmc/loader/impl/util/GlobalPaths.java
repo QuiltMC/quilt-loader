@@ -20,29 +20,33 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 
+import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class GlobalPaths {
 
 	private static Path config, cache;
+	private static boolean actuallyGlobal = true;
 
-	public static Path getConfigDir() {
-		if (config == null) {
+	static {
+		try {
 			String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 
 			if (os.contains("win")) {
 				String configHome = System.getenv("LOCALAPPDATA");
 				Path base = Paths.get(configHome);
 				config = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods");
+				cache = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods").resolve("Cache");
 
 			} else if (os.contains("mac")) {
-
 				Path home = Paths.get(System.getProperty("user.home"));
 				Path base = home.resolve("Library").resolve("Application Support");
 
 				config = base.resolve("org.quiltmc.QuiltLoaderAndMods");
-
+				cache = base.resolve("org.quiltmc.QuiltLoaderAndMods");
 			} else {
 				String configHome = System.getenv("XDG_CONFIG_HOME");
 				if (configHome == null || configHome.isEmpty()) {
@@ -54,44 +58,30 @@ public class GlobalPaths {
 				}
 				Path base = Paths.get(configHome);
 				config = base.resolve("quilt_loader_and_mods");
-			}
-
-			QuiltLoaderImpl.ensureDirExists(config, "global config");
-		}
-		return config;
-	}
-
-	public static Path getCacheDir() {
-		if (cache == null) {
-			String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-
-			if (os.contains("win")) {
-				String configHome = System.getenv("LOCALAPPDATA");
-				Path base = Paths.get(configHome);
-				cache = base.resolve("QuiltMC").resolve("QuiltLoaderAndMods").resolve("Cache");
-
-			} else if (os.contains("mac")) {
-
-				Path home = Paths.get(System.getProperty("user.home"));
-				Path base = home.resolve("Library").resolve("Caches");
-
-				cache = base.resolve("org.quiltmc.QuiltLoaderAndMods");
-
-			} else {
-				String cacheHome = System.getenv("XDG_CACHE_HOME");
-				if (cacheHome == null || cacheHome.isEmpty()) {
-					cacheHome = System.getProperty("user.home");
-					if (!cacheHome.endsWith("/")) {
-						cacheHome += "/";
-					}
-					cacheHome += ".cache";
-				}
-				Path base = Paths.get(cacheHome);
 				cache = base.resolve("quilt_loader_and_mods");
 			}
 
 			QuiltLoaderImpl.ensureDirExists(cache, "global cache");
+			QuiltLoaderImpl.ensureDirExists(config, "global config");
+		} catch (Throwable throwable) {
+			Log.warn(LogCategory.GENERAL, "Unable to create global config and cache directories. Falling back to per-instance directories.", throwable);
+			actuallyGlobal = false;
+			config = QuiltLoader.getConfigDir().resolve("global");
+			cache = QuiltLoader.getCacheDir().resolve("global");
+			QuiltLoaderImpl.ensureDirExists(config, "fake global config");
+			QuiltLoaderImpl.ensureDirExists(config, "fake global cache");
 		}
+	}
+
+	public static Path getConfigDir() {
+		return config;
+	}
+
+	public static Path getCacheDir() {
 		return cache;
+	}
+
+	public static boolean globalDirsEnabled() {
+		return actuallyGlobal;
 	}
 }
