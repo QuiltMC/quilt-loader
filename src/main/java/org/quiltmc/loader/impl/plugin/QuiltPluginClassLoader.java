@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.plugin;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -47,7 +46,29 @@ class QuiltPluginClassLoader extends ClassLoader {
 	}
 
 	@Override
-	protected Class<?> findClass(String name) throws ClassNotFoundException {
+	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+		Class<?> c = loadClassInner(name);
+		if (c == null) {
+			return super.loadClass(name, resolve);
+		}
+		if (resolve) {
+			resolveClass(c);
+		}
+		return c;
+	}
+
+	Class<?> loadClassDirectly(String name, boolean resolve) throws ClassNotFoundException {
+		Class<?> c = loadClassInner(name);
+		if (c == null) {
+			throw new ClassNotFoundException(name);
+		}
+		if (resolve) {
+			resolveClass(c);
+		}
+		return c;
+	}
+
+	private Class<?> loadClassInner(String name) throws ClassNotFoundException {
 
 		String pkg = null;
 
@@ -83,13 +104,7 @@ class QuiltPluginClassLoader extends ClassLoader {
 			}
 		}
 
-		Class<?> cls = manager.findClass(name, pkg);
-
-		if (cls != null) {
-			return cls;
-		}
-
-		return super.findClass(name);
+		return manager.findClass(name, pkg);
 	}
 
 	@Override

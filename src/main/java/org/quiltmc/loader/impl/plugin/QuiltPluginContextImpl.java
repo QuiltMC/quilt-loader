@@ -51,7 +51,7 @@ public class QuiltPluginContextImpl extends BasePluginContext {
 		}
 		classLoader = new QuiltPluginClassLoader(manager, parent, pluginPath, pluginMeta);
 
-		Class<?> cls = classLoader.loadClass(pluginMeta.pluginClass());
+		Class<?> cls = classLoader.loadClassDirectly(pluginMeta.pluginClass(), true);
 		Object obj = cls.getDeclaredConstructor().newInstance();
 		this.plugin = (QuiltLoaderPlugin) obj;
 
