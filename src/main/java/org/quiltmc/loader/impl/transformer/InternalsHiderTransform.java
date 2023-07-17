@@ -426,7 +426,7 @@ class InternalsHiderTransform {
 			} else if (replacements.size() == 1) {
 				sb.append("Please don't use this, instead try using the public api ");
 				sb.append(replacements.get(0));
-				sb.append(" - that way you can have guarenteed backwards compatibility!");
+				sb.append(" - that way you can have guaranteed backwards compatibility!");
 			} else {
 				sb.append("Please don't use this, instead try using one of the following public API classes:");
 				for (String str : replacements) {
