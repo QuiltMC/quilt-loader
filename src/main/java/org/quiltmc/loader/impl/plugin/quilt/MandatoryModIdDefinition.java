@@ -32,6 +32,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class MandatoryModIdDefinition extends ModIdDefinition {
 	public final ModLoadOption option;
+	private boolean invalid = false;
 	private final QuiltPluginContext ctx;
 
 	public MandatoryModIdDefinition(QuiltPluginContext ctx, ModLoadOption candidate) {
@@ -51,16 +52,26 @@ public final class MandatoryModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public void define(RuleDefiner definer) {
-		definer.atLeastOneOf(option);
+		if (!invalid) {
+			definer.atLeastOneOf(option);
+		}
 	}
 
 	@Override
 	public boolean onLoadOptionAdded(LoadOption option) {
+		if (option == this.option && invalid) {
+			invalid = false;
+			return true;
+		}
 		return false;
 	}
 
 	@Override
 	public boolean onLoadOptionRemoved(LoadOption option) {
+		if (option == this.option && !invalid) {
+			invalid = true;
+			return true;
+		}
 		return false;
 	}
 

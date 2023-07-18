@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import javax.print.CancelablePrintJob;
+
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
@@ -48,6 +50,7 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 	private final List<ModLoadOption> validOptions;
 	private final List<ModLoadOption> invalidOptions;
 	private final List<ModLoadOption> allOptions;
+	private boolean valid = true;
 
 	public final QuiltRuleDep unless;
 
@@ -76,6 +79,10 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 
 	@Override
 	public boolean onLoadOptionAdded(LoadOption option) {
+		if (option == source && !valid) {
+			valid = true;
+			return true;
+		}
 		if (option instanceof ModLoadOption) {
 			ModLoadOption mod = (ModLoadOption) option;
 
@@ -112,11 +119,19 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 		boolean changed = validOptions.remove(option);
 		changed |= invalidOptions.remove(option);
 		allOptions.remove(option);
+		if (option == source && valid) {
+			valid = false;
+			changed = true;
+		}
 		return changed;
 	}
 
 	@Override
 	public void define(RuleDefiner definer) {
+
+		if (!valid) {
+			return;
+		}
 
 		boolean optional = publicDep.optional();
 		List<ModLoadOption> options = validOptions;

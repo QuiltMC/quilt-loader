@@ -30,6 +30,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class DisabledModIdDefinition extends ModIdDefinition {
 	public final ModLoadOption option;
+	private boolean valid = true;
 	private final QuiltPluginContext ctx;
 
 	public DisabledModIdDefinition(QuiltPluginContext ctx, ModLoadOption candidate) {
@@ -49,16 +50,26 @@ public final class DisabledModIdDefinition extends ModIdDefinition {
 
 	@Override
 	public void define(RuleDefiner definer) {
-		definer.atMost(0, option);
+		if (valid) {
+			definer.atMost(0, option);
+		}
 	}
 
 	@Override
 	public boolean onLoadOptionAdded(LoadOption option) {
+		if (option == this.option && !valid) {
+			valid = true;
+			return true;
+		}
 		return false;
 	}
 
 	@Override
 	public boolean onLoadOptionRemoved(LoadOption option) {
+		if (option == this.option && valid) {
+			valid = false;
+			return true;
+		}
 		return false;
 	}
 
