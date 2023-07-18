@@ -14,5 +14,9 @@
   "mixin": [
     "fabricmc.test.mixins.client.json"
   ],
-  "experimental_chasm_transformers_disabled": "chasm_transformers"
+  "experimental_chasm_transformers_disabled": "chasm_transformers",
+  "experimental_quilt_loader_plugin_disabled": {
+    "class": "net.fabricmc.minecraft.test.plugin.TestLoaderPlugin",
+    "packages": [ "net.fabricmc.minecraft.test.plugin" ]
+  }
 }
