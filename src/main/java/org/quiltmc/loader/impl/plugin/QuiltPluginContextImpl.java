@@ -44,12 +44,12 @@ public class QuiltPluginContextImpl extends BasePluginContext {
 		this.optionFrom = from;
 		this.pluginPath = from.resourceRoot();
 
-		ClassLoader parent = getClass().getClassLoader();
+		ClassLoader parent = Thread.currentThread().getContextClassLoader();
 		ModPlugin pluginMeta = from.metadata().plugin();
 		if (pluginMeta == null) {
 			throw new IllegalArgumentException("No plugin metadata!");
 		}
-		classLoader = new QuiltPluginClassLoader(manager, parent, pluginPath, pluginMeta);
+		classLoader = new QuiltPluginClassLoader(this, parent, pluginPath, pluginMeta);
 
 		Class<?> cls = classLoader.loadClassDirectly(pluginMeta.pluginClass(), true);
 		Object obj = cls.getDeclaredConstructor().newInstance();

@@ -311,7 +311,7 @@ public class TransformCache {
 			ChasmInvoker.applyChasm(root, modList, solveResult);
 		}
 
-		InternalsHiderTransform internalsHider = new InternalsHiderTransform();
+		InternalsHiderTransform internalsHider = new InternalsHiderTransform(InternalsHiderTransform.Target.MOD);
 		Map<Path, ClassData> classes = new HashMap<>();
 
 		forEachClassFile(root, modList, (mod, file) -> {

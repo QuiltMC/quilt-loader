@@ -36,24 +36,33 @@ import org.objectweb.asm.Type;
 import org.quiltmc.loader.api.ModInternal;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.launch.knot.IllegalQuiltInternalAccessError;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
-class InternalsHiderTransform {
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+public class InternalsHiderTransform {
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public enum Target {
+		PLUGIN,
+		MOD;
+	}
 
 	private static final String MOD_INTERNAL_DESCRIPTOR = Type.getDescriptor(ModInternal.class);
 
 	private static final String METHOD_OWNER = Type.getInternalName(QuiltInternalExceptionUtil.class);
 
+	final Target target;
 	final Map<String, InternalValue> internalPackages = new HashMap<>();
 	final Map<String, InternalValue> internalClasses = new HashMap<>();
 	final Map<MethodKey, InternalValue> internalMethods = new HashMap<>();
 	final Map<FieldKey, InternalValue> internalFields = new HashMap<>();
 
-	InternalsHiderTransform() {}
+	public InternalsHiderTransform(Target target) {
+		this.target = target;
+	}
 
 	void scanClass(ModLoadOption mod, Path file, byte[] classBytes) {
 		// TODO: Replace this with full-reflect lookup!
@@ -125,7 +134,7 @@ class InternalsHiderTransform {
 		reader.accept(visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 	}
 
-	byte[] run(ModLoadOption mod, byte[] classBytes) {
+	public byte[] run(ModLoadOption mod, byte[] classBytes) {
 		ClassReader reader = new ClassReader(classBytes);
 		String className = reader.getClassName();
 		ClassWriter writer = new ClassWriter(reader, 0) {
@@ -297,17 +306,27 @@ class InternalsHiderTransform {
 					type = QuiltLoaderInternalType.LEGACY_NO_WARN;
 				}
 
-				if (type == QuiltLoaderInternalType.LEGACY_NO_WARN) {
-					value = PermittedLoaderInternalValue.INSTANCE;
-				} else {
-					if (type == QuiltLoaderInternalType.LEGACY_EXPOSED) {
-						value = new WarnLoaderInternalValue();
+				if (target == Target.MOD) {
+					if (type == QuiltLoaderInternalType.LEGACY_NO_WARN) {
+						value = PermittedLoaderInternalValue.INSTANCE;
+					} else {
+						if (type == QuiltLoaderInternalType.LEGACY_EXPOSED) {
+							value = new WarnLoaderInternalValue();
+						} else {
+							value = new LoaderInternalValue();
+						}
+						for (Class<?> cls : replacements) {
+							value.replacements.add(cls.toString());
+						}
+					}
+				} else if (target == Target.PLUGIN) {
+					if (name.startsWith("org.quiltmc.loader.api.")) {
+						value = PermittedLoaderInternalValue.INSTANCE;
 					} else {
 						value = new LoaderInternalValue();
 					}
-					for (Class<?> cls : replacements) {
-						value.replacements.add(cls.toString());
-					}
+				} else {
+					throw new IllegalStateException("Unknown Target " + target);
 				}
 				internalClasses.put(owner, value);
 
