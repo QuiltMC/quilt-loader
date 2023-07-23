@@ -39,19 +39,45 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 	@Override
 	public String toString() {
 		try {
-			return String.format(translate ? I18n.translate(translationKey) : translationKey, extra);
-		} catch (IllegalFormatException e) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("Bad Args for '");
-			sb.append(translationKey);
-			sb.append(" ");
-			sb.append(e);
-			for (Object o : extra) {
-				sb.append(' ').append(o);
+			final String format;
+
+			if (translate) {
+				format = I18n.translate(translationKey);
+
+				if (format.equals(translationKey)) {
+					return error("Missing translation for", null);
+				}
+			} else {
+				format = translationKey;
 			}
 
-			return sb.toString();
+			return String.format(format, extra);
+		} catch (IllegalFormatException e) {
+			return error("Bad args for", e);
 		}
+	}
 
+	private String error(String error, Throwable ex) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(error);
+		sb.append(" '");
+		sb.append(translationKey);
+		sb.append("'");
+		if (ex != null) {
+			sb.append(" ");
+			sb.append(ex);
+		}
+		sb.append(" [");
+		boolean first = true;
+		for (Object o : extra) {
+			if (!first) {
+				sb.append(",");
+			}
+			first = false;
+			sb.append(' ').append(o);
+		}
+		sb.append(" ]");
+
+		return sb.toString();
 	}
 }
