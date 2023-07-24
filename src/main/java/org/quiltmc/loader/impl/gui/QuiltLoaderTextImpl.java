@@ -16,7 +16,10 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.util.Collections;
 import java.util.IllegalFormatException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.plugin.gui.I18n;
@@ -26,6 +29,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 
+	private static final Set<String> incorrectlyUntranslatedKeys = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 	private final String translationKey;
 	private final Object[] extra;
 	boolean translate;
@@ -33,7 +38,12 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 	public QuiltLoaderTextImpl(String key, boolean translate, Object... args) {
 		this.translationKey = key;
 		this.extra = args;
-		this.translate = true;
+		this.translate = translate;
+		if (!translate && !key.equals(I18n.translate(key))) {
+			if (incorrectlyUntranslatedKeys.add(key)) {
+				new Throwable("Incorrectly untranslated key '" + key + "'").printStackTrace();
+			}
+		}
 	}
 
 	@Override

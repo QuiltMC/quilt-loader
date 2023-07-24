@@ -37,7 +37,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltRuleBreakOnly extends QuiltRuleBreak {
-	final ModDependency.Only publicDep;
+	public final ModDependency.Only publicDep;
 	final List<ModLoadOption> conflictingOptions;
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
@@ -136,6 +136,18 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		return !conflictingOptions.isEmpty();
 	}
 
+	public List<ModLoadOption> getConflictingOptions() {
+		return Collections.unmodifiableList(conflictingOptions);
+	}
+
+	public List<ModLoadOption> getOkayOptions() {
+		return Collections.unmodifiableList(okayOptions);
+	}
+
+	public List<ModLoadOption> getAllOptions() {
+		return Collections.unmodifiableList(allOptions);
+	}
+
 	@Override
 	public String toString() {
 		return publicDep.toString();
@@ -189,7 +201,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		for (ModLoadOption option : conflictingOptions) {
 			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", option.describe()));
 		}
-		to.accept(QuiltLoaderText.translate("solver.rule.break.only.invalid", okayOptions.size()));
+		to.accept(QuiltLoaderText.translate("solver.rule.break.only.okay", okayOptions.size()));
 		for (ModLoadOption option : okayOptions) {
 			to.accept(QuiltLoaderText.translate("solver.rule.mod_def.optional.source", option.describe()));
 		}
