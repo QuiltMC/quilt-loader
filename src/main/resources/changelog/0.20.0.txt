@@ -1,6 +1,7 @@
 Features:
 
 * Improved entrypoint exception handling a bit.
+* Added error description for simple "breaks".
 
 Bug Fixes:
 
