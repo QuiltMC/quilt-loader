@@ -314,17 +314,21 @@ public class TransformCache {
 		}
 
 		InternalsHiderTransform internalsHider = new InternalsHiderTransform(InternalsHiderTransform.Target.MOD);
-		Map<Path, ClassData> classes = new HashMap<>();
+		Map<Path, ModLoadOption> classes = new HashMap<>();
+
+		// the double read is necessary to avoid storing all classes in memory at once, and thus having memory complexity
+		// proportional to mod count
 
 		forEachClassFile(root, modList, (mod, file) -> {
 			byte[] classBytes = Files.readAllBytes(file);
-			classes.put(file, new ClassData(mod, classBytes));
+			classes.put(file, mod);
 			internalsHider.scanClass(mod, file, classBytes);
 			return null;
 		});
 
-		for (Map.Entry<Path, ClassData> entry : classes.entrySet()) {
-			byte[] newBytes = internalsHider.run(entry.getValue().mod, entry.getValue().classBytes);
+		for (Map.Entry<Path, ModLoadOption> entry : classes.entrySet()) {
+			byte[] classBytes = Files.readAllBytes(entry.getKey());
+			byte[] newBytes = internalsHider.run(entry.getValue(), classBytes);
 			if (newBytes != null) {
 				Files.write(entry.getKey(), newBytes);
 			}
