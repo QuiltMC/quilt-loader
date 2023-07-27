@@ -148,6 +148,8 @@ public class TransformCache {
 			QuiltZipPath inner = fs.getRoot();
 			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
 				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
+				// delete the previous transform cache to prevent FileAlreadyExistsException later
+				try { Files.deleteIfExists(cacheFile); } catch(IOException ignored) {}
 				return null;
 			}
 			Path optionFile = inner.resolve("options.txt");
