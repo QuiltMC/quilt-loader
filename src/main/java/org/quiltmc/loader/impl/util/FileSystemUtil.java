@@ -25,7 +25,7 @@ import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipError;
 
@@ -56,8 +56,17 @@ public final class FileSystemUtil {
 
 	private FileSystemUtil() { }
 
-	private static final Map<String, String> jfsArgsCreate = Collections.singletonMap("create", "true");
-	private static final Map<String, String> jfsArgsEmpty = Collections.emptyMap();
+	private static final Map<String, Object> jfsArgsCreate = new HashMap<>();
+	private static final Map<String, Object> jfsArgsEmpty = new HashMap<>();
+
+	static {
+		jfsArgsCreate.put("create", "true");
+		if(Boolean.getBoolean(SystemProperties.USE_ZIPFS_TEMP_FILE)) {
+			// must be Boolean.TRUE for Java 8
+			jfsArgsCreate.put("useTempFile", Boolean.TRUE);
+			jfsArgsEmpty.put("useTempFile", Boolean.TRUE);
+		}
+	}
 
 	public static FileSystemDelegate getJarFileSystem(Path path, boolean create) throws IOException {
 		return getJarFileSystem(path.toUri(), create);
