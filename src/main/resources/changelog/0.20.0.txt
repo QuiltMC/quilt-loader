@@ -2,6 +2,7 @@ Features:
 
 * Improved entrypoint exception handling a bit.
 * Added error description for simple "breaks".
+* [#336] Memory usage improvements during transform cache building (embeddedt)
 
 Bug Fixes:
 
