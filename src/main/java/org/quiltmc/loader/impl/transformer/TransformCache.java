@@ -41,7 +41,6 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
@@ -51,7 +50,6 @@ import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -148,8 +146,7 @@ public class TransformCache {
 			QuiltZipPath inner = fs.getRoot();
 			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
 				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
-				// delete the previous transform cache to prevent FileAlreadyExistsException later
-				try { Files.deleteIfExists(cacheFile); } catch(IOException ignored) {}
+				erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 				return null;
 			}
 			Path optionFile = inner.resolve("options.txt");
@@ -385,16 +382,6 @@ public class TransformCache {
 				return true;
 			}
 		});
-	}
-
-	static final class ClassData {
-		final ModLoadOption mod;
-		final byte[] classBytes;
-
-		ClassData(ModLoadOption mod, byte[] classBytes) {
-			this.mod = mod;
-			this.classBytes = classBytes;
-		}
 	}
 
 	@FunctionalInterface
