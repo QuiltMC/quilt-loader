@@ -77,6 +77,7 @@ public final class SystemProperties {
 	// enable useTempFile in ZipFileSystem, reduces memory usage when writing transform cache at the cost of speed
 	public static final String USE_ZIPFS_TEMP_FILE = "loader.zipfs.use_temp_file";
 	public static final String DISABLE_BEACON = "loader.disable_beacon";
+	public static final String ENABLE_QUILT_MOD_JSON5_IN_DEV_ENV = "loader.enable_quilt_mod_json5_in_dev_env";
 
 	private SystemProperties() {
 	}

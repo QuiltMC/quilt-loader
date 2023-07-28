@@ -55,11 +55,33 @@ public class ClasspathModCandidateFinder {
 	public static void findCandidatesStatic(ModAdder out) {
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
+			List<List<Path>> alreadyParsedMods = new ArrayList<>();
 
 			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
 				Enumeration<URL> fabricMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
 				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
+				Enumeration<URL> quiltQmj5Mods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json5");
+				// We unconditionally enable QMJ5 finding here in order to output the loader plugin's errors
+				while (quiltQmj5Mods.hasMoreElements()) {
+					URL url = quiltQmj5Mods.nextElement();
+
+					try {
+						Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, "quilt.mod.json5"));
+						List<Path> paths = pathGroups.get(path);
+
+						if (paths == null) {
+							List<Path> wrappedPath = Collections.singletonList(path);
+							out.addMod(wrappedPath);
+							alreadyParsedMods.add(wrappedPath);
+						} else {
+							out.addMod(paths);
+							alreadyParsedMods.add(paths);
+						}
+					} catch (UrlConversionException e) {
+						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json5 from %s", url, e);
+					}
+				}
 				while (quiltMods.hasMoreElements()) {
 					URL url = quiltMods.nextElement();
 
@@ -68,9 +90,14 @@ public class ClasspathModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
+							List<Path> wrappedPath = Collections.singletonList(path);
+							if (!alreadyParsedMods.contains(wrappedPath)) {
+								out.addMod(wrappedPath);
+							}
 						} else {
-							out.addMod(paths);
+							if (!alreadyParsedMods.contains(paths)) {
+								out.addMod(paths);
+							}
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json from %s", url, e);
@@ -84,9 +111,14 @@ public class ClasspathModCandidateFinder {
 						List<Path> paths = pathGroups.get(path);
 
 						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
+							List<Path> wrappedPath = Collections.singletonList(path);
+							if (!alreadyParsedMods.contains(wrappedPath)) {
+								out.addMod(wrappedPath);
+							}
 						} else {
-							out.addMod(paths);
+							if (!alreadyParsedMods.contains(paths)) {
+								out.addMod(paths);
+							}
 						}
 					} catch (UrlConversionException e) {
 						Log.debug(LogCategory.DISCOVERY, "Error determining location for fabric.mod.json from %s", url, e);

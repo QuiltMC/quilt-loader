@@ -224,7 +224,7 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	configurations = [project.configurations.include]
 
 	relocate 'org.quiltmc.loader.util.sat4j', 'org.quiltmc.loader.impl.lib.sat4j'
-	relocate 'org.quiltmc.qup', 'org.quiltmc.loader.impl.lib.qup'
+	relocate 'org.quiltmc.parsers', 'org.quiltmc.loader.impl.lib.parsers'
 	relocate 'com.electronwill', 'org.quiltmc.loader.impl.lib.electronwill'
 	relocate 'com.unascribed.flexver', 'org.quiltmc.loader.impl.lib.flexver'
 	//relocate 'org.quiltmc.json5', 'org.quiltmc.loader.impl.lib.json5'
