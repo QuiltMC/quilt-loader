@@ -22,9 +22,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -32,10 +30,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileTime;
-import java.nio.file.spi.FileSystemProvider;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -44,8 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -53,13 +47,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.FasterFiles;
-import org.quiltmc.loader.api.plugin.NonZipException;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> implements CachedFileSystem {
+public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> implements CachedFileSystem {
 
 	private static final Set<String> FILE_ATTRS = Collections.singleton("basic");
 
@@ -71,13 +66,10 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		CLOSED;
 	}
 
-	final Map<QuiltMemoryPath, QuiltMemoryEntry> files;
-
 	volatile OpenState openState = OpenState.OPEN;
 
-	private QuiltMemoryFileSystem(String name, boolean uniquify, Map<QuiltMemoryPath, QuiltMemoryEntry> fileMap) {
+	private QuiltMemoryFileSystem(String name, boolean uniquify) {
 		super(QuiltMemoryFileSystem.class, QuiltMemoryPath.class, name, uniquify);
-		this.files = fileMap;
 		QuiltMemoryFileSystemProvider.PROVIDER.register(this);
 	}
 
@@ -123,63 +115,9 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		return FILE_ATTRS;
 	}
 
-	// FasterFileSystem
-
-	@Override
-	public boolean isSymbolicLink(Path path) {
-		// Not supported
-		return false;
-	}
-
-	@Override
-	public boolean isDirectory(Path path, LinkOption... options) {
-		return files.get(path.toAbsolutePath().normalize()) instanceof QuiltMemoryFolder;
-	}
-
-	@Override
-	public boolean isRegularFile(Path path, LinkOption[] options) {
-		return files.get(path.toAbsolutePath().normalize()) instanceof QuiltMemoryFile;
-	}
-
-	@Override
-	public boolean exists(Path path, LinkOption... options) {
-		return files.containsKey(path.toAbsolutePath().normalize());
-	}
-
-	@Override
-	public boolean notExists(Path path, LinkOption... options) {
-		// Nothing can go wrong, so this is fine
-		return !exists(path, options);
-	}
-
-	@Override
-	public boolean isReadable(Path path) {
-		return exists(path);
-	}
-
-	@Override
-	public boolean isExecutable(Path path) {
-		return exists(path);
-	}
-
-	@Override
-	public Stream<Path> list(Path dir) throws IOException {
-		return getChildren(dir).stream().map(p -> (Path) p);
-	}
-
-	@Override
-	public Collection<? extends Path> getChildren(Path dir) throws IOException {
-		QuiltMemoryEntry entry = files.get(dir.toAbsolutePath().normalize());
-		if (entry instanceof QuiltMemoryFolder) {
-			return ((QuiltMemoryFolder) entry).getChildren();
-		} else {
-			throw new NotDirectoryException(dir.toString());
-		}
-	}
-
 	public BasicFileAttributes readAttributes(QuiltMemoryPath qmp) throws IOException {
 		checkOpen();
-		QuiltMemoryEntry entry = files.get(qmp.toAbsolutePath().normalize());
+		QuiltUnifiedEntry entry = getEntry(qmp);
 
 		if (entry != null) {
 			return entry.createAttributes();
@@ -226,14 +164,6 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 	public static final class ReadOnly extends QuiltMemoryFileSystem implements ReadOnlyFileSystem {
 
-		/** Used to store all file data content in a single byte array. Potentially provides performance gains as we
-		 * don't allocate as many objects (plus it's all packed). Comes with the one-time cost of actually coping all
-		 * the bytes out of their original arrays and into the bigger byte array. */
-		// TODO: Test:
-		// 1: how expensive the "packing" is
-		// 2: how much space we gain or perf we gain?
-		private static final boolean PACK_FILE_DATA = true;
-
 		private static final int STAT_UNCOMPRESSED = 0;
 		private static final int STAT_USED = 1;
 		private static final int STAT_MEMORY = 2;
@@ -242,15 +172,12 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		private QuiltMemoryFileStore.ReadOnly fileStore;
 		private Iterable<FileStore> fileStoreItr;
 
-		/** Only used if {@link #PACK_FILE_DATA} is true. */
-		final byte[] packedByteArray;
-
 		/** Creates a new read-only {@link FileSystem} that copies every file in the given directory.
 		 *
 		 * @param compress if true then all files will be stored in-memory compressed.
 		 * @throws IOException if any of the files in the given path could not be read. */
 		public ReadOnly(String name, boolean uniquify, Path from, boolean compress) throws IOException {
-			super(name, uniquify, new HashMap<>());
+			super(name, uniquify);
 
 			int[] stats = new int[3];
 			stats[STAT_MEMORY] = 60;
@@ -289,8 +216,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 					state.children.add(childPath);
 					QuiltMemoryFile.ReadOnly qmf = QuiltMemoryFile.ReadOnly.create(childPath, Files.readAllBytes(file), compress);
 					putFileStats(stats, qmf);
-
-					files.put(childPath, qmf);
+					addEntryWithoutParents(qmf, IOException::new);
 
 					return super.visitFile(file, attrs);
 				}
@@ -299,7 +225,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
 					DirBuildState state = stack.pop();
 					QuiltMemoryPath[] children = state.children.toArray(new QuiltMemoryPath[0]);
-					files.put(state.folder, new QuiltMemoryFolder.ReadOnly(state.folder, children));
+					addEntryWithoutParents(new QuiltUnifiedFolderReadOnly(state.folder, children), IOException::new);
 
 					stats[STAT_MEMORY] += children.length * 4 + 12;
 
@@ -313,43 +239,20 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 			uncompressedSize = stats[STAT_UNCOMPRESSED];
 			usedSize = stats[STAT_USED];
-			memorySize = stats[STAT_MEMORY] + ((int) (files.size() * 24 / 0.75f));
-			packedByteArray = pack();
+			memorySize = stats[STAT_MEMORY] + ((int) (getEntryCount() * 24 / 0.75f));
 			fileStore = new QuiltMemoryFileStore.ReadOnly(name, usedSize);
 			fileStoreItr = Collections.singleton(fileStore);
+		}
+
+		@Override
+		protected boolean startWithConcurrentMap() {
+			return false;
 		}
 
 		private static void putFileStats(int[] stats, QuiltMemoryFile.ReadOnly qmf) {
 			stats[STAT_UNCOMPRESSED] += qmf.uncompressedSize;
 			stats[STAT_USED] += qmf.byteArray().length;
 			stats[STAT_MEMORY] += qmf.byteArray().length + 16;
-		}
-
-		private byte[] pack() {
-			if (PACK_FILE_DATA) {
-				byte[] packed = new byte[usedSize];
-
-				int pos = 0;
-
-				Iterator<Map.Entry<QuiltMemoryPath, QuiltMemoryEntry>> iter = files.entrySet().iterator();
-				while (iter.hasNext()) {
-					Map.Entry<QuiltMemoryPath, QuiltMemoryEntry> entry = iter.next();
-					if (entry.getValue() instanceof QuiltMemoryFile.ReadOnly.Absolute) {
-						QuiltMemoryFile.ReadOnly.Absolute abs = (QuiltMemoryFile.ReadOnly.Absolute) entry.getValue();
-						int len = abs.bytesLength();
-						System.arraycopy(abs.byteArray(), 0, packed, pos, len);
-						entry.setValue(
-							new QuiltMemoryFile.ReadOnly.Relative(
-								abs.path, abs.isCompressed, abs.uncompressedSize, pos, len
-							)
-						);
-						pos += len;
-					}
-				}
-				return packed;
-			} else {
-				return null;
-			}
 		}
 
 		/** Creates a new read-only file system that copies every entry of a {@link ZipInputStream} that starts with
@@ -366,12 +269,12 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		 * @param compress If true then entries will be compressed in-memory. Generally slow.
 		 * @throws IOException if {@link ZipInputStream} threw an {@link IOException} while reading entries. */
 		public ReadOnly(String name, ZipInputStream zipFrom, String zipPathPrefix, boolean compress) throws IOException {
-			super(name, true, new HashMap<>());
+			super(name, true);
+
+			addEntryAndParents(new QuiltUnifiedFolderWriteable(root));
 
 			int[] stats = new int[3];
 			stats[STAT_MEMORY] = 60;
-
-			Map<QuiltMemoryPath, Set<QuiltMemoryPath>> folders = new HashMap<>();
 
 			boolean anyEntries = false;
 			ZipEntry entry;
@@ -389,17 +292,14 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 
 				QuiltMemoryPath path = getPath(entryName);
 				if (entryName.endsWith("/")) {
-					// Folder, but it might have already been automatically added by a file
-					folders.computeIfAbsent(path, p -> new HashSet<>());
-					putParentFolders(folders, path);
+					createDirectories(path);
 				} else {
 					// File
 					stats[STAT_MEMORY] += path.name.length() + 28;
 					byte[] bytes = FileUtil.readAllBytes(zipFrom);
 					QuiltMemoryFile.ReadOnly qmf = QuiltMemoryFile.ReadOnly.create(path, bytes, compress);
 					putFileStats(stats, qmf);
-					files.put(path, qmf);
-					putParentFolders(folders, path);
+					addEntryAndParents(qmf);
 				}
 			}
 
@@ -410,17 +310,11 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 				throw new IOException("No zip entries found!");
 			}
 
-			for (Map.Entry<QuiltMemoryPath, Set<QuiltMemoryPath>> folder : folders.entrySet()) {
-				QuiltMemoryPath folderPath = folder.getKey();
-				QuiltMemoryPath[] entries = folder.getValue().toArray(new QuiltMemoryPath[0]);
-				stats[STAT_MEMORY] += folderPath.name.length() + entries.length * 4 + 12;
-				files.put(folderPath, new QuiltMemoryFolder.ReadOnly(folderPath, entries));
-			}
+			switchToReadOnly();
 
 			uncompressedSize = stats[STAT_UNCOMPRESSED];
 			usedSize = stats[STAT_USED];
-			memorySize = stats[STAT_MEMORY] + ((int) (files.size() * 24 / 0.75f));
-			packedByteArray = pack();
+			memorySize = stats[STAT_MEMORY] + ((int) (getEntryCount() * 24 / 0.75f));
 
 			fileStore = new QuiltMemoryFileStore.ReadOnly(name, usedSize);
 			fileStoreItr = Collections.singleton(fileStore);
@@ -490,21 +384,21 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		}
 
 		private void copyPath(QuiltMemoryPath src, QuiltMemoryPath dst) {
-			QuiltMemoryEntry entrySrc = src.fs.files.get(src);
+			QuiltUnifiedEntry entrySrc = src.fs.getEntry(src);
 			if (entrySrc instanceof QuiltMemoryFile) {
 				QuiltMemoryFile.ReadOnly fileSrc = (QuiltMemoryFile.ReadOnly) entrySrc;
 				QuiltMemoryFile.ReadWrite fileDst = new QuiltMemoryFile.ReadWrite(dst);
 				fileDst.copyFrom(fileSrc);
-				dst.fs.files.put(dst, fileDst);
+				dst.fs.addEntryWithoutParents(fileDst, IllegalStateException::new);
 			} else {
-				QuiltMemoryFolder.ReadOnly folderSrc = (QuiltMemoryFolder.ReadOnly) entrySrc;
-				QuiltMemoryFolder.ReadWrite folderDst = new QuiltMemoryFolder.ReadWrite(dst);
-				dst.fs.files.put(dst, folderDst);
+				QuiltUnifiedFolderReadOnly folderSrc = (QuiltUnifiedFolderReadOnly) entrySrc;
+				QuiltUnifiedFolderWriteable folderDst = new QuiltUnifiedFolderWriteable(dst);
+				dst.fs.addEntryWithoutParents(folderDst, IllegalStateException::new);
 
-				for (QuiltMemoryPath pathSrc : folderSrc.children) {
+				for (QuiltMapPath<?, ?> pathSrc : folderSrc.children) {
 					QuiltMemoryPath pathDst = dst.resolve(pathSrc.name);
 					folderDst.children.add(pathDst);
-					copyPath(pathSrc, pathDst);
+					copyPath((QuiltMemoryPath) pathSrc, pathDst);
 				}
 			}
 		}
@@ -516,10 +410,15 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 		private Iterable<FileStore> fileStoreItr;
 
 		public ReadWrite(String name, boolean uniquify) {
-			super(name, uniquify, new ConcurrentHashMap<>());
+			super(name, uniquify);
 			fileStore = new QuiltMemoryFileStore.ReadWrite(name, this);
 			fileStoreItr = Collections.singleton(fileStore);
-			files.put(root, new QuiltMemoryFolder.ReadWrite(root));
+			addEntryAndParentsUnsafe(new QuiltUnifiedFolderWriteable(root));
+		}
+
+		@Override
+		protected boolean startWithConcurrentMap() {
+			return true;
 		}
 
 		public ReadWrite(String name, boolean uniquify, Path from) throws IOException {
@@ -555,15 +454,15 @@ public abstract class QuiltMemoryFileSystem extends QuiltBaseFileSystem<QuiltMem
 					state.children.add(childPath);
 					QuiltMemoryFile.ReadWrite qmf = new QuiltMemoryFile.ReadWrite(childPath);
 					qmf.createOutputStream(false).write(Files.readAllBytes(file));
-					files.put(childPath, qmf);
+					addEntryWithoutParents(qmf, IOException::new);
 					return super.visitFile(file, attrs);
 				}
 
 				@Override
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
 					DirBuildState state = stack.pop();
-					QuiltMemoryFolder.ReadWrite qmf = new QuiltMemoryFolder.ReadWrite(state.folder);
-					files.put(state.folder, qmf);
+					QuiltUnifiedFolderWriteable qmf = new QuiltUnifiedFolderWriteable(state.folder);
+					addEntryWithoutParents(qmf, IOException::new);
 					qmf.children.addAll(state.children);
 					return super.postVisitDirectory(dir, exc);
 				}

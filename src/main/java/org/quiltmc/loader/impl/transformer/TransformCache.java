@@ -42,6 +42,7 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.__MEMORY;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
@@ -329,6 +330,15 @@ public class TransformCache {
 		}
 
 		internalsHider.finish();
+
+		System.out.println("POPULATING TRANSFORM CACHE, TAKE A SNAPSHOT NOW!");
+		try {
+			Thread.sleep(16_000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		__MEMORY.mem("Populate Transform Cache");
 	}
 
 	private static void forEachClassFile(Path root, List<ModLoadOption> modList, ClassConsumer action)

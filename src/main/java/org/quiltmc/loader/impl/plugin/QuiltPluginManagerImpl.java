@@ -94,6 +94,8 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
@@ -245,10 +247,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
 		String name = zip.getFileName().toString();
-		try (ZipInputStream zipFrom = new ZipInputStream(Files.newInputStream(zip))) {
-			QuiltMemoryPath qRoot = new QuiltMemoryFileSystem.ReadOnly(name, zipFrom, "", false).getRoot();
-			pathParents.put(qRoot, zip);
-			return qRoot;
+		try {
+			// I tried enabling this... and the memory usage shot up. Not sure why to be honest
+			if (true && zip.getFileSystem() == FileSystems.getDefault()) {
+				QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();
+				pathParents.put(qRoot, zip);
+				return qRoot;
+			}
+			try (ZipInputStream zipFrom = new ZipInputStream(Files.newInputStream(zip))) {
+				QuiltMemoryPath qRoot = new QuiltMemoryFileSystem.ReadOnly(name, zipFrom, "", false).getRoot();
+				pathParents.put(qRoot, zip);
+				return qRoot;
+			}
 		} catch (IOException e) {
 			if (name.endsWith(".zip") || name.endsWith(".jar")) {
 				// Something probably went wrong while trying to load them as zips

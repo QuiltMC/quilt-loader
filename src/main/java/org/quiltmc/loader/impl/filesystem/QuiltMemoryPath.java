@@ -21,7 +21,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class QuiltMemoryPath extends QuiltBasePath<QuiltMemoryFileSystem, QuiltMemoryPath> {
+public final class QuiltMemoryPath extends QuiltMapPath<QuiltMemoryFileSystem, QuiltMemoryPath> {
 
 	QuiltMemoryPath(@NotNull QuiltMemoryFileSystem fs, QuiltMemoryPath parent, String name) {
 		super(fs, parent, name);

@@ -403,6 +403,16 @@ public final class QuiltLoaderImpl {
 			addMod(modOption.convertToMod(resourceRoot));
 		}
 
+		__MEMORY.mem("After transform cache");
+
+		try {
+			transformedModBundle.getFileSystem().close();
+		} catch (IOException e) {
+			// TODO!
+			throw new Error(e);
+		}
+		__MEMORY.mem("After transform cache closed");
+
 		long modAddEnd = System.nanoTime();
 
 		System.out.println("transform-cache took " + (zipEnd - zipStart) / 1000_000 + "ms");
@@ -507,6 +517,7 @@ public final class QuiltLoaderImpl {
 	}
 
 	private ModSolveResult runPlugins() {
+		__MEMORY.mem("Before running plugins");
 		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
 		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), getCacheDir(), provider, config);
 
@@ -515,6 +526,7 @@ public final class QuiltLoaderImpl {
 
 		try {
 			ModSolveResultImpl result = plugins.run(true);
+			__MEMORY.mem("After running plugins");
 
 			if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 				return result;

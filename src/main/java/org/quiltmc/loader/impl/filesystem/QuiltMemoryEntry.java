@@ -22,6 +22,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
+@Deprecated
 abstract class QuiltMemoryEntry {
 
 	final QuiltMemoryPath path;

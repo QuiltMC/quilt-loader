@@ -118,6 +118,8 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		}
 
 		this.hash = fs.hashCode() * 31 + (parent == null ? name.hashCode() : (parent.hash * 31 + name.hashCode()));
+
+		toStringHashCode();
 	}
 
 	@Override
@@ -217,6 +219,65 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 		return sb.toString();
 	}
+
+	/**
+	 * Faster version of {@link #toString()}.{@link #hashCode()}
+	 * @return this.toString().hashCode().
+	 */
+	public int toStringHashCode() {
+		if (isRoot()) {
+			return NAME_ROOT.hashCode();
+		}
+
+		int hash;
+
+		if (parent != null) {
+			if (parent.isRoot()) {
+				hash = '/';
+			} else {
+				hash = 31 * parent.toStringHashCode() + '/';
+			}
+		} else {
+			hash = 0;
+		}
+
+		for (int i = 0; i < name.length(); i++) {
+			hash = 31 * hash + name.charAt(i);
+		}
+
+		if (toString().hashCode() != hash) {
+			throw new AssertionError(toString());
+		}
+		return hash;
+	}
+
+	/** Faster alternative to {@link #toString()}.equals, if both this path and the other path is a QuiltBasePath.
+     * 
+     * @return this.toString().equals(other.toString()) */
+	public boolean isToStringEqual(Path other) {
+		if (!(other instanceof QuiltBasePath)) {
+			return toString().equals(other.toString());
+		}
+		boolean should = toString().equals(other.toString());
+		boolean result = s2(other);
+		if (should != result) {
+			throw new AssertionError();
+		}
+		return result;
+	}
+
+	private boolean s2(Path other) {
+		QuiltBasePath<?, ?> o = (QuiltBasePath<?, ?>) other;
+		if (parent == null || o.parent == null) {
+			if ((parent == null) != (o.parent == null)) {
+				return false;
+			}
+		} else if (!parent.isToStringEqual(o.parent)) {
+			return false;
+		}
+		return name.equals(o.name);
+	}
+
 
 	@Override
 	public int getNameCount() {
