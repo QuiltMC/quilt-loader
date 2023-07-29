@@ -39,23 +39,29 @@ import org.quiltmc.config.api.values.ValueList;
 import org.quiltmc.config.api.values.ValueMap;
 import org.quiltmc.config.api.values.ValueTreeNode;
 import org.quiltmc.config.impl.tree.TrackedValueImpl;
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonToken;
-import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.parsers.json.JsonFormat;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.JsonToken;
+import org.quiltmc.parsers.json.JsonWriter;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class Json5Serializer implements Serializer {
-	public static final Json5Serializer INSTANCE = new Json5Serializer();
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+final class JsonFamilySerializer implements Serializer {
+	static final JsonFamilySerializer JSON5 = new JsonFamilySerializer(JsonFormat.JSON5, "json5");
+	// could also add jsonc and/or json here
+	// but what would the extension for JSONC be? .json or .jsonc?
+	private final JsonFormat format;
+	private final String extension;
 
-	private Json5Serializer() {
-
+	private JsonFamilySerializer(JsonFormat format, String extension) {
+		this.format = format;
+		this.extension = extension;
 	}
 
 	@Override
 	public String getFileExtension() {
-		return "json5";
+		return extension;
 	}
 
 	private void serialize(JsonWriter writer, Object value) throws IOException {
@@ -150,7 +156,7 @@ public final class Json5Serializer implements Serializer {
 
 	@Override
 	public void serialize(Config config, OutputStream to) throws IOException {
-		JsonWriter writer = JsonWriter.json5(new OutputStreamWriter(to));
+		JsonWriter writer = JsonWriter.create(new OutputStreamWriter(to), format);
 
 		for (String comment : config.metadata(Comment.TYPE)) {
 			writer.comment(comment);
@@ -170,7 +176,7 @@ public final class Json5Serializer implements Serializer {
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	public void deserialize(Config config, InputStream from) {
 		try {
-			JsonReader reader = JsonReader.json5(new InputStreamReader(from));
+			JsonReader reader = JsonReader.create(new InputStreamReader(from), format);
 
 			Map<String, Object> values = parseObject(reader);
 

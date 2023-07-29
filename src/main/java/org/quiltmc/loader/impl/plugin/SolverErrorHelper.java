@@ -49,6 +49,7 @@ import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.plugin.quilt.DisabledModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -177,6 +178,10 @@ class SolverErrorHelper {
 		}
 
 		if (reportDuplicateMandatoryMods(rootRules)) {
+			return true;
+		}
+
+		if (reportBreakingMods(rootRules)) {
 			return true;
 		}
 
@@ -371,7 +376,7 @@ class SolverErrorHelper {
 		// 1..N is either MandatoryModIdDefinition or DisabledModIdDefinition (and the mod is mandatory)
 
 		if (rootRules.size() < 3) {
-			return false; 
+			return false;
 		}
 
 		// Step 1: Find the single OptionalModIdDefinition
@@ -483,6 +488,75 @@ class SolverErrorHelper {
 		return true;
 	}
 
+	private boolean reportBreakingMods(List<RuleLink> rootRules) {
+		if (rootRules.size() != 2) {
+			return false;
+		}
+
+		// ROOT[0] = A=RuleLink<MandatoryModIdDefinition>
+		// -> B=OptionLink<ModLoadOption> -> nothing
+		// ROOT[1] = C=RuleLink<MandatoryModIdDefinition>
+		// -> D=OptionLink<ModLoadOption>
+		// -> E=RuleLink<QuiltRuleBreakOnly> -> B
+
+		RuleLink ruleA = rootRules.get(0);
+		RuleLink ruleC = rootRules.get(1);
+		MandatoryModIdDefinition modA, modC;
+		OptionLink linkB, linkD;
+
+		if (ruleA.rule instanceof MandatoryModIdDefinition) {
+			modA = (MandatoryModIdDefinition) ruleA.rule;
+			linkB = ruleA.to.get(0);
+		} else {
+			return false;
+		}
+
+		if (ruleC.rule instanceof MandatoryModIdDefinition) {
+			modC = (MandatoryModIdDefinition) ruleC.rule;
+			linkD = ruleC.to.get(0);
+		} else {
+			return false;
+		}
+
+		if (linkB.to.size() > linkD.to.size()) {
+			RuleLink tempRule = ruleA;
+			MandatoryModIdDefinition tempMod = modA;
+			OptionLink tempLink = linkB;
+
+			ruleA = ruleC;
+			modA = modC;
+			linkB = linkD;
+
+			ruleC = tempRule;
+			modC = tempMod;
+			linkD = tempLink;
+		}
+
+		if (!linkB.to.isEmpty() || linkD.to.size() != 1) {
+			return false;
+		}
+
+		RuleLink linkE = linkD.to.get(0);
+
+		if (!(linkE.rule instanceof QuiltRuleBreakOnly)) {
+			return false;
+		}
+
+		QuiltRuleBreakOnly ruleE = (QuiltRuleBreakOnly) linkE.rule;
+		if (linkE.to.size() != 1 || !linkE.to.contains(linkB)) {
+			return false;
+		}
+
+		ModDependencyIdentifier modOn = ruleE.publicDep.id();
+		VersionRange versionsOn = ruleE.publicDep.versionRange();
+		ModLoadOption from = modC.option;
+		Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
+		allBreakingOptions.addAll(ruleE.getConflictingOptions());
+		this.errors.add(new BreakageError(modOn, versionsOn, from, allBreakingOptions));
+
+		return true;
+	}
+
 	/**
 	 * A solver error which might have multiple real errors merged into one for display.
 	 */
@@ -514,7 +588,7 @@ class SolverErrorHelper {
 			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(
 				QuiltLoaderText.translate("error.unhandled_solver")
 			);
-			error.appendDescription(QuiltLoaderText.of("error.unhandled_solver.desc"));
+			error.appendDescription(QuiltLoaderText.translate("error.unhandled_solver.desc"));
 			error.addOpenQuiltSupportButton();
 			error.appendReportText("Unhandled solver error involving the following rules:");
 
@@ -620,7 +694,111 @@ class SolverErrorHelper {
 			}
 			report.append(modOn);// TODO
 			report.append(", which is missing!");
-			error.appendReportText(report.toString());
+			error.appendReportText(report.toString(), "");
+
+			for (ModLoadOption mod : from) {
+				error.appendReportText("- " + manager.describePath(mod.from()));
+			}
+		}
+	}
+
+	static class BreakageError extends SolverError {
+		final ModDependencyIdentifier modOn;
+		final VersionRange versionsOn;
+		final Set<ModLoadOption> from = new LinkedHashSet<>();
+		final Set<ModLoadOption> allBreakingOptions;
+
+		BreakageError(ModDependencyIdentifier modOn, VersionRange versionsOn, ModLoadOption from, Set<
+			ModLoadOption> allBreakingOptions) {
+			this.modOn = modOn;
+			this.versionsOn = versionsOn;
+			this.from.add(from);
+			this.allBreakingOptions = allBreakingOptions;
+		}
+
+		@Override
+		boolean mergeInto(SolverError into) {
+			if (into instanceof BreakageError) {
+				BreakageError depDst = (BreakageError) into;
+				if (!modOn.equals(depDst.modOn) || !versionsOn.equals(depDst.versionsOn)) {
+					return false;
+				}
+				depDst.from.addAll(from);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		void report(QuiltPluginManagerImpl manager) {
+
+			boolean transitive = false;
+
+			// Title:
+			// "BuildCraft" breaks with [version 1.5.1] of "Quilt Standard Libraries", but it's present!
+
+			// Description:
+			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
+			ModLoadOption mandatoryMod = from.iterator().next();
+			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
+
+			QuiltLoaderText first = VersionRangeDescriber.describe(
+				rootModName, versionsOn, modOn.id(), false, transitive
+			);
+
+			Object[] secondData = new Object[allBreakingOptions.size() == 1 ? 1 : 0];
+			String secondKey = "error.break.";
+			if (allBreakingOptions.size() > 1) {
+				secondKey += "multi_conflict";
+			} else {
+				secondKey += "single_conflict";
+				secondData[0] = allBreakingOptions.iterator().next().version().toString();
+			}
+			QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
+			QuiltLoaderText title = QuiltLoaderText.translate("error.break.join.title", first, second);
+			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
+
+			setIconFromMod(manager, mandatoryMod, error);
+
+			Map<Path, ModLoadOption> realPaths = new LinkedHashMap<>();
+
+			for (ModLoadOption mod : from) {
+				Object[] modDescArgs = { mod.metadata().name(), manager.describePath(mod.from()) };
+				error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", modDescArgs));
+				manager.getRealContainingFile(mod.from()).ifPresent(p -> realPaths.putIfAbsent(p, mod));
+			}
+
+			for (ModLoadOption mod : allBreakingOptions) {
+				Object[] modDescArgs = { mod.metadata().name(), manager.describePath(mod.from()) };
+				error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", modDescArgs));
+				manager.getRealContainingFile(mod.from()).ifPresent(p -> realPaths.putIfAbsent(p, mod));
+			}
+
+			for (Map.Entry<Path, ModLoadOption> entry : realPaths.entrySet()) {
+				error.addFileViewButton(entry.getKey()).icon(entry.getValue().modCompleteIcon());
+			}
+
+			String issuesUrl = mandatoryMod.metadata().contactInfo().get("issues");
+			if (issuesUrl != null) {
+				error.addOpenLinkButton(
+					QuiltLoaderText.translate("button.mod_issue_tracker", mandatoryMod.metadata().name()), issuesUrl
+				);
+			}
+
+			StringBuilder report = new StringBuilder(rootModName);
+			report.append(" breaks");
+			if (VersionRange.ANY.equals(versionsOn)) {
+				report.append(" all versions of ");
+			} else {
+				report.append(" version ").append(versionsOn).append(" of ");
+			}
+			report.append(modOn);// TODO
+			report.append(", which is present!");
+			error.appendReportText(report.toString(), "");
+
+			for (ModLoadOption mod : from) {
+				error.appendReportText("- " + manager.describePath(mod.from()));
+			}
 		}
 	}
 }

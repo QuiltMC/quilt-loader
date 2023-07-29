@@ -22,14 +22,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +39,6 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.__MEMORY;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
@@ -52,7 +49,6 @@ import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -149,6 +145,7 @@ public class TransformCache {
 			QuiltZipPath inner = fs.getRoot();
 			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
 				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
+				erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 				return null;
 			}
 			Path optionFile = inner.resolve("options.txt");
@@ -312,18 +309,22 @@ public class TransformCache {
 			ChasmInvoker.applyChasm(root, modList, solveResult);
 		}
 
-		InternalsHiderTransform internalsHider = new InternalsHiderTransform();
-		Map<Path, ClassData> classes = new HashMap<>();
+		InternalsHiderTransform internalsHider = new InternalsHiderTransform(InternalsHiderTransform.Target.MOD);
+		Map<Path, ModLoadOption> classes = new HashMap<>();
+
+		// the double read is necessary to avoid storing all classes in memory at once, and thus having memory complexity
+		// proportional to mod count
 
 		forEachClassFile(root, modList, (mod, file) -> {
 			byte[] classBytes = Files.readAllBytes(file);
-			classes.put(file, new ClassData(mod, classBytes));
+			classes.put(file, mod);
 			internalsHider.scanClass(mod, file, classBytes);
 			return null;
 		});
 
-		for (Map.Entry<Path, ClassData> entry : classes.entrySet()) {
-			byte[] newBytes = internalsHider.run(entry.getValue().mod, entry.getValue().classBytes);
+		for (Map.Entry<Path, ModLoadOption> entry : classes.entrySet()) {
+			byte[] classBytes = Files.readAllBytes(entry.getKey());
+			byte[] newBytes = internalsHider.run(entry.getValue(), classBytes);
 			if (newBytes != null) {
 				Files.write(entry.getKey(), newBytes);
 			}
@@ -389,16 +390,6 @@ public class TransformCache {
 				return true;
 			}
 		});
-	}
-
-	static final class ClassData {
-		final ModLoadOption mod;
-		final byte[] classBytes;
-
-		ClassData(ModLoadOption mod, byte[] classBytes) {
-			this.mod = mod;
-			this.classBytes = classBytes;
-		}
 	}
 
 	@FunctionalInterface

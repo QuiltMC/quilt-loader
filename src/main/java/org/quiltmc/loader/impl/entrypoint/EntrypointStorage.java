@@ -176,10 +176,11 @@ public final class EntrypointStorage {
 					results.add(result);
 				}
 			} catch (Throwable t) {
+				QuiltEntrypointException e2 = new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), t);
 				if (exception == null) {
-					exception = new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), t);
+					exception = e2;
 				} else {
-					exception.addSuppressed(t);
+					exception.addSuppressed(e2);
 				}
 			}
 		}
@@ -209,10 +210,11 @@ public final class EntrypointStorage {
 
 					container = new EntrypointContainerImpl<>(entry.getModContainer(), instance);
 				} catch (Throwable t) {
+					QuiltEntrypointException e2 = new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), t);
 					if (exc == null) {
-						exc = new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), t);
+						exc = e2;
 					} else {
-						exc.addSuppressed(t);
+						exc.addSuppressed(e2);
 					}
 
 					continue;
@@ -221,7 +223,7 @@ public final class EntrypointStorage {
 				container = new EntrypointContainerImpl<>(entry.getModContainer(), () -> {
 				try {
 					return entry.getOrCreate(type);
-				} catch (Exception ex) {
+				} catch (Exception | LinkageError ex) {
 					throw new QuiltEntrypointException(key, entry.getModContainer().metadata().id(), ex);
 				}
 			});

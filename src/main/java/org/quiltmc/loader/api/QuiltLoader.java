@@ -24,10 +24,12 @@ import java.util.Optional;
 
 import net.fabricmc.loader.api.ObjectShare;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.util.GlobalPaths;
 
 import net.fabricmc.api.EnvType;
 
@@ -222,6 +224,28 @@ public final class QuiltLoader {
 	 */
 	public static Path getConfigDir() {
 		return impl().getConfigDir();
+	}
+
+	/**
+	 * Get the global (per-user) directory for cached files.
+	 */
+	public static Path getGlobalCacheDir() {
+		return GlobalPaths.getCacheDir();
+	}
+
+	/**
+	 * Get the global (per-user) directory for configuration files.
+	 */
+	public static Path getGlobalConfigDir() {
+		return GlobalPaths.getConfigDir();
+	}
+
+	/**
+	 * @return true if the global config and cache dirs are actually global, or false if they are simply subfolders of the per-instance folders.
+	 */
+	@ApiStatus.Experimental
+	public static boolean globalDirsEnabled() {
+		return GlobalPaths.globalDirsEnabled();
 	}
 
 	/**

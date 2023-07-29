@@ -879,6 +879,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		List<ModLoadOption> mods = new ArrayList<>();
 
+		if (!modIds.containsKey(QuiltLoaderImpl.MOD_ID)) {
+			AsciiTableRow row = table.addRow();
+			row.put(modColumn, "Quilt Loader");
+			row.put(id, QuiltLoaderImpl.MOD_ID);
+			row.put(version, QuiltLoaderImpl.VERSION);
+			row.put(plugin, "!missing!");
+		}
+
 		for (PotentialModSet set : this.modIds.values()) {
 			mods.addAll(set.all);
 		}

@@ -28,7 +28,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.FasterFiles;
@@ -43,6 +45,7 @@ import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
@@ -131,12 +134,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	public boolean hasDepsChanged(ModLoadOption mod) {
-		ModOverrides modOverrides = overrides.overrides.get(context().manager().describePath(mod.from()));
+		ModOverrides modOverrides = overrides.pathOverrides.get(context().manager().describePath(mod.from()));
 		return modOverrides != null && modOverrides.hasDepsChanged();
 	}
 
 	public boolean hasDepsRemoved(ModLoadOption mod) {
-		ModOverrides modOverrides = overrides.overrides.get(context().manager().describePath(mod.from()));
+		ModOverrides modOverrides = overrides.pathOverrides.get(context().manager().describePath(mod.from()));
 		return modOverrides != null && modOverrides.hasDepsRemoved();
 	}
 
@@ -349,14 +352,26 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				Collection<ModDependency> depends = metadata.depends();
 				Collection<ModDependency> breaks = metadata.breaks();
 
-				ModOverrides override = overrides.overrides.get(described);
+				List<SingleOverrideEntry> overrideList = new ArrayList<>();
+				ModOverrides byPath = overrides.pathOverrides.get(described);
+				if (byPath != null) {
+					overrideList.add(new SingleOverrideEntry(byPath, true));
+				}
 
-				if (override != null) {
-					depends = new HashSet<>(depends);
-					breaks = new HashSet<>(breaks);
+				for (Entry<Pattern, ModOverrides> entry : overrides.patternOverrides.entrySet()) {
+					if (!entry.getKey().matcher(mod.id()).matches()) {
+						continue;
+					}
 
-					replace(override.dependsOverrides, depends);
-					replace(override.breakOverrides, breaks);
+					overrideList.add(new SingleOverrideEntry(entry.getValue(), false));
+				}
+
+				depends = new HashSet<>(depends);
+				breaks = new HashSet<>(breaks);
+
+				for (SingleOverrideEntry override : overrideList) {
+					replace(override.fuzzy, override.overrides.dependsOverrides, depends);
+					replace(override.fuzzy, override.overrides.breakOverrides, breaks);
 				}
 
 				for (ModDependency dep : depends) {
@@ -378,23 +393,67 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Log.warn(LogCategory.DISCOVERY, "'" + msg);
 	}
 
-	private static void replace(SpecificOverrides overrides, Collection<ModDependency> in) {
+	static final class SingleOverrideEntry {
+		final ModOverrides overrides;
+		final boolean fuzzy;
+
+		public SingleOverrideEntry(ModOverrides overrides, boolean fuzzy) {
+			this.overrides = overrides;
+			this.fuzzy = fuzzy;
+		}
+	}
+
+	private static void replace(boolean fuzzy, SpecificOverrides overrides, Collection<ModDependency> in) {
 		for (Map.Entry<ModDependency, ModDependency> entry : overrides.replacements.entrySet()) {
-			if (remove(in, entry.getKey(), "replace")) {
+			if (remove(fuzzy, in, entry.getKey(), "replace")) {
 				in.add(entry.getValue());
 			}
 		}
 
 		for (ModDependency removal : overrides.removals) {
-			remove(in, removal, "remove");
+			remove(fuzzy, in, removal, "remove");
 		}
 
 		in.addAll(overrides.additions);
 	}
 
-	private static boolean remove(Collection<ModDependency> in, ModDependency removal, String name) {
+	private static boolean remove(boolean fuzzy, Collection<ModDependency> in, ModDependency removal, String name) {
 		if (in.remove(removal)) {
 			return true;
+		}
+
+		if (fuzzy && removal instanceof ModDependency.Only) {
+			ModDependency.Only specific = (ModDependency.Only) removal;
+			if (specific.versionRange() == VersionRange.ANY && specific.unless() == null) {
+				List<ModDependency> matches = new ArrayList<>();
+				for (ModDependency dep : in) {
+					if (!(dep instanceof ModDependency.Only)) {
+						continue;
+					}
+					ModDependency.Only current = (ModDependency.Only) dep;
+					if (!current.id().equals(specific.id())) {
+						continue;
+					}
+					matches.add(current);
+				}
+
+				if (matches.size() == 1) {
+					in.remove(matches.get(0));
+					return true;
+				} else if (matches.size() > 1) {
+					warn("Found multiple matching ModDependency " + name + " when using using fuzzy matching!");
+					logModDep("", "", removal);
+					warn("Comparison:");
+					if (in.isEmpty()) {
+						warn("  (None left)");
+					}
+					int index = 0;
+					for (ModDependency with : in) {
+						logCompare(" ", "[" + index++ + "]: ", removal, with);
+					}
+					return false;
+				}
+			}
 		}
 
 		warn("Failed to find the ModDependency 'from' to " + name + "!");

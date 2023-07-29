@@ -41,7 +41,7 @@ public final class QuiltConfigImpl {
 		Map<String, Serializer> serializerMap = new LinkedHashMap<>();
 
 		serializerMap.put("toml", new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
-		serializerMap.put("json5", Json5Serializer.INSTANCE);
+		serializerMap.put("json5", JsonFamilySerializer.JSON5);
 
 		for (Serializer serializer : QuiltLoaderImpl.INSTANCE.getEntrypoints("config_serializer", Serializer.class)) {
 			Serializer oldValue = serializerMap.put(serializer.getFileExtension(), serializer);

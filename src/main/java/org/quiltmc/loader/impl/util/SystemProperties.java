@@ -66,6 +66,7 @@ public final class SystemProperties {
 	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
 	public static final String ENABLE_EXPERIMENTAL_LOADING_PLUGINS = "loader.experimental.allow_loading_plugins";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
+	public static final String JAR_COPY_ALL_MODS = "loader.workaround.jar_copy_all_mods";
 	public static final String DISABLE_STRICT_PARSING = "loader.workaround.disable_strict_parsing";
 	public static final String LOG_EARLY_CLASS_LOADS = "loader.debug.log_early_class_loads";
 	public static final String DEBUG_CLASS_TO_MOD = "loader.debug.dump_class_to_mod";
@@ -73,6 +74,9 @@ public final class SystemProperties {
 	public static final String DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE = "loader.transform_cache.disable_optimised_compression";
 	public static final String DISABLE_PRELOAD_TRANSFORM_CACHE = "loader.transform_cache.disable_preload";
 	public static final String LOG_CACHE_KEY_CHANGES = "loader.transform_cache.log_changed_keys";
+	// enable useTempFile in ZipFileSystem, reduces memory usage when writing transform cache at the cost of speed
+	public static final String USE_ZIPFS_TEMP_FILE = "loader.zipfs.use_temp_file";
+	public static final String DISABLE_BEACON = "loader.disable_beacon";
 
 	private SystemProperties() {
 	}

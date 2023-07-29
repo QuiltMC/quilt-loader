@@ -29,7 +29,15 @@ public class VersionRangeDescriber {
 	}
 
 	public static QuiltLoaderText describe(QuiltLoaderText modFrom, VersionRange range, String depName, boolean transitive) {
-		String titleKey = "error.dep." + (transitive ? "transitive." : "direct.");
+		return describe(modFrom, range, depName, true, transitive);
+	}
+
+	public static QuiltLoaderText describe(String modFrom, VersionRange range, String depName, boolean isDep, boolean transitive) {
+		return describe(QuiltLoaderText.of(modFrom), range, depName, isDep, transitive);
+	}
+
+	public static QuiltLoaderText describe(QuiltLoaderText modFrom, VersionRange range, String depName, boolean isDep, boolean transitive) {
+		String titleKey = "error." + (isDep ? "dep." : "break.") + (transitive ? "transitive." : "direct.");
 
 		if (range.size() != 1) {
 			return QuiltLoaderText.translate(getTransKey(titleKey, "ranged"), modFrom, range, depName);
