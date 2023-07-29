@@ -45,6 +45,8 @@ import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
@@ -257,8 +259,8 @@ public class TransformCache {
 		}
 
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
-			try (QuiltMemoryFileSystem.ReadWrite rw = new QuiltMemoryFileSystem.ReadWrite("transform-cache", true)) {
-				QuiltMemoryPath root = rw.getRoot();
+			try (QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache", true)) {
+				QuiltUnifiedPath root = fs.getRoot();
 				populateTransformCache(root, modList, result);
 				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 				Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));

@@ -92,7 +92,8 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 			options = new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE };
 		}
 
-		Boolean append = null;
+		boolean append = false;
+		boolean truncate = false;
 		boolean create = false;
 		boolean deleteOnClose = false;
 
@@ -105,22 +106,18 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 			} else if (option instanceof StandardOpenOption) {
 				switch ((StandardOpenOption) option) {
 					case APPEND:{
-						if (append != null) {
-							if (!append) {
-								throw new IllegalArgumentException("Cannot append and truncate! " + options);
-							}
+						if (truncate) {
+							throw new IllegalArgumentException("Cannot append and truncate! " + options);
 						} else {
 							append = true;
 						}
 						break;
 					}
 					case TRUNCATE_EXISTING: {
-						if (append != null) {
-							if (append) {
-								throw new IllegalArgumentException("Cannot append and truncate! " + options);
-							}
+						if (append) {
+							throw new IllegalArgumentException("Cannot append and truncate! " + options);
 						} else {
-							append = false;
+							truncate = true;
 						}
 						break;
 					}
@@ -132,6 +129,7 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 						if (path.fs.exists(path)) {
 							throw new IOException(path + " already exists, and CREATE_NEW is specified!");
 						}
+						create = true;
 						break;
 					}
 					case DELETE_ON_CLOSE: {
@@ -167,10 +165,10 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 		} else if (current instanceof QuiltUnifiedFile) {
 			targetFile = (QuiltUnifiedFile) current;
 		} else {
-			throw new IOException("Cannot open an OutputStream on a directory!");
+			throw new IOException("Cannot open an OutputStream on " + current);
 		}
 
-		OutputStream stream = targetFile.createOutputStream(append != null ? append : false);
+		OutputStream stream = targetFile.createOutputStream(append, truncate);
 
 		if (deleteOnClose) {
 			final OutputStream previous = stream;
@@ -344,6 +342,9 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
 		P path = toAbsolutePath(dir);
+		if (path.fs.exists(path)) {
+			throw new FileAlreadyExistsException(path.toString());
+		}
 		ensureWriteable(path);
 		path.fs.addEntryRequiringParent(new QuiltUnifiedFolderWriteable(path));
 	}
@@ -490,7 +491,14 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 
 		if (type == BasicFileAttributes.class) {
 			P p = toAbsolutePath(path);
-			return type.cast(p.fs.getEntry(p).createAttributes());
+			QuiltUnifiedEntry entry = p.fs.getEntry(p);
+			if (entry == null) {
+				if ("/".equals(path.toString())) {
+					throw new NoSuchFileException(p.fs.getClass() + " [root]");
+				}
+				throw new NoSuchFileException(path.toString());
+			}
+			return type.cast(entry.createAttributes());
 		} else {
 			throw new UnsupportedOperationException("Unsupported attributes " + type);
 		}

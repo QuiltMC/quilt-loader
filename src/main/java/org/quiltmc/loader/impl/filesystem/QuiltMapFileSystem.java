@@ -7,10 +7,12 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -77,7 +79,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		P parent = path.parent;
 		if (parent == null) {
 			if (root.equals(path)) {
-				addEntryWithoutParents(newEntry, execCtor);
+				addEntryWithoutParents0(newEntry, execCtor);
 				return;
 			} else {
 				throw new IllegalArgumentException("Somehow obtained a normalised, absolute, path without a parent which isn't root? " + path);
@@ -86,7 +88,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 
 		QuiltUnifiedEntry entry = getEntry(parent);
 		if (entry instanceof QuiltUnifiedFolderWriteable) {
-			addEntryWithoutParents(newEntry, execCtor);
+			addEntryWithoutParents0(newEntry, execCtor);
 			((QuiltUnifiedFolderWriteable) entry).children.add(path);
 		} else if (entry == null) {
 			throw execCtor.apply("Cannot put entry " + path + " because the parent folder doesn't exist!");
@@ -107,11 +109,15 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		P path = addEntryWithoutParents0(newEntry, execCtor);
 		P parent = path;
 		P previous = path;
+		boolean first = true;
 		while ((parent = parent.getParent()) != null) {
-			if (isDirectory(parent)) {
+			QuiltUnifiedEntry parentEntry = getEntry(parent);
+			if (parentEntry instanceof QuiltUnifiedFolder) {
+				if (first) {
+					((QuiltUnifiedFolderWriteable) parentEntry).children.add(path);
+				}
 				break;
 			}
-			QuiltUnifiedEntry parentEntry = getEntry(parent);
 			QuiltUnifiedFolderWriteable parentFolder;
 			if (parentEntry == null) {
 				entries.put(parent, parentFolder = new QuiltUnifiedFolderWriteable(parent));
@@ -126,11 +132,16 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 			parentFolder.children.add(previous);
 
 			previous = parent;
+			first = false;
 		}
 	}
 
-	protected <T extends Throwable> void addEntryWithoutParents(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
-		addEntryWithoutParents0(newEntry, execCtor);
+	protected void addEntryWithoutParentsUnsafe(QuiltUnifiedEntry newEntry) {
+		addEntryWithoutParents0(newEntry, IllegalStateException::new);
+	}
+
+	protected void addEntryWithoutParents(QuiltUnifiedEntry newEntry) throws IOException {
+		addEntryWithoutParents0(newEntry, IOException::new);
 	}
 
 	private <T extends Throwable> P addEntryWithoutParents0(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
@@ -148,9 +159,17 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 
 	protected boolean removeEntry(P path, boolean throwIfMissing) throws IOException {
 		path = path.toAbsolutePath().normalize();
+		if ("/quilt_tags/quilt_tags.accesswidener".equals(path.toString())) {
+			System.out.println("Removing " + path);
+		}
 		QuiltUnifiedEntry current = getEntry(path);
 		if (current == null) {
 			if (throwIfMissing) {
+				List<P> keys = new ArrayList<>(entries.keySet());
+				Collections.sort(keys);
+				for (P key : keys) {
+					System.out.println(key + " = " + getEntry(key).getClass());
+				}
 				throw new IOException("Cannot remove an entry if it doesn't exist! " + path);
 			} else {
 				return false;

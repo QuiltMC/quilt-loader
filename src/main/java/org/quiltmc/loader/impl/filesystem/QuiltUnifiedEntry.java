@@ -33,7 +33,7 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		return path + " " + getClass().getName();
 	}
 
-	protected abstract BasicFileAttributes createAttributes();
+	protected abstract BasicFileAttributes createAttributes() throws IOException;
 
 	protected QuiltUnifiedEntry switchToReadOnly() {
 		return this;
@@ -114,7 +114,7 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 
 		abstract InputStream createInputStream() throws IOException;
 
-		abstract OutputStream createOutputStream(boolean append) throws IOException;
+		abstract OutputStream createOutputStream(boolean append, boolean truncate) throws IOException;
 
 		abstract SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException;
 	}
@@ -135,7 +135,7 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		}
 
 		@Override
-		OutputStream createOutputStream(boolean append) throws IOException {
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
 			throw new IOException("ReadOnly");
 		}
 
@@ -151,9 +151,9 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		}
 
 		@Override
-		protected BasicFileAttributes createAttributes() {
-			// TODO Auto-generated method stub
-			throw new AbstractMethodError("// TODO: Implement this!");
+		protected BasicFileAttributes createAttributes() throws IOException {
+			BasicFileAttributes attrs = Files.readAttributes(to, BasicFileAttributes.class);
+			return new QuiltFileAttributes(this, attrs.size());
 		}
 
 		@Override
@@ -166,6 +166,7 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 	public static class QuiltUnifiedCopyOnWriteFile extends QuiltUnifiedMountedFile {
 		public QuiltUnifiedCopyOnWriteFile(QuiltMapPath<?, ?> path, Path to) {
 			super(path, to);
+//			System.out.println("NEW copy-on-write " + path + "   ->   " + to);
 		}
 
 		@Override
@@ -177,6 +178,33 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		@Override
 		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
 			return new QuiltUnifiedCopyOnWriteFile(newPath, to);
+		}
+
+		private QuiltUnifiedFile deepCopy(boolean truncate) throws IOException {
+			System.out.println("REMOVED copy-on-write " + path);
+			path.fs.provider().delete(path);
+			QuiltMemoryFile.ReadWrite file = new QuiltMemoryFile.ReadWrite(path);
+			if (!truncate) {
+				try (OutputStream dst = file.createOutputStream(true, true)) {
+					Files.copy(path, dst);
+				}
+			}
+			path.fs.addEntryRequiringParent(file);
+			return file;
+		}
+
+		@Override
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
+			return deepCopy(truncate).createOutputStream(append, truncate);
+		}
+
+		@Override
+		SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException {
+			if (options.contains(StandardOpenOption.WRITE)) {
+				boolean truncate = options.contains(StandardOpenOption.TRUNCATE_EXISTING);
+				return deepCopy(truncate).createByteChannel(options);
+			}
+			return super.createByteChannel(options);
 		}
 	}
 }

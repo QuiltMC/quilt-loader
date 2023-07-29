@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -105,6 +106,10 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		switchToReadOnly();
 
 		QuiltZipFileSystemProvider.PROVIDER.register(this);
+
+		if (!isDirectory(root)) {
+			throw new IllegalStateException("Missing root???");
+		}
 	}
 
 	@Override
@@ -178,33 +183,33 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 
 		addFolder(newRoot, getRoot());
 
-		switchToReadOnly();
-
 		QuiltZipFileSystemProvider.PROVIDER.register(this);
+
+		if (!isDirectory(root)) {
+			throw new IllegalStateException("Missing root???");
+		}
 	}
 
 	private void addFolder(QuiltZipPath src, QuiltZipPath dst) {
 		QuiltZipFileSystem srcFS = src.fs;
 		QuiltUnifiedEntry entryFrom = srcFS.getEntry(src);
-		if (entryFrom instanceof QuiltUnifiedFolderWriteable) {
+		if (entryFrom instanceof QuiltUnifiedFolderReadOnly) {
 			// QuiltZipFolder does store subfolders that are part of the original FS, so we need to fully copy it
-			for (QuiltMapPath<?, ?> child : ((QuiltUnifiedFolderWriteable) entryFrom).children) {
-				addFolder((QuiltZipPath) child, dst.resolve(child.name));
+			QuiltMapPath<?, ?>[] srcChildren = ((QuiltUnifiedFolderReadOnly) entryFrom).children;
+			QuiltMapPath<?, ?>[] dstChildren = new QuiltMapPath<?, ?>[srcChildren.length];
+			for (int i = 0; i < srcChildren.length; i++) {
+				QuiltMapPath<?, ?> srcChild = srcChildren[i];
+				QuiltZipPath dstChild = dst.resolve(srcChild.name);
+				addFolder((QuiltZipPath) srcChild, dstChild);
+				dstChildren[i] = dstChild;
 			}
-		} else if (entryFrom instanceof QuiltUnifiedFolderReadOnly) {
-			// QuiltZipFolder does store subfolders that are part of the original FS, so we need to fully copy it
-			for (QuiltMapPath<?, ?> child : ((QuiltUnifiedFolderReadOnly) entryFrom).children) {
-				addFolder((QuiltZipPath) child, dst.resolve(child.name));
-			}
+			addEntryWithoutParentsUnsafe(new QuiltUnifiedFolderReadOnly(dst, dstChildren));
 		} else if (entryFrom instanceof QuiltZipFile) {
-			try {
-				QuiltZipFile from = (QuiltZipFile) entryFrom;
-				addEntryAndParents(new QuiltZipFile(dst, channels, from.offset, from.compressedSize, from.uncompressedSize, from.isCompressed));
-			} catch (IOException e) {
-				throw new IllegalStateException("Failed to copy over a perfectly good ");
-			}
+			QuiltZipFile from = (QuiltZipFile) entryFrom;
+			addEntryWithoutParentsUnsafe(new QuiltZipFile(dst, channels, from.offset, from.compressedSize, from.uncompressedSize, from.isCompressed));
 		} else {
 			// This isn't meant to happen, it means something got constructed badly
+			throw new IllegalArgumentException("Unknown source entry " + entryFrom);
 		}
 	}
 
@@ -647,7 +652,7 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		}
 
 		@Override
-		OutputStream createOutputStream(boolean append) throws IOException {
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
 			throw new IOException(READ_ONLY_ERROR_MESSAGE);
 		}
 

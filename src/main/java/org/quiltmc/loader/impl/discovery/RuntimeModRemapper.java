@@ -60,15 +60,17 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class RuntimeModRemapper {
-
+	static final boolean DISABLE_REMAP = true;
+static final boolean COPY_ON_WRITE = true;
 	public static void remap(Path cache, List<ModLoadOption> modList) {
-		List<ModLoadOption> modsToRemap = modList.stream()
+		List<ModLoadOption> modsToRemap = DISABLE_REMAP ? new ArrayList<>() : modList.stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 
 		// Copy everything that's not in the modsToRemap list
 		for (ModLoadOption mod : modList) {
-			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
+			boolean skipRemap = DISABLE_REMAP || mod.namespaceMappingFrom() == null;
+			if (skipRemap && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
 
 				final boolean onlyTranformableFiles = mod.couldResourcesChange();
 
@@ -78,6 +80,9 @@ public final class RuntimeModRemapper {
 					Files.walk(modSrc).forEach(path -> {
 						if (!FasterFiles.isRegularFile(path)) {
 							// Only copy class files, since those files are the only files modified by chasm
+							if (!FasterFiles.isDirectory(path)) {
+								System.out.println("Unregular file " + path.getClass() + " " + path);
+							}
 							return;
 						}
 						if (onlyTranformableFiles) {
@@ -85,6 +90,7 @@ public final class RuntimeModRemapper {
 							if (!fileName.endsWith(".class") && !fileName.endsWith(".chasm")) {
 								// Only copy class files, since those files are the only files modified by chasm
 								// (and chasm files, since they are read by chasm)
+								System.out.println("Skipping " + path);
 								return;
 							}
 						}
@@ -92,7 +98,11 @@ public final class RuntimeModRemapper {
 						Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
 						try {
 							FasterFiles.createDirectories(dst.getParent());
-							Files.copy(path, dst);
+							if (COPY_ON_WRITE) {
+								FasterFiles.copyOnWrite(path, dst);
+							} else {
+								FasterFiles.copy(path, dst);
+							}
 						} catch (IOException e) {
 							throw new Error(e);
 						}
@@ -165,7 +175,6 @@ public final class RuntimeModRemapper {
 
 				if (info.accessWideners != null) {
 					for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
-						Files.delete(info.outputPath.resolve(entry.getKey()));
 						Files.write(info.outputPath.resolve(entry.getKey()), entry.getValue());
 					}
 				}

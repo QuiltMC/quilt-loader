@@ -33,9 +33,9 @@ final class QuiltFileAttributes implements BasicFileAttributes {
 	private static final FileTime THE_TIME = FileTime.fromMillis(0);
 
 	final Object key;
-	final int size;
+	final long size;
 
-	public QuiltFileAttributes(Object key, int size) {
+	public QuiltFileAttributes(Object key, long size) {
 		this.key = key == null ? this : key;
 		this.size = size;
 	}

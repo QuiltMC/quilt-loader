@@ -216,7 +216,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 					state.children.add(childPath);
 					QuiltMemoryFile.ReadOnly qmf = QuiltMemoryFile.ReadOnly.create(childPath, Files.readAllBytes(file), compress);
 					putFileStats(stats, qmf);
-					addEntryWithoutParents(qmf, IOException::new);
+					addEntryWithoutParents(qmf);
 
 					return super.visitFile(file, attrs);
 				}
@@ -225,7 +225,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
 					DirBuildState state = stack.pop();
 					QuiltMemoryPath[] children = state.children.toArray(new QuiltMemoryPath[0]);
-					addEntryWithoutParents(new QuiltUnifiedFolderReadOnly(state.folder, children), IOException::new);
+					addEntryWithoutParents(new QuiltUnifiedFolderReadOnly(state.folder, children));
 
 					stats[STAT_MEMORY] += children.length * 4 + 12;
 
@@ -340,11 +340,6 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 			return true;
 		}
 
-		@Override
-		public boolean isPermanentlyReadOnly() {
-			return false;
-		}
-
 		/** @return The uncompressed size of all files stored in this file system. Since we store file data compressed
 		 *         this doesn't reflect actual byte usage. */
 		public int getUncompressedSize() {
@@ -389,11 +384,11 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 				QuiltMemoryFile.ReadOnly fileSrc = (QuiltMemoryFile.ReadOnly) entrySrc;
 				QuiltMemoryFile.ReadWrite fileDst = new QuiltMemoryFile.ReadWrite(dst);
 				fileDst.copyFrom(fileSrc);
-				dst.fs.addEntryWithoutParents(fileDst, IllegalStateException::new);
+				dst.fs.addEntryWithoutParentsUnsafe(fileDst);
 			} else {
 				QuiltUnifiedFolderReadOnly folderSrc = (QuiltUnifiedFolderReadOnly) entrySrc;
 				QuiltUnifiedFolderWriteable folderDst = new QuiltUnifiedFolderWriteable(dst);
-				dst.fs.addEntryWithoutParents(folderDst, IllegalStateException::new);
+				dst.fs.addEntryWithoutParentsUnsafe(folderDst);
 
 				for (QuiltMapPath<?, ?> pathSrc : folderSrc.children) {
 					QuiltMemoryPath pathDst = dst.resolve(pathSrc.name);
@@ -414,6 +409,9 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 			fileStore = new QuiltMemoryFileStore.ReadWrite(name, this);
 			fileStoreItr = Collections.singleton(fileStore);
 			addEntryAndParentsUnsafe(new QuiltUnifiedFolderWriteable(root));
+			if (!name.startsWith("shadow_")) {
+				throw new Error("RW????");
+			}
 		}
 
 		@Override
@@ -453,8 +451,8 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 					QuiltMemoryPath childPath = state.folder.resolve(fileName);
 					state.children.add(childPath);
 					QuiltMemoryFile.ReadWrite qmf = new QuiltMemoryFile.ReadWrite(childPath);
-					qmf.createOutputStream(false).write(Files.readAllBytes(file));
-					addEntryWithoutParents(qmf, IOException::new);
+					qmf.createOutputStream(false, false).write(Files.readAllBytes(file));
+					addEntryWithoutParents(qmf);
 					return super.visitFile(file, attrs);
 				}
 
@@ -462,7 +460,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 				public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
 					DirBuildState state = stack.pop();
 					QuiltUnifiedFolderWriteable qmf = new QuiltUnifiedFolderWriteable(state.folder);
-					addEntryWithoutParents(qmf, IOException::new);
+					addEntryWithoutParents(qmf);
 					qmf.children.addAll(state.children);
 					return super.postVisitDirectory(dir, exc);
 				}

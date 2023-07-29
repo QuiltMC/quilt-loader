@@ -6,8 +6,7 @@ public class __MEMORY {
 	public static final LinkedHashMap<String, Double> SNAPSHOTS = new LinkedHashMap<>();
 
 	static {
-		new Thread("GC invoker") {
-			
+		Thread gc = new Thread("GC invoker") {
 			@Override
 			public void run() {
 				while (true) {
@@ -19,10 +18,13 @@ public class __MEMORY {
 					System.gc();
 				}
 			}
-		}.start();
+		};
+//		gc.setDaemon(true);
+		gc.start();
 	}
 
 	public static void mem(String name) {
+		System.out.println("__MEMORY " + name);
 		for (int i = 0; i < 3; i++) {
 			System.gc();
 			System.gc();

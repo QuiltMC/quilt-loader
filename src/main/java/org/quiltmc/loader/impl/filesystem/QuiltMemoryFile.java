@@ -148,7 +148,7 @@ abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 		}
 
 		@Override
-		OutputStream createOutputStream(boolean append) throws IOException {
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
 			throw readOnly();
 		}
 
@@ -423,7 +423,10 @@ abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 		}
 
 		@Override
-		OutputStream createOutputStream(boolean append) throws IOException {
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
+			if (truncate) {
+				length = 0;
+			}
 			return new OutputStream() {
 
 				private final byte[] tempWriter = new byte[1];
