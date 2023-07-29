@@ -79,6 +79,9 @@ final class QuiltZipCustomCompressedWriter {
 
 	private void write0() throws IOException {
 
+//		TODO: Add an option for writing in-place, but putting the contents at the end, and adding a pointer to the contents!
+//		(In addition to the pointer to the data[])
+
 		// Steps:
 		// 1: Find all folders and files
 		// 2: Pass each file on to a queue of files to be processed

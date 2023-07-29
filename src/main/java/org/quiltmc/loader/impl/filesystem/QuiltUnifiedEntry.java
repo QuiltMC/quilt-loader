@@ -9,9 +9,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -123,10 +125,12 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 	public static class QuiltUnifiedMountedFile extends QuiltUnifiedFile {
 
 		public final Path to;
+		public final boolean readOnly;
 
-		public QuiltUnifiedMountedFile(QuiltMapPath<?, ?> path, Path to) {
+		public QuiltUnifiedMountedFile(QuiltMapPath<?, ?> path, Path to, boolean readOnly) {
 			super(path);
 			this.to = to;
+			this.readOnly = readOnly;
 		}
 
 		@Override
@@ -136,13 +140,24 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 
 		@Override
 		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
-			throw new IOException("ReadOnly");
+			if (readOnly) {
+				throw new IOException("ReadOnly");
+			}
+			List<OpenOption> options = new ArrayList<>(3);
+			options.add(StandardOpenOption.WRITE);
+			if (append) {
+				options.add(StandardOpenOption.APPEND);
+			}
+			if (truncate) {
+				options.add(StandardOpenOption.TRUNCATE_EXISTING);
+			}
+			return Files.newOutputStream(to, options.toArray(new OpenOption[0]));
 		}
 
 		@Override
 		SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException {
 			for (OpenOption option : options) {
-				if (option != StandardOpenOption.READ) {
+				if (option != StandardOpenOption.READ && readOnly) {
 					throw new IOException("ReadOnly");
 				}
 			}
@@ -157,22 +172,31 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		}
 
 		@Override
+		protected QuiltUnifiedEntry switchToReadOnly() {
+			if (readOnly) {
+				return this;
+			} else {
+				return new QuiltUnifiedMountedFile(path, to, true);
+			}
+		}
+
+		@Override
 		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
-			return new QuiltUnifiedMountedFile(newPath, to);
+			return new QuiltUnifiedMountedFile(newPath, to, readOnly);
 		}
 	}
 
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 	public static class QuiltUnifiedCopyOnWriteFile extends QuiltUnifiedMountedFile {
 		public QuiltUnifiedCopyOnWriteFile(QuiltMapPath<?, ?> path, Path to) {
-			super(path, to);
+			super(path, to, false);
 //			System.out.println("NEW copy-on-write " + path + "   ->   " + to);
 		}
 
 		@Override
 		protected QuiltUnifiedEntry switchToReadOnly() {
 			// If we're still present then we haven't been modified.
-			return new QuiltUnifiedMountedFile(path, to);
+			return new QuiltUnifiedMountedFile(path, to, true);
 		}
 
 		@Override

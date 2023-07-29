@@ -19,7 +19,6 @@ package org.quiltmc.loader.api;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
@@ -47,13 +46,6 @@ public interface FasterFileSystem {
 	 * @param target A {@link Path} which must be from this {@link FileSystem}
 	 * @return target */
 	default Path copy(Path source, Path target, CopyOption... options) throws IOException {
-		return Files.copy(source, target, options);
-	}
-
-	/** @param source A {@link Path}, which might not be in this {@link FileSystem}.
-	 * @param target A {@link Path} which must be from this {@link FileSystem}
-	 * @return target */
-	default Path copyOnWrite(Path source, Path target, CopyOption... options) throws IOException {
 		return Files.copy(source, target, options);
 	}
 

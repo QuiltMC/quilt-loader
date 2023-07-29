@@ -20,36 +20,29 @@ package org.quiltmc.loader.impl.discovery;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
+import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.MountOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
 
-import net.fabricmc.accesswidener.AccessWidenerFormatException;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
@@ -60,8 +53,10 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class RuntimeModRemapper {
-	static final boolean DISABLE_REMAP = true;
-static final boolean COPY_ON_WRITE = true;
+
+	static final boolean DISABLE_REMAP = false;
+	static final boolean COPY_ON_WRITE = true;
+
 	public static void remap(Path cache, List<ModLoadOption> modList) {
 		List<ModLoadOption> modsToRemap = DISABLE_REMAP ? new ArrayList<>() : modList.stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
@@ -99,7 +94,7 @@ static final boolean COPY_ON_WRITE = true;
 						try {
 							FasterFiles.createDirectories(dst.getParent());
 							if (COPY_ON_WRITE) {
-								FasterFiles.copyOnWrite(path, dst);
+								ExtendedFiles.mount(path, dst, MountOption.COPY_ON_WRITE);
 							} else {
 								FasterFiles.copy(path, dst);
 							}

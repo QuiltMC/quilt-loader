@@ -5,21 +5,26 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
+import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
+import org.quiltmc.loader.api.ExtendedFileSystem;
+import org.quiltmc.loader.api.MountOption;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedCopyOnWriteFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedMountedFile;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** General-purpose {@link FileSystem}, used when building the transform cache. Also intended to replace the various
  * zip/memory file systems currently in use. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileSystem, QuiltUnifiedPath> {
+public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileSystem, QuiltUnifiedPath> implements ExtendedFileSystem {
 
 	private boolean readOnly = false;
 
@@ -93,11 +98,11 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 			CachedFileSystem cached = (CachedFileSystem) srcFS;
 			if (!cached.isPermanentlyReadOnly()) {
 				System.out.println("Cannot copy-on-write " + cached.getClass() + " " + source + " " + source.getClass());
-				return super.copyOnWrite(source, target, options);
+				return copy(source, target, options);
 			}
 		} else {
 			System.out.println("Cannot copy-on-write other " + source + " " + source.getClass());
-			return super.copyOnWrite(source, target, options);
+			return copy(source, target, options);
 		}
 		QuiltUnifiedPath dst = provider().toAbsolutePath(target);
 		QuiltUnifiedEntry dstEntry = getEntry(dst);
@@ -118,5 +123,74 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 
 		addEntryRequiringParent(new QuiltUnifiedCopyOnWriteFile(dst, source));
 		return dst;
+	}
+
+	@Override
+	public Path mount(Path source, Path target, MountOption... options) throws IOException {
+		QuiltUnifiedPath dst = provider().toAbsolutePath(target);
+		QuiltUnifiedEntry dstEntry = getEntry(dst);
+
+		boolean canExist = false;
+		boolean readOnly = false;
+		boolean copyOnWrite = false;
+
+		for (MountOption option : options) {
+			switch (option) {
+				case REPLACE_EXISTING: {
+					canExist = true;
+					break;
+				}
+				case COPY_ON_WRITE: {
+					copyOnWrite = true;
+					break;
+				}
+				case READ_ONLY: {
+					readOnly = true;
+					break;
+				}
+				default: {
+					throw new IllegalStateException("Unknown MountOption " + option);
+				}
+			}
+		}
+
+		if (copyOnWrite && readOnly) {
+			throw new IllegalArgumentException("Can't specify both READ_ONLY and COPY_ON_WRITE : " + Arrays.toString(options));
+		}
+
+
+		if (canExist) {
+			provider().delete(dst);
+		} else if (dstEntry != null) {
+			throw new FileAlreadyExistsException(dst.toString());
+		}
+
+		if (copyOnWrite) {
+			dstEntry = new QuiltUnifiedCopyOnWriteFile(dst, source);
+		} else {
+			dstEntry = new QuiltUnifiedMountedFile(dst, source, readOnly);
+		}
+		addEntryRequiringParent(dstEntry);
+		return dst;
+	}
+
+	@Override
+	public boolean isMountedFile(Path file) {
+		return getEntry(file) instanceof QuiltUnifiedMountedFile;
+	}
+
+	@Override
+	public boolean isCopyOnWrite(Path file) {
+		return getEntry(file) instanceof QuiltUnifiedCopyOnWriteFile;
+	}
+
+	@Override
+	public Path readMountTarget(Path file) throws IOException {
+		QuiltUnifiedEntry entry = getEntry(file);
+		if (entry instanceof QuiltUnifiedMountedFile) {
+			return ((QuiltUnifiedMountedFile) entry).to;
+		} else {
+			throw new NotLinkException(file.toString() + " is not a mounted file!");
+		}
 	}
 }

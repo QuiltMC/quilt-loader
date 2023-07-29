@@ -66,16 +66,6 @@ public final class FasterFiles {
 		}
 	}
 
-	/** Copies the source file to the target file. If the source file system is read-only then the target file may
-	 * become a link to the source file, which is fully copied when it is modified. */
-	public static Path copyOnWrite(Path source, Path target, CopyOption... options) throws IOException {
-		if (target.getFileSystem() instanceof FasterFileSystem) {
-			return ((FasterFileSystem) target.getFileSystem()).copyOnWrite(source, target, options);
-		} else {
-			return Files.copy(source, target, options);
-		}
-	}
-
 	public static boolean isSymbolicLink(Path path) {
 		if (path.getFileSystem() instanceof FasterFileSystem) {
 			return ((FasterFileSystem) path.getFileSystem()).isSymbolicLink(path);

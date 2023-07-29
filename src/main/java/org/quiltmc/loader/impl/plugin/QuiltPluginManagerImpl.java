@@ -61,8 +61,6 @@ import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionFormatException;
-import org.quiltmc.loader.api.VersionInterval;
-import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
@@ -100,7 +98,6 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataReader;
-import org.quiltmc.loader.impl.metadata.qmj.VersionConstraintImpl;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
 import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
@@ -115,9 +112,9 @@ import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl.LoadOptionResult;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator;
-import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
+import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -248,8 +245,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
 		String name = zip.getFileName().toString();
 		try {
-			// I tried enabling this... and the memory usage shot up. Not sure why to be honest
-			if (true && zip.getFileSystem() == FileSystems.getDefault()) {
+			if (true || zip.getFileSystem() == FileSystems.getDefault()) {
 				QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();
 				pathParents.put(qRoot, zip);
 				return qRoot;
