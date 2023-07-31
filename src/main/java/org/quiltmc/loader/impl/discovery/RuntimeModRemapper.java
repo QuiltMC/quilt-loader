@@ -70,7 +70,6 @@ public final class RuntimeModRemapper {
 				Path modDst = cache.resolve(mod.id());
 				try {
 					Files.walk(modSrc).forEach(path -> {
-						try {
 						if (!FasterFiles.isRegularFile(path)) {
 							// Only copy class files, since those files are the only files modified by chasm
 							return;
@@ -85,7 +84,7 @@ public final class RuntimeModRemapper {
 						}
 						Path sub = modSrc.relativize(path);
 						Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
-						// try {
+						try {
 							FasterFiles.createDirectories(dst.getParent());
 							if (COPY_ON_WRITE) {
 								ExtendedFiles.mount(path, dst, MountOption.COPY_ON_WRITE);
