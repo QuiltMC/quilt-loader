@@ -76,18 +76,6 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 	}
 
 	@Override
-	public Iterable<FileStore> getFileStores() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
-	}
-
-	@Override
-	public Set<String> supportedFileAttributeViews() {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
-	}
-
-	@Override
 	public Path copyOnWrite(Path source, Path target, CopyOption... options) throws IOException {
 		FileSystem srcFS = source.getFileSystem();
 		if (srcFS instanceof CachedFileSystem) {

@@ -11,6 +11,7 @@ import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.DirectoryStream.Filter;
 import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.LinkOption;
@@ -512,5 +513,10 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 	@Override
 	public void setAttribute(Path path, String attribute, Object value, LinkOption... options) throws IOException {
 		throw new IOException("Attributes are unmodifiable");
+	}
+
+	@Override
+	public FileStore getFileStore(Path path) throws IOException {
+		return toAbsolutePath(path).fs.getFileStores().iterator().next();
 	}
 }

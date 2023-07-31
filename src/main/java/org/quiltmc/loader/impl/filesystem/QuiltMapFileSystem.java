@@ -3,13 +3,17 @@ package org.quiltmc.loader.impl.filesystem;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.FileAttributeView;
+import java.nio.file.attribute.FileStoreAttributeView;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -282,6 +286,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 	@Override
 	public boolean isSymbolicLink(Path path) {
 		// Completely unsupported
+		// (File mounts aren't technically symbolic links)
 		return false;
 	}
 
@@ -319,5 +324,66 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		validate();
 
 		return dir;
+	}
+
+	@Override
+	public Iterable<FileStore> getFileStores() {
+		FileStore store = new FileStore() {
+			@Override
+			public String type() {
+				return QuiltMapFileSystem.this.getClass().getName();
+			}
+
+			@Override
+			public boolean supportsFileAttributeView(String name) {
+				return "basic".equals(name);
+			}
+
+			@Override
+			public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
+				return type == BasicFileAttributeView.class;
+			}
+
+			@Override
+			public String name() {
+				return QuiltMapFileSystem.this.name;
+			}
+
+			@Override
+			public boolean isReadOnly() {
+				return QuiltMapFileSystem.this.isReadOnly();
+			}
+
+			@Override
+			public long getUsableSpace() throws IOException {
+				return 10;
+			}
+
+			@Override
+			public long getUnallocatedSpace() throws IOException {
+				return 0;
+			}
+
+			@Override
+			public long getTotalSpace() throws IOException {
+				return getUsableSpace();
+			}
+
+			@Override
+			public <V extends FileStoreAttributeView> V getFileStoreAttributeView(Class<V> type) {
+				return null;
+			}
+
+			@Override
+			public Object getAttribute(String attribute) throws IOException {
+				return null;
+			}
+		};
+		return Collections.singleton(store);
+	}
+
+	@Override
+	public Set<String> supportedFileAttributeViews() {
+		return Collections.singleton("basic");
 	}
 }

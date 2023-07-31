@@ -272,67 +272,6 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		return exists(path);
 	}
 
-	@Override
-	public Iterable<FileStore> getFileStores() {
-		FileStore store = new FileStore() {
-			@Override
-			public String type() {
-				return "QuiltZipFileSystem";
-			}
-
-			@Override
-			public boolean supportsFileAttributeView(String name) {
-				return "basic".equals(name);
-			}
-
-			@Override
-			public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
-				return type == BasicFileAttributeView.class;
-			}
-
-			@Override
-			public String name() {
-				return "QuiltZipFileSystem";
-			}
-
-			@Override
-			public boolean isReadOnly() {
-				return true;
-			}
-
-			@Override
-			public long getUsableSpace() throws IOException {
-				return 10;
-			}
-
-			@Override
-			public long getUnallocatedSpace() throws IOException {
-				return 0;
-			}
-
-			@Override
-			public long getTotalSpace() throws IOException {
-				return getUsableSpace();
-			}
-
-			@Override
-			public <V extends FileStoreAttributeView> V getFileStoreAttributeView(Class<V> type) {
-				return null;
-			}
-
-			@Override
-			public Object getAttribute(String attribute) throws IOException {
-				return null;
-			}
-		};
-		return Collections.singleton(store);
-	}
-
-	@Override
-	public Set<String> supportedFileAttributeViews() {
-		return Collections.singleton("basic");
-	}
-
 	// Custom classes to grab the real offset while reading the zip
 
 	static final class CountingInputStream extends InputStream {

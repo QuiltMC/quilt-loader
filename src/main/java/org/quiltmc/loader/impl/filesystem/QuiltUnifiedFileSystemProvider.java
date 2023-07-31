@@ -69,10 +69,4 @@ public class QuiltUnifiedFileSystemProvider extends QuiltMapFileSystemProvider<Q
 	public FileSystem newFileSystem(URI uri, Map<String, ?> env) throws IOException {
 		throw new IOException("Only direct creation is supported");
 	}
-
-	@Override
-	public FileStore getFileStore(Path path) throws IOException {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
-	}
 }
