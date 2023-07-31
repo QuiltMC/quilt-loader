@@ -307,7 +307,7 @@ public class TransformCache {
 
 		RuntimeModRemapper.remap(root, modList);
 
-		((QuiltMapFileSystem<?, ?>) root.getFileSystem()).dumpEntries("after-remap");
+		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-remap");
 
 		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
 			ChasmInvoker.applyChasm(root, modList, solveResult);

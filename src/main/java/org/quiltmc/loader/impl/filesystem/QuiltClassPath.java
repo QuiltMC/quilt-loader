@@ -341,7 +341,6 @@ public class QuiltClassPath {
 					compare = ((OverlappingPath) result).paths[0];
 				}
 				if (compare != null && !isEqual(key, compare)) {
-					System.out.println(key + " != " + compare);
 					return null;
 				}
 			}

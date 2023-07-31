@@ -17,7 +17,6 @@
 
 package org.quiltmc.loader.impl.discovery;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -69,17 +68,11 @@ public final class RuntimeModRemapper {
 
 				Path modSrc = mod.resourceRoot();
 				Path modDst = cache.resolve(mod.id());
-				try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("dbg-remap-" + mod.id() + ".txt"))) {
+				try {
 					Files.walk(modSrc).forEach(path -> {
 						try {
-						bw.append(path.toString());
 						if (!FasterFiles.isRegularFile(path)) {
 							// Only copy class files, since those files are the only files modified by chasm
-							if (!FasterFiles.isDirectory(path)) {
-								System.out.println("Unregular file " + path.getClass() + " " + path);
-							}
-							bw.append(" = unregular");
-							bw.newLine();
 							return;
 						}
 						if (onlyTranformableFiles) {
@@ -87,9 +80,6 @@ public final class RuntimeModRemapper {
 							if (!fileName.endsWith(".class") && !fileName.endsWith(".chasm")) {
 								// Only copy class files, since those files are the only files modified by chasm
 								// (and chasm files, since they are read by chasm)
-								System.out.println("Skipping " + path);
-								bw.append(" = skipped");
-								bw.newLine();
 								return;
 							}
 						}
@@ -102,7 +92,6 @@ public final class RuntimeModRemapper {
 							} else {
 								FasterFiles.copy(path, dst);
 							}
-							bw.newLine();
 						} catch (IOException e) {
 							throw new Error(e);
 						}

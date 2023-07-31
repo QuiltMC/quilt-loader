@@ -3,6 +3,7 @@ package org.quiltmc.loader.impl.filesystem;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
@@ -30,11 +31,18 @@ import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolder;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P extends QuiltMapPath<FS, P>>
 	extends QuiltBaseFileSystem<FS, P>
 	implements CachedFileSystem {
+
+	/** Controls {@link #dumpEntries(String)}. */
+	private static final boolean ENABLE_DEBUG_DUMPING = Boolean.getBoolean(SystemProperties.DEBUG_DUMP_FILESYSTEM_CONTENTS);
+
+	/** Controls {@link #validate()}. */
+	private static final boolean ENABLE_VALIDATION = Boolean.getBoolean(SystemProperties.DEBUG_VALIDATE_FILESYSTEM_CONTENTS);
 
 	private final Map<P, QuiltUnifiedEntry> entries;
 
@@ -43,7 +51,16 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		this.entries = startWithConcurrentMap() ? new ConcurrentHashMap<>() : new HashMap<>();
 	}
 
+	public static void dumpEntries(FileSystem fs, String name) {
+		if (ENABLE_DEBUG_DUMPING && fs instanceof QuiltMapFileSystem) {
+			((QuiltMapFileSystem<?, ?>) fs).dumpEntries(name);
+		}
+	}
+
 	public void dumpEntries(String name) {
+		if (!ENABLE_DEBUG_DUMPING) {
+			return;
+		}
 		try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("dbg-map-fs-" + name + ".txt"))) {
 			Set<String> paths = new TreeSet<>();
 			for (Map.Entry<P, QuiltUnifiedEntry> entry : entries.entrySet()) {
@@ -59,7 +76,9 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 	}
 
 	public void validate() {
-		if (true) return;
+		if (!ENABLE_VALIDATION) {
+			return;
+		}
 		for (Entry<P, QuiltUnifiedEntry> entry : entries.entrySet()) {
 			P path = entry.getKey();
 			QuiltUnifiedEntry e = entry.getValue();
