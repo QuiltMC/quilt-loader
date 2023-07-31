@@ -245,16 +245,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
 		String name = zip.getFileName().toString();
 		try {
-			if (true || zip.getFileSystem() == FileSystems.getDefault()) {
-				QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();
-				pathParents.put(qRoot, zip);
-				return qRoot;
-			}
-			try (ZipInputStream zipFrom = new ZipInputStream(Files.newInputStream(zip))) {
-				QuiltMemoryPath qRoot = new QuiltMemoryFileSystem.ReadOnly(name, zipFrom, "", false).getRoot();
-				pathParents.put(qRoot, zip);
-				return qRoot;
-			}
+			QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();
+			pathParents.put(qRoot, zip);
+			return qRoot;
 		} catch (IOException e) {
 			if (name.endsWith(".zip") || name.endsWith(".jar")) {
 				// Something probably went wrong while trying to load them as zips

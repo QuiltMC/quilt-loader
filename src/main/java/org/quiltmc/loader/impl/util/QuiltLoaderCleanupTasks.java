@@ -50,7 +50,7 @@ public class QuiltLoaderCleanupTasks {
 		try {
 			while (true) {
 				try {
-					Thread.sleep(100);
+					Thread.sleep(10_000);
 				} catch (InterruptedException e) {
 					// Ignored
 				}
