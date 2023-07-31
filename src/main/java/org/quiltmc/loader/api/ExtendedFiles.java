@@ -3,6 +3,7 @@ package org.quiltmc.loader.api;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.Files;
+import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 
 /** Similar to {@link Files}, but for {@link ExtendedFileSystem}. Unlike {@link Files}, most operations can take
@@ -38,6 +39,37 @@ public class ExtendedFiles {
 			return ((ExtendedFileSystem) target.getFileSystem()).mount(source, target, options);
 		} else {
 			throw new UnsupportedOperationException(target.getFileSystem() + " does not support file mounts!");
+		}
+	}
+
+	/** @return True if the file has been mounted with {@link #mount(Path, Path, MountOption...)}. */
+	public static boolean isMountedFile(Path file) {
+		if (file.getFileSystem() instanceof ExtendedFileSystem) {
+			return ((ExtendedFileSystem) file.getFileSystem()).isMountedFile(file);
+		} else {
+			return false;
+		}
+	}
+
+	/** @return True if the given file was created by {@link #mount(Path, Path, MountOption...)} with
+	 *         {@link MountOption#COPY_ON_WRITE}, and the file has not been modified since it was copied. */
+	public static boolean isCopyOnWrite(Path file) {
+		if (file.getFileSystem() instanceof ExtendedFileSystem) {
+			return ((ExtendedFileSystem) file.getFileSystem()).isCopyOnWrite(file);
+		} else {
+			return false;
+		}
+	}
+
+	/** Reads the target of a mounted file, if it was created by {@link #mount(Path, Path, MountOption...)}.
+	 * 
+	 * @throws NotLinkException if the given file is not a {@link #isMountedFile(Path)}.
+	 * @throws UnsupportedOperationException if this filesystem doesn't support file mounts. */
+	public static Path readMountTarget(Path file) throws IOException {
+		if (file.getFileSystem() instanceof ExtendedFileSystem) {
+			return ((ExtendedFileSystem) file.getFileSystem()).readMountTarget(file);
+		} else {
+			throw new UnsupportedOperationException(file + " is not a mounted file!");
 		}
 	}
 }

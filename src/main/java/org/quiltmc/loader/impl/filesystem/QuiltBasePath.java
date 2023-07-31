@@ -118,8 +118,6 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		}
 
 		this.hash = fs.hashCode() * 31 + (parent == null ? name.hashCode() : (parent.hash * 31 + name.hashCode()));
-
-		toStringHashCode();
 	}
 
 	@Override

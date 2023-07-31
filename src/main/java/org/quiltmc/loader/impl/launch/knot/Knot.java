@@ -142,13 +142,6 @@ public final class Knot extends QuiltLauncherBase {
 		provider.initialize(this);
 
 		Thread.currentThread().setContextClassLoader(cl);
-		try {
-			System.out.println("Attach debugger now!");
-			Thread.sleep(10_000);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		loader.setGameProvider(provider);
