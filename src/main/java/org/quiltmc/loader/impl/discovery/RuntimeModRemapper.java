@@ -17,13 +17,13 @@
 
 package org.quiltmc.loader.impl.discovery;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -54,30 +54,32 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class RuntimeModRemapper {
 
-	static final boolean DISABLE_REMAP = false;
 	static final boolean COPY_ON_WRITE = true;
 
 	public static void remap(Path cache, List<ModLoadOption> modList) {
-		List<ModLoadOption> modsToRemap = DISABLE_REMAP ? new ArrayList<>() : modList.stream()
+		List<ModLoadOption> modsToRemap = modList.stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 
 		// Copy everything that's not in the modsToRemap list
 		for (ModLoadOption mod : modList) {
-			boolean skipRemap = DISABLE_REMAP || mod.namespaceMappingFrom() == null;
-			if (skipRemap && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
+			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
 
 				final boolean onlyTranformableFiles = mod.couldResourcesChange();
 
 				Path modSrc = mod.resourceRoot();
 				Path modDst = cache.resolve(mod.id());
-				try {
+				try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("dbg-remap-" + mod.id() + ".txt"))) {
 					Files.walk(modSrc).forEach(path -> {
+						try {
+						bw.append(path.toString());
 						if (!FasterFiles.isRegularFile(path)) {
 							// Only copy class files, since those files are the only files modified by chasm
 							if (!FasterFiles.isDirectory(path)) {
 								System.out.println("Unregular file " + path.getClass() + " " + path);
 							}
+							bw.append(" = unregular");
+							bw.newLine();
 							return;
 						}
 						if (onlyTranformableFiles) {
@@ -86,18 +88,21 @@ public final class RuntimeModRemapper {
 								// Only copy class files, since those files are the only files modified by chasm
 								// (and chasm files, since they are read by chasm)
 								System.out.println("Skipping " + path);
+								bw.append(" = skipped");
+								bw.newLine();
 								return;
 							}
 						}
 						Path sub = modSrc.relativize(path);
 						Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
-						try {
+						// try {
 							FasterFiles.createDirectories(dst.getParent());
 							if (COPY_ON_WRITE) {
 								ExtendedFiles.mount(path, dst, MountOption.COPY_ON_WRITE);
 							} else {
 								FasterFiles.copy(path, dst);
 							}
+							bw.newLine();
 						} catch (IOException e) {
 							throw new Error(e);
 						}

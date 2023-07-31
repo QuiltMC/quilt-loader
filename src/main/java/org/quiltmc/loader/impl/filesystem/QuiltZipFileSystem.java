@@ -18,7 +18,6 @@ package org.quiltmc.loader.impl.filesystem;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,6 +55,7 @@ import java.util.zip.ZipInputStream;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
+import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderCleanupTasks;
@@ -99,8 +99,14 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 			pushback.mark(header.length);
 			int readLength = pushback.read(header);
 			if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.HEADER)) {
-				int start = new DataInputStream(pushback).readInt();
-				readDirectory(root, start, new DataInputStream(new GZIPInputStream(pushback)), zipPathPrefix);
+				if (!(source instanceof SharedByteChannels)) {
+					throw new IOException("Cannot read a custom compressed stream that isn't on the default file system!");
+				}
+				int directoryStart = new DataInputStream(pushback).readInt();
+				int dataStart = readLength + 4;
+				try (GZIPInputStream src = new GZIPInputStream(source.stream(directoryStart))) {
+					readDirectory(root, new DataInputStream(src), zipPathPrefix);
+				}
 			} else if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.PARTIAL_HEADER)) {
 				throw new PartiallyWrittenIOException();
 			} else {
@@ -114,6 +120,8 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		switchToReadOnly();
 
 		QuiltZipFileSystemProvider.PROVIDER.register(this);
+		validate();
+		dumpEntries(name);
 
 		if (!isDirectory(root)) {
 			throw new IllegalStateException("Missing root???");
@@ -152,7 +160,7 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		}
 	}
 
-	private void readDirectory(QuiltZipPath path, int start, DataInputStream stream, String zipPathPrefix) throws IOException {
+	private void readDirectory(QuiltZipPath path, DataInputStream stream, String zipPathPrefix) throws IOException {
 		String pathString = path.toString();
 		if (pathString.startsWith(zipPathPrefix) || zipPathPrefix.startsWith(pathString)) {
 			createDirectories(path);
@@ -163,7 +171,7 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 			byte[] nameBytes = new byte[length];
 			stream.readFully(nameBytes);
 			QuiltZipPath filePath = path.resolve(new String(nameBytes, StandardCharsets.UTF_8));
-			int offset = start + stream.readInt();
+			int offset = stream.readInt();
 			int uncompressedSize = stream.readInt();
 			int compressedSize = stream.readInt();
 			if (filePath.toString().startsWith(zipPathPrefix)) {
@@ -177,7 +185,7 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 			byte[] nameBytes = new byte[length];
 			stream.readFully(nameBytes);
 			String name = new String(nameBytes, StandardCharsets.UTF_8);
-			readDirectory(path.resolve(name), start, stream, zipPathPrefix);
+			readDirectory(path.resolve(name), stream, zipPathPrefix);
 		}
 	}
 
@@ -404,12 +412,6 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		abstract InputStream stream(long position) throws IOException;
 
 		abstract SeekableByteChannel channel() throws IOException;
-	}
-
-	static final class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
-		byte[] getArray() {
-			return buf;
-		}
 	}
 
 	static final class InMemorySource extends ZipSource {

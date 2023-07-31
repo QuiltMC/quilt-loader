@@ -1,10 +1,13 @@
 package org.quiltmc.loader.impl.filesystem;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -14,6 +17,9 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -35,6 +41,39 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 	public QuiltMapFileSystem(Class<FS> filesystemClass, Class<P> pathClass, String name, boolean uniqueify) {
 		super(filesystemClass, pathClass, name, uniqueify);
 		this.entries = startWithConcurrentMap() ? new ConcurrentHashMap<>() : new HashMap<>();
+	}
+
+	public void dumpEntries(String name) {
+		try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("dbg-map-fs-" + name + ".txt"))) {
+			Set<String> paths = new TreeSet<>();
+			for (Map.Entry<P, QuiltUnifiedEntry> entry : entries.entrySet()) {
+				paths.add(entry.getKey().toString() + "  = " + entry.getValue().getClass());
+			}
+			for (String key : paths) {
+				bw.append(key);
+				bw.newLine();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void validate() {
+		if (true) return;
+		for (Entry<P, QuiltUnifiedEntry> entry : entries.entrySet()) {
+			P path = entry.getKey();
+			QuiltUnifiedEntry e = entry.getValue();
+			if (!path.isRoot()) {
+				QuiltUnifiedEntry parent = entries.get(path.parent);
+				if (parent == null || !(parent instanceof QuiltUnifiedFolder)) {
+					throw new IllegalStateException("Entry " + path + " doesn't have a parent!");
+				}
+				QuiltUnifiedFolder pp = (QuiltUnifiedFolder) parent;
+				if (!pp.getChildren().contains(path)) {
+					throw new IllegalStateException("Entry " + path + " isn't linked to from its parent!");
+				}
+			}
+		}
 	}
 
 	// Construction
@@ -95,6 +134,8 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		} else {
 			throw execCtor.apply("Cannot put entry " + path + " because the parent is not a folder (was " + entry + ")");
 		}
+
+		validate();
 	}
 
 	protected void addEntryAndParents(QuiltUnifiedEntry newEntry) throws IOException {
@@ -109,18 +150,11 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		P path = addEntryWithoutParents0(newEntry, execCtor);
 		P parent = path;
 		P previous = path;
-		boolean first = true;
 		while ((parent = parent.getParent()) != null) {
 			QuiltUnifiedEntry parentEntry = getEntry(parent);
-			if (parentEntry instanceof QuiltUnifiedFolder) {
-				if (first) {
-					((QuiltUnifiedFolderWriteable) parentEntry).children.add(path);
-				}
-				break;
-			}
 			QuiltUnifiedFolderWriteable parentFolder;
 			if (parentEntry == null) {
-				entries.put(parent, parentFolder = new QuiltUnifiedFolderWriteable(parent));
+				addEntryWithoutParents0(parentFolder = new QuiltUnifiedFolderWriteable(parent), execCtor);
 			} else if (parentEntry instanceof QuiltUnifiedFolderWriteable) {
 				parentFolder = (QuiltUnifiedFolderWriteable) parentEntry;
 			} else {
@@ -129,11 +163,14 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 				);
 			}
 
-			parentFolder.children.add(previous);
+			if (!parentFolder.children.add(previous)) {
+				break;
+			}
 
 			previous = parent;
-			first = false;
 		}
+
+		validate();
 	}
 
 	protected void addEntryWithoutParentsUnsafe(QuiltUnifiedEntry newEntry) {
@@ -259,6 +296,8 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		while (!stack.isEmpty()) {
 			provider().createDirectory(stack.pop(), attrs);
 		}
+
+		validate();
 
 		return dir;
 	}

@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -273,6 +272,12 @@ public class QuiltClassPath {
 	}
 
 	private static boolean isEqualPath(Path in, Path value) {
+		if (in instanceof OverlappingPath) {
+			in = ((OverlappingPath) in).paths[0];
+		}
+		if (value instanceof OverlappingPath) {
+			value = ((OverlappingPath) value).paths[0];
+		}
 		if (in instanceof QuiltBasePath) {
 			return ((QuiltBasePath<?, ?>) in).isToStringEqual(value);
 		}
@@ -331,8 +336,12 @@ public class QuiltClassPath {
 			if (result instanceof HashCollisionPath) {
 				result = ((HashCollisionPath) result).get(key);
 			} else {
-				if (result != null && !isEqual(key, result)) {
-					System.out.println(key + " != " + result);
+				Path compare = result;
+				if (result instanceof OverlappingPath) {
+					compare = ((OverlappingPath) result).paths[0];
+				}
+				if (compare != null && !isEqual(key, compare)) {
+					System.out.println(key + " != " + compare);
 					return null;
 				}
 			}
@@ -373,7 +382,8 @@ public class QuiltClassPath {
 			} else if (current instanceof OverlappingPath) {
 				if (isEqualPath(file, ((OverlappingPath) current).paths[0])) {
 					OverlappingPath multi = (OverlappingPath) current;
-					multi.addPath(file);multi.data &= ~OverlappingPath.FLAG_HAS_WARNED;
+					multi.addPath(file);
+					multi.data &= ~OverlappingPath.FLAG_HAS_WARNED;
 					return multi;
 				} else {
 					return new HashCollisionPath(current, file);
@@ -459,7 +469,6 @@ public class QuiltClassPath {
 		private void rehash(int newSize) {
 			Path[] oldTable = table;
 			table = new Path[newSize];
-			entryCount = 0;
 			Path[] array1 = { null };
 			Path[] subIter = null;
 			for (Path sub : oldTable) {
@@ -476,15 +485,14 @@ public class QuiltClassPath {
 				}
 
 				for (Path sub2 : subIter) {
+					final Path hashPath;
 					if (sub2 instanceof OverlappingPath) {
-						OverlappingPath overlap = (OverlappingPath) sub2;
-						int index = overlap.paths[0].toString().hashCode() & table.length - 1;
-						for (Path sub3 : overlap.paths) {
-							table[index] = computeNewPath(table[index], sub3);
-						}
+						hashPath = ((OverlappingPath) sub2).paths[0];
 					} else {
-						put(sub2);
+						hashPath = sub2;
 					}
+					int index = hashCode(hashPath) & table.length - 1;
+					table[index] = computeNewPath(table[index], sub2);
 				}
 			}
 		}
@@ -511,19 +519,17 @@ public class QuiltClassPath {
 
 		@Override
 		protected IllegalStateException illegal() {
-			throw new IllegalStateException(
+			IllegalStateException ex = new IllegalStateException(
 				"QuiltClassPath must NEVER return a HashCollisionPath - something has gone very wrong!"
 			);
+			ex.printStackTrace();
+			throw ex;
 		}
 
 		/** @return The equal path index in {@link #values}, or a negative number if it's not present. */
 		public int getEqualPathIndex(Path in) {
 			for (int i = 0; i < values.length; i++) {
-				Path value = values[i];
-				if (value instanceof OverlappingPath) {
-					value = ((OverlappingPath) value).paths[0];
-				}
-				if (isEqualPath(in, value)) {
+				if (isEqualPath(in, values[i])) {
 					return i;
 				}
 			}
@@ -562,13 +568,16 @@ public class QuiltClassPath {
 		public void addPath(Path file) {
 			paths = Arrays.copyOf(paths, paths.length + 1);
 			paths[paths.length - 1] = file;
+			file.getNameCount();
 		}
 
 		@Override
 		protected IllegalStateException illegal() {
-			throw new IllegalStateException(
+			IllegalStateException ex = new IllegalStateException(
 				"QuiltClassPath must NEVER return an OverlappingPath - something has gone very wrong!"
 			);
+			ex.printStackTrace();
+			throw ex;
 		}
 
 		public Path getFirst() {

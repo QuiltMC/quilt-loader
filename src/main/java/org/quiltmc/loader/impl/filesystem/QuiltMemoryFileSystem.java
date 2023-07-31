@@ -409,9 +409,6 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 			fileStore = new QuiltMemoryFileStore.ReadWrite(name, this);
 			fileStoreItr = Collections.singleton(fileStore);
 			addEntryAndParentsUnsafe(new QuiltUnifiedFolderWriteable(root));
-			if (!name.startsWith("shadow_")) {
-				throw new Error("RW????");
-			}
 		}
 
 		@Override

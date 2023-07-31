@@ -165,18 +165,18 @@ public final class Knot extends QuiltLauncherBase {
 
 		__MEMORY.mem("End");
 
-		System.out.println("Took " + time + "ms to load. Memory stats:");
-		for (Entry<String, Double> entry : __MEMORY.SNAPSHOTS.entrySet()) {
-			System.out.println(entry.getKey() + " " + entry.getValue());
-		}
-		while (time > 0) {
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+//		System.out.println("Took " + time + "ms to load. Memory stats:");
+//		for (Entry<String, Double> entry : __MEMORY.SNAPSHOTS.entrySet()) {
+//			System.out.println(entry.getKey() + " " + entry.getValue());
+//		}
+//		while (time > 0) {
+//			try {
+//				Thread.sleep(1000);
+//			} catch (InterruptedException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//		}
 
 		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
 

@@ -16,17 +16,18 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
-import java.io.BufferedOutputStream;
+import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -34,23 +35,23 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.quiltmc.loader.impl.util.CountingOutputStream;
+import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 
 /** Writer class that implements
  * {@link QuiltZipFileSystem#writeQuiltCompressedFileSystem(java.nio.file.Path, java.nio.file.Path)}. */
 final class QuiltZipCustomCompressedWriter {
 
 	static final Charset UTF8 = StandardCharsets.UTF_8;
-	static final byte[] HEADER = "quiltmczipcmpv1".getBytes(UTF8);
+	static final byte[] HEADER = "quiltmczipcmpv2".getBytes(UTF8);
 	static final byte[] PARTIAL_HEADER = Arrays.copyOf("PARTIAL!PARTIAL!PARTIAL!".getBytes(UTF8), HEADER.length);
 
 	private static final AtomicInteger WRITER_THREAD_INDEX = new AtomicInteger();
@@ -58,6 +59,8 @@ final class QuiltZipCustomCompressedWriter {
 
 	final Path src, dst;
 	final LinkedBlockingQueue<Path> sourceFiles = new LinkedBlockingQueue<>();
+	final Map<Path, FileEntry> files = new ConcurrentHashMap<>();
+	final AtomicInteger currentOffset = new AtomicInteger();
 
 	volatile boolean interrupted;
 	volatile boolean aborted = false;
@@ -70,17 +73,14 @@ final class QuiltZipCustomCompressedWriter {
 
 	/** @see QuiltZipFileSystem#writeQuiltCompressedFileSystem(Path, Path) */
 	void write() throws IOException {
-		try {
-			write0();
+		try (FileChannel channel = FileChannel.open(dst, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+			write0(channel);
 		} finally {
 			aborted = true;
 		}
 	}
 
-	private void write0() throws IOException {
-
-//		TODO: Add an option for writing in-place, but putting the contents at the end, and adding a pointer to the contents!
-//		(In addition to the pointer to the data[])
+	private void write0(FileChannel channel) throws IOException {
 
 		// Steps:
 		// 1: Find all folders and files
@@ -92,17 +92,22 @@ final class QuiltZipCustomCompressedWriter {
 		// Spin up the other threads now
 		int mainIndex = WRITER_THREAD_INDEX.incrementAndGet();
 
+		channel.write(ByteBuffer.wrap(PARTIAL_HEADER));
+		// 4 bytes: Directory pointer
+		channel.write(ByteBuffer.allocate(4));
+		currentOffset.set((int) channel.position());
+
 		int threadCount = Runtime.getRuntime().availableProcessors();
 		WriterThread[] threads = new WriterThread[threadCount];
 		for (int i = 0; i < threadCount; i++) {
-			threads[i] = new WriterThread(mainIndex, i);
+			threads[i] = new WriterThread(mainIndex, i, channel);
 			threads[i].setDaemon(true);
 			threads[i].start();
 		}
 
 		final Deque<Directory> stack = new ArrayDeque<>();
 
-		try {
+		try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("quilt-zip-custom-compressed-writer-in.txt"))){
 			Files.walkFileTree(src, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -112,6 +117,8 @@ final class QuiltZipCustomCompressedWriter {
 						parent.childDirectories.add(sub);
 					}
 					stack.push(sub);
+					bw.append(dir.toString());
+					bw.newLine();
 					return FileVisitResult.CONTINUE;
 				}
 
@@ -123,6 +130,8 @@ final class QuiltZipCustomCompressedWriter {
 					}
 					stack.peek().childFiles.add(file);
 					sourceFiles.add(file);
+					bw.append(file.toString());
+					bw.newLine();
 					return FileVisitResult.CONTINUE;
 				}
 
@@ -215,58 +224,23 @@ final class QuiltZipCustomCompressedWriter {
 			}
 		}
 
-		// Compute the real offsets
-		Map<Path, FileEntry> realOffsets = new HashMap<>();
-		// Real offset starts from the end of the directory list, which makes everything a lot simpler
-		int offset = 0;
-		for (WriterThread writer : threads) {
-			if (offset == 0) {
-				// Everything is already aligned
-				realOffsets.putAll(writer.files);
-			} else {
-				for (Map.Entry<Path, FileEntry> entry : writer.files.entrySet()) {
-					FileEntry from = entry.getValue();
-					realOffsets.put(
-						entry.getKey(), new FileEntry(
-							offset + from.offset, from.uncompressedLength, from.compressedLength
-						)
-					);
-				}
-			}
+		// Write the directory
+		int directoryOffset = currentOffset.get();
+		ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+		GZIPOutputStream gzip = new GZIPOutputStream(baos);
+		writeDirectory(stack.pop(), files, new DataOutputStream(gzip));
+		gzip.finish();
+		channel.write(baos.wrapIntoBuffer(), directoryOffset);
 
-			offset += writer.currentOffset();
-		}
+		// Write the directory offset
+		baos = new ExposedByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		dos.writeInt(directoryOffset);
+		channel.write(baos.wrapIntoBuffer(), HEADER.length);
+		channel.force(false);
 
-		final byte[] tmpHeader = PARTIAL_HEADER;
-
-		int offsetStart;
-
-		// Now to write the actual file
-		OpenOption[] options = { StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE };
-		try (OutputStream stream = new BufferedOutputStream(Files.newOutputStream(dst, options))) {
-			CountingOutputStream counter = new CountingOutputStream(stream);
-			counter.write(tmpHeader);
-			counter.write(new byte[4]); // File offset start
-			GZIPOutputStream gzip = new GZIPOutputStream(counter);
-			writeDirectory(stack.pop(), realOffsets, new DataOutputStream(gzip));
-			gzip.finish();
-			offsetStart = counter.getBytesWritten();
-
-			for (WriterThread thread : threads) {
-				int arrayCount = thread.arrays.size();
-				for (int i = 0; i < arrayCount; i++) {
-					byte[] array = thread.arrays.get(i);
-					int length = i == arrayCount - 1 ? thread.currentArrayIndex : array.length;
-					stream.write(array, 0, length);
-				}
-			}
-		}
-
-		// And rewrite the header since we're complete
-		try (OutputStream stream = Files.newOutputStream(dst, StandardOpenOption.WRITE)) {
-			stream.write(HEADER);
-			new DataOutputStream(stream).writeInt(offsetStart);
-		}
+		// and the finished header
+		channel.write(ByteBuffer.wrap(HEADER), 0);
 	}
 
 	private void writeDirectory(Directory directory, Map<Path, FileEntry> fileMap, DataOutputStream to)
@@ -303,22 +277,12 @@ final class QuiltZipCustomCompressedWriter {
 
 	private final class WriterThread extends Thread {
 
-		private static final int ARRAY_LENGTH = 512 * 1024;
-
-		/** List of 512k byte arrays. */
-		private final List<byte[]> arrays = new ArrayList<>();
-
-		/** Index in the current byte array, not the index of the current byte array (which is always the last
-		 * array). */
-		int currentArrayIndex = ARRAY_LENGTH;
-
-		final ExpandingOutputStream outputStream = new ExpandingOutputStream();
-		final Map<Path, FileEntry> files = new HashMap<>();
-
+		final FileChannel channel;
 		Deflater deflater;
 
-		public WriterThread(int mainIndex, int subIndex) {
+		public WriterThread(int mainIndex, int subIndex, FileChannel channel) {
 			super("QuiltZipWriter-" + mainIndex + "." + subIndex);
+			this.channel = channel;
 		}
 
 		@Override
@@ -335,15 +299,22 @@ final class QuiltZipCustomCompressedWriter {
 					break;
 				}
 
-				int offset = currentOffset();
-				int uncompressedLength;
 				if (deflater == null) {
 					deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
 				} else {
 					deflater.reset();
 				}
-				try (DeflaterOutputStream compressor = new DeflaterOutputStream(outputStream, deflater)) {
-					uncompressedLength = (int) Files.copy(next, compressor);
+
+				try {
+					int uncompressedLength;
+					ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
+					try (DeflaterOutputStream compressor = new DeflaterOutputStream(baos, deflater)) {
+						uncompressedLength = (int) Files.copy(next, compressor);
+					}
+					int offset = currentOffset.getAndAdd(baos.size());
+					int length = baos.size();
+					channel.write(ByteBuffer.wrap(baos.getArray(), 0, length), offset);
+					files.put(next, new FileEntry(offset, uncompressedLength, length));
 				} catch (IOException e) {
 					e = new IOException("Failed to copy " + next, e);
 					synchronized (QuiltZipCustomCompressedWriter.this) {
@@ -360,43 +331,10 @@ final class QuiltZipCustomCompressedWriter {
 						break;
 					}
 				}
-				int length = currentOffset() - offset;
-				files.put(next, new FileEntry(offset, uncompressedLength, length));
 			}
 
 			if (deflater != null) {
 				deflater.end();
-			}
-		}
-
-		private int currentOffset() {
-			return (arrays.size() - 1) * ARRAY_LENGTH + currentArrayIndex;
-		}
-
-		final class ExpandingOutputStream extends OutputStream {
-			final byte[] singleArray = new byte[1];
-
-			@Override
-			public void write(int b) throws IOException {
-				singleArray[0] = (byte) b;
-				write(singleArray, 0, 1);
-			}
-
-			@Override
-			public void write(byte[] b, int off, int len) throws IOException {
-				while (len > 0) {
-					if (currentArrayIndex == ARRAY_LENGTH) {
-						arrays.add(new byte[ARRAY_LENGTH]);
-						currentArrayIndex = 0;
-					}
-					byte[] to = arrays.get(arrays.size() - 1);
-					int available = to.length - currentArrayIndex;
-					int toCopy = Math.min(available, len);
-					System.arraycopy(b, off, to, currentArrayIndex, toCopy);
-					off += toCopy;
-					currentArrayIndex += toCopy;
-					len -= toCopy;
-				}
 			}
 		}
 	}

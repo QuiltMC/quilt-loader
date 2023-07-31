@@ -43,8 +43,7 @@ import org.quiltmc.loader.impl.__MEMORY;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
+import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
@@ -262,6 +261,7 @@ public class TransformCache {
 			try (QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache", true)) {
 				QuiltUnifiedPath root = fs.getRoot();
 				populateTransformCache(root, modList, result);
+				fs.dumpEntries("after-populate");
 				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 				Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
 				QuiltZipFileSystem.writeQuiltCompressedFileSystem(root, transformCacheFile);
@@ -306,6 +306,8 @@ public class TransformCache {
 		throws ModResolutionException, IOException {
 
 		RuntimeModRemapper.remap(root, modList);
+
+		((QuiltMapFileSystem<?, ?>) root.getFileSystem()).dumpEntries("after-remap");
 
 		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
 			ChasmInvoker.applyChasm(root, modList, solveResult);
