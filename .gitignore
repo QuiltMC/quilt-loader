@@ -28,3 +28,4 @@ bin/
 # Testing
 run/
 logs/
+quiltloader.log
