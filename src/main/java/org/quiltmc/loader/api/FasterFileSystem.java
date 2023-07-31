@@ -96,5 +96,4 @@ public interface FasterFileSystem {
 	default Collection<? extends Path> getChildren(Path dir) throws IOException {
 		return FasterFiles.getChildrenIndirect(dir);
 	}
-
 }

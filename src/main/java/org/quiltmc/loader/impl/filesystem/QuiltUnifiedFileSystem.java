@@ -28,10 +28,6 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 
 	private boolean readOnly = false;
 
-	// FIXME TODO: Make a cache that doesn't need to copy every file into memory if the source is a zip path!
-	// also change the transform cache to *not* copy files into it when generating - only converting the links to normal
-	// paths
-
 	public QuiltUnifiedFileSystem(String name, boolean uniqueify) {
 		super(QuiltUnifiedFileSystem.class, QuiltUnifiedPath.class, name, uniqueify);
 		addEntryAndParentsUnsafe(new QuiltUnifiedFolderWriteable(root));
