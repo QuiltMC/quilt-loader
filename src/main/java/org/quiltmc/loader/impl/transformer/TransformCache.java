@@ -335,15 +335,6 @@ public class TransformCache {
 		}
 
 		internalsHider.finish();
-
-		System.out.println("POPULATING TRANSFORM CACHE, TAKE A SNAPSHOT NOW!");
-		try {
-			Thread.sleep(16_000);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
-
-		__MEMORY.mem("Populate Transform Cache");
 	}
 
 	private static void forEachClassFile(Path root, List<ModLoadOption> modList, ClassConsumer action)

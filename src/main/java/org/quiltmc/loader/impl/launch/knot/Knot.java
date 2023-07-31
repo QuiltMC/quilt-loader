@@ -22,7 +22,6 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.__MEMORY;
 import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.game.GameProvider;
@@ -92,8 +91,6 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	public ClassLoader init(String[] args) {
-		__MEMORY.mem("Knot start");
-
 		setProperties(properties);
 
 		// configure fabric vars
@@ -145,7 +142,6 @@ public final class Knot extends QuiltLauncherBase {
 		provider.initialize(this);
 
 		Thread.currentThread().setContextClassLoader(cl);
-		__MEMORY.mem("Before starting loader");
 		try {
 			System.out.println("Attach debugger now!");
 			Thread.sleep(10_000);
@@ -154,29 +150,10 @@ public final class Knot extends QuiltLauncherBase {
 			e.printStackTrace();
 		}
 
-		long start = System.currentTimeMillis();
-
 		QuiltLoaderImpl loader = QuiltLoaderImpl.INSTANCE;
 		loader.setGameProvider(provider);
 		loader.load();
 		loader.freeze();
-
-		long time = System.currentTimeMillis() - start;
-
-		__MEMORY.mem("End");
-
-//		System.out.println("Took " + time + "ms to load. Memory stats:");
-//		for (Entry<String, Double> entry : __MEMORY.SNAPSHOTS.entrySet()) {
-//			System.out.println(entry.getKey() + " " + entry.getValue());
-//		}
-//		while (time > 0) {
-//			try {
-//				Thread.sleep(1000);
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
 
 		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
 
