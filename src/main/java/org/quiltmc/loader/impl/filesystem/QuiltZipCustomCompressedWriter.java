@@ -107,7 +107,7 @@ final class QuiltZipCustomCompressedWriter {
 
 		final Deque<Directory> stack = new ArrayDeque<>();
 
-		try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("quilt-zip-custom-compressed-writer-in.txt"))){
+		try {
 			Files.walkFileTree(src, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
@@ -117,8 +117,6 @@ final class QuiltZipCustomCompressedWriter {
 						parent.childDirectories.add(sub);
 					}
 					stack.push(sub);
-					bw.append(dir.toString());
-					bw.newLine();
 					return FileVisitResult.CONTINUE;
 				}
 
@@ -130,8 +128,6 @@ final class QuiltZipCustomCompressedWriter {
 					}
 					stack.peek().childFiles.add(file);
 					sourceFiles.add(file);
-					bw.append(file.toString());
-					bw.newLine();
 					return FileVisitResult.CONTINUE;
 				}
 
