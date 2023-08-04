@@ -77,6 +77,8 @@ public final class SystemProperties {
 	// enable useTempFile in ZipFileSystem, reduces memory usage when writing transform cache at the cost of speed
 	public static final String USE_ZIPFS_TEMP_FILE = "loader.zipfs.use_temp_file";
 	public static final String DISABLE_BEACON = "loader.disable_beacon";
+	public static final String DEBUG_DUMP_FILESYSTEM_CONTENTS = "loader.debug.filesystem.dump_contents";
+	public static final String DEBUG_VALIDATE_FILESYSTEM_CONTENTS = "loader.debug.filesystem.validate_constantly";
 
 	private SystemProperties() {
 	}

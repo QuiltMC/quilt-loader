@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api;
 
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -54,6 +55,14 @@ public final class FasterFiles {
 			return ((FasterFileSystem) dir.getFileSystem()).createDirectories(dir, attrs);
 		} else {
 			return Files.createDirectories(dir, attrs);
+		}
+	}
+
+	public static Path copy(Path source, Path target, CopyOption... options) throws IOException {
+		if (target.getFileSystem() instanceof FasterFileSystem) {
+			return ((FasterFileSystem) target.getFileSystem()).copy(source, target, options);
+		} else {
+			return Files.copy(source, target, options);
 		}
 	}
 

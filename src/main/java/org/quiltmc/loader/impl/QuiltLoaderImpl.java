@@ -424,6 +424,13 @@ public final class QuiltLoaderImpl {
 			addMod(modOption.convertToMod(resourceRoot));
 		}
 
+		try {
+			transformedModBundle.getFileSystem().close();
+		} catch (IOException e) {
+			// TODO!
+			throw new Error(e);
+		}
+
 		temporaryPluginSolveResult = null;
 		temporaryOrderedModList = null;
 		temporarySourcePaths = null;

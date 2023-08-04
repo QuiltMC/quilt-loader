@@ -20,36 +20,28 @@ package org.quiltmc.loader.impl.discovery;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystem;
-import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
+import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.MountOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
 
-import net.fabricmc.accesswidener.AccessWidenerFormatException;
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
@@ -60,6 +52,8 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class RuntimeModRemapper {
+
+	static final boolean COPY_ON_WRITE = true;
 
 	public static void remap(Path cache, List<ModLoadOption> modList) {
 		List<ModLoadOption> modsToRemap = modList.stream()
@@ -92,7 +86,11 @@ public final class RuntimeModRemapper {
 						Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
 						try {
 							FasterFiles.createDirectories(dst.getParent());
-							Files.copy(path, dst);
+							if (COPY_ON_WRITE) {
+								ExtendedFiles.mount(path, dst, MountOption.COPY_ON_WRITE);
+							} else {
+								FasterFiles.copy(path, dst);
+							}
 						} catch (IOException e) {
 							throw new Error(e);
 						}
@@ -165,7 +163,6 @@ public final class RuntimeModRemapper {
 
 				if (info.accessWideners != null) {
 					for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
-						Files.delete(info.outputPath.resolve(entry.getKey()));
 						Files.write(info.outputPath.resolve(entry.getKey()), entry.getValue());
 					}
 				}

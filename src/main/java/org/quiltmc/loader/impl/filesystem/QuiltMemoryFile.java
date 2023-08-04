@@ -32,45 +32,47 @@ import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.SystemProperties;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-abstract class QuiltMemoryFile extends QuiltMemoryEntry {
+abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 
-	private QuiltMemoryFile(QuiltMemoryPath path) {
+	private QuiltMemoryFile(QuiltMapPath<?, ?> path) {
 		super(path);
 	}
 
-	abstract InputStream createInputStream() throws IOException;
+	static final class ReadOnly extends QuiltMemoryFile {
 
-	abstract OutputStream createOutputStream(boolean append) throws IOException;
-
-	abstract SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException;
-
-	static abstract class ReadOnly extends QuiltMemoryFile {
-
+		final byte[] bytes;
 		final boolean isCompressed;
 		final int uncompressedSize;
 
-		ReadOnly(QuiltMemoryPath path, boolean compressed, int uncompressedSize) {
+		ReadOnly(QuiltMapPath<?, ?> path, boolean compressed, int uncompressedSize, byte[] bytes) {
 			super(path);
 			this.isCompressed = compressed;
 			this.uncompressedSize = uncompressedSize;
+			this.bytes = bytes;
 		}
 
-		abstract byte[] byteArray();
+		final byte[] byteArray() {
+			return bytes;
+		}
 
-		abstract int bytesOffset();
+		final int bytesOffset() {
+			return 0;
+		}
 
-		abstract int bytesLength();
+		final int bytesLength() {
+			return bytes.length;
+		}
 
-		static QuiltMemoryFile.ReadOnly create(QuiltMemoryPath path, byte[] bytes, boolean compress) {
+		static QuiltMemoryFile.ReadOnly create(QuiltMapPath<?, ?> path, byte[] bytes, boolean compress) {
 			int size = bytes.length;
 
 			if (size < 24 || !compress) {
-				return new QuiltMemoryFile.ReadOnly.Absolute(path, false, size, bytes);
+				return new QuiltMemoryFile.ReadOnly(path, false, size, bytes);
 			}
 
 			try {
@@ -82,13 +84,18 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				byte[] c = baos.toByteArray();
 
 				if (c.length + 24 < size) {
-					return new QuiltMemoryFile.ReadOnly.Absolute(path, true, size, c);
+					return new QuiltMemoryFile.ReadOnly(path, true, size, c);
 				} else {
-					return new QuiltMemoryFile.ReadOnly.Absolute(path, false, size, bytes);
+					return new QuiltMemoryFile.ReadOnly(path, false, size, bytes);
 				}
 			} catch (IOException e) {
-				return new QuiltMemoryFile.ReadOnly.Absolute(path, false, size, bytes);
+				return new QuiltMemoryFile.ReadOnly(path, false, size, bytes);
 			}
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
+			return new ReadOnly(newPath, isCompressed, uncompressedSize, bytes);
 		}
 
 		@Override
@@ -141,7 +148,7 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 		}
 
 		@Override
-		OutputStream createOutputStream(boolean append) throws IOException {
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
 			throw readOnly();
 		}
 
@@ -265,56 +272,6 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				return position;
 			}
 		}
-
-		static final class Absolute extends ReadOnly {
-			private final byte[] bytes;
-
-			Absolute(QuiltMemoryPath path, boolean compressed, int uncompressedSize, byte[] bytes) {
-				super(path, compressed, uncompressedSize);
-				this.bytes = bytes;
-			}
-
-			@Override
-			byte[] byteArray() {
-				return bytes;
-			}
-
-			@Override
-			int bytesOffset() {
-				return 0;
-			}
-
-			@Override
-			int bytesLength() {
-				return bytes.length;
-			}
-		}
-
-		static final class Relative extends ReadOnly {
-			private final int byteOffset;
-			private final int byteLength;
-
-			Relative(QuiltMemoryPath path, boolean compressed, int uncompressedSize, int byteOffset, int byteLength) {
-				super(path, compressed, uncompressedSize);
-				this.byteOffset = byteOffset;
-				this.byteLength = byteLength;
-			}
-
-			@Override
-			byte[] byteArray() {
-				return ((QuiltMemoryFileSystem.ReadOnly) path.fs).packedByteArray;
-			}
-
-			@Override
-			int bytesOffset() {
-				return byteOffset;
-			}
-
-			@Override
-			int bytesLength() {
-				return byteLength;
-			}
-		}
 	}
 
 	static final class ReadWrite extends QuiltMemoryFile {
@@ -323,8 +280,14 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 		private byte[] bytes = null;
 		private int length = 0;
 
-		ReadWrite(QuiltMemoryPath path) {
+		ReadWrite(QuiltMapPath<?, ?> path) {
 			super(path);
+		}
+
+		private ReadWrite(QuiltMapPath<?, ?> path, ReadWrite from, boolean copy) {
+			super(path);
+			this.bytes = copy ? Arrays.copyOf(from.bytes, from.bytes.length) : from.bytes;
+			this.length = from.length;
 		}
 
 		private ReadWrite sync() {
@@ -373,6 +336,16 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 				this.bytes = Arrays.copyOfRange(src.byteArray(), offset, offset + src.bytesLength());
 				this.length = src.bytesLength();
 			}
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
+			return new ReadWrite(newPath, this, true);
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createMovedTo(QuiltMapPath<?, ?> newPath) {
+			return new ReadWrite(newPath, this, false);
 		}
 
 		private void expand(int to) throws IOException {
@@ -450,7 +423,10 @@ abstract class QuiltMemoryFile extends QuiltMemoryEntry {
 		}
 
 		@Override
-		OutputStream createOutputStream(boolean append) throws IOException {
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
+			if (truncate) {
+				length = 0;
+			}
 			return new OutputStream() {
 
 				private final byte[] tempWriter = new byte[1];

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.filesystem.quilt.mfs;
+package org.quiltmc.loader.impl.filesystem.quilt.ufs;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,20 +24,20 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystemProvider;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystemProvider;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** {@link URLStreamHandler} for {@link QuiltMemoryFileSystem}. */
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
+/** {@link URLStreamHandler} for {@link QuiltUnifiedFileSystem}. */
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class Handler extends URLStreamHandler {
 	@Override
 	protected URLConnection openConnection(URL u) throws IOException {
-		QuiltMemoryPath path;
+		QuiltUnifiedPath path;
 		try {
-			path = QuiltMemoryFileSystemProvider.instance().getPath(u.toURI());
+			path = QuiltUnifiedFileSystemProvider.instance().getPath(u.toURI());
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2023 QuiltMC
+ * Copyright 2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.filesystem;
+package org.quiltmc.loader.impl.util;
 
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltZipPath extends QuiltMapPath<QuiltZipFileSystem, QuiltZipPath> {
-
-	QuiltZipPath(QuiltZipFileSystem fs, QuiltZipPath parent, String name) {
-		super(fs, parent, name);
+public final class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
+	public byte[] getArray() {
+		return buf;
 	}
 
-	@Override
-	QuiltZipPath getThisPath() {
-		return this;
+	public ByteBuffer wrapIntoBuffer() {
+		return ByteBuffer.wrap(buf, 0, count);
 	}
 }

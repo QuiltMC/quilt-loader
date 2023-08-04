@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2023 QuiltMC
+ * Copyright 2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,13 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
-import java.nio.file.attribute.BasicFileAttributes;
+import org.jetbrains.annotations.Nullable;
 
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+public abstract class QuiltMapPath<FS extends QuiltMapFileSystem<FS, P>, P extends QuiltMapPath<FS, P>>
+	extends QuiltBasePath<FS, P> {
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-@Deprecated
-abstract class QuiltMemoryEntry {
-
-	final QuiltMemoryPath path;
-
-	public QuiltMemoryEntry(QuiltMemoryPath path) {
-		this.path = path;
+	QuiltMapPath(FS fs, @Nullable P parent, String name) {
+		super(fs, parent, name);
 	}
 
-	protected abstract BasicFileAttributes createAttributes();
-
-	@Override
-	public String toString() {
-		return path + " " + getClass().getSimpleName();
-	}
 }
