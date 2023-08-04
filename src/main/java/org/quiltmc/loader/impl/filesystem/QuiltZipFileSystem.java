@@ -28,19 +28,14 @@ import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileStore;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -55,6 +50,7 @@ import java.util.zip.ZipInputStream;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
 import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
@@ -92,6 +88,9 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 			source = new InMemorySource(Files.newInputStream(zipFrom));
 		}
 
+		// Ensure root exists - empty zips wouldn't create this otherwise
+		addEntryAndParents(new QuiltUnifiedFolderWriteable(root));
+
 		// Check for our header
 		byte[] header = new byte[QuiltZipCustomCompressedWriter.HEADER.length];
 		try (InputStream fileStream = source.openConstructingStream()) {
@@ -122,10 +121,6 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		QuiltZipFileSystemProvider.PROVIDER.register(this);
 		validate();
 		dumpEntries(name);
-
-		if (!isDirectory(root)) {
-			throw new IllegalStateException("Missing root???");
-		}
 	}
 
 	@Override
