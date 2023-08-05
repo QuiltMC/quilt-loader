@@ -97,11 +97,9 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 		if (srcFS instanceof CachedFileSystem) {
 			CachedFileSystem cached = (CachedFileSystem) srcFS;
 			if (!cached.isPermanentlyReadOnly()) {
-				System.out.println("Cannot copy-on-write " + cached.getClass() + " " + source + " " + source.getClass());
 				return copy(source, target, options);
 			}
 		} else {
-			System.out.println("Cannot copy-on-write other " + source + " " + source.getClass());
 			return copy(source, target, options);
 		}
 		QuiltUnifiedPath dst = provider().toAbsolutePath(target);
