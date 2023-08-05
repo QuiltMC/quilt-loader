@@ -87,7 +87,7 @@ public final class RuntimeModRemapper {
 						try {
 							FasterFiles.createDirectories(dst.getParent());
 							if (COPY_ON_WRITE) {
-								ExtendedFiles.mount(path, dst, MountOption.COPY_ON_WRITE);
+								ExtendedFiles.copyOnWrite(path, dst);
 							} else {
 								FasterFiles.copy(path, dst);
 							}
