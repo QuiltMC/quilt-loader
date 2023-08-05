@@ -28,7 +28,7 @@ import java.util.concurrent.ThreadFactory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class DeferredNioExecutionHandler {
 	// private static final ThreadLocal<Boolean> DEFERRED_REQUIRED = new ThreadLocal<>();
-	private static final boolean DEFER_REQUESTED = true;// System.getProperty("fabric.resource-loader.deferFilesystemOperations", "false").equalsIgnoreCase("true");
+	private static final boolean DEFER_REQUESTED = Boolean.getBoolean(SystemProperties.ALWAYS_DEFER_FILESYSTEM_OPERATIONS);
 	private static ExecutorService EXECUTOR_SERVICE;
 
 	public static boolean shouldDefer() {
