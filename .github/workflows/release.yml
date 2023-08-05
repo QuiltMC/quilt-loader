@@ -15,7 +15,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
       - name: Publish javadoc to javadoc.quiltmc.org
-        uses: actions/upload-s3@v1.3.3
+        uses: shallwefootball/upload-s3-action@v1.3.3
         with:
           aws_key_id: ${{ secrets.JAVADOC_USERNAME }}
           aws_secret_access_key: ${{ secrets.JAVADOC_PASSWORD }}
