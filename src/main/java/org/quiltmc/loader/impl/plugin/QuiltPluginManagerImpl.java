@@ -760,6 +760,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			break outer;
 		}
 
+		// It's arguably the most important version - if anything goes wrong while writing this report
+		// at least we know what code was used to generate it.
+		report.overview("Quilt Loader Version: " + QuiltLoaderImpl.VERSION);
+
 		if (!errors.isEmpty()) {
 			int number = 1;
 

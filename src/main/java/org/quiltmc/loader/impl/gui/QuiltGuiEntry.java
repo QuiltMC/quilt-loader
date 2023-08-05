@@ -68,6 +68,9 @@ public final class QuiltGuiEntry {
 		if ((provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
 
 			QuiltReport report = new QuiltReport("Crashed!");
+			// It's arguably the most important version - if anything goes wrong while writing this report
+			// at least we know what code was used to generate it.
+			report.overview("Quilt Loader Version: " + QuiltLoaderImpl.VERSION);
 			report.addStacktraceSection("Crash", 0, exception);
 			try {
 				QuiltLoaderImpl.INSTANCE.appendModTable(report.addStringSection("Mods", 0)::lines);
