@@ -51,6 +51,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
+import org.quiltmc.loader.impl.util.DisconnectableByteChannel;
 import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
@@ -496,13 +497,13 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		@Override
 		SeekableByteChannel channel() throws IOException {
 			try {
-				return channels.computeIfAbsent(Thread.currentThread(), t -> {
+				return new DisconnectableByteChannel(channels.computeIfAbsent(Thread.currentThread(), t -> {
 					try {
 						return Files.newByteChannel(zipFrom, StandardOpenOption.READ);
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
-				});
+				}));
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
@@ -570,6 +571,11 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 		public long skip(long n) throws IOException {
 			position += n;
 			return n;
+		}
+
+		@Override
+		public void close() throws IOException {
+			channel.close();
 		}
 	}
 
