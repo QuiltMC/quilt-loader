@@ -3,8 +3,11 @@ Features:
 * Improved entrypoint exception handling a bit.
 * Added error description for simple "breaks".
 * [#336] Memory usage improvements during transform cache building (embeddedt)
+* [#338] More optimisations to transform cache building. 
+* Added the quilt loader version to the top of quilt-loader crash reports.
 
 Bug Fixes:
 
 * Fixed the mods table being empty if quilt-loader crashed too early.
 * Fixed `ConfigFieldAnnotationProcessors.register` not being public
+* [#342] Fixed mods being able to replace classes in the `org.apache.logging.log4j.**` package.
