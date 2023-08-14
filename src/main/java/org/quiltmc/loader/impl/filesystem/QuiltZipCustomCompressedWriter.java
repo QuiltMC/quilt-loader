@@ -205,7 +205,7 @@ final class QuiltZipCustomCompressedWriter {
 					count++;
 					Path next = iterator.next();
 					if (count < 100) {
-						if (!sb.isEmpty()) {
+						if (sb.length() == 0) {
 							sb.append(", ");
 						}
 						sb.append(next);
