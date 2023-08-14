@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
-import java.io.BufferedWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -27,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -35,9 +33,11 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.Deflater;
@@ -101,6 +101,18 @@ final class QuiltZipCustomCompressedWriter {
 		WriterThread[] threads = new WriterThread[threadCount];
 		for (int i = 0; i < threadCount; i++) {
 			threads[i] = new WriterThread(mainIndex, i, channel);
+			threads[i].setUncaughtExceptionHandler((thread, ex) -> {
+				System.err.println("Exception in thread " + thread.getName());
+				ex.printStackTrace(System.err);
+				ExecutionException ee = new ExecutionException(thread.getName(), ex);
+				synchronized (QuiltZipCustomCompressedWriter.this) {
+					if (exception == null) {
+						exception = ee;
+					} else {
+						exception.addSuppressed(ee);
+					}
+				}
+			});
 			threads[i].setDaemon(true);
 			threads[i].start();
 		}
@@ -186,7 +198,23 @@ final class QuiltZipCustomCompressedWriter {
 		// Check state of every thread to propagate exceptions upwards
 		synchronized (QuiltZipCustomCompressedWriter.this) {
 			if (!sourceFiles.isEmpty()) {
-				IOException e = new IOException("Some source files haven't been processed!\n" + sourceFiles);
+				StringBuilder sb = new StringBuilder();
+				Iterator<Path> iterator = sourceFiles.iterator();
+				int count = 0;
+				while (iterator.hasNext()) {
+					count++;
+					Path next = iterator.next();
+					if (count < 100) {
+						if (!sb.isEmpty()) {
+							sb.append(", ");
+						}
+						sb.append(next);
+					}
+				}
+				if (count >= 100) {
+					sb.append(", [" + (count - 100) + " more]");
+				}
+				IOException e = new IOException("Some source files haven't been processed!\n" + sb);
 				if (exception == null) {
 					// And we don't know why
 					exception = e;
@@ -211,6 +239,8 @@ final class QuiltZipCustomCompressedWriter {
 					throw (IllegalStateException) exception;
 				} else if (exception instanceof IOException) {
 					throw (IOException) exception;
+				} else if (exception instanceof ExecutionException) {
+					throw new RuntimeException("One of the writer threads crashed!", exception);
 				} else {
 					throw new IllegalStateException(
 						"Unexpected 'Exception' type - this should only be set to IOException or IllegalStateException!",

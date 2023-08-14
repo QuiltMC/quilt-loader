@@ -5,6 +5,7 @@ Features:
 * [#336] Memory usage improvements during transform cache building (embeddedt)
 * [#338] More optimisations to transform cache building. 
 * Added the quilt loader version to the top of quilt-loader crash reports.
+* Added an uncaught exception handler to every QuiltZipCustomCompressedWriter thread, and added it to the crash report.
 
 Bug Fixes:
 
