@@ -177,7 +177,8 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 			Path inside = null;
 
-			if (from.getFileName().toString().endsWith(".jar")) {
+			Path fileName = from.getFileName();
+			if (fileName != null && fileName.toString().endsWith(".jar")) {
 				try {
 					inside = FileSystems.newFileSystem(from, (ClassLoader) null).getPath("/");
 				} catch (IOException e) {
