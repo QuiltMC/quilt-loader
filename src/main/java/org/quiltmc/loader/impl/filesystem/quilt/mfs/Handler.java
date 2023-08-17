@@ -23,10 +23,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import org.quiltmc.loader.impl.filesystem.QuiltBasePath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystemProvider;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;

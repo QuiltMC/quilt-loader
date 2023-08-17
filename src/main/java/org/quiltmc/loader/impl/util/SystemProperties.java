@@ -74,7 +74,12 @@ public final class SystemProperties {
 	public static final String DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE = "loader.transform_cache.disable_optimised_compression";
 	public static final String DISABLE_PRELOAD_TRANSFORM_CACHE = "loader.transform_cache.disable_preload";
 	public static final String LOG_CACHE_KEY_CHANGES = "loader.transform_cache.log_changed_keys";
+	// enable useTempFile in ZipFileSystem, reduces memory usage when writing transform cache at the cost of speed
+	public static final String USE_ZIPFS_TEMP_FILE = "loader.zipfs.use_temp_file";
 	public static final String DISABLE_BEACON = "loader.disable_beacon";
+	public static final String DEBUG_DUMP_FILESYSTEM_CONTENTS = "loader.debug.filesystem.dump_contents";
+	public static final String DEBUG_VALIDATE_FILESYSTEM_CONTENTS = "loader.debug.filesystem.validate_constantly";
+	public static final String ALWAYS_DEFER_FILESYSTEM_OPERATIONS = "loader.workaround.defer_all_filesystem_operations";
 
 	private SystemProperties() {
 	}

@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.plugin.base;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
@@ -44,11 +45,12 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, ModMetadataExt meta, Path from,
 		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+
 		this.pluginContext = pluginContext;
-		this.metadata = meta;
-		this.from = from;
-		this.fileIcon = fileIcon;
-		this.resourceRoot = resourceRoot;
+		this.metadata = Objects.requireNonNull(meta, "meta");
+		this.from = Objects.requireNonNull(from, "from");
+		this.fileIcon = Objects.requireNonNull(fileIcon, "fileIcon");
+		this.resourceRoot = Objects.requireNonNull(resourceRoot, "resourceRoot");
 		this.mandatory = mandatory;
 		this.requiresRemap = requiresRemap;
 	}

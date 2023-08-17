@@ -1,0 +1,156 @@
+/* Quilt Additions */
+
+@import url('https://fonts.bunny.net/css?family=Poppins:500,700&display=swap');
+
+:root {
+    --quilt_theme_background: #fefcff;
+    --quilt_theme_foreground: #4a4a4a;
+
+    --quilt_theme_selected_background: #9722ff;
+
+    --quilt_theme_background_code: #77778022;
+    --quilt_theme_link_color: #27a2fd;
+    --quilt_theme_link_hover_color: #1571b7;
+    --quilt_theme_border_color: #777;
+
+    --quilt_theme_navbar_background: #f9f3ff;
+    --quilt_theme_navbar_foreground: rgba(7, 6, 6, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --quilt_theme_background: #271f33;
+        --quilt_theme_foreground: #fafafa;
+
+        --quilt_theme_link_hover_color: #026cbb;
+
+        --quilt_theme_navbar_background: #1c1526;
+        --quilt_theme_navbar_foreground: white;
+    }
+}
+
+.quilt {
+    font: 400 14px/1.5 -apple-system, system-ui, sans-serif;
+    color: var(--quilt_theme_foreground);
+    background-color: var(--quilt_theme_background);
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-feature-settings: "kern" 1;
+    -moz-font-feature-settings: "kern" 1;
+    -o-font-feature-settings: "kern" 1;
+    font-feature-settings: "kern" 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.quilt table {
+    width: 100%;
+    text-align: left;
+    color: var(--quilt_theme_foreground);
+    border-collapse: collapse;
+    border: 1px solid var(--quilt_theme_border_color);
+}
+
+.quilt table tr:nth-child(even) {
+    background-color: var(--quilt_theme_navbar_background);
+}
+
+.quilt table th, table td {
+    padding: 1px 10px;
+}
+
+.quilt table th {
+    background-color: var(--quilt_theme_navbar_background);
+    border: 1px solid var(--quilt_theme_border_color);
+    border-bottom-color: var(--quilt_theme_border_color);
+}
+
+.quilt table td {
+    border: 1px solid var(--quilt_theme_border_color);
+}
+
+/* Changes */
+
+body, div.block , dl.notes > dd {
+    font-family: -apple-system, system-ui, sans-serif;
+    font-size: medium;
+}
+
+body, .even-row-color, .even-row-color .table-header,
+.summary section[class$="-summary"], .details section[class$="-details"], .class-uses .detail, .serialized-class-details,
+.inherited-list, section[class$="-details"] .detail,
+#search-input {
+    background-color: var(--quilt_theme_background);
+    color: var(--quilt_theme_foreground);
+}
+
+.ui-widget-content {
+    background-color: var(--quilt_theme_background) !important;
+    color: var(--quilt_theme_foreground) !important;
+}
+
+.top-nav, .sub-nav, .nav-bar-cell1-rev {
+    font-family: "Poppins", sans-serif;
+}
+
+a:link, a:visited {
+    color: var(--quilt_theme_link_color);
+}
+
+a[href]:hover, a[href]:focus {
+    color: var(--quilt_theme_link_hover_color);
+}
+
+.block, .title, dl.notes > dt {
+    color: var(--quilt_theme_foreground);
+}
+
+:not(h1, h2, h3, h4, h5, h6) > code {
+    font-family: ui-monospace, monospace;
+    font-size: 85%;
+}
+
+:not(pre) > code {
+    background-color: var(--quilt_theme_background_code);
+    border-radius: 6px;
+    padding: .2em .4em;
+}
+
+.top-nav, .sub-nav, .table-header, .odd-row-color, .odd-row-color .table-header,
+body.class-declaration-page .summary h3, body.class-declaration-page .details h3,
+body.class-declaration-page .summary .inherited-list h2,
+.ui-autocomplete-category {
+    background-color: var(--quilt_theme_navbar_background);
+    color: var(--quilt_theme_navbar_foreground);
+}
+
+.ui-state-active,
+.ui-widget-content .ui-state-active,
+.ui-widget-header .ui-state-active,
+a.ui-button:active,
+.ui-button:active,
+.ui-button.ui-state-active:hover {
+    background-color: var(--quilt_theme_selected_background) !important;
+    color: white !important;
+}
+
+.top-nav a:link, .top-nav a:active, .top-nav a:visited {
+    color: var(--quilt_theme_navbar_foreground);
+}
+
+.caption, .nav-bar-cell1-rev, div.table-tabs > button.active-table-tab {
+    color: white;
+}
+
+.caption span, .nav-bar-cell1-rev, div.table-tabs > button.active-table-tab {
+    background-color: var(--quilt_theme_selected_background);
+}
+
+.summary-table, .details-table,
+.summary section[class$="-summary"], .details section[class$="-details"], .class-uses .detail, .serialized-class-details,
+#search-input {
+    border-color: var(--quilt_theme_border_color);
+}
+
+.col-first, .col-second, .col-last, .col-constructor-name, .col-summary-item-name, .col-last {
+    font-size: medium;
+}

@@ -16,7 +16,10 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.util.Collections;
 import java.util.IllegalFormatException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.plugin.gui.I18n;
@@ -26,6 +29,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 
+	private static final Set<String> incorrectlyUntranslatedKeys = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
 	private final String translationKey;
 	private final Object[] extra;
 	boolean translate;
@@ -33,25 +38,56 @@ public final class QuiltLoaderTextImpl implements QuiltLoaderText {
 	public QuiltLoaderTextImpl(String key, boolean translate, Object... args) {
 		this.translationKey = key;
 		this.extra = args;
-		this.translate = true;
+		this.translate = translate;
+		if (!translate && !key.equals(I18n.translate(key))) {
+			if (incorrectlyUntranslatedKeys.add(key)) {
+				new Throwable("Incorrectly untranslated key '" + key + "'").printStackTrace();
+			}
+		}
 	}
 
 	@Override
 	public String toString() {
 		try {
-			return String.format(translate ? I18n.translate(translationKey) : translationKey, extra);
-		} catch (IllegalFormatException e) {
-			StringBuilder sb = new StringBuilder();
-			sb.append("Bad Args for '");
-			sb.append(translationKey);
-			sb.append(" ");
-			sb.append(e);
-			for (Object o : extra) {
-				sb.append(' ').append(o);
+			final String format;
+
+			if (translate) {
+				format = I18n.translate(translationKey);
+
+				if (format.equals(translationKey)) {
+					return error("Missing translation for", null);
+				}
+			} else {
+				format = translationKey;
 			}
 
-			return sb.toString();
+			return String.format(format, extra);
+		} catch (IllegalFormatException e) {
+			return error("Bad args for", e);
 		}
+	}
 
+	private String error(String error, Throwable ex) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(error);
+		sb.append(" '");
+		sb.append(translationKey);
+		sb.append("'");
+		if (ex != null) {
+			sb.append(" ");
+			sb.append(ex);
+		}
+		sb.append(" [");
+		boolean first = true;
+		for (Object o : extra) {
+			if (!first) {
+				sb.append(",");
+			}
+			first = false;
+			sb.append(' ').append(o);
+		}
+		sb.append(" ]");
+
+		return sb.toString();
 	}
 }

@@ -17,37 +17,30 @@
 package org.quiltmc.loader.impl.filesystem;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.PushbackInputStream;
 import java.io.UncheckedIOException;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileStore;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileAttributeView;
-import java.nio.file.attribute.FileStoreAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -55,7 +48,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.CachedFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
+import org.quiltmc.loader.impl.util.DisconnectableByteChannel;
+import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderCleanupTasks;
@@ -71,26 +68,45 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * only use this if the backing path supports efficient random access (generally {@link QuiltMemoryFileSystem} supports
  * this if it's not read-only, or the "compress" constructor argument is false). */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, QuiltZipPath>
+public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, QuiltZipPath>
 	implements ReadOnlyFileSystem {
 
-	final Map<QuiltZipPath, QuiltZipEntry> entries = new HashMap<>();
-	final SharedByteChannels channels;
+	static final boolean DEBUG_TEST_READING = false;
+
+	final WeakReference<QuiltZipFileSystem> thisRef = new WeakReference<>(this);
+	final ZipSource source;
 
 	public QuiltZipFileSystem(String name, Path zipFrom, String zipPathPrefix) throws IOException {
 		super(QuiltZipFileSystem.class, QuiltZipPath.class, name, true);
 
-		channels = new SharedByteChannels(this, zipFrom);
+		if (DEBUG_TEST_READING) {
+			System.out.println("new QuiltZipFileSystem ( "  + name + ", from " + zipFrom + " )");
+		}
+
+		if (zipFrom.getFileSystem() == FileSystems.getDefault()) {
+			source = new SharedByteChannels(this, zipFrom);
+		} else {
+			source = new InMemorySource(Files.newInputStream(zipFrom));
+		}
+
+		// Ensure root exists - empty zips wouldn't create this otherwise
+		addEntryAndParents(new QuiltUnifiedFolderWriteable(root));
 
 		// Check for our header
 		byte[] header = new byte[QuiltZipCustomCompressedWriter.HEADER.length];
-		try (InputStream fileStream = Files.newInputStream(zipFrom, StandardOpenOption.READ)) {
+		try (InputStream fileStream = source.openConstructingStream()) {
 			BufferedInputStream pushback = new BufferedInputStream(fileStream);
 			pushback.mark(header.length);
 			int readLength = pushback.read(header);
 			if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.HEADER)) {
-				int start = new DataInputStream(pushback).readInt();
-				readDirectory(root, start, new DataInputStream(new GZIPInputStream(pushback)), zipPathPrefix);
+				if (!(source instanceof SharedByteChannels)) {
+					throw new IOException("Cannot read a custom compressed stream that isn't on the default file system!");
+				}
+				int directoryStart = new DataInputStream(pushback).readInt();
+				int dataStart = readLength + 4;
+				try (GZIPInputStream src = new GZIPInputStream(source.stream(directoryStart))) {
+					readDirectory(root, new DataInputStream(src), zipPathPrefix);
+				}
 			} else if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.PARTIAL_HEADER)) {
 				throw new PartiallyWrittenIOException();
 			} else {
@@ -99,7 +115,18 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			}
 		}
 
+		source.build();
+
+		switchToReadOnly();
+
 		QuiltZipFileSystemProvider.PROVIDER.register(this);
+		validate();
+		dumpEntries(name);
+	}
+
+	@Override
+	protected boolean startWithConcurrentMap() {
+		return false;
 	}
 
 	private void initializeFromZip(InputStream fileStream, String zipPathPrefix) throws IOException {
@@ -121,19 +148,18 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 				QuiltZipPath path = getPath(entryName);
 
 				if (entryName.endsWith("/")) {
-					// Folder, but it might already have been automatically added by a file
-					entries.putIfAbsent(path, new QuiltZipFolder());
+					createDirectories(path);
 				} else {
-					putFile(path, new QuiltZipFile(channels, entry, zip), IOException::new);
+					addEntryAndParents(new QuiltZipFile(path, source, entry, zip));
 				}
 			}
 		}
 	}
 
-	private void readDirectory(QuiltZipPath path, int start, DataInputStream stream, String zipPathPrefix) throws IOException {
+	private void readDirectory(QuiltZipPath path, DataInputStream stream, String zipPathPrefix) throws IOException {
 		String pathString = path.toString();
 		if (pathString.startsWith(zipPathPrefix) || zipPathPrefix.startsWith(pathString)) {
-			entries.computeIfAbsent(path, p -> new QuiltZipFolder());
+			createDirectories(path);
 		}
 		int childFiles = stream.readUnsignedShort();
 		for (int i = 0; i < childFiles; i++) {
@@ -141,12 +167,11 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			byte[] nameBytes = new byte[length];
 			stream.readFully(nameBytes);
 			QuiltZipPath filePath = path.resolve(new String(nameBytes, StandardCharsets.UTF_8));
-			int offset = start + stream.readInt();
+			int offset = stream.readInt();
 			int uncompressedSize = stream.readInt();
 			int compressedSize = stream.readInt();
 			if (filePath.toString().startsWith(zipPathPrefix)) {
-				QuiltZipFile file = new QuiltZipFile(filePath.toString(), channels, offset, compressedSize, uncompressedSize, true);
-				putFile(filePath, file, IOException::new);
+				addEntryAndParents(new QuiltZipFile(filePath, source, offset, compressedSize, uncompressedSize, true));
 			}
 		}
 
@@ -156,7 +181,7 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			byte[] nameBytes = new byte[length];
 			stream.readFully(nameBytes);
 			String name = new String(nameBytes, StandardCharsets.UTF_8);
-			readDirectory(path.resolve(name), start, stream, zipPathPrefix);
+			readDirectory(path.resolve(name), stream, zipPathPrefix);
 		}
 	}
 
@@ -165,44 +190,38 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 	public QuiltZipFileSystem(String name, QuiltZipPath newRoot) {
 		super(QuiltZipFileSystem.class, QuiltZipPath.class, name, true);
 
-		channels = newRoot.fs.channels;
-		channels.open(this);
+		source = newRoot.fs.source;
+		source.open(this);
 
 		addFolder(newRoot, getRoot());
 
 		QuiltZipFileSystemProvider.PROVIDER.register(this);
+
+		if (!isDirectory(root)) {
+			throw new IllegalStateException("Missing root???");
+		}
 	}
 
 	private void addFolder(QuiltZipPath src, QuiltZipPath dst) {
 		QuiltZipFileSystem srcFS = src.fs;
-		QuiltZipEntry entryFrom = srcFS.entries.get(src);
-		if (entryFrom instanceof QuiltZipFolder) {
+		QuiltUnifiedEntry entryFrom = srcFS.getEntry(src);
+		if (entryFrom instanceof QuiltUnifiedFolderReadOnly) {
 			// QuiltZipFolder does store subfolders that are part of the original FS, so we need to fully copy it
-			entries.put(dst, new QuiltZipFolder());
-			for (Map.Entry<String, QuiltZipPath> child : ((QuiltZipFolder) entryFrom).children.entrySet()) {
-				addFolder(child.getValue(), dst.resolve(child.getKey()));
+			QuiltMapPath<?, ?>[] srcChildren = ((QuiltUnifiedFolderReadOnly) entryFrom).children;
+			QuiltMapPath<?, ?>[] dstChildren = new QuiltMapPath<?, ?>[srcChildren.length];
+			for (int i = 0; i < srcChildren.length; i++) {
+				QuiltMapPath<?, ?> srcChild = srcChildren[i];
+				QuiltZipPath dstChild = dst.resolve(srcChild.name);
+				addFolder((QuiltZipPath) srcChild, dstChild);
+				dstChildren[i] = dstChild;
 			}
+			addEntryWithoutParentsUnsafe(new QuiltUnifiedFolderReadOnly(dst, dstChildren));
 		} else if (entryFrom instanceof QuiltZipFile) {
-			// QuiltZipFile doesn't store anything that directly relates it to the source file system, so we can just
-			// reuse the object
-			putFile(dst, (QuiltZipFile) entryFrom, IllegalStateException::new);
+			QuiltZipFile from = (QuiltZipFile) entryFrom;
+			addEntryWithoutParentsUnsafe(new QuiltZipFile(dst, source, from.offset, from.compressedSize, from.uncompressedSize, from.isCompressed));
 		} else {
 			// This isn't meant to happen, it means something got constructed badly
-		}
-	}
-
-	private <T extends Throwable> void putFile(QuiltZipPath path, QuiltZipFile file, Function<String, T> exCtor)
-		throws T {
-		entries.put(path, file);
-		QuiltZipPath parent = path;
-		QuiltZipPath previous = path;
-		while ((parent = parent.getParent()) != null) {
-			QuiltZipEntry newEntry = entries.computeIfAbsent(parent, f -> new QuiltZipFolder());
-			if (!(newEntry instanceof QuiltZipFolder)) {
-				throw exCtor.apply("Cannot make a file into a folder " + parent + " for " + path);
-			}
-			((QuiltZipFolder) newEntry).children.put(previous.name, previous);
-			previous = parent;
+			throw new IllegalArgumentException("Unknown source entry " + entryFrom);
 		}
 	}
 
@@ -229,12 +248,12 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 
 	@Override
 	public void close() throws IOException {
-		channels.close(this);
+		source.close(this);
 	}
 
 	@Override
 	public boolean isOpen() {
-		return channels.isOpen;
+		return source.isOpen();
 	}
 
 	@Override
@@ -245,116 +264,8 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 	// FasterFileSystem
 
 	@Override
-	public boolean isSymbolicLink(Path path) {
-		// Symbolic links are not supported in zips
-		return false;
-	}
-
-	@Override
-	public boolean isDirectory(Path path, LinkOption... options) {
-		return entries.get(path.toAbsolutePath().normalize()) instanceof QuiltZipFolder;
-	}
-
-	@Override
-	public boolean isRegularFile(Path path, LinkOption[] options) {
-		return entries.get(path.toAbsolutePath().normalize()) instanceof QuiltZipFile;
-	}
-
-	@Override
-	public boolean exists(Path path, LinkOption... options) {
-		return entries.containsKey(path.toAbsolutePath().normalize());
-	}
-
-	@Override
-	public boolean notExists(Path path, LinkOption... options) {
-		// Normally you're not meant to do this
-		// But it's fine, since there's nothing that could prevent us from checking if the file exists
-		return !exists(path, options);
-	}
-
-	@Override
-	public boolean isReadable(Path path) {
-		return exists(path);
-	}
-
-	@Override
 	public boolean isExecutable(Path path) {
 		return exists(path);
-	}
-
-	@Override
-	public Stream<Path> list(Path dir) throws IOException {
-		return getChildren(dir).stream().map(p -> (Path) p);
-	}
-
-	@Override
-	public Collection<? extends Path> getChildren(Path dir) throws IOException {
-		QuiltZipEntry entry = entries.get(dir.toAbsolutePath().normalize());
-		if (!(entry instanceof QuiltZipFolder)) {
-			throw new NotDirectoryException(dir.toString());
-		}
-		return Collections.unmodifiableCollection(((QuiltZipFolder) entry).children.values());
-	}
-
-	@Override
-	public Iterable<FileStore> getFileStores() {
-		FileStore store = new FileStore() {
-			@Override
-			public String type() {
-				return "QuiltZipFileSystem";
-			}
-
-			@Override
-			public boolean supportsFileAttributeView(String name) {
-				return "basic".equals(name);
-			}
-
-			@Override
-			public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
-				return type == BasicFileAttributeView.class;
-			}
-
-			@Override
-			public String name() {
-				return "QuiltZipFileSystem";
-			}
-
-			@Override
-			public boolean isReadOnly() {
-				return true;
-			}
-
-			@Override
-			public long getUsableSpace() throws IOException {
-				return 10;
-			}
-
-			@Override
-			public long getUnallocatedSpace() throws IOException {
-				return 0;
-			}
-
-			@Override
-			public long getTotalSpace() throws IOException {
-				return getUsableSpace();
-			}
-
-			@Override
-			public <V extends FileStoreAttributeView> V getFileStoreAttributeView(Class<V> type) {
-				return null;
-			}
-
-			@Override
-			public Object getAttribute(String attribute) throws IOException {
-				return null;
-			}
-		};
-		return Collections.singleton(store);
-	}
-
-	@Override
-	public Set<String> supportedFileAttributeViews() {
-		return Collections.singleton("basic");
 	}
 
 	// Custom classes to grab the real offset while reading the zip
@@ -419,10 +330,114 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 		}
 	}
 
+	static abstract class ZipSource {
+
+		abstract InputStream openConstructingStream() throws IOException;
+
+		abstract ZipSource forIndividualFile(long offset, int length);
+
+		abstract void build() throws IOException;
+
+		abstract boolean isOpen();
+
+		abstract void open(QuiltZipFileSystem fs);
+
+		abstract void close(QuiltZipFileSystem fs) throws IOException;
+
+		abstract InputStream stream(long position) throws IOException;
+
+		abstract SeekableByteChannel channel() throws IOException;
+	}
+
+	static final class InMemorySource extends ZipSource {
+
+		private InputStream from;
+		private ExposedByteArrayOutputStream baos;
+		private int negativeOffset;
+		private byte[] bytes;
+
+		InMemorySource(InputStream from) {
+			this.from = from;
+			this.baos = new ExposedByteArrayOutputStream();
+		}
+
+		InMemorySource(long negativeOffset, byte[] bytes) {
+			this.negativeOffset = (int) negativeOffset;
+			this.bytes = bytes;
+		}
+
+		@Override
+		InputStream openConstructingStream() throws IOException {
+			return new InputStream() {
+				@Override
+				public int read() throws IOException {
+					int read = from.read();
+					if (read >= 0) {
+						baos.write(read);
+					}
+					return read;
+				}
+
+				@Override
+				public int read(byte[] b, int off, int len) throws IOException {
+					int read = from.read(b, off, len);
+					if (read > 0) {
+						baos.write(b, off, read);
+					}
+					return read;
+				}
+
+				@Override
+				public void close() throws IOException {
+					from.close();
+				}
+			};
+		}
+
+		@Override
+		ZipSource forIndividualFile(long offset, int length) {
+			int pos = (int) offset;
+			return new InMemorySource(pos, Arrays.copyOfRange(baos.getArray(), pos, pos + length));
+		}
+
+		@Override
+		void build() throws IOException {
+			from.close();
+			from = null;
+			baos = null;
+		}
+
+		@Override
+		boolean isOpen() {
+			return true;
+		}
+
+		@Override
+		void open(QuiltZipFileSystem fs) {
+			// NO-OP
+		}
+
+		@Override
+		void close(QuiltZipFileSystem fs) throws IOException {
+			// NO-OP
+		}
+
+		@Override
+		InputStream stream(long position) throws IOException {
+			int pos = (int) (position - negativeOffset);
+			return new ByteArrayInputStream(bytes, pos, bytes.length - pos);
+		}
+
+		@Override
+		SeekableByteChannel channel() throws IOException {
+			return new ByteArrayChannel(bytes, negativeOffset);
+		}
+	}
+
 	/** Used to cache {@link SeekableByteChannel} per-thread, since it's an expensive operation to open them. */
-	static final class SharedByteChannels {
+	static final class SharedByteChannels extends ZipSource {
 		final Path zipFrom;
-		final Set<QuiltZipFileSystem> fileSystems = new HashSet<>();
+		final Set<WeakReference<QuiltZipFileSystem>> fileSystems = new HashSet<>();
 
 		// This is not very nice: we want to use a ThreadLocal
 		// but we can't since we need to close every channel afterwards
@@ -436,12 +451,34 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			QuiltLoaderCleanupTasks.addCleanupTask(this, this::removeDeadThreads);
 		}
 
-		synchronized void open(QuiltZipFileSystem fs) {
-			fileSystems.add(fs);
+		@Override
+		public InputStream openConstructingStream() throws IOException {
+			return Files.newInputStream(zipFrom);
 		}
 
+		@Override
+		ZipSource forIndividualFile(long offset, int length) {
+			return this;
+		}
+
+		@Override
+		void build() throws IOException {
+			// NO-OP
+		}
+
+		@Override
+		boolean isOpen() {
+			return isOpen;
+		}
+
+		@Override
+		synchronized void open(QuiltZipFileSystem fs) {
+			fileSystems.add(fs.thisRef);
+		}
+
+		@Override
 		synchronized void close(QuiltZipFileSystem fs) throws IOException {
-			fileSystems.remove(fs);
+			fileSystems.remove(fs.thisRef);
 			if (fileSystems.isEmpty()) {
 				isOpen = false;
 				for (SeekableByteChannel channel : channels.values()) {
@@ -452,15 +489,21 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			}
 		}
 
+		@Override
+		InputStream stream(long position) throws IOException {
+			return new ByteChannel2Stream(channel(), position);
+		}
+
+		@Override
 		SeekableByteChannel channel() throws IOException {
 			try {
-				return channels.computeIfAbsent(Thread.currentThread(), t -> {
+				return new DisconnectableByteChannel(channels.computeIfAbsent(Thread.currentThread(), t -> {
 					try {
 						return Files.newByteChannel(zipFrom, StandardOpenOption.READ);
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
-				});
+				}));
 			} catch (UncheckedIOException e) {
 				throw e.getCause();
 			}
@@ -478,6 +521,13 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
+				}
+			}
+
+			Iterator<WeakReference<QuiltZipFileSystem>> iter = fileSystems.iterator();
+			while (iter.hasNext()) {
+				if (iter.next().get() == null) {
+					iter.remove();
 				}
 			}
 
@@ -522,29 +572,90 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 			position += n;
 			return n;
 		}
-	}
-
-	static abstract class QuiltZipEntry {
-		protected abstract BasicFileAttributes createAttributes(QuiltZipPath path);
-	}
-
-	static final class QuiltZipFolder extends QuiltZipEntry {
-		final Map<String, QuiltZipPath> children = new HashMap<>();
 
 		@Override
-		protected BasicFileAttributes createAttributes(QuiltZipPath path) {
-			return new QuiltFileAttributes(path, QuiltFileAttributes.SIZE_DIRECTORY);
+		public void close() throws IOException {
+			channel.close();
 		}
 	}
 
-	static final class QuiltZipFile extends QuiltZipEntry {
-		final SharedByteChannels channels;
+	static final class ByteArrayChannel implements SeekableByteChannel {
+
+		private final byte[] bytes;
+		private final int negativeOffset;
+		private int position;
+
+		ByteArrayChannel(byte[] bytes, int negativeOffset) {
+			this.bytes = bytes;
+			this.negativeOffset = negativeOffset;
+		}
+
+		@Override
+		public boolean isOpen() {
+			return true;
+		}
+
+		@Override
+		public void close() throws IOException {
+			// NO-OP
+		}
+
+		@Override
+		public int read(ByteBuffer dst) throws IOException {
+			if (position >= bytes.length) {
+				return -1;
+			}
+			if (position < 0) {
+				return -1;
+			}
+			int length = Math.min(bytes.length - position, dst.remaining());
+			dst.put(bytes, position, length);
+			position += length;
+			return length;
+		}
+
+		@Override
+		public int write(ByteBuffer src) throws IOException {
+			throw new IOException("read only");
+		}
+
+		@Override
+		public long position() throws IOException {
+			return position + negativeOffset;
+		}
+
+		@Override
+		public SeekableByteChannel position(long newPosition) throws IOException {
+			if (newPosition < 0) {
+				throw new IllegalArgumentException("position < 0");
+			}
+			this.position = (int) Math.min(Integer.MAX_VALUE / 2, newPosition) - negativeOffset;
+			return this;
+		}
+
+		@Override
+		public long size() throws IOException {
+			return bytes.length;
+		}
+
+		@Override
+		public SeekableByteChannel truncate(long size) throws IOException {
+			if (size >= bytes.length) {
+				return this;
+			} else {
+				throw new IOException("read only");
+			}
+		}
+	}
+
+	static final class QuiltZipFile extends QuiltUnifiedFile {
+		final ZipSource source;
 		final long offset;
 		final int compressedSize, uncompressedSize;
 		final boolean isCompressed;
 
-		QuiltZipFile(SharedByteChannels channels, ZipEntry entry, CustomZipInputStream zip) throws IOException {
-			this.channels = channels;
+		QuiltZipFile(QuiltZipPath path, ZipSource source, ZipEntry entry, CustomZipInputStream zip) throws IOException {
+			super(path);
 			this.offset = zip.getOffset();
 			int method = entry.getMethod();
 			if (method == ZipEntry.DEFLATED) {
@@ -573,10 +684,19 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 				compressed = (int) (zip.getOffset() - offset);
 				uncompressed = outputLength;
 				time = System.nanoTime() - start;
+			} else {
+				while (true) {
+					int skipped = (int) zip.skip(1 << 16);
+					if (skipped == 0) {
+						break;
+					}
+				}
 			}
 
 			this.compressedSize = compressed;
 			this.uncompressedSize = uncompressed;
+
+			this.source = source.forIndividualFile(offset, compressedSize);
 
 			if (Boolean.getBoolean("alexiil.temp.dump_zip_file_system_entries")) {
 				StringBuilder sb = new StringBuilder();
@@ -596,24 +716,29 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 				System.out.println(sb.toString());
 			}
 
-//			testReading(entry.toString());
+			if (DEBUG_TEST_READING) {
+				testReading(entry.toString());
+			}
 		}
 
-		QuiltZipFile(String path, SharedByteChannels channels, long offset, int compressedSize, int uncompressedSize,
+		QuiltZipFile(QuiltZipPath path, ZipSource source, long offset, int compressedSize, int uncompressedSize,
 			boolean isCompressed) {
 
-			this.channels = channels;
+			super(path);
+
+			this.source = source;
 			this.offset = offset;
 			this.compressedSize = compressedSize;
 			this.uncompressedSize = uncompressedSize;
 			this.isCompressed = isCompressed;
 
-//			testReading(path);
+			if (DEBUG_TEST_READING) {
+				testReading(path.toString());
+			}
 		}
 
-
 		private void testReading(String path) {
-			if (!path.endsWith(".json") && !path.endsWith(".txt")) {
+			if (!path.endsWith(".json") && !path.endsWith(".txt") && !"META-INF/MANIFEST.MF".equals(path)) {
 				return;
 			}
 			System.out.println(path + " @ " + Integer.toHexString((int) offset));
@@ -664,10 +789,16 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 		}
 
 		@Override
-		protected BasicFileAttributes createAttributes(QuiltZipPath path) {
+		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
+			return new QuiltZipFile((QuiltZipPath) newPath, source, offset, compressedSize, uncompressedSize, isCompressed);
+		}
+
+		@Override
+		protected BasicFileAttributes createAttributes() {
 			return new QuiltFileAttributes(path, uncompressedSize);
 		}
 
+		@Override
 		InputStream createInputStream() throws IOException {
 			InputStream stream = createUncompressingInputStream();
 			if (isCompressed) {
@@ -684,14 +815,28 @@ public class QuiltZipFileSystem extends QuiltBaseFileSystem<QuiltZipFileSystem, 
 		}
 
 		private InputStream createUncompressingInputStream() throws IOException, IOException {
-			ByteChannel2Stream channel = new ByteChannel2Stream(channels.channel(), offset);
-			return new LimitedInputStream(channel, compressedSize);
+			return new LimitedInputStream(source.stream(offset), compressedSize);
+		}
+
+		@Override
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
+			throw new IOException(READ_ONLY_ERROR_MESSAGE);
+		}
+
+		@Override
+		SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException {
+			for (OpenOption option : options) {
+				if (option != StandardOpenOption.READ) {
+					throw new IOException(READ_ONLY_ERROR_MESSAGE);
+				}
+			}
+
+			return createByteChannel();
 		}
 
 		SeekableByteChannel createByteChannel() throws IOException {
 			if (!isCompressed) {
-				Path path = channels.zipFrom;
-				return new OffsetSeekableByteChannel(Files.newByteChannel(path, StandardOpenOption.READ));
+				return new OffsetSeekableByteChannel(source.channel());
 			} else {
 				return new InflaterSeekableByteChannel();
 			}

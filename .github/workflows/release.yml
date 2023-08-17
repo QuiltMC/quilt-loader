@@ -14,6 +14,15 @@ jobs:
           MAVEN_URL: ${{ secrets.MAVEN_URL }}
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+      - name: Publish javadoc to javadoc.quiltmc.org
+        uses: shallwefootball/upload-s3-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.JAVADOC_USERNAME }}
+          aws_secret_access_key: ${{ secrets.JAVADOC_PASSWORD }}
+          aws_bucket: ${{ secrets.JAVADOC_BUCKET }}
+          endpoint: ${{ secrets.JAVADOC_URL }}
+          source_dir: ./build/docs/
+          destination_dir: "quilt-loader"
 
       - name: Update Quilt Meta
         uses: quiltmc/update-quilt-meta@main

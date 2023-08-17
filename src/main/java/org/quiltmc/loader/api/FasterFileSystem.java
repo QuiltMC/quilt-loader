@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api;
 
 import java.io.IOException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -39,6 +40,13 @@ public interface FasterFileSystem {
 
 	default Path createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException {
 		return Files.createDirectories(dir, attrs);
+	}
+
+	/** @param source A {@link Path}, which might not be in this {@link FileSystem}.
+	 * @param target A {@link Path} which must be from this {@link FileSystem}
+	 * @return target */
+	default Path copy(Path source, Path target, CopyOption... options) throws IOException {
+		return Files.copy(source, target, options);
 	}
 
 	default boolean isSymbolicLink(Path path) {

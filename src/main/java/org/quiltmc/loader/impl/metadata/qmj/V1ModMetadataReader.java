@@ -849,7 +849,6 @@ public final class V1ModMetadataReader {
 		if (modJsonNode == null) {
 			modJsonNode = warningNode.addChild(QuiltLoaderText.of("quilt.mod.json"));
 			modJsonNode.mainIcon(QuiltLoaderGui.iconJsonFile()).subIcon(QuiltLoaderGui.iconQuilt());
-			modJsonNode.setDirectLevel(WarningLevel.WARN);
 		}
 		return modJsonNode;
 	}

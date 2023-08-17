@@ -17,10 +17,12 @@
 package org.quiltmc.loader.impl.solver;
 
 import java.util.Arrays;
+import java.util.Set;
 
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -56,6 +58,17 @@ abstract class RuleDefinition {
 			}
 		}
 		return op;
+	}
+
+	/* package-private */ void validateOptions(Set<LoadOption> validOptions) {
+		for (LoadOption option : options) {
+			if (RuleContext.isNegated(option)) {
+				option = RuleContext.negate(option);
+			}
+			if (!validOptions.contains(option)) {
+				throw new IllegalStateException("Tried to define rule " + rule.getClass() + " " + rule + " as " + this + ", but the option " + option.getClass() + " " + option + " isn't registered!");
+			}
+		}
 	}
 
 	protected abstract IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException;

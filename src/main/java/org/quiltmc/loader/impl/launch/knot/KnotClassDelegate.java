@@ -196,7 +196,7 @@ class KnotClassDelegate {
 
 		URL url = getClassUrl(name, allowFromParent);
 
-		if (!allowFromParent && name.startsWith("org.slf4j.")) {
+		if (!allowFromParent && shouldRerouteToParent(name)) {
 			// Force slf4j itself to be loaded on a single classloader
 			// FIXME DISABLED
 			// TODO: Change this into a report, rather than being printed on each overlap.
@@ -311,6 +311,10 @@ class KnotClassDelegate {
 			System.out.print(text.toString());
 		}
 		return c;
+	}
+
+	private boolean shouldRerouteToParent(String name) {
+		return name.startsWith("org.slf4j.") || name.startsWith("org.apache.logging.log4j.");
 	}
 
 	boolean computeCanLoadPackage(String pkgName, boolean allowFromParent) {

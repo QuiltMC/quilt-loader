@@ -156,7 +156,11 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		javaMeta.group = "builtin";
 		javaMeta.version = Version.of(javaVersion);
 		javaMeta.name = System.getProperty("java.vm.name");
-		Path javaPath = new File(System.getProperty("java.home")).toPath();
+		String javaHome = System.getProperty("java.home");
+		Path javaPath = new File(javaHome).toPath();
+		if (javaPath.getNameCount() == 0) {
+			throw new Error("Invalid java.home value? '" + javaHome + "' for vm '" + javaMeta.name + "'");
+		}
 		addSystemMod(new BuiltinMod(Collections.singletonList(javaPath), javaMeta.build()), "java");
 	}
 
@@ -177,7 +181,8 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 			Path inside = null;
 
-			if (from.getFileName().toString().endsWith(".jar")) {
+			Path fileName = from.getFileName();
+			if (fileName != null && fileName.toString().endsWith(".jar")) {
 				try {
 					inside = FileSystems.newFileSystem(from, (ClassLoader) null).getPath("/");
 				} catch (IOException e) {

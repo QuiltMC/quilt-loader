@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.plugin;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -26,6 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.impl.transformer.InternalsHiderTransform;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -33,21 +33,43 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class QuiltPluginClassLoader extends ClassLoader {
 
-	final QuiltPluginManagerImpl manager;
+	final QuiltPluginContextImpl context;
 	final Path from;
 	final Set<String> loadablePackages;
 
-	public QuiltPluginClassLoader(QuiltPluginManagerImpl manager, ClassLoader parent, Path from,
+	public QuiltPluginClassLoader(QuiltPluginContextImpl context, ClassLoader parent, Path from,
 		ModMetadataExt.ModPlugin plugin) {
 
 		super(parent);
-		this.manager = manager;
+		this.context = context;
 		this.from = from;
 		this.loadablePackages = new HashSet<>(plugin.packages());
 	}
 
 	@Override
-	protected Class<?> findClass(String name) throws ClassNotFoundException {
+	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+		Class<?> c = loadClassInner(name);
+		if (c == null) {
+			return super.loadClass(name, resolve);
+		}
+		if (resolve) {
+			resolveClass(c);
+		}
+		return c;
+	}
+
+	Class<?> loadClassDirectly(String name, boolean resolve) throws ClassNotFoundException {
+		Class<?> c = loadClassInner(name);
+		if (c == null) {
+			throw new ClassNotFoundException(name);
+		}
+		if (resolve) {
+			resolveClass(c);
+		}
+		return c;
+	}
+
+	private Class<?> loadClassInner(String name) throws ClassNotFoundException {
 
 		String pkg = null;
 
@@ -69,6 +91,10 @@ class QuiltPluginClassLoader extends ClassLoader {
 			try (InputStream is = Files.newInputStream(from.resolve(path))) {
 				byte[] src = FileUtil.readAllBytes(is);
 
+				InternalsHiderTransform transform = new InternalsHiderTransform(InternalsHiderTransform.Target.PLUGIN);
+
+				src = transform.run(context.optionFrom, src);
+
 				try {
 					definePackage(pkg, null, null, null, null, null, null, null);
 				} catch (IllegalArgumentException e) {
@@ -83,13 +109,7 @@ class QuiltPluginClassLoader extends ClassLoader {
 			}
 		}
 
-		Class<?> cls = manager.findClass(name, pkg);
-
-		if (cls != null) {
-			return cls;
-		}
-
-		return super.findClass(name);
+		return context.manager.findClass(name, pkg);
 	}
 
 	@Override

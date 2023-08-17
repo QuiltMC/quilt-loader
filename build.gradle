@@ -314,19 +314,26 @@ javadoc {
 		if (file("README.html").exists()) {
 			overview = "README.html"
 		}
-
+		destinationDir = file("${buildDir}/docs/${project.version}")
 		source = "8"
 		encoding = 'UTF-8'
 		charSet = 'UTF-8'
 		memberLevel = JavadocMemberLevel.PACKAGE
+		splitIndex true
 		links(
 				'https://asm.ow2.io/javadoc/',
 				'https://docs.oracle.com/javase/8/docs/api/',
 				'https://logging.apache.org/log4j/2.x/log4j-api/apidocs/'
 		)
 
-		// Disable the crazy super-strict doclint tool in Java 8
-		addStringOption('Xdoclint:none', '-quiet')
+		addBooleanOption 'Xdoclint:html', true
+		addBooleanOption 'Xdoclint:syntax', true
+		addBooleanOption 'Xdoclint:reference', true
+		addBooleanOption 'Xdoclint:accessibility', true
+		addStringOption("-notimestamp")
+		addStringOption("Xdoclint:none")
+		addStringOption("-quiet")
+		addFileOption "-add-stylesheet", file("src/main/javadoc/style.css")
 	}
 
 	source sourceSets.main.allJava.srcDirs

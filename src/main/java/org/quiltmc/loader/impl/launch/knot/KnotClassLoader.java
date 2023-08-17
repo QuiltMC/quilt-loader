@@ -23,6 +23,7 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.DeferredInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -133,6 +134,16 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public InputStream getResourceAsStream(String name) {
 		Objects.requireNonNull(name);
 
+		try {
+			return DeferredInputStream.deferIfNeeded(() -> {
+				return getResourceAsStream0(name);
+			});
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to fetch the input stream", e);
+		}
+	}
+
+	private InputStream getResourceAsStream0(String name) {
 		Path path = paths.findResource(name);
 		if (path != null) {
 			try {
