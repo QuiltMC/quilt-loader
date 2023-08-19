@@ -130,7 +130,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.20.0-beta.14";
+	public static final String VERSION = "0.20.0-beta.15";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -208,8 +208,6 @@ public final class QuiltLoaderImpl {
 
 		setGameDir(provider.getLaunchDirectory());
 		argumentModsList = provider.getArguments().remove(Arguments.ADD_MODS);
-
-		ActiveUserBeacon.run();
 	}
 
 	public void setGameDir(Path gameDir) {
