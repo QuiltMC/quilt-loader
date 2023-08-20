@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 import org.quiltmc.loader.api.FasterFiles;
 
@@ -63,7 +64,7 @@ public class HashUtil {
 
 		int nano = now.getNano();
 
-		return new byte[] { //
+		return Arrays.copyOf(new byte[] { //
 			(byte) (now.getYear() & 0xFF), //
 			(byte) ((now.getYear() >> 8) & 0xFF), //
 			(byte) (now.getMonthValue()), //
@@ -75,7 +76,7 @@ public class HashUtil {
 			(byte) ((nano >> 8) & 0xFF), //
 			(byte) ((nano >> 16) & 0xFF), //
 			(byte) (nano >> 24)//
-		};
+		}, 20); // 20 bytes to match SHA-1
 	}
 
 	public static String hashToString(byte[] hash) {

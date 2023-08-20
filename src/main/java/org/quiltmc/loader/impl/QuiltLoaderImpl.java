@@ -33,6 +33,7 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -130,7 +131,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.20.0-beta.15";
+	public static final String VERSION = "0.20.0-beta.16";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -146,6 +147,9 @@ public final class QuiltLoaderImpl {
 	public static final char FLAG_DEPS_REMOVED = 'R';
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
+
+	protected final Map<String, String> modOriginHash = new HashMap<>();
+	protected final Map<Path, String> pathOriginHash = new HashMap<>();
 
 	protected List<ModContainerExt> mods = new ArrayList<>();
 
@@ -343,8 +347,48 @@ public final class QuiltLoaderImpl {
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
 
+		Map<Path, byte[]> originPathCache = new HashMap<>();
+
+		for (ModLoadOption mod : modList) {
+			Path from = mod.from();
+			List<List<Path>> srcPaths = temporarySourcePaths.get(from);
+			boolean newArray = false;
+			byte[] hash = null;
+			for (List<Path> paths : srcPaths) {
+				Path first = paths.get(0);
+				if (first.getFileSystem() != FileSystems.getDefault()) {
+					throw new ModResolutionException(
+						"The first path as a source for " + from + " (first = " + first
+							+ ") is not on the default file system?"
+					);
+				}
+				byte[] firstHash = originPathCache.get(first);
+				if (firstHash == null) {
+					try {
+						firstHash = HashUtil.computeHash(first);
+					} catch (IOException e) {
+						throw new ModResolutionException("Failed to compute the hash for mod '" + mod.id() + "', path " + first);
+					}
+					originPathCache.put(first, firstHash);
+					pathOriginHash.put(first, HashUtil.hashToString(firstHash));
+				}
+				if (hash == null) {
+					hash = firstHash;
+				} else {
+					if (!newArray) {
+						newArray = true;
+						hash = Arrays.copyOf(hash, hash.length);
+					}
+					for (int i = 0; i < hash.length; i++) {
+						hash[i] ^= firstHash[i];
+					}
+				}
+			}
+			modOriginHash.put(mod.id(), HashUtil.hashToString(hash));
+		}
+
 		Path transformCacheFolder = getCacheDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
-		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, result);
+		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, modOriginHash, result);
 		QuiltZipPath transformedModBundle = cacheResult.transformCacheRoot;
 
 		long zipEnd = System.nanoTime();
@@ -814,13 +858,7 @@ public final class QuiltLoaderImpl {
 
 				Path from = paths.get(0);
 				if (FasterFiles.isRegularFile(from)) {
-					String hashString;
-					try {
-						hashString = HashUtil.hashToString(HashUtil.computeHash(from));
-					} catch (IOException e) {
-						hashString = "<" + e.getMessage() + ">";
-					}
-					row.put(hash, hashString);
+					row.put(hash, pathOriginHash.get(from));
 				}
 
 				if (pathsIndex != 0) {

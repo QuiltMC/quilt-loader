@@ -68,7 +68,7 @@ public class TransformCache {
 	private static final String FILE_TRANSFORM_COMPLETE = "__TRANSFORM_COMPLETE";
 
 	public static TransformCacheResult populateTransformBundle(Path transformCacheFolder, List<ModLoadOption> modList,
-		ModSolveResult result) throws ModResolutionException {
+		Map<String, String> modOriginHash, ModSolveResult result) throws ModResolutionException {
 		Map<String, String> map = new TreeMap<>();
 		// Mod order is important? For now, assume it is
 		int index = 0;
@@ -82,13 +82,8 @@ public class TransformCache {
 
 		for (Entry<String, ModLoadOption> mod : result.directMods().entrySet()) {
 			ModLoadOption modOption = mod.getValue();
-			try {
-				String name = modOption.from().getFileName().toString();
-				byte[] hash = modOption.computeOriginHash();
-				map.put("mod:" + mod.getKey(), name + " " + HashUtil.hashToString(hash));
-			} catch (IOException io) {
-				throw new ModResolutionException("Failed to compute the hash of " + modOption, io);
-			}
+			String name = modOption.from().getFileName().toString();
+			map.put("mod:" + mod.getKey(), name + " " + modOriginHash.get(modOption.id()));
 		}
 
 		boolean enableChasm = Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM);

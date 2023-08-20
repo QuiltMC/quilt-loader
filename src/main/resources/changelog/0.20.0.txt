@@ -8,6 +8,7 @@ Features:
 * Added an uncaught exception handler to every QuiltZipCustomCompressedWriter thread, and added it to the crash report.
 * [#339] Added a new system property "loader.workaround.defer_all_filesystem_operations" which fixes "ClosedByInterruptException" on older versions of minecraft.
 * [RFC#84] Removed the active user beacon.
+* [#350] Cached mod path hashes once, rather than computing them when building a crash report.
 
 Bug Fixes:
 
