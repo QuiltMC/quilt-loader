@@ -1,5 +1,12 @@
+Deprecation:
+
+* Deprecated the quilt-json5 exposed to mods. We shouldn't expose libraries directly in Loader unless we absolutely must (in case we want to break them!),
+  and there's no reason to expose quilt-json5 here. It is being replaced by quilt-parsers, and mods are responsible for including it themselves if they want it.
+
 Features:
 
+* [#311] Updated Quilt Config to 1.1.0-beta.3
+    * Added a new `ReflectiveConfig` interface, a replacement to `WrappedConfig` that is actually useful (you can modify the config now).
 * Improved entrypoint exception handling a bit.
 * Added error description for simple "breaks".
 * [#336] Memory usage improvements during transform cache building (embeddedt)
