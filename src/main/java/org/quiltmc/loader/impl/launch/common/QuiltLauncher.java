@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.jar.Manifest;
 
 import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -76,4 +77,6 @@ public interface QuiltLauncher {
 	String getTargetNamespace();
 
 	List<Path> getClassPath();
+
+	GameTransformer getEntrypointTransformer();
 }

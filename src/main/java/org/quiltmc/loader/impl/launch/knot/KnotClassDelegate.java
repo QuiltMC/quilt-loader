@@ -17,20 +17,17 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
+import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
-import org.quiltmc.loader.api.ModContainer.BasicSourceType;
-import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
-import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -43,7 +40,6 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -489,29 +485,11 @@ class KnotClassDelegate {
 			return PatchLoader.getNewPatchedClass(name);
 		}
 
-		if (!transformInitialized || !canTransformClass(name)) {
-			try {
-				return getRawClassByteArray(classFileURL, name);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
-			}
+		try {
+			return getRawClassByteArray(classFileURL, name);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
 		}
-
-		byte[] input = provider.getEntrypointTransformer().transform(name);
-
-		if (input == null) {
-			try {
-				input = getRawClassByteArray(classFileURL, name);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
-			}
-		}
-
-		if (input != null) {
-			return QuiltTransformer.transform(isDevelopment, envType, name, input);
-		}
-
-		return null;
 	}
 
 	private static boolean canTransformClass(String name) {

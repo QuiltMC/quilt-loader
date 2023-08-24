@@ -137,7 +137,7 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
-	public boolean needsChasmTransforming() {
+	public boolean needsTransforming() {
 		// The providing mod will get transformed - not this alias.
 		return false;
 	}

@@ -24,6 +24,7 @@ import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -147,8 +148,6 @@ public final class Knot extends QuiltLauncherBase {
 		loader.load();
 		loader.freeze();
 
-		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
-
 		MixinBootstrap.init();
 		QuiltMixinBootstrap.init(getEnvironmentType(), loader);
 		QuiltLauncherBase.finishMixinBootstrapping();
@@ -268,6 +267,11 @@ public final class Knot extends QuiltLauncherBase {
 	@Override
 	public List<Path> getClassPath() {
 		return classPath;
+	}
+
+	@Override
+	public GameTransformer getEntrypointTransformer() {
+		return provider.getEntrypointTransformer();
 	}
 
 	@Override

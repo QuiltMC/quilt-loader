@@ -121,7 +121,7 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	}
 
 	@Override
-	public boolean needsChasmTransforming() {
+	public boolean needsTransforming() {
 		return true;
 	}
 

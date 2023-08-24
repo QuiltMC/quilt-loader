@@ -47,7 +47,7 @@ public class SystemModOption extends BuiltinModOption {
 	}
 
 	@Override
-	public boolean needsChasmTransforming() {
+	public boolean needsTransforming() {
 		return false;
 	}
 }

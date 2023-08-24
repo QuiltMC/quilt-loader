@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.discovery;
+package org.quiltmc.loader.impl.transformer;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.FasterFiles;
-import org.quiltmc.loader.api.MountOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -55,51 +54,10 @@ public final class RuntimeModRemapper {
 
 	static final boolean COPY_ON_WRITE = true;
 
-	public static void remap(Path cache, List<ModLoadOption> modList) {
-		List<ModLoadOption> modsToRemap = modList.stream()
+	public static void remap(Map<ModLoadOption, Path> modRoots) {
+		List<ModLoadOption> modsToRemap = modRoots.keySet().stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
-
-		// Copy everything that's not in the modsToRemap list
-		for (ModLoadOption mod : modList) {
-			if (mod.namespaceMappingFrom() == null && mod.needsChasmTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())) {
-
-				final boolean onlyTranformableFiles = mod.couldResourcesChange();
-
-				Path modSrc = mod.resourceRoot();
-				Path modDst = cache.resolve(mod.id());
-				try {
-					Files.walk(modSrc).forEach(path -> {
-						if (!FasterFiles.isRegularFile(path)) {
-							// Only copy class files, since those files are the only files modified by chasm
-							return;
-						}
-						if (onlyTranformableFiles) {
-							String fileName = path.getFileName().toString();
-							if (!fileName.endsWith(".class") && !fileName.endsWith(".chasm")) {
-								// Only copy class files, since those files are the only files modified by chasm
-								// (and chasm files, since they are read by chasm)
-								return;
-							}
-						}
-						Path sub = modSrc.relativize(path);
-						Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
-						try {
-							FasterFiles.createDirectories(dst.getParent());
-							if (COPY_ON_WRITE) {
-								ExtendedFiles.copyOnWrite(path, dst);
-							} else {
-								FasterFiles.copy(path, dst);
-							}
-						} catch (IOException e) {
-							throw new Error(e);
-						}
-					});
-				} catch (IOException io) {
-					throw new Error(io);
-				}
-			}
-		}
 
 		if (modsToRemap.isEmpty()) {
 			return;
@@ -133,10 +91,8 @@ public final class RuntimeModRemapper {
 			//Done in a 2nd loop as we need to make sure all the inputs are present before remapping
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-				info.outputPath = cache.resolve("/" + mod.id());
+				info.outputPath = modRoots.get(mod);
 				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).build();
-
-				outputConsumer.addNonClassFiles(mod.resourceRoot(), NonClassCopyMode.FIX_META_INF, remapper);
 
 				info.outputConsumerPath = outputConsumer;
 

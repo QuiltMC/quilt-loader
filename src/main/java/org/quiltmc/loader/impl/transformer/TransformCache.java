@@ -28,11 +28,9 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.TreeMap;
 
 import org.quiltmc.loader.api.FasterFiles;
@@ -40,16 +38,13 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.RuntimeModRemapper;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
-import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
-import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -98,7 +93,7 @@ public class TransformCache {
 		QuiltZipPath existing = checkTransformCache(transformCacheFolder, map);
 		boolean isNewlyGenerated = false;
 		if (existing == null) {
-			existing = createTransformCache(transformCacheFolder.resolve(CACHE_FILE), toString(map), modList, result);
+			existing = createTransformCache(transformCacheFolder.resolve(CACHE_FILE), toString(map), modList);
 			isNewlyGenerated = true;
 		} else if (!Boolean.getBoolean(SystemProperties.DISABLE_PRELOAD_TRANSFORM_CACHE)) {
 			FilePreloadHelper.preLoad(transformCacheFolder.resolve(CACHE_FILE));
@@ -243,7 +238,7 @@ public class TransformCache {
 	static final boolean WRITE_CUSTOM = true;
 
 	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<
-		ModLoadOption> modList, ModSolveResult result) throws ModResolutionException {
+		ModLoadOption> modList) throws ModResolutionException {
 
 		try {
 			Files.createDirectories(transformCacheFile.getParent());
@@ -254,7 +249,7 @@ public class TransformCache {
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
 			try (QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache", true)) {
 				QuiltUnifiedPath root = fs.getRoot();
-				populateTransformCache(root, modList, result);
+				QuiltStaticTransformation.populateAndRun(root, modList);
 				fs.dumpEntries("after-populate");
 				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 				Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
@@ -272,7 +267,7 @@ public class TransformCache {
 
 			Path inner = fs.get().getPath("/");
 
-			populateTransformCache(inner, modList, result);
+			QuiltStaticTransformation.populateAndRun(inner, modList);
 
 			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 			Files.createFile(inner.resolve(FILE_TRANSFORM_COMPLETE));
@@ -294,95 +289,5 @@ public class TransformCache {
 			// TODO: Better error message for the gui!
 			throw new ModResolutionException("Failed to read the newly written transform cache!", e);
 		}
-	}
-
-	private static void populateTransformCache(Path root, List<ModLoadOption> modList, ModSolveResult solveResult)
-		throws ModResolutionException, IOException {
-
-		RuntimeModRemapper.remap(root, modList);
-
-		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-remap");
-
-		if (Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM)) {
-			ChasmInvoker.applyChasm(root, modList, solveResult);
-		}
-
-		InternalsHiderTransform internalsHider = new InternalsHiderTransform(InternalsHiderTransform.Target.MOD);
-		Map<Path, ModLoadOption> classes = new HashMap<>();
-
-		// the double read is necessary to avoid storing all classes in memory at once, and thus having memory complexity
-		// proportional to mod count
-
-		forEachClassFile(root, modList, (mod, file) -> {
-			byte[] classBytes = Files.readAllBytes(file);
-			classes.put(file, mod);
-			internalsHider.scanClass(mod, file, classBytes);
-			return null;
-		});
-
-		for (Map.Entry<Path, ModLoadOption> entry : classes.entrySet()) {
-			byte[] classBytes = Files.readAllBytes(entry.getKey());
-			byte[] newBytes = internalsHider.run(entry.getValue(), classBytes);
-			if (newBytes != null) {
-				Files.write(entry.getKey(), newBytes);
-			}
-		}
-
-		internalsHider.finish();
-	}
-
-	private static void forEachClassFile(Path root, List<ModLoadOption> modList, ClassConsumer action)
-		throws IOException {
-		for (ModLoadOption mod : modList) {
-			visitFolder(mod, root.resolve(mod.id()), action);
-		}
-		visitFolder(null, root.resolve(TRANSFORM_CACHE_NONMOD_CLASSLOADABLE), action);
-	}
-
-	private static void visitFolder(ModLoadOption mod, Path root, ClassConsumer action) throws IOException {
-		if (!Files.isDirectory(root)) {
-			return;
-		}
-		Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
-
-			@Override
-			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				String folderName = Objects.toString(dir.getFileName());
-				if (folderName != null && !couldBeJavaElement(folderName, false)) {
-					return FileVisitResult.SKIP_SUBTREE;
-				}
-				return FileVisitResult.CONTINUE;
-			}
-
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				String fileName = file.getFileName().toString();
-				if (fileName.endsWith(".class") && couldBeJavaElement(fileName, true)) {
-					byte[] result = action.run(mod, file);
-					if (result != null) {
-						Files.write(file, result);
-					}
-				}
-				return FileVisitResult.CONTINUE;
-			}
-
-			private boolean couldBeJavaElement(String name, boolean ignoreClassSuffix) {
-				int end = name.length();
-				if (ignoreClassSuffix) {
-					end -= ".class".length();
-				}
-				for (int i = 0; i < end; i++) {
-					if (name.charAt(i) == '.') {
-						return false;
-					}
-				}
-				return true;
-			}
-		});
-	}
-
-	@FunctionalInterface
-	interface ClassConsumer {
-		byte[] run(ModLoadOption mod, Path file) throws IOException;
 	}
 }

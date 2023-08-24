@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.transformer;
 import java.util.Collection;
 import java.util.HashSet;
 
+import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -27,22 +28,17 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
-import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class QuiltTransformer {
-	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
+	public static byte[] transform(boolean isDevelopment, EnvType envType, AccessWidener accessWidener, String name, byte[] bytes) {
 		// FIXME: Could use a better way to detect this...
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;
-		boolean applyAccessWidener = isMinecraftClass && QuiltLoaderImpl.INSTANCE.getAccessWidener().getTargets().contains(name);
+		boolean applyAccessWidener = isMinecraftClass && accessWidener.getTargets().contains(name);
 
 		if (!transformAccess && !environmentStrip && !applyAccessWidener) {
 			return bytes;
@@ -102,7 +98,7 @@ public final class QuiltTransformer {
 		}
 
 		if (applyAccessWidener) {
-			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, QuiltLoaderImpl.INSTANCE.getAccessWidener());
+			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, accessWidener);
 			visitorCount++;
 		}
 
