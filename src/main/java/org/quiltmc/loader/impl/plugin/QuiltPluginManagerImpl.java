@@ -114,6 +114,7 @@ import org.quiltmc.loader.impl.solver.Sat4jWrapper;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
+import org.quiltmc.loader.impl.util.FileHasherImpl;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -144,6 +145,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<Path, String> customPathNames = new HashMap<>();
 	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
 	Map<Path, List<List<Path>>> sourcePaths;
+
+	public final FileHasherImpl hasher;
 
 	final Map<Path, String> modFolders = new LinkedHashMap<>();
 	final Map<Path, ModLoadOption> modPaths = new LinkedHashMap<>();
@@ -206,6 +209,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		this.cacheDir = cacheDir;
 		this.absGameDir = gameDir.toAbsolutePath().normalize();
 		this.absModsDir = modsDir.toAbsolutePath().normalize();
+
+		this.hasher = new FileHasherImpl(this::getParent);
 
 		this.executor = config.singleThreadedLoading ? null : Executors.newCachedThreadPool();
 		this.mainThreadTasks = config.singleThreadedLoading ? new ArrayDeque<>() : new ConcurrentLinkedQueue<>();
@@ -909,7 +914,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				if (FasterFiles.isRegularFile(from)) {
 					String hashString;
 					try {
-						hashString = HashUtil.hashToString(HashUtil.computeHash(from));
+						hashString = HashUtil.hashToString(hasher.computeNormalHash(from));
 					} catch (IOException e) {
 						hashString = "<" + e.getMessage() + ">";
 					}

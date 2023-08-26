@@ -18,65 +18,40 @@ package org.quiltmc.loader.impl.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 
 import org.quiltmc.loader.api.FasterFiles;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class HashUtil {
 
+	public static final int SHA1_HASH_LENGTH = 20;
+
 	public static byte[] computeHash(Path path) throws IOException {
 		if (FasterFiles.isDirectory(path)) {
-			// We don't support hash computations here?
-			// So instead return the current date & time
-
-			return currentDateAndTimeHash();
+			path = path.toAbsolutePath();
+			return computeHash(path.toString());
 		} else {
-			try {
-				MessageDigest digest = MessageDigest.getInstance("SHA-1");
+			final byte[] readCache = new byte[0x2000];
 
-				final byte[] readCache = new byte[0x2000];
-
-				try (InputStream is = Files.newInputStream(path)) {
-					int count;
-					while ((count = is.read(readCache)) > 0) {
-						digest.update(readCache, 0, count);
-					}
-
-					return digest.digest();
+			try (InputStream is = Files.newInputStream(path)) {
+				MessageDigest digest = createDigest();
+				int count;
+				while ((count = is.read(readCache)) > 0) {
+					digest.update(readCache, 0, count);
 				}
 
-			} catch (NoSuchAlgorithmException e) {
-				throw new IOException(e);
+				return digest.digest();
 			}
 		}
 	}
 
-	/** "Hashes" the current date and time. (Except instead of hashing, this just returns the date and time badly
-	 * encoded as bytes). */
-	public static byte[] currentDateAndTimeHash() {
-		LocalDateTime now = LocalDateTime.now();
-
-		int nano = now.getNano();
-
-		return Arrays.copyOf(new byte[] { //
-			(byte) (now.getYear() & 0xFF), //
-			(byte) ((now.getYear() >> 8) & 0xFF), //
-			(byte) (now.getMonthValue()), //
-			(byte) now.getDayOfMonth(), //
-			(byte) now.getHour(), //
-			(byte) now.getMinute(), //
-			(byte) now.getSecond(), //
-			(byte) (nano & 0xFF), //
-			(byte) ((nano >> 8) & 0xFF), //
-			(byte) ((nano >> 16) & 0xFF), //
-			(byte) (nano >> 24)//
-		}, 20); // 20 bytes to match SHA-1
+	public static byte[] computeHash(String text) {
+		return createDigest().digest(text.getBytes(StandardCharsets.UTF_8));
 	}
 
 	public static String hashToString(byte[] hash) {
@@ -89,5 +64,19 @@ public class HashUtil {
 			sb.append(Integer.toHexString(i));
 		}
 		return sb.toString();
+	}
+
+	private static MessageDigest createDigest() {
+		try {
+			return MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("This JVM doesn't support SHA-1???");
+		}
+	}
+
+	public static void xorHash(byte[] dst, byte[] src) {
+		for (int i = 0; i < dst.length; i++) {
+			dst[i] ^= src[i];
+		}
 	}
 }

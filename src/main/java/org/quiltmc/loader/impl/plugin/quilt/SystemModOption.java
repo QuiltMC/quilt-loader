@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.solver.QuiltFileHasher;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -42,8 +43,12 @@ public class SystemModOption extends BuiltinModOption {
 	}
 
 	@Override
-	public byte[] computeOriginHash() throws IOException {
-		return new byte[] { 0, 1, 2, 3 };
+	public byte[] computeOriginHash(QuiltFileHasher hasher) throws IOException {
+		byte[] hash = new byte[hasher.getHashLength()];
+		for (int i = 0; i < hash.length; i++) {
+			hash[i] = (byte) i;
+		}
+		return hash;
 	}
 
 	@Override
