@@ -235,9 +235,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 
 	protected boolean removeEntry(P path, boolean throwIfMissing) throws IOException {
 		path = path.toAbsolutePath().normalize();
-		if ("/quilt_tags/quilt_tags.accesswidener".equals(path.toString())) {
-			System.out.println("Removing " + path);
-		}
+
 		QuiltUnifiedEntry current = getEntry(path);
 		if (current == null) {
 			if (throwIfMissing) {

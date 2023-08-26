@@ -55,43 +55,9 @@ public class ClasspathModCandidateFinder {
 	public static void findCandidatesStatic(ModAdder out) {
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
-
-			// Search for URLs which point to 'fabric.mod.json' entries, to be considered as mods.
 			try {
-				Enumeration<URL> fabricMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("fabric.mod.json");
-				Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources("quilt.mod.json");
-				while (quiltMods.hasMoreElements()) {
-					URL url = quiltMods.nextElement();
-
-					try {
-						Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, "quilt.mod.json"));
-						List<Path> paths = pathGroups.get(path);
-
-						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
-						} else {
-							out.addMod(paths);
-						}
-					} catch (UrlConversionException e) {
-						Log.debug(LogCategory.DISCOVERY, "Error determining location for quilt.mod.json from %s", url, e);
-					}
-				}
-				while (fabricMods.hasMoreElements()) {
-					URL url = fabricMods.nextElement();
-
-					try {
-						Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, "fabric.mod.json"));
-						List<Path> paths = pathGroups.get(path);
-
-						if (paths == null) {
-							out.addMod(Collections.singletonList(path));
-						} else {
-							out.addMod(paths);
-						}
-					} catch (UrlConversionException e) {
-						Log.debug(LogCategory.DISCOVERY, "Error determining location for fabric.mod.json from %s", url, e);
-					}
-				}
+				findCandidates("quilt.mod.json", pathGroups, out);
+				findCandidates("fabric.mod.json", pathGroups, out);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -100,6 +66,37 @@ public class ClasspathModCandidateFinder {
 				out.addMod(Collections.singletonList(getLoaderPath()));
 			} catch (Throwable t) {
 				Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
+			}
+		}
+	}
+
+	private static void findCandidates(String metadataName, Map<Path, List<Path>> pathGroups, ModAdder out) throws IOException {
+		Enumeration<URL> quiltMods = QuiltLauncherBase.getLauncher().getTargetClassLoader().getResources(metadataName);
+		while (quiltMods.hasMoreElements()) {
+			URL url = quiltMods.nextElement();
+
+			try {
+				Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, metadataName));
+				List<Path> paths = pathGroups.get(path);
+
+				if (paths == null) {
+                    if (!url.getProtocol().equals("jar")) {
+						if (!pathGroups.isEmpty()) {
+							// path groups are enabled, warn for misconfiguration
+							throw new RuntimeException("Mod at path " + url + " lacks a class path group! Make sure the loom 'mods' block " +
+									"is configured correctly!");
+						}
+
+						Log.error(LogCategory.DISCOVERY, "Mod at path %s is not included in the loom 'mods' block! " +
+								"This will be an error in a future version of Loader!", path);
+                    }
+
+                    out.addMod(Collections.singletonList(path));
+				} else {
+					out.addMod(paths);
+				}
+			} catch (UrlConversionException e) {
+				Log.debug(LogCategory.DISCOVERY, "Error determining location for %s from %s", metadataName, url, e);
 			}
 		}
 	}

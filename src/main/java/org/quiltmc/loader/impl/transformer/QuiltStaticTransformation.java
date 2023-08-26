@@ -3,6 +3,7 @@ package org.quiltmc.loader.impl.transformer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -194,7 +195,12 @@ final class QuiltStaticTransformation {
 						// find the refmap and copy it too
 						String refmap = extractRefmap(modSrc.resolve(mixin));
 						if (refmap != null) {
-							copyFile(modSrc.resolve(refmap), modSrc, modDst);
+							try {
+								copyFileThrowing(modSrc.resolve(refmap), modSrc, modDst);
+							} catch (FileAlreadyExistsException ignored) {
+								// multiple mixin jsons can share the same refmap
+							}
+
 						}
 					}
 					for (String aw : mod.metadata().accessWideners()) {
@@ -266,21 +272,26 @@ final class QuiltStaticTransformation {
 
 		return null;
     }
+
 	private static void copyFile(Path path, Path modSrc, Path modDst) {
+		try {
+			copyFileThrowing(path, modSrc, modDst);
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	private static void copyFileThrowing(Path path, Path modSrc, Path modDst) throws IOException {
 		if (!FasterFiles.exists(path)) {
 			return;
 		}
 		Path sub = modSrc.relativize(path);
 		Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
-		try {
-			FasterFiles.createDirectories(dst.getParent());
-			if (COPY_ON_WRITE) {
-				ExtendedFiles.copyOnWrite(path, dst);
-			} else {
-				FasterFiles.copy(path, dst);
-			}
-		} catch (IOException e) {
-			throw new Error(e);
+		FasterFiles.createDirectories(dst.getParent());
+		if (COPY_ON_WRITE) {
+			ExtendedFiles.copyOnWrite(path, dst);
+		} else {
+			FasterFiles.copy(path, dst);
 		}
 	}
 }
