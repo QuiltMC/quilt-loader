@@ -3,11 +3,13 @@ package org.quiltmc.loader.impl.transformer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.List;
@@ -195,11 +197,8 @@ final class QuiltStaticTransformation {
 						// find the refmap and copy it too
 						String refmap = extractRefmap(modSrc.resolve(mixin));
 						if (refmap != null) {
-							try {
-								copyFileThrowing(modSrc.resolve(refmap), modSrc, modDst);
-							} catch (FileAlreadyExistsException ignored) {
-								// multiple mixin jsons can share the same refmap
-							}
+							// multiple mixins can reference the same refmap
+							copyFile(modSrc.resolve(refmap), modSrc, modDst, StandardCopyOption.REPLACE_EXISTING);
 
 						}
 					}
@@ -273,25 +272,21 @@ final class QuiltStaticTransformation {
 		return null;
     }
 
-	private static void copyFile(Path path, Path modSrc, Path modDst) {
-		try {
-			copyFileThrowing(path, modSrc, modDst);
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
-	private static void copyFileThrowing(Path path, Path modSrc, Path modDst) throws IOException {
+	private static void copyFile(Path path, Path modSrc, Path modDst, CopyOption... copyOptions) {
 		if (!FasterFiles.exists(path)) {
 			return;
 		}
 		Path sub = modSrc.relativize(path);
 		Path dst = modDst.resolve(sub.toString().replace(modSrc.getFileSystem().getSeparator(), modDst.getFileSystem().getSeparator()));
-		FasterFiles.createDirectories(dst.getParent());
-		if (COPY_ON_WRITE) {
-			ExtendedFiles.copyOnWrite(path, dst);
-		} else {
-			FasterFiles.copy(path, dst);
+		try {
+			FasterFiles.createDirectories(dst.getParent());
+			if (COPY_ON_WRITE) {
+				ExtendedFiles.copyOnWrite(path, dst, copyOptions);
+			} else {
+				FasterFiles.copy(path, dst, copyOptions);
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
 	}
 }
