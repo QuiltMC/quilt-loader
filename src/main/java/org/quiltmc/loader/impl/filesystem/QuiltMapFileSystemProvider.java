@@ -433,7 +433,7 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 		}
 
 		if (canExist) {
-			delete(dst);
+			deleteIfExists(dst);
 		} else if (dstEntry != null) {
 			throw new FileAlreadyExistsException(dst.toString());
 		}
