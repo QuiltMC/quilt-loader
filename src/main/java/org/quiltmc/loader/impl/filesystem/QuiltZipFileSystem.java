@@ -948,9 +948,9 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 						throw new IOException("Unable to read enough bytes from the gzip stream!");
 					} else {
 						bufferPosition += read;
-						position += read;
 					}
 				}
+				position += toRead;
 
 				dst.put(buffer, pos, toRead);
 				return toRead;
