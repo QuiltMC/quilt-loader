@@ -54,7 +54,9 @@ public final class QuiltTransformer {
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			if (stripData.stripEntireClass()) {
-				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
+				// KnotClassDelegate.getRawClassByteArray hardcodes an empty byte array to be the same thing as the class not existing.
+				// TODO: support deleting classes without a hack in knot
+				return new byte[0];
 			}
 
 			Collection<String> stripMethods = stripData.getStripMethods();

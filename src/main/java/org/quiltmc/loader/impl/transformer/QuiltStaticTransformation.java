@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
@@ -81,6 +82,11 @@ final class QuiltStaticTransformation {
 		// proportional to mod count
 		forEachClassFile(modRoots, (mod, file) -> {
 			byte[] classBytes = Files.readAllBytes(file);
+			// KnotClassDelegate.getRawClassByteArray hardcodes an empty byte array to be the same thing as the class not existing.
+			// TODO: support deleting classes without a hack in knot
+			if (classBytes.length == 0) {
+				return null;
+			}
 			classes.put(file, mod);
 			internalsHider.scanClass(mod, file, classBytes);
 			return null;
@@ -88,6 +94,11 @@ final class QuiltStaticTransformation {
 
 		for (Map.Entry<Path, ModLoadOption> entry : classes.entrySet()) {
 			byte[] classBytes = Files.readAllBytes(entry.getKey());
+			// KnotClassDelegate.getRawClassByteArray hardcodes an empty byte array to be the same thing as the class not existing.
+			// TODO: support deleting classes without a hack in knot
+			if (classBytes.length == 0) {
+				continue;
+			}
 			byte[] newBytes = internalsHider.run(entry.getValue(), classBytes);
 			if (newBytes != null) {
 				Files.write(entry.getKey(), newBytes);

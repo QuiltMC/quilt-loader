@@ -503,11 +503,21 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(URL url, String name) throws IOException {
+		byte[] ret;
 		try (InputStream inputStream = (url != null ? url.openStream() : null)) {
 			if (inputStream == null) {
 				return null;
 			}
-			return FileUtil.readAllBytes(inputStream);
+			ret = FileUtil.readAllBytes(inputStream);
+		}
+
+		// We define an empty class file to be the same as a class not existing, as a workaround for
+		// being unable to remove files in the transform cache.
+		// This behavior is an implementation detail and should not be relied on by anything but internal Loader code.
+		if (ret.length == 0) {
+			return null;
+		} else {
+			return ret;
 		}
 	}
 
