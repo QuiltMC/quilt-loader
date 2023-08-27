@@ -20,6 +20,7 @@ package org.quiltmc.loader.impl.launch.common;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -52,6 +53,7 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public MappingConfiguration getMappingConfiguration() {
 		return mappingConfiguration;
 	}
+
 
 	protected static void setProperties(Map<String, Object> propertiesA) {
 		if (properties != null && properties != propertiesA) {

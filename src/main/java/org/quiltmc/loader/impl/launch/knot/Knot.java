@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -305,6 +306,11 @@ public final class Knot extends QuiltLauncherBase {
 	@Override
 	public void setTransformCache(URL insideTransformCache) {
 		classLoader.getDelegate().setTransformCache(insideTransformCache);
+	}
+
+	@Override
+	public void setHiddenClasses(Set<String> hiddenClasses) {
+		classLoader.getDelegate().setHiddenClasses(hiddenClasses);
 	}
 
 	@Override

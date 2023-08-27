@@ -49,13 +49,13 @@ import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class RuntimeModRemapper {
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+final class RuntimeModRemapper {
 
 	static final boolean COPY_ON_WRITE = true;
 
-	public static void remap(Map<ModLoadOption, Path> modRoots) {
-		List<ModLoadOption> modsToRemap = modRoots.keySet().stream()
+	public static void remap(TransformCache cache) {
+		List<ModLoadOption> modsToRemap = cache.getMods().stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 
@@ -91,7 +91,7 @@ public final class RuntimeModRemapper {
 			//Done in a 2nd loop as we need to make sure all the inputs are present before remapping
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-				info.outputPath = modRoots.get(mod);
+				info.outputPath = cache.getRoot(mod);
 				OutputConsumerPath outputConsumer = new OutputConsumerPath.Builder(info.outputPath).build();
 
 				info.outputConsumerPath = outputConsumer;

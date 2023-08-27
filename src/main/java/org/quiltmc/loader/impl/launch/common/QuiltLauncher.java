@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.jar.Manifest;
 
 import org.quiltmc.loader.api.ModContainer;
@@ -39,6 +39,7 @@ public interface QuiltLauncher {
 	void addToClassPath(Path path, ModContainer mod, URL origin, String... allowedPrefixes);
 	void setAllowedPrefixes(Path path, String... prefixes);
 	void setTransformCache(URL insideTransformCache);
+	void setHiddenClasses(Set<String> classes);
 	void hideParentUrl(URL hidden);
 	void hideParentPath(Path obf);
 	void validateGameClassLoader(Object gameInstance);

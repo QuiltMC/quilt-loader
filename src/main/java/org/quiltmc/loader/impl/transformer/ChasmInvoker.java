@@ -30,10 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
 import org.quiltmc.chasm.api.ChasmProcessor;
 import org.quiltmc.chasm.api.ClassResult;
 import org.quiltmc.chasm.api.Transformer;
@@ -47,8 +45,6 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
-import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
-import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -59,39 +55,36 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class ChasmInvoker {
 
-	static void applyChasm(Map<ModLoadOption, Path> modRoots)
+	static void applyChasm(TransformCache cache)
 		throws ChasmTransformException {
 		try {
-			applyChasm0(modRoots);
+			applyChasm0(cache);
 		} catch (Throwable e) {
 			throw new ChasmTransformException("Failed to apply chasm!", e);
 		}
 	}
 
-	static void applyChasm0(Map<ModLoadOption, Path> modRoots) throws IOException {
+	static void applyChasm0(TransformCache cache) throws IOException {
 		Map<String, ModLoadOption> package2mod = new HashMap<>();
 		Map<String, byte[]> inputClassCache = new HashMap<>();
 
 		// TODO: Move chasm searching to here!
-		modRoots.forEach((mod, path2) -> {
+		for (ModLoadOption mod : cache.getMods()) {
+			Path path2 = cache.getRoot(mod);
 			if (!FasterFiles.isDirectory(path2)) {
 				return;
 			}
-			try {
-				Files.walkFileTree(path2, new SimpleFileVisitor<Path>() {
-					@Override
-					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-						if (file.getFileName().toString().endsWith(".class")) {
-							package2mod.put(path2.relativize(file.getParent()).toString(), mod);
-							inputClassCache.put(path2.relativize(file).toString(), Files.readAllBytes(file));
-						}
-						return FileVisitResult.CONTINUE;
+			Files.walkFileTree(path2, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					if (file.getFileName().toString().endsWith(".class")) {
+						package2mod.put(path2.relativize(file.getParent()).toString(), mod);
+						inputClassCache.put(path2.relativize(file).toString(), Files.readAllBytes(file));
 					}
-				});
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		}
 
 		ChasmProcessor chasm = new ChasmProcessor(new Context() {
 
@@ -115,7 +108,8 @@ class ChasmInvoker {
 			}
 		});
 
-		modRoots.forEach((mod, modPath) -> {
+		for (ModLoadOption mod : cache.getMods()) {
+			Path modPath = cache.getRoot(mod);
 			if (!FasterFiles.exists(modPath)) {
 				return;
 			}
@@ -160,38 +154,34 @@ class ChasmInvoker {
 				}
 			}
 
-			try {
-				Files.walkFileTree(modPath, new SimpleFileVisitor<Path>() {
-					@Override
-					public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-						if (file.getFileName().toString().endsWith(".class")) {
-							byte[] bytes = Files.readAllBytes(file);
-							Metadata meta = new Metadata();
-							meta.put(QuiltMetadata.class, new QuiltMetadata(mod));
-							chasm.addClass(bytes, meta);
-						} else if (file.getFileName().toString().endsWith(".chasm")) {
-							for (Path chasmRoot : chasmRoots) {
-								if (file.startsWith(chasmRoot)) {
-									String chasmId = mod.id() + ":" + chasmRoot.relativize(file).toString();
-									chasmId = chasmId.replace(chasmRoot.getFileSystem().getSeparator(), "/");
-									if (chasmId.endsWith(".chasm")) {
-										chasmId = chasmId.substring(0, chasmId.length() - ".chasm".length());
-									}
-									Log.info(LogCategory.CHASM, "Found chasm transformer: '" + chasmId + "'");
-									Node node = Node.parse(file);
-									Transformer transformer = new ChasmLangTransformer(chasmId, node, chasm.getContext());
-									chasm.addTransformer(transformer);
-									break;
+			Files.walkFileTree(modPath, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					if (file.getFileName().toString().endsWith(".class")) {
+						byte[] bytes = Files.readAllBytes(file);
+						Metadata meta = new Metadata();
+						meta.put(QuiltMetadata.class, new QuiltMetadata(mod, LoaderUtil.getClassNameFromTransformCache(file.toString())));
+						chasm.addClass(bytes, meta);
+					} else if (file.getFileName().toString().endsWith(".chasm")) {
+						for (Path chasmRoot : chasmRoots) {
+							if (file.startsWith(chasmRoot)) {
+								String chasmId = mod.id() + ":" + chasmRoot.relativize(file).toString();
+								chasmId = chasmId.replace(chasmRoot.getFileSystem().getSeparator(), "/");
+								if (chasmId.endsWith(".chasm")) {
+									chasmId = chasmId.substring(0, chasmId.length() - ".chasm".length());
 								}
+								Log.info(LogCategory.CHASM, "Found chasm transformer: '" + chasmId + "'");
+								Node node = Node.parse(file);
+								Transformer transformer = new ChasmLangTransformer(chasmId, node, chasm.getContext());
+								chasm.addTransformer(transformer);
+								break;
 							}
 						}
-						return FileVisitResult.CONTINUE;
 					}
-				});
-			} catch (IOException e) {
-				throw new UncheckedIOException(e);
-			}
-		});
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		}
 
 		List<ClassResult> classResults = chasm.process();
 		for (ClassResult result : classResults) {
@@ -204,13 +194,13 @@ class ChasmInvoker {
 					String className = cr.getClassName();
 					final Path rootTo;
 					if (qm != null) {
-						rootTo = modRoots.get(qm.from);
+						rootTo = cache.getRoot(qm.from);
 					} else {
 						ModLoadOption mod = package2mod.get(className.substring(0, className.lastIndexOf('/')));
 						if (mod == null) {
 							throw new AbstractMethodError("// TODO: Support classloading from unknown mods!");
 						}
-						rootTo = modRoots.get(mod);
+						rootTo = cache.getRoot(mod);
 					}
 					Path to = rootTo.resolve(LoaderUtil.getClassFileName(className));
 					Files.createDirectories(to.getParent());
@@ -221,12 +211,13 @@ class ChasmInvoker {
 					break;
 				}
 				case REMOVED: {
-					// We need to prevent resource loading from accessing this file.
-
-					// Deleting the file from the transform cache isn't enough.
-					// QuiltLoaderImpl#setup() is missing functionality
-					// and so are the file systems?
-					throw new AbstractMethodError("// TODO: Support REMOVED files in the path system!");
+					QuiltMetadata qm = this_value_is_actually_nullable(result.getMetadata().get(QuiltMetadata.class));
+					if (qm != null) {
+						cache.hideClass(LoaderUtil.getClassNameFromTransformCache(qm.name));
+					} else {
+						throw new UnsupportedOperationException("Cannot remove unknown class");
+					}
+					break;
 				}
 				default: {
 					throw new UnsupportedChasmException(
@@ -247,9 +238,12 @@ class ChasmInvoker {
 	static class QuiltMetadata {
 
 		final ModLoadOption from;
+		// the dot name of this class
+		final String name;
 
-		public QuiltMetadata(ModLoadOption from) {
+		public QuiltMetadata(ModLoadOption from, String name) {
 			this.from = from;
+			this.name = name;
 		}
 	}
 }

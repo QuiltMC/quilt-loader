@@ -21,6 +21,8 @@ import java.util.HashSet;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
+
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -32,8 +34,8 @@ import org.objectweb.asm.ClassWriter;
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class QuiltTransformer {
-	public static byte[] transform(boolean isDevelopment, EnvType envType, AccessWidener accessWidener, String name, byte[] bytes) {
+final class QuiltTransformer {
+	public static byte[] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, byte[] bytes) {
 		// FIXME: Could use a better way to detect this...
 		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
@@ -54,9 +56,8 @@ public final class QuiltTransformer {
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			if (stripData.stripEntireClass()) {
-				// KnotClassDelegate.getRawClassByteArray hardcodes an empty byte array to be the same thing as the class not existing.
-				// TODO: support deleting classes without a hack in knot
-				return new byte[0];
+				cache.hideClass(name);
+				return null;
 			}
 
 			Collection<String> stripMethods = stripData.getStripMethods();

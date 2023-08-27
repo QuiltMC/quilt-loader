@@ -18,7 +18,6 @@
 package org.quiltmc.loader.impl;
 
 import java.awt.GraphicsEnvironment;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -103,7 +102,7 @@ import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
-import org.quiltmc.loader.impl.transformer.TransformCache;
+import org.quiltmc.loader.impl.transformer.TransformCacheManager;
 import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator;
@@ -121,8 +120,6 @@ import org.spongepowered.asm.mixin.FabricUtil;
 
 import net.fabricmc.loader.api.ObjectShare;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(value = QuiltLoaderInternalType.LEGACY_EXPOSED, replacements = QuiltLoader.class)
@@ -387,13 +384,14 @@ public final class QuiltLoaderImpl {
 		}
 
 		Path transformCacheFolder = getCacheDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
-		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, modOriginHash, result);
+		TransformCacheResult cacheResult = TransformCacheManager.populateTransformBundle(transformCacheFolder, modList, modOriginHash, result);
 		QuiltZipPath transformedModBundle = cacheResult.transformCacheRoot;
 
 		long zipEnd = System.nanoTime();
 
 		try {
 			QuiltLauncherBase.getLauncher().setTransformCache(transformedModBundle.toUri().toURL());
+			QuiltLauncherBase.getLauncher().setHiddenClasses(cacheResult.hiddenClasses);
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}

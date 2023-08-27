@@ -17,7 +17,6 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.ModContainer;
@@ -97,6 +96,7 @@ class KnotClassDelegate {
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
 	private boolean transformFinishedLoading = false;
+	private Set<String> hiddenClasses;
 	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -503,21 +503,15 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(URL url, String name) throws IOException {
-		byte[] ret;
+		if (hiddenClasses.contains(name)) {
+			return null;
+		}
+
 		try (InputStream inputStream = (url != null ? url.openStream() : null)) {
 			if (inputStream == null) {
 				return null;
 			}
-			ret = FileUtil.readAllBytes(inputStream);
-		}
-
-		// We define an empty class file to be the same as a class not existing, as a workaround for
-		// being unable to remove files in the transform cache.
-		// This behavior is an implementation detail and should not be relied on by anything but internal Loader code.
-		if (ret.length == 0) {
-			return null;
-		} else {
-			return ret;
+			return FileUtil.readAllBytes(inputStream);
 		}
 	}
 
@@ -531,6 +525,10 @@ class KnotClassDelegate {
 
 	void setTransformCache(URL insideTransformCache) {
 		transformCacheUrl = insideTransformCache.toString();
+	}
+
+	void setHiddenClasses(Set<String> hiddenClasses) {
+		this.hiddenClasses = hiddenClasses;
 	}
 
 	void hideParentUrl(URL parentPath) {
