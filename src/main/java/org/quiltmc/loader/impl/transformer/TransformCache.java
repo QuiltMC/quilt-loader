@@ -58,8 +58,6 @@ class TransformCache {
 	private final Map<ModLoadOption, Path> modRoots = new HashMap<>();
 	private final List<ModLoadOption> orderedMods;
 	private final Set<String> hiddenClasses = new HashSet<>();
-
-	private static final String MODS_DIRECTORY = "mods/";
 	private static final boolean COPY_ON_WRITE = true;
 
 	public TransformCache(Path root, List<ModLoadOption> orderedMods) {
@@ -68,7 +66,7 @@ class TransformCache {
 
 		for (ModLoadOption mod : orderedMods) {
 			Path modSrc = mod.resourceRoot();
-			Path modDst = root.resolve(MODS_DIRECTORY + mod.id());
+			Path modDst = root.resolve(mod.id());
 			modRoots.put(mod, modDst);
 
 			try {
@@ -135,7 +133,7 @@ class TransformCache {
 		// Populate mods that need remapped
 		RuntimeModRemapper.remap(this);
 		for (ModLoadOption orderedMod : orderedMods) {
-			modRoots.put(orderedMod, root.resolve(MODS_DIRECTORY + orderedMod.id() + "/"));
+			modRoots.put(orderedMod, root.resolve(orderedMod.id() + "/"));
 		}
 	}
 

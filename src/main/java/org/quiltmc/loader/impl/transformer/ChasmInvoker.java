@@ -72,7 +72,7 @@ class ChasmInvoker {
 		for (ModLoadOption mod : cache.getMods()) {
 			Path path2 = cache.getRoot(mod);
 			if (!FasterFiles.isDirectory(path2)) {
-				return;
+				continue;
 			}
 			Files.walkFileTree(path2, new SimpleFileVisitor<Path>() {
 				@Override
@@ -111,7 +111,7 @@ class ChasmInvoker {
 		for (ModLoadOption mod : cache.getMods()) {
 			Path modPath = cache.getRoot(mod);
 			if (!FasterFiles.exists(modPath)) {
-				return;
+				continue;
 			}
 
 			// QMJ spec: "experimental_chasm_transformers"

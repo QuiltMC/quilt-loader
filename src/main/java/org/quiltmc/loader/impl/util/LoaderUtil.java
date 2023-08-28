@@ -29,7 +29,7 @@ public final class LoaderUtil {
 	}
 
 	public static String getClassNameFromTransformCache(String name) {
-		name = name.substring(name.indexOf('/', 1) + 1); // remove mod id
+		name = name.substring(name.indexOf('/', 1) + 1); // remove /mod_id/
 		name = name.replace('/', '.');
 		return name.substring(0, name.length() - 6); // remove .class
 	}

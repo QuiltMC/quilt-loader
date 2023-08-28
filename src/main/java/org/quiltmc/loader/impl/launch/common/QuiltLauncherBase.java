@@ -20,7 +20,6 @@ package org.quiltmc.loader.impl.launch.common;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Set;
 
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -35,7 +34,6 @@ import org.spongepowered.asm.mixin.MixinEnvironment;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public static Path minecraftJar;
-
 	private static boolean mixinReady;
 	private static Map<String, Object> properties;
 	private static QuiltLauncher launcher;
