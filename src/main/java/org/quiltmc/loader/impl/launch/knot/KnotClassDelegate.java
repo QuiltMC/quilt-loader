@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -96,7 +97,7 @@ class KnotClassDelegate {
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
 	private boolean transformFinishedLoading = false;
-	private Set<String> hiddenClasses;
+	private Set<String> hiddenClasses = Collections.emptySet();
 	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());

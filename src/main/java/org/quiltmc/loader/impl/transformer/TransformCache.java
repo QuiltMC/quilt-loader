@@ -33,6 +33,9 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.parsers.json.JsonReader;
 
+/**
+ * A representation of the transform cache to be used by transformers when generating the cache for the first time.
+ */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class TransformCache {
 	private final Path root;
@@ -53,7 +56,7 @@ class TransformCache {
 			modRoots.put(mod, modDst);
 
 			try {
-				// note: we could provide a folder to pass in more data (e.g. /transformers)
+				// note: we could provide a folder to pass in more data (e.g. a /transformers dir with metadata)
 				// we could also provide meta-inf here:
 //					copyFile(modSrc.resolve("META-INF/MANIFEST.MF"), modSrc, modDst);
 
@@ -79,7 +82,7 @@ class TransformCache {
 				if (value == null) {
 					chasmPaths = new String[0];
 				} else if (value.type() == LoaderValue.LType.STRING) {
-					chasmPaths = new String[] { value.asString() };
+					chasmPaths = new String[]{value.asString()};
 				} else if (value.type() == LoaderValue.LType.ARRAY) {
 					LoaderValue.LArray array = value.asArray();
 					chasmPaths = new String[array.size()];
@@ -120,6 +123,29 @@ class TransformCache {
 		}
 	}
 
+	public Path getRoot(ModLoadOption mod) {
+		return modRoots.get(mod);
+	}
+
+	public List<ModLoadOption> getMods() {
+		return Collections.unmodifiableList(orderedMods);
+	}
+
+	public Set<String> getHiddenClasses() {
+		return Collections.unmodifiableSet(hiddenClasses);
+	}
+
+	public void forEachClassFile(ClassConsumer action)
+			throws IOException {
+		for (ModLoadOption mod : orderedMods) {
+			visitFolder(mod, getRoot(mod), action);
+		}
+	}
+
+	public void hideClass(String className) {
+		hiddenClasses.add(className);
+	}
+
 	private static void copyFile(Path path, Path modSrc, Path modDst, CopyOption... copyOptions) {
 		if (!FasterFiles.exists(path)) {
 			return;
@@ -155,24 +181,6 @@ class TransformCache {
 		}
 
 		return null;
-	}
-	public Path getRoot(ModLoadOption mod) {
-		return modRoots.get(mod);
-	}
-
-	public List<ModLoadOption> getMods() {
-		return Collections.unmodifiableList(orderedMods);
-	}
-
-	public Set<String> getHiddenClasses() {
-		return Collections.unmodifiableSet(hiddenClasses);
-	}
-
-	public void forEachClassFile(ClassConsumer action)
-			throws IOException {
-		for (ModLoadOption mod : orderedMods) {
-			visitFolder(mod, getRoot(mod), action);
-		}
 	}
 
 	private void visitFolder(ModLoadOption mod, Path root, ClassConsumer action) throws IOException {
@@ -224,14 +232,11 @@ class TransformCache {
 	public interface ClassConsumer {
 		/**
 		 * Consume a class and potentially transform it.
-		 * @param mod the mod which "owns" this class file
+		 *
+		 * @param mod       the mod which "owns" this class file
 		 * @param className the name of the class in dot form (e.g. {@code net.minecraft.client.MinecraftClient$1}
 		 * @return the transformed bytes, or null if nothing was changed
 		 */
-        byte @Nullable [] run(ModLoadOption mod, String className, Path file) throws IOException;
-	}
-
-	public void hideClass(String className) {
-		hiddenClasses.add(className);
+		byte @Nullable [] run(ModLoadOption mod, String className, Path file) throws IOException;
 	}
 }

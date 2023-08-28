@@ -256,7 +256,7 @@ public class TransformCacheManager {
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
 			try (QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache", true)) {
 				QuiltUnifiedPath root = fs.getRoot();
-				TransformCache cache = TransformCacheGenerator.populateAndRun(root, modList);
+				TransformCache cache = TransformCacheGenerator.generate(root, modList);
 				fs.dumpEntries("after-populate");
 				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 				Files.write(root.resolve(HIDDEN_CLASSES_PATH), cache.getHiddenClasses());
@@ -275,7 +275,7 @@ public class TransformCacheManager {
 
 			Path inner = fs.get().getPath("/");
 
-			TransformCacheGenerator.populateAndRun(inner, modList);
+			TransformCacheGenerator.generate(inner, modList);
 
 			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 			Files.createFile(inner.resolve(FILE_TRANSFORM_COMPLETE));

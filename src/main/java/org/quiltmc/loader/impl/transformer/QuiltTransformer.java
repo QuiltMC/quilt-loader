@@ -23,6 +23,7 @@ import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -35,9 +36,8 @@ import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
-	public static byte[] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, byte[] bytes) {
-		// FIXME: Could use a better way to detect this...
-		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
+	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
+		boolean isMinecraftClass = mod.id().equals("minecraft");
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;
 		boolean applyAccessWidener = isMinecraftClass && accessWidener.getTargets().contains(name);
@@ -111,7 +111,7 @@ final class QuiltTransformer {
 		}
 
 		if (visitorCount <= 0) {
-			return bytes;
+			return null;
 		}
 
 		classReader.accept(visitor, 0);

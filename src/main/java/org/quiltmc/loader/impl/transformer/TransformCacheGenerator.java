@@ -25,8 +25,8 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 final class TransformCacheGenerator {
 
 
-	static TransformCache populateAndRun(Path root, List<ModLoadOption> modList) throws ModResolutionException, IOException {
-		TransformCache cache = createRoots(root, modList);
+	static TransformCache generate(Path root, List<ModLoadOption> modList) throws ModResolutionException, IOException {
+		TransformCache cache = new TransformCache(root, modList);
 		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-copy");
 
 		// Transform time!
@@ -47,6 +47,7 @@ final class TransformCacheGenerator {
 					cache,
 					accessWidener,
 					name,
+					mod,
 					classBytes
 			);
 		});
@@ -103,11 +104,5 @@ final class TransformCacheGenerator {
 		}
 
 		return ret;
-	}
-
-
-	private static TransformCache createRoots(Path root, List<ModLoadOption> modList) {
-		TransformCache cache = new TransformCache(root, modList);
-		return cache;
 	}
 }
