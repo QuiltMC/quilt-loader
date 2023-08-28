@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.MixinEnvironment;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public static Path minecraftJar;
+
 	private static boolean mixinReady;
 	private static Map<String, Object> properties;
 	private static QuiltLauncher launcher;
@@ -51,7 +52,6 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 	public MappingConfiguration getMappingConfiguration() {
 		return mappingConfiguration;
 	}
-
 
 	protected static void setProperties(Map<String, Object> propertiesA) {
 		if (properties != null && properties != propertiesA) {
