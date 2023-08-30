@@ -17,8 +17,18 @@
 
 package org.quiltmc.loader.impl.util;
 
+import org.quiltmc.loader.impl.filesystem.QuiltBasePath;
+import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
+import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
+
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class SystemProperties {
+	private SystemProperties() {}
+
+	// ###########
+	// # General #
+	// ###########
+
 	public static final String DEVELOPMENT = "loader.development";
 	public static final String SIDE = "loader.side";
 	public static final String GAME_JAR_PATH = "loader.gameJarPath";
@@ -78,9 +88,44 @@ public final class SystemProperties {
 	public static final String USE_ZIPFS_TEMP_FILE = "loader.zipfs.use_temp_file";
 	public static final String DISABLE_BEACON = "loader.disable_beacon";
 	public static final String DEBUG_DUMP_FILESYSTEM_CONTENTS = "loader.debug.filesystem.dump_contents";
-	public static final String DEBUG_VALIDATE_FILESYSTEM_CONTENTS = "loader.debug.filesystem.validate_constantly";
 	public static final String ALWAYS_DEFER_FILESYSTEM_OPERATIONS = "loader.workaround.defer_all_filesystem_operations";
+	public static final String DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE = "loader.quilt_class_path.disable_custom_table";
 
-	private SystemProperties() {
+	// ##############
+	// # Validation #
+	// ##############
+
+	/** Integer between 0 and 5. Controls various other validation properties, if they aren't specified.
+	 * <ol start="0">
+	 * <li>The default. Used for validation that isn't expected to cost performance, although these aren't controllable
+	 * via a system property.</li>
+	 * <li>Adds double-checking for some optimisations. Enabling these may cause a slight slowdown in some
+	 * operations.</li>
+	 * <li>UNUSED</li>
+	 * <li>UNUSED</li>
+	 * <li>Fairly expensive validation. This either implies a small increase in memory usage, or very large performance
+	 * slowdown.</li>
+	 * <li>Extremely expensive validation. Might imply heavy disk usage, or beyond 1000x performance slowdown for common
+	 * tasks, or large increases in memory usage. (No properties use this at the moment).</li>
+	 * </ol>
+	 */
+	public static final int VALIDATION_LEVEL = Integer.getInteger("loader.validation.level", 0);
+
+	/** Controls validation for {@link QuiltClassPath}. Also enabled by {@link #VALIDATION_LEVEL} > 0. */
+	public static final String VALIDATE_QUILT_CLASS_PATH = "loader.validation.quilt_class_path";
+
+	/** Controls validation for {@link QuiltBasePath}. Also enabled by {@link #VALIDATION_LEVEL} > 0. */
+	public static final String VALIDATE_QUILT_BASE_PATH = "loader.validation.quilt_base_path";
+
+	/** Controls if {@link QuiltMapFileSystem} should validate its internal map on every filesystem operation. Also
+	 * enabled by {@link #VALIDATION_LEVEL} > 3 */
+	public static final String DEBUG_VALIDATE_FILESYSTEM_CONTENTS = "loader.debug.filesystem.validate_constantly";
+
+	public static boolean getBoolean(String name, boolean fallbackDefault) {
+		String value = System.getProperty(name);
+		if (value == null) {
+			return fallbackDefault;
+		}
+		return Boolean.parseBoolean(value);
 	}
 }

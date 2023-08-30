@@ -33,6 +33,7 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +44,7 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -51,18 +53,30 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class QuiltClassPath {
 
+	private static final boolean VALIDATE = SystemProperties.getBoolean(
+		SystemProperties.VALIDATE_QUILT_CLASS_PATH, SystemProperties.VALIDATION_LEVEL > 0
+	);
+
 	private static final AtomicInteger ZIP_SCANNER_COUNT = new AtomicInteger();
 	private static final Queue<Runnable> SCAN_TASKS = new ArrayDeque<>();
 	private static final Set<Thread> ACTIVE_SCANNERS = new HashSet<>();
 
 	/** Saves quite a bit of memory to use our own hash table, while also not being too much work (since we already key
 	 * by int hash) */
-	private static final boolean USE_CUSTOM_TABLE = true;
+	private static final boolean USE_CUSTOM_TABLE = !Boolean.getBoolean(SystemProperties.DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE);
 
+	private final List<Path> allRoots = VALIDATE ? new CopyOnWriteArrayList<>() : null;
 	private final List<Path> roots = new CopyOnWriteArrayList<>();
 	private final FileMap files = USE_CUSTOM_TABLE ? new HashTableFileMap() : new StandardFileMap();
 
+	/** Set if {@link #VALIDATE} finds a problem. */
+	private static boolean printFullDetail = false;
+
 	public void addRoot(Path root) {
+		if (VALIDATE) {
+			allRoots.add(root);
+		}
+
 		if (root instanceof QuiltJoinedPath) {
 			QuiltJoinedFileSystem fs = ((QuiltJoinedPath) root).fs;
 
@@ -213,14 +227,55 @@ public class QuiltClassPath {
 	}
 
 	public Path findResource(String path) {
+		Path quick = quickFindResource(path);
+		if (VALIDATE) {
+			Path slow = findResourceIn(allRoots, path);
+			if (!Objects.equals(slow, quick)) {
+				IllegalStateException ex = new IllegalStateException(
+					"quickFindResource( " + path + " ) returned a different path to the slow find resource! ("
+						+ describePath(quick) + " vs " + describePath(slow) + ")"
+				);
+				ex.printStackTrace();
+				printFullDetail = true;
+				quickFindResource(path);
+				throw ex;
+			}
+		}
+		return quick;
+	}
+
+	private static String describePath(Path path) {
+		if (path == null) {
+			return "null";
+		}
+		if (path instanceof HashCollisionPath) {
+			return ((HashCollisionPath) path).describe();
+		}
+		if (path instanceof OverlappingPath) {
+			return ((OverlappingPath) path).describe();
+		}
+		return "'" + path + "'.fs:" + path.getFileSystem();
+	}
+
+	private Path quickFindResource(String path) {
 		String absolutePath = path;
 		if (!path.startsWith("/")) {
 			absolutePath = "/" + path;
 		}
+		if (printFullDetail) {
+			Log.warn(LogCategory.GENERAL, "quickFindResource(" + path + ")");
+		}
 		Path quick = files.get(absolutePath);
+
+		if (printFullDetail) {
+			Log.warn(LogCategory.GENERAL, "- files.get(" + absolutePath + ") -> " + describePath(quick));
+		}
 
 		if (quick instanceof HashCollisionPath) {
 			quick = ((HashCollisionPath) quick).get(absolutePath);
+			if (printFullDetail) {
+				Log.warn(LogCategory.GENERAL, "- after hash collisiion -> " + describePath(quick));
+			}
 		}
 
 		if (quick != null) {
@@ -230,17 +285,51 @@ public class QuiltClassPath {
 			return quick;
 		}
 
-		for (Path root : roots) {
+		return findResourceIn(roots, path);
+	}
+
+	private static Path findResourceIn(List<Path> list, String path) {
+		for (Path root : list) {
 			Path ext = root.resolve(path);
 			if (FasterFiles.exists(ext)) {
 				return ext;
 			}
 		}
-
 		return null;
 	}
 
 	public List<Path> getResources(String path) {
+		List<Path> quick = quickGetResources(path);
+		if (VALIDATE) {
+			List<Path> slow = new ArrayList<>();
+			getResourcesIn(allRoots, path, slow);
+			if (!quick.equals(slow)) {
+				IllegalStateException ex = new IllegalStateException(
+					"quickGetResources( " + path + " ) returned a different list of paths to the slow get resources! ("
+						+ describePaths(quick) + " vs " + describePaths(slow) + ")"
+				);
+				ex.printStackTrace();
+				printFullDetail = true;
+				quickGetResources(path);
+				throw ex;
+			}
+		}
+		return quick;
+	}
+
+	private static String describePaths(List<Path> paths) {
+		StringBuilder sb = new StringBuilder("[");
+		for (Path p : paths) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+			sb.append(describePath(p));
+		}
+		sb.append(" ]");
+		return sb.toString();
+	}
+
+	private List<Path> quickGetResources(String path) {
 		String absolutePath = path;
 		if (!path.startsWith("/")) {
 			absolutePath = "/" + path;
@@ -261,14 +350,17 @@ public class QuiltClassPath {
 			}
 		}
 
-		for (Path root : roots) {
+		getResourcesIn(roots, path, paths);
+		return Collections.unmodifiableList(paths);
+	}
+
+	private static void getResourcesIn(List<Path> src, String path, List<Path> dst) {
+		for (Path root : src) {
 			Path ext = root.resolve(path);
 			if (FasterFiles.exists(ext)) {
-				paths.add(ext);
+				dst.add(ext);
 			}
 		}
-
-		return Collections.unmodifiableList(paths);
 	}
 
 	private static boolean isEqualPath(Path in, Path value) {
@@ -298,7 +390,7 @@ public class QuiltClassPath {
 
 	private static boolean isEqual(String key, Path value) {
 
-		boolean should = key.equals(value.toString());
+		boolean should = VALIDATE && key.equals(value.toString());
 
 		int offset = key.length();
 		int names = value.getNameCount();
@@ -306,24 +398,35 @@ public class QuiltClassPath {
 			String sub = value.getName(part).toString();
 			offset -= sub.length();
 			if (!key.startsWith(sub, offset)) {
-				if (should) {
-					throw new IllegalStateException("Optimized equality test seems to be broken for " + key);
+				if (VALIDATE && should) {
+					throw new IllegalStateException("Optimized equality test seems to be broken for " + key + " " + describePath(value));
 				}
 				return false;
 			}
 			offset--;
 			if (offset < 0) {
-				if (should) {
-					throw new IllegalStateException("Optimized equality test seems to be broken for " + key);
+				if (VALIDATE && should) {
+					throw new IllegalStateException("Optimized equality test seems to be broken for " + key + " " + describePath(value));
 				}
 				return false;
 			}
 			if (key.charAt(offset) != '/') {
-				if (should) {
-					throw new IllegalStateException("Optimized equality test seems to be broken for " + key);
+				if (VALIDATE && should) {
+					throw new IllegalStateException("Optimized equality test seems to be broken for " + key + " " + describePath(value));
 				}
 				return false;
 			}
+		}
+
+		if (offset != 0) {
+			if (VALIDATE && should) {
+				throw new IllegalStateException("Optimized equality test seems to be broken for " + key + " " + describePath(value));
+			}
+			return false;
+		}
+
+		if (VALIDATE && !should) {
+			throw new IllegalStateException("Optimized equality test seems to be broken for " + key + " " + describePath(value));
 		}
 		return true;
 	}
@@ -433,7 +536,14 @@ public class QuiltClassPath {
 		Path get0(String key) {
 			Path[] tbl = table;
 			// Stored in a variable for thread safety
-			return tbl[key.hashCode() & tbl.length - 1];
+			int hash = key.hashCode();
+			int index = hash & tbl.length - 1;
+
+			if (printFullDetail) {
+				Log.warn(LogCategory.GENERAL, "- hash(" + key + ") = " + hash + "; index = " + index + " in Path[" + tbl.length + "]");
+			}
+
+			return tbl[index];
 		}
 
 		@Override
@@ -516,6 +626,14 @@ public class QuiltClassPath {
 			values[a.values.length] = b;
 		}
 
+		private String describe() {
+			String[] array = new String[values.length];
+			for (int i = 0; i < array.length; i++) {
+				array[i] = describePath(values[i]);
+			}
+			return "HashCollisionPath " + Arrays.toString(array);
+		}
+
 		@Override
 		protected IllegalStateException illegal() {
 			IllegalStateException ex = new IllegalStateException(
@@ -568,6 +686,14 @@ public class QuiltClassPath {
 			paths = Arrays.copyOf(paths, paths.length + 1);
 			paths[paths.length - 1] = file;
 			file.getNameCount();
+		}
+
+		private String describe() {
+			String[] array = new String[paths.length];
+			for (int i = 0; i < array.length; i++) {
+				array[i] = describePath(paths[i]);
+			}
+			return "OverlappingPath " + Integer.toHexString(data) + " " + Arrays.toString(array);
 		}
 
 		@Override
