@@ -23,4 +23,5 @@ Features:
 Bug FIxes:
 
 * Fixed QuiltClassPath not always returning the correct path. (This fixes #354)
+* [#348] FixedQuiltZipFileSystem.InflaterSeekableByteChannel sometimes skipping bytes when reading. (heipiao233)
 * [#354] Fixed dedicated servers not letting any clients connect.
