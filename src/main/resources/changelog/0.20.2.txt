@@ -1,0 +1,27 @@
+New System Properties:
+
+* `loader.validation.level` which controls how much validation quilt-loader does by default,
+    since we expect lots of optional validation properties.
+    * This is used to check for bugs in quilt-loader itself, and isn't expected to be used by players or modpack authors.
+    * This should be a value between 0 and 5:
+        * 0 is the default. Used for validation that isn't expected to cost performance, although these aren't controllable via a system property.
+        * 1 adds double-checking to some optimisations, where it is fairly cheap to do so. Will (eventually) add a few seconds to game launch, especially with larger packs.
+        * 2 is currently unused. We'll write a definition when we do use 2 though.
+        * 3 is currently unused. We'll write a definition when we do use 3 though.
+        * 4 is used for fairly expensive validation. This either implies a small increase in memory usage, or very large performance slowdown.
+        * 5 is for extremely expensive validation. Might imply heavy disk usage, or beyond 1000x performance slowdown for common
+            tasks, or large increases in memory usage. (No properties use this at the moment)
+    * We don't recommend setting this higher than 2. (The default is 0).
+* `loader.quilt_class_path.disable_custom_table` which disables a memory-saving optimisation for the class path.
+    * This is not generally expected to be useful. If fetching resources from the classpath returns the wrong file, or no file,
+        then setting the validation level to 1 will check to see if this is the cause.
+
+Features:
+
+* `loader.debug.filesystem.validate_constantly` now applies automatically if the validation level is 4 or 5.
+
+Bug FIxes:
+
+* Fixed QuiltClassPath not always returning the correct path. (This fixes #354)
+* [#348] FixedQuiltZipFileSystem.InflaterSeekableByteChannel sometimes skipping bytes when reading. (heipiao233)
+* [#354] Fixed dedicated servers not letting any clients connect.

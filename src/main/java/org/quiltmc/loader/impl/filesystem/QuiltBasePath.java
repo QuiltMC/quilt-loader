@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
@@ -55,6 +56,10 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	private static final int FLAG_IS_ABSOLUTE = 1 << 0;
 	private static final int FLAG_IS_NORMALIZED = 1 << 1;
 	private static final int NAME_COUNT_OFFSET = 2;
+
+	private static final boolean VALIDATE = SystemProperties.getBoolean(
+		SystemProperties.VALIDATE_QUILT_BASE_PATH, SystemProperties.VALIDATION_LEVEL > 0
+	);
 
 	final @NotNull FS fs;
 	final @Nullable P parent;
@@ -243,9 +248,12 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			hash = 31 * hash + name.charAt(i);
 		}
 
-		if (toString().hashCode() != hash) {
-			throw new AssertionError(toString());
+		if (VALIDATE) {
+			if (toString().hashCode() != hash) {
+				throw new AssertionError(toString());
+			}
 		}
+
 		return hash;
 	}
 
@@ -256,15 +264,17 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		if (!(other instanceof QuiltBasePath)) {
 			return toString().equals(other.toString());
 		}
-		boolean should = toString().equals(other.toString());
-		boolean result = s2(other);
-		if (should != result) {
-			throw new AssertionError();
+		boolean result = quickIsToStringEqual(other);
+		if (VALIDATE) {
+			boolean should = toString().equals(other.toString());
+			if (should != result) {
+				throw new AssertionError(should + " != " + result);
+			}
 		}
 		return result;
 	}
 
-	private boolean s2(Path other) {
+	private boolean quickIsToStringEqual(Path other) {
 		QuiltBasePath<?, ?> o = (QuiltBasePath<?, ?>) other;
 		if (parent == null || o.parent == null) {
 			if ((parent == null) != (o.parent == null)) {

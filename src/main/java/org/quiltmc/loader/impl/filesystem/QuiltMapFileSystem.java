@@ -62,7 +62,9 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 	private static final boolean ENABLE_DEBUG_DUMPING = Boolean.getBoolean(SystemProperties.DEBUG_DUMP_FILESYSTEM_CONTENTS);
 
 	/** Controls {@link #validate()}. */
-	private static final boolean ENABLE_VALIDATION = Boolean.getBoolean(SystemProperties.DEBUG_VALIDATE_FILESYSTEM_CONTENTS);
+	private static final boolean ENABLE_VALIDATION = SystemProperties.getBoolean(
+		SystemProperties.DEBUG_VALIDATE_FILESYSTEM_CONTENTS, SystemProperties.VALIDATION_LEVEL > 3
+	);
 
 	private final Map<P, QuiltUnifiedEntry> entries;
 

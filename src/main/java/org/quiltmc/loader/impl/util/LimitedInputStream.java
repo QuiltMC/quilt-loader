@@ -32,6 +32,11 @@ public final class LimitedInputStream extends InputStream {
 	}
 
 	@Override
+	public String toString() {
+		return "LimitedInputStream { " + position + " / " + limit + " of " + from + " }";
+	}
+
+	@Override
 	public int available() throws IOException {
 		return limit - position;
 	}
