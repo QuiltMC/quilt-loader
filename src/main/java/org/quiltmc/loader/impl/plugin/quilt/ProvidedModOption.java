@@ -31,6 +31,7 @@ import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.QuiltFileHasher;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -143,8 +144,8 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
-	public byte[] computeOriginHash() {
-		return new byte[0];
+	public byte[] computeOriginHash(QuiltFileHasher hasher) {
+		return new byte[hasher.getHashLength()];
 	}
 
 	@Override

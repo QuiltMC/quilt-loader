@@ -109,6 +109,7 @@ import org.quiltmc.loader.impl.util.AsciiTableGenerator;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.FileHasherImpl;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -128,7 +129,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.20.2";
+	public static final String VERSION = "0.21.0-beta.1";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -145,6 +146,7 @@ public final class QuiltLoaderImpl {
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
+	protected final FileHasherImpl hasher = new FileHasherImpl(null);
 	protected final Map<String, String> modOriginHash = new HashMap<>();
 	protected final Map<Path, String> pathOriginHash = new HashMap<>();
 
@@ -347,44 +349,26 @@ public final class QuiltLoaderImpl {
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
 
-		Map<Path, byte[]> originPathCache = new HashMap<>();
-
 		for (ModLoadOption mod : modList) {
 			Path from = mod.from();
 			List<List<Path>> srcPaths = temporarySourcePaths.get(from);
-			boolean newArray = false;
-			byte[] hash = null;
-			for (List<Path> paths : srcPaths) {
-				Path first = paths.get(0);
-				if (first.getFileSystem() != FileSystems.getDefault()) {
-					throw new ModResolutionException(
-						"The first path as a source for " + from + " (first = " + first
-							+ ") is not on the default file system?"
-					);
-				}
-				byte[] firstHash = originPathCache.get(first);
-				if (firstHash == null) {
-					try {
-						firstHash = HashUtil.computeHash(first);
-					} catch (IOException e) {
-						throw new ModResolutionException("Failed to compute the hash for mod '" + mod.id() + "', path " + first);
+			try {
+				for (List<Path> paths : srcPaths) {
+					Path first = paths.get(0);
+					if (first.getFileSystem() != FileSystems.getDefault()) {
+						throw new ModResolutionException(
+							"The first path as a source for " + from + " (first = " + first
+								+ ") is not on the default file system?"
+						);
 					}
-					originPathCache.put(first, firstHash);
-					pathOriginHash.put(first, HashUtil.hashToString(firstHash));
-				}
-				if (hash == null) {
-					hash = firstHash;
-				} else {
-					if (!newArray) {
-						newArray = true;
-						hash = Arrays.copyOf(hash, hash.length);
-					}
-					for (int i = 0; i < hash.length; i++) {
-						hash[i] ^= firstHash[i];
+					if (!pathOriginHash.containsKey(first)) {
+						pathOriginHash.put(first, HashUtil.hashToString(hasher.computeNormalHash(from)));
 					}
 				}
+				modOriginHash.put(mod.id(), HashUtil.hashToString(mod.computeOriginHash(hasher)));
+			} catch (IOException e) {
+				throw new ModResolutionException("Failed to compute the hash for mod '" + mod.id() + "'", e);
 			}
-			modOriginHash.put(mod.id(), HashUtil.hashToString(hash));
 		}
 
 		Path transformCacheFolder = getCacheDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);

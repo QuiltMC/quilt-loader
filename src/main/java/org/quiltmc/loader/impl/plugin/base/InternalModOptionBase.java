@@ -26,6 +26,7 @@ import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.solver.QuiltFileHasher;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -40,8 +41,6 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	protected final boolean mandatory;
 	protected final boolean requiresRemap;
 	protected final QuiltLoaderIcon fileIcon;
-
-	byte[] hash;
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, ModMetadataExt meta, Path from,
 		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
@@ -126,10 +125,7 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	}
 
 	@Override
-	public byte[] computeOriginHash() throws IOException {
-		if (hash == null) {
-			hash = HashUtil.computeHash(from);
-		}
-		return hash;
+	public byte[] computeOriginHash(QuiltFileHasher hasher) throws IOException {
+		return hasher.computeNormalHash(from);
 	}
 }
