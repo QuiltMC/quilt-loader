@@ -30,10 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
 import org.quiltmc.chasm.api.ChasmProcessor;
 import org.quiltmc.chasm.api.ClassResult;
 import org.quiltmc.chasm.api.Transformer;
@@ -47,8 +45,6 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
-import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
-import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -59,22 +55,22 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class ChasmInvoker {
 
-	static void applyChasm(Path root, List<ModLoadOption> modList, ModSolveResult result)
-		throws ModResolutionException {
+	static void applyChasm(TransformCache cache)
+		throws ChasmTransformException {
 		try {
-			applyChasm0(root, modList, result);
-		} catch (Exception e) {
+			applyChasm0(cache);
+		} catch (Throwable e) {
 			throw new ChasmTransformException("Failed to apply chasm!", e);
 		}
 	}
 
-	static void applyChasm0(Path root, List<ModLoadOption> modList, ModSolveResult solveResult) throws IOException {
-		Map<String, String> package2mod = new HashMap<>();
+	static void applyChasm0(TransformCache cache) throws IOException {
+		Map<String, ModLoadOption> package2mod = new HashMap<>();
 		Map<String, byte[]> inputClassCache = new HashMap<>();
 
 		// TODO: Move chasm searching to here!
-		for (ModLoadOption mod : modList) {
-			Path path2 = root.resolve(mod.id());
+		for (ModLoadOption mod : cache.getMods()) {
+			Path path2 = cache.getRoot(mod);
 			if (!FasterFiles.isDirectory(path2)) {
 				continue;
 			}
@@ -82,7 +78,7 @@ class ChasmInvoker {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 					if (file.getFileName().toString().endsWith(".class")) {
-						package2mod.put(path2.relativize(file.getParent()).toString(), mod.id());
+						package2mod.put(path2.relativize(file.getParent()).toString(), mod);
 						inputClassCache.put(path2.relativize(file).toString(), Files.readAllBytes(file));
 					}
 					return FileVisitResult.CONTINUE;
@@ -112,8 +108,8 @@ class ChasmInvoker {
 			}
 		});
 
-		for (ModLoadOption mod : modList) {
-			Path modPath = root.resolve(mod.id());
+		for (ModLoadOption mod : cache.getMods()) {
+			Path modPath = cache.getRoot(mod);
 			if (!FasterFiles.exists(modPath)) {
 				continue;
 			}
@@ -121,6 +117,7 @@ class ChasmInvoker {
 			// QMJ spec: "experimental_chasm_transformers"
 			// either a string, or a list of strings
 			// each string is a folder which will be recursively searched for chasm transformers.
+			// TODO: duplicated in QuiltTransformers
 			LoaderValue value = mod.metadata().value("experimental_chasm_transformers");
 
 			final String[] paths;
@@ -163,7 +160,7 @@ class ChasmInvoker {
 					if (file.getFileName().toString().endsWith(".class")) {
 						byte[] bytes = Files.readAllBytes(file);
 						Metadata meta = new Metadata();
-						meta.put(QuiltMetadata.class, new QuiltMetadata(mod));
+						meta.put(QuiltMetadata.class, new QuiltMetadata(mod, LoaderUtil.getClassNameFromTransformCache(file.toString())));
 						chasm.addClass(bytes, meta);
 					} else if (file.getFileName().toString().endsWith(".chasm")) {
 						for (Path chasmRoot : chasmRoots) {
@@ -197,14 +194,13 @@ class ChasmInvoker {
 					String className = cr.getClassName();
 					final Path rootTo;
 					if (qm != null) {
-						rootTo = root.resolve(qm.from.id());
+						rootTo = cache.getRoot(qm.from);
 					} else {
-						String mod = package2mod.get(className.substring(0, className.lastIndexOf('/')));
+						ModLoadOption mod = package2mod.get(className.substring(0, className.lastIndexOf('/')));
 						if (mod == null) {
-							mod = TransformCache.TRANSFORM_CACHE_NONMOD_CLASSLOADABLE;
 							throw new AbstractMethodError("// TODO: Support classloading from unknown mods!");
 						}
-						rootTo = root.resolve(mod);
+						rootTo = cache.getRoot(mod);
 					}
 					Path to = rootTo.resolve(LoaderUtil.getClassFileName(className));
 					Files.createDirectories(to.getParent());
@@ -215,12 +211,13 @@ class ChasmInvoker {
 					break;
 				}
 				case REMOVED: {
-					// We need to prevent resource loading from accessing this file.
-
-					// Deleting the file from the transform cache isn't enough.
-					// QuiltLoaderImpl#setup() is missing functionality
-					// and so are the file systems?
-					throw new AbstractMethodError("// TODO: Support REMOVED files in the path system!");
+					QuiltMetadata qm = this_value_is_actually_nullable(result.getMetadata().get(QuiltMetadata.class));
+					if (qm != null) {
+						cache.hideClass(LoaderUtil.getClassNameFromTransformCache(qm.name));
+					} else {
+						throw new UnsupportedOperationException("Cannot remove unknown class");
+					}
+					break;
 				}
 				default: {
 					throw new UnsupportedChasmException(
@@ -241,9 +238,12 @@ class ChasmInvoker {
 	static class QuiltMetadata {
 
 		final ModLoadOption from;
+		// the dot name of this class
+		final String name;
 
-		public QuiltMetadata(ModLoadOption from) {
+		public QuiltMetadata(ModLoadOption from, String name) {
 			this.from = from;
+			this.name = name;
 		}
 	}
 }

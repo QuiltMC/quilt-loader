@@ -28,6 +28,12 @@ public final class LoaderUtil {
 		return className.replace('.', '/').concat(".class");
 	}
 
+	public static String getClassNameFromTransformCache(String name) {
+		name = name.substring(name.indexOf('/', 1) + 1); // remove /mod_id/
+		name = name.replace('/', '.');
+		return name.substring(0, name.length() - 6); // remove .class
+	}
+
 	public static Path normalizePath(Path path) {
 		if (path == null) {
 			return null;

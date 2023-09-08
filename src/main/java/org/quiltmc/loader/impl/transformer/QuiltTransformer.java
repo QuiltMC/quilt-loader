@@ -19,7 +19,11 @@ package org.quiltmc.loader.impl.transformer;
 import java.util.Collection;
 import java.util.HashSet;
 
+import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
+
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -27,22 +31,16 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
-import org.objectweb.asm.MethodVisitor;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-
-import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
-import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class QuiltTransformer {
-	public static byte[] transform(boolean isDevelopment, EnvType envType, String name, byte[] bytes) {
-		// FIXME: Could use a better way to detect this...
-		boolean isMinecraftClass = name.startsWith("net.minecraft.") || name.startsWith("com.mojang.blaze3d.") || name.indexOf('.') < 0;
+final class QuiltTransformer {
+	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
+		boolean isMinecraftClass = mod.id().equals("minecraft");
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean environmentStrip = !isMinecraftClass || isDevelopment;
-		boolean applyAccessWidener = isMinecraftClass && QuiltLoaderImpl.INSTANCE.getAccessWidener().getTargets().contains(name);
+		boolean applyAccessWidener = isMinecraftClass && accessWidener.getTargets().contains(name);
 
 		if (!transformAccess && !environmentStrip && !applyAccessWidener) {
 			return bytes;
@@ -58,7 +56,8 @@ public final class QuiltTransformer {
 			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			if (stripData.stripEntireClass()) {
-				throw new RuntimeException("Cannot load class " + name + " in environment type " + envType);
+				cache.hideClass(name);
+				return null;
 			}
 
 			Collection<String> stripMethods = stripData.getStripMethods();
@@ -102,7 +101,7 @@ public final class QuiltTransformer {
 		}
 
 		if (applyAccessWidener) {
-			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, QuiltLoaderImpl.INSTANCE.getAccessWidener());
+			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, accessWidener);
 			visitorCount++;
 		}
 
@@ -112,7 +111,7 @@ public final class QuiltTransformer {
 		}
 
 		if (visitorCount <= 0) {
-			return bytes;
+			return null;
 		}
 
 		classReader.accept(visitor, 0);

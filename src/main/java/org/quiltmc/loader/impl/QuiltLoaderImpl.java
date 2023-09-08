@@ -18,7 +18,6 @@
 package org.quiltmc.loader.impl;
 
 import java.awt.GraphicsEnvironment;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -103,7 +102,7 @@ import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
-import org.quiltmc.loader.impl.transformer.TransformCache;
+import org.quiltmc.loader.impl.transformer.TransformCacheManager;
 import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator;
@@ -121,8 +120,6 @@ import org.spongepowered.asm.mixin.FabricUtil;
 
 import net.fabricmc.loader.api.ObjectShare;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(value = QuiltLoaderInternalType.LEGACY_EXPOSED, replacements = QuiltLoader.class)
@@ -155,7 +152,6 @@ public final class QuiltLoaderImpl {
 
 	private final Map<String, LanguageAdapter> adapterMap = new HashMap<>();
 	private final EntrypointStorage entrypointStorage = new EntrypointStorage();
-	private final AccessWidener accessWidener = new AccessWidener();
 
 	private final ObjectShare objectShare = new ObjectShareImpl();
 
@@ -392,13 +388,14 @@ public final class QuiltLoaderImpl {
 		}
 
 		Path transformCacheFolder = getCacheDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
-		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, modOriginHash, result);
+		TransformCacheResult cacheResult = TransformCacheManager.populateTransformBundle(transformCacheFolder, modList, modOriginHash, result);
 		QuiltZipPath transformedModBundle = cacheResult.transformCacheRoot;
 
 		long zipEnd = System.nanoTime();
 
 		try {
 			QuiltLauncherBase.getLauncher().setTransformCache(transformedModBundle.toUri().toURL());
+			QuiltLauncherBase.getLauncher().setHiddenClasses(cacheResult.hiddenClasses);
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
@@ -418,7 +415,7 @@ public final class QuiltLoaderImpl {
 		for (ModLoadOption modOption : modList) {
 			Path resourceRoot;
 
-			if (!modOption.needsChasmTransforming() && modOption.namespaceMappingFrom() == null) {
+			if (!modOption.needsTransforming() && modOption.namespaceMappingFrom() == null) {
 				resourceRoot = modOption.resourceRoot();
 			} else {
 				String modid = modOption.id();
@@ -1159,26 +1156,7 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	public void loadAccessWideners() {
-		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
 
-		for (ModContainerExt mod : mods) {
-			for (String accessWidener : mod.metadata().accessWideners()) {
-
-				Path path = mod.getPath(accessWidener);
-
-				if (!FasterFiles.isRegularFile(path)) {
-					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.metadata().id() + " '" + accessWidener + "'");
-				}
-
-				try (BufferedReader reader = Files.newBufferedReader(path)) {
-					accessWidenerReader.read(reader, getMappingResolver().getCurrentRuntimeNamespace());
-				} catch (Exception e) {
-					throw new RuntimeException("Failed to read accessWidener file from mod " + mod.metadata().id(), e);
-				}
-			}
-		}
-	}
 
 	public void prepareModInit(Path newRunDir, Object gameInstance) {
 		if (!frozen) {
@@ -1213,10 +1191,6 @@ public final class QuiltLoaderImpl {
 		} catch (RuntimeException e) {
 			throw new FormattedException("A mod crashed on startup!", e);
 		}
-	}
-
-	public AccessWidener getAccessWidener() {
-		return accessWidener;
 	}
 
 	/**

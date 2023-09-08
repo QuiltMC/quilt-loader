@@ -21,16 +21,12 @@ import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
-import org.quiltmc.loader.api.ModContainer.BasicSourceType;
-import org.quiltmc.loader.api.minecraft.ClientOnly;
-import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
-import org.quiltmc.loader.impl.transformer.QuiltTransformer;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -43,7 +39,6 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
@@ -56,6 +51,7 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -101,6 +97,7 @@ class KnotClassDelegate {
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
 	private boolean transformFinishedLoading = false;
+	private Set<String> hiddenClasses = Collections.emptySet();
 	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -489,29 +486,11 @@ class KnotClassDelegate {
 			return PatchLoader.getNewPatchedClass(name);
 		}
 
-		if (!transformInitialized || !canTransformClass(name)) {
-			try {
-				return getRawClassByteArray(classFileURL, name);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
-			}
+		try {
+			return getRawClassByteArray(classFileURL, name);
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
 		}
-
-		byte[] input = provider.getEntrypointTransformer().transform(name);
-
-		if (input == null) {
-			try {
-				input = getRawClassByteArray(classFileURL, name);
-			} catch (IOException e) {
-				throw new RuntimeException("Failed to load class file for '" + name + "'!", e);
-			}
-		}
-
-		if (input != null) {
-			return QuiltTransformer.transform(isDevelopment, envType, name, input);
-		}
-
-		return null;
 	}
 
 	private static boolean canTransformClass(String name) {
@@ -525,6 +504,10 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(URL url, String name) throws IOException {
+		if (hiddenClasses.contains(name)) {
+			return null;
+		}
+
 		try (InputStream inputStream = (url != null ? url.openStream() : null)) {
 			if (inputStream == null) {
 				return null;
@@ -543,6 +526,10 @@ class KnotClassDelegate {
 
 	void setTransformCache(URL insideTransformCache) {
 		transformCacheUrl = insideTransformCache.toString();
+	}
+
+	void setHiddenClasses(Set<String> hiddenClasses) {
+		this.hiddenClasses = hiddenClasses;
 	}
 
 	void hideParentUrl(URL parentPath) {
