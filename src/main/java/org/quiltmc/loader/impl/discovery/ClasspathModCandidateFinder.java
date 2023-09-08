@@ -83,7 +83,7 @@ public class ClasspathModCandidateFinder {
                     if (!url.getProtocol().equals("jar")) {
 						if (!pathGroups.isEmpty()) {
 							// path groups are enabled, warn for misconfiguration
-							throw new RuntimeException("Mod at path " + url + " lacks a class path group! Make sure the loom 'mods' block " +
+							Log.error(LogCategory.DISCOVERY,"Mod at path " + url + " lacks a class path group! Make sure the loom 'mods' block " +
 									"is configured correctly!");
 						}
 
