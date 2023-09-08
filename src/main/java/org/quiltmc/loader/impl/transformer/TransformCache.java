@@ -48,6 +48,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.ParseException;
 
 /**
  * A representation of the transform cache to be used by transformers when generating the cache for the first time.
@@ -192,6 +193,8 @@ class TransformCache {
 			}
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
+		} catch (ParseException e) {
+			throw new RuntimeException("Failed to extract the refmap from " + mixin, e);
 		}
 
 		return null;
