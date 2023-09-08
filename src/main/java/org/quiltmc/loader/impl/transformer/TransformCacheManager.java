@@ -40,6 +40,7 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
+import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
@@ -255,12 +256,8 @@ public class TransformCacheManager {
 
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
 			try (QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache", true)) {
-				QuiltUnifiedPath root = fs.getRoot();
-				TransformCache cache = TransformCacheGenerator.generate(root, modList);
-				fs.dumpEntries("after-populate");
-				Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
-				Files.write(root.resolve(HIDDEN_CLASSES_PATH), cache.getHiddenClasses());
-				Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
+				Path root = fs.getRoot();
+				writeTransformCache(options, modList, root);
 				QuiltZipFileSystem.writeQuiltCompressedFileSystem(root, transformCacheFile);
 
 				return openCache(transformCacheFile);
@@ -275,10 +272,7 @@ public class TransformCacheManager {
 
 			Path inner = fs.get().getPath("/");
 
-			TransformCacheGenerator.generate(inner, modList);
-
-			Files.write(inner.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
-			Files.createFile(inner.resolve(FILE_TRANSFORM_COMPLETE));
+			writeTransformCache(options, modList, inner);
 
 		} catch (IOException e) {
 			throw new ModResolutionException("Failed to create the transform bundle!", e);
@@ -287,6 +281,14 @@ public class TransformCacheManager {
 		}
 
 		return openCache(transformCacheFile);
+	}
+
+	private static void writeTransformCache(String options, List<ModLoadOption> modList, Path root) throws ModResolutionException, IOException {
+		TransformCache cache = TransformCacheGenerator.generate(root, modList);
+		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-populate");
+		Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
+		Files.write(root.resolve(HIDDEN_CLASSES_PATH), cache.getHiddenClasses());
+		Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
 	}
 
 	private static QuiltZipPath openCache(Path transformCacheFile) throws ModResolutionException {

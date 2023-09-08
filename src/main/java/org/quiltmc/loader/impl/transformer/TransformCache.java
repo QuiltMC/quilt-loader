@@ -65,66 +65,85 @@ class TransformCache {
 		this.root = root;
 		this.orderedMods = orderedMods.stream().filter(mod -> mod.needsTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())).collect(Collectors.toList());
 
-		for (ModLoadOption mod : orderedMods) {
+		for (ModLoadOption mod : this.orderedMods) {
 			Path modSrc = mod.resourceRoot();
 			Path modDst = root.resolve(mod.id());
 			modRoots.put(mod, modDst);
 
+			final boolean onlyTransformableFiles = mod.couldResourcesChange();
+
 			try {
-				// note: we could provide a folder to pass in more data (e.g. a /transformers dir with metadata)
-				// we could also provide meta-inf here:
+				if (onlyTransformableFiles) {
+					// note: we could provide a folder to pass in more data (e.g. a /transformers dir with metadata)
+					// we could also provide meta-inf here:
 //					copyFile(modSrc.resolve("META-INF/MANIFEST.MF"), modSrc, modDst);
 
-				// Copy mixin + AWs over
-				for (String mixin : mod.metadata().mixins(QuiltLauncherBase.getLauncher().getEnvironmentType())) {
-					copyFile(modSrc.resolve(mixin), modSrc, modDst);
-					// find the refmap and copy it too
-					String refmap = extractRefmap(modSrc.resolve(mixin));
-					if (refmap != null) {
-						// multiple mixins can reference the same refmap
-						copyFile(modSrc.resolve(refmap), modSrc, modDst, StandardCopyOption.REPLACE_EXISTING);
+					// Copy mixin + AWs over
+					for (String mixin : mod.metadata().mixins(QuiltLauncherBase.getLauncher().getEnvironmentType())) {
+						copyFile(modSrc.resolve(mixin), modSrc, modDst);
+						// find the refmap and copy it too
+						String refmap = extractRefmap(modSrc.resolve(mixin));
+						if (refmap != null) {
+							// multiple mixins can reference the same refmap
+							copyFile(modSrc.resolve(refmap), modSrc, modDst, StandardCopyOption.REPLACE_EXISTING);
 
-					}
-				}
-				for (String aw : mod.metadata().accessWideners()) {
-					copyFile(modSrc.resolve(aw), modSrc, modDst);
-				}
-
-				LoaderValue value = mod.metadata().value("experimental_chasm_transformers");
-
-				// TODO: copied from ChasmInvoker
-				final String[] chasmPaths;
-				if (value == null) {
-					chasmPaths = new String[0];
-				} else if (value.type() == LoaderValue.LType.STRING) {
-					chasmPaths = new String[]{value.asString()};
-				} else if (value.type() == LoaderValue.LType.ARRAY) {
-					LoaderValue.LArray array = value.asArray();
-					chasmPaths = new String[array.size()];
-					for (int i = 0; i < array.size(); i++) {
-						LoaderValue entry = array.get(i);
-						if (entry.type() == LoaderValue.LType.STRING) {
-							chasmPaths[i] = entry.asString();
-						} else {
-							Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers[" + i + "]' in " + mod.id());
 						}
 					}
-				} else {
-					chasmPaths = new String[0];
-					Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers' in " + mod.id());
-				}
+					for (String aw : mod.metadata().accessWideners()) {
+						copyFile(modSrc.resolve(aw), modSrc, modDst);
+					}
 
-				for (String chasmPath : chasmPaths) {
-					copyFile(modSrc.resolve(chasmPath), modSrc, modDst);
-				}
+					LoaderValue value = mod.metadata().value("experimental_chasm_transformers");
 
-				// copy classes for mods which don't need remapped
-				if (mod.namespaceMappingFrom() == null) {
-					try (Stream<Path> stream = Files.walk(modSrc)) {
-						stream
+					// TODO: copied from ChasmInvoker
+					final String[] chasmPaths;
+					if (value == null) {
+						chasmPaths = new String[0];
+					} else if (value.type() == LoaderValue.LType.STRING) {
+						chasmPaths = new String[]{value.asString()};
+					} else if (value.type() == LoaderValue.LType.ARRAY) {
+						LoaderValue.LArray array = value.asArray();
+						chasmPaths = new String[array.size()];
+						for (int i = 0; i < array.size(); i++) {
+							LoaderValue entry = array.get(i);
+							if (entry.type() == LoaderValue.LType.STRING) {
+								chasmPaths[i] = entry.asString();
+							} else {
+								Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers[" + i + "]' in " + mod.id());
+							}
+						}
+					} else {
+						chasmPaths = new String[0];
+						Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers' in " + mod.id());
+					}
+
+					for (String chasmPath : chasmPaths) {
+						copyFile(modSrc.resolve(chasmPath), modSrc, modDst);
+					}
+
+					// copy classes for mods which don't need remapped
+					if (mod.namespaceMappingFrom() == null) {
+						try (Stream<Path> stream = Files.walk(modSrc)) {
+							stream
 								.filter(FasterFiles::isRegularFile)
 								.filter(p -> p.getFileName().toString().endsWith(".class") || p.getFileName().toString().endsWith(".chasm"))
 								.forEach(path -> copyFile(path, modSrc, modDst));
+						}
+					}
+				} else if (mod.namespaceMappingFrom() != null) {
+					// Copy everything that isn't a class file, since those get remapped
+					try (Stream<Path> stream = Files.walk(modSrc)) {
+						stream
+							.filter(FasterFiles::isRegularFile)
+							.filter(p -> !p.getFileName().toString().endsWith(".class"))
+							.forEach(path -> copyFile(path, modSrc, modDst));
+					}
+				} else {
+					// Copy everything
+					try (Stream<Path> stream = Files.walk(modSrc)) {
+						stream
+							.filter(FasterFiles::isRegularFile)
+							.forEach(path -> copyFile(path, modSrc, modDst));
 					}
 				}
 			} catch (IOException io) {
@@ -133,7 +152,7 @@ class TransformCache {
 		}
 		// Populate mods that need remapped
 		RuntimeModRemapper.remap(this);
-		for (ModLoadOption orderedMod : orderedMods) {
+		for (ModLoadOption orderedMod : this.orderedMods) {
 			modRoots.put(orderedMod, root.resolve(orderedMod.id() + "/"));
 		}
 	}
