@@ -1,5 +1,6 @@
 pluginManagement {
 	repositories {
+		gradlePluginPortal()
 		maven {
 			name = 'Quilt Releases'
 			url = 'https://maven.quiltmc.org/repository/release/'
@@ -8,12 +9,7 @@ pluginManagement {
 			name = "Fabric"
 			url = "https://maven.fabricmc.net"
 		}
-		maven {
-			name = "Cotton"
-			url = "https://server.bbkr.space/artifactory/libs-release"
-		}
 		mavenCentral()
-		gradlePluginPortal()
 	}
 }
 

@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.transformer;
 
-import java.nio.file.Path;
+import java.util.Set;
 
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -24,13 +24,13 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TransformCacheResult {
-	public final Path transformCacheFolder;
-	public final boolean isNewlyGenerated;
 	public final QuiltZipPath transformCacheRoot;
+	public final boolean isNewlyGenerated;
+	public final Set<String> hiddenClasses;
 
-	TransformCacheResult(Path transformCacheFolder, boolean isNewlyGenerated, QuiltZipPath transformCacheRoot) {
-		this.transformCacheFolder = transformCacheFolder;
+	TransformCacheResult(QuiltZipPath transformCacheRoot, boolean isNewlyGenerated, Set<String> hiddenClasses) {
 		this.isNewlyGenerated = isNewlyGenerated;
 		this.transformCacheRoot = transformCacheRoot;
+		this.hiddenClasses = hiddenClasses;
 	}
 }

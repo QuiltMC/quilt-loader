@@ -24,6 +24,7 @@ import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
+import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
@@ -52,6 +53,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.Set;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
@@ -146,8 +148,6 @@ public final class Knot extends QuiltLauncherBase {
 		loader.setGameProvider(provider);
 		loader.load();
 		loader.freeze();
-
-		QuiltLoaderImpl.INSTANCE.loadAccessWideners();
 
 		MixinBootstrap.init();
 		QuiltMixinBootstrap.init(getEnvironmentType(), loader);
@@ -271,6 +271,11 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	@Override
+	public GameTransformer getEntrypointTransformer() {
+		return provider.getEntrypointTransformer();
+	}
+
+	@Override
 	public void addToClassPath(Path path, String... allowedPrefixes) {
 		addToClassPath(path, null, null, allowedPrefixes);
 	}
@@ -301,6 +306,11 @@ public final class Knot extends QuiltLauncherBase {
 	@Override
 	public void setTransformCache(URL insideTransformCache) {
 		classLoader.getDelegate().setTransformCache(insideTransformCache);
+	}
+
+	@Override
+	public void setHiddenClasses(Set<String> hiddenClasses) {
+		classLoader.getDelegate().setHiddenClasses(hiddenClasses);
 	}
 
 	@Override

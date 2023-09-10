@@ -1,0 +1,7 @@
+Features:
+
+- Added versioning support for 1.20.2 snapshots (upstream sync from Fabric)
+- Added a fallback system for the global config/cache folders
+    - If the normal global folders can't be accessed then per-instance fallback folders are used instead:
+    - `<instance>/config/global` and `<instance>/cache/global`.
+    - These also respect the `loader.configDir` and `loader.cacheDir` system properties.

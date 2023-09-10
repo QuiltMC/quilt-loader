@@ -1,0 +1,3 @@
+Bug FIxes:
+
+* [#353] Fixed Quilt Parsers not being relocated properly.

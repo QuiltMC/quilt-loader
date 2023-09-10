@@ -18,7 +18,6 @@ package org.quiltmc.loader.api.plugin.solver;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
@@ -68,11 +67,13 @@ public abstract class ModLoadOption extends LoadOption {
 	@Nullable
 	public abstract String namespaceMappingFrom();
 
-	public abstract boolean needsChasmTransforming();
+	public abstract boolean needsTransforming();
 
-	/** @return A hash of the origin files used for the mod. This is used to cache class transformations (like remapping
-	 *         and chasm) between launches. This may be called off-thread. */
-	public abstract byte[] computeOriginHash() throws IOException;
+	/** @param hasher The hasher to use when hashing files and folders.
+	 * @return A hash of the origin files used for the mod. This is used to cache class transformations (like remapping
+	 *         and chasm) between launches. This may be called off-thread. This should always return an array with a
+	 *         length {@link QuiltFileHasher#getHashLength()}. */
+	public abstract byte[] computeOriginHash(QuiltFileHasher hasher) throws IOException;
 
 	/** @return The group for this mod. Normally this will just be the same as the group in {@link #metadata()}, but for
 	 *         provided mods this may be different. */

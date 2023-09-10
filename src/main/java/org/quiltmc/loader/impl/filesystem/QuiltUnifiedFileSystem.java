@@ -114,7 +114,7 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 		}
 
 		if (canExist) {
-			provider().delete(dst);
+			provider().deleteIfExists(dst);
 		} else if (dstEntry != null) {
 			throw new FileAlreadyExistsException(dst.toString());
 		}
@@ -158,7 +158,7 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 
 
 		if (canExist) {
-			provider().delete(dst);
+			provider().deleteIfExists(dst);
 		} else if (dstEntry != null) {
 			throw new FileAlreadyExistsException(dst.toString());
 		}

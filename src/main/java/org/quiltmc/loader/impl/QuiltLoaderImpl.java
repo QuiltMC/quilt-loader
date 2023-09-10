@@ -18,7 +18,6 @@
 package org.quiltmc.loader.impl;
 
 import java.awt.GraphicsEnvironment;
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,6 +32,7 @@ import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -102,13 +102,14 @@ import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
-import org.quiltmc.loader.impl.transformer.TransformCache;
+import org.quiltmc.loader.impl.transformer.TransformCacheManager;
 import org.quiltmc.loader.impl.transformer.TransformCacheResult;
 import org.quiltmc.loader.impl.util.Arguments;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
 import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+import org.quiltmc.loader.impl.util.FileHasherImpl;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -120,8 +121,6 @@ import org.spongepowered.asm.mixin.FabricUtil;
 
 import net.fabricmc.loader.api.ObjectShare;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(value = QuiltLoaderInternalType.LEGACY_EXPOSED, replacements = QuiltLoader.class)
@@ -130,7 +129,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.20.0-beta.14";
+	public static final String VERSION = "0.21.0-beta.3";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -147,11 +146,14 @@ public final class QuiltLoaderImpl {
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
+	protected final FileHasherImpl hasher = new FileHasherImpl(null);
+	protected final Map<String, String> modOriginHash = new HashMap<>();
+	protected final Map<Path, String> pathOriginHash = new HashMap<>();
+
 	protected List<ModContainerExt> mods = new ArrayList<>();
 
 	private final Map<String, LanguageAdapter> adapterMap = new HashMap<>();
 	private final EntrypointStorage entrypointStorage = new EntrypointStorage();
-	private final AccessWidener accessWidener = new AccessWidener();
 
 	private final ObjectShare objectShare = new ObjectShareImpl();
 
@@ -208,8 +210,6 @@ public final class QuiltLoaderImpl {
 
 		setGameDir(provider.getLaunchDirectory());
 		argumentModsList = provider.getArguments().remove(Arguments.ADD_MODS);
-
-		ActiveUserBeacon.run();
 	}
 
 	public void setGameDir(Path gameDir) {
@@ -297,6 +297,10 @@ public final class QuiltLoaderImpl {
 		if (provider == null) throw new IllegalStateException("game provider not set");
 		if (frozen) throw new IllegalStateException("Frozen - cannot load additional mods!");
 
+		if (SystemProperties.VALIDATION_LEVEL > 0) {
+			Log.info(LogCategory.GENERAL, "Enabled debugging validation level " + SystemProperties.VALIDATION_LEVEL);
+		}
+
 		try {
 			setup();
 		} catch (ModResolutionException exception) {
@@ -345,14 +349,37 @@ public final class QuiltLoaderImpl {
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
 
+		for (ModLoadOption mod : modList) {
+			Path from = mod.from();
+			List<List<Path>> srcPaths = temporarySourcePaths.get(from);
+			try {
+				for (List<Path> paths : srcPaths) {
+					Path first = paths.get(0);
+					if (first.getFileSystem() != FileSystems.getDefault()) {
+						throw new ModResolutionException(
+							"The first path as a source for " + from + " (first = " + first
+								+ ") is not on the default file system?"
+						);
+					}
+					if (!pathOriginHash.containsKey(first)) {
+						pathOriginHash.put(first, HashUtil.hashToString(hasher.computeNormalHash(from)));
+					}
+				}
+				modOriginHash.put(mod.id(), HashUtil.hashToString(mod.computeOriginHash(hasher)));
+			} catch (IOException e) {
+				throw new ModResolutionException("Failed to compute the hash for mod '" + mod.id() + "'", e);
+			}
+		}
+
 		Path transformCacheFolder = getCacheDir().resolve(CACHE_DIR_NAME).resolve("transform-cache-" + suffix);
-		TransformCacheResult cacheResult = TransformCache.populateTransformBundle(transformCacheFolder, modList, result);
+		TransformCacheResult cacheResult = TransformCacheManager.populateTransformBundle(transformCacheFolder, modList, modOriginHash, result);
 		QuiltZipPath transformedModBundle = cacheResult.transformCacheRoot;
 
 		long zipEnd = System.nanoTime();
 
 		try {
 			QuiltLauncherBase.getLauncher().setTransformCache(transformedModBundle.toUri().toURL());
+			QuiltLauncherBase.getLauncher().setHiddenClasses(cacheResult.hiddenClasses);
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
 		}
@@ -372,7 +399,7 @@ public final class QuiltLoaderImpl {
 		for (ModLoadOption modOption : modList) {
 			Path resourceRoot;
 
-			if (!modOption.needsChasmTransforming() && modOption.namespaceMappingFrom() == null) {
+			if (!modOption.needsTransforming() && modOption.namespaceMappingFrom() == null) {
 				resourceRoot = modOption.resourceRoot();
 			} else {
 				String modid = modOption.id();
@@ -816,13 +843,7 @@ public final class QuiltLoaderImpl {
 
 				Path from = paths.get(0);
 				if (FasterFiles.isRegularFile(from)) {
-					String hashString;
-					try {
-						hashString = HashUtil.hashToString(HashUtil.computeHash(from));
-					} catch (IOException e) {
-						hashString = "<" + e.getMessage() + ">";
-					}
-					row.put(hash, hashString);
+					row.put(hash, pathOriginHash.get(from));
 				}
 
 				if (pathsIndex != 0) {
@@ -1119,26 +1140,7 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	public void loadAccessWideners() {
-		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(accessWidener);
 
-		for (ModContainerExt mod : mods) {
-			for (String accessWidener : mod.metadata().accessWideners()) {
-
-				Path path = mod.getPath(accessWidener);
-
-				if (!FasterFiles.isRegularFile(path)) {
-					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.metadata().id() + " '" + accessWidener + "'");
-				}
-
-				try (BufferedReader reader = Files.newBufferedReader(path)) {
-					accessWidenerReader.read(reader, getMappingResolver().getCurrentRuntimeNamespace());
-				} catch (Exception e) {
-					throw new RuntimeException("Failed to read accessWidener file from mod " + mod.metadata().id(), e);
-				}
-			}
-		}
-	}
 
 	public void prepareModInit(Path newRunDir, Object gameInstance) {
 		if (!frozen) {
@@ -1173,10 +1175,6 @@ public final class QuiltLoaderImpl {
 		} catch (RuntimeException e) {
 			throw new FormattedException("A mod crashed on startup!", e);
 		}
-	}
-
-	public AccessWidener getAccessWidener() {
-		return accessWidener;
 	}
 
 	/**

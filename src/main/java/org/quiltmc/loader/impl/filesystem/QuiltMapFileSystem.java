@@ -62,7 +62,9 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 	private static final boolean ENABLE_DEBUG_DUMPING = Boolean.getBoolean(SystemProperties.DEBUG_DUMP_FILESYSTEM_CONTENTS);
 
 	/** Controls {@link #validate()}. */
-	private static final boolean ENABLE_VALIDATION = Boolean.getBoolean(SystemProperties.DEBUG_VALIDATE_FILESYSTEM_CONTENTS);
+	private static final boolean ENABLE_VALIDATION = SystemProperties.getBoolean(
+		SystemProperties.DEBUG_VALIDATE_FILESYSTEM_CONTENTS, SystemProperties.VALIDATION_LEVEL > 3
+	);
 
 	private final Map<P, QuiltUnifiedEntry> entries;
 
@@ -235,9 +237,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 
 	protected boolean removeEntry(P path, boolean throwIfMissing) throws IOException {
 		path = path.toAbsolutePath().normalize();
-		if ("/quilt_tags/quilt_tags.accesswidener".equals(path.toString())) {
-			System.out.println("Removing " + path);
-		}
+
 		QuiltUnifiedEntry current = getEntry(path);
 		if (current == null) {
 			if (throwIfMissing) {

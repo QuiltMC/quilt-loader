@@ -1,0 +1,6 @@
+Features:
+- Move Loader's runtime transformers to the transform cache (#352)
+  - This gives us a chance to dogfood the transform cache in more situations and may slightly reduce load times.
+# TODO: add some information about the loom "mods" block and how to configure it
+Bug Fixes:
+- Transform cache no longer regenerates each launch (#356)
