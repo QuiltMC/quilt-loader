@@ -4,3 +4,4 @@ Features:
 # TODO: add some information about the loom "mods" block and how to configure it
 Bug Fixes:
 - Transform cache no longer regenerates each launch (#356)
+- [#366] Fix backwards compatibility issue where mods incorrectly using the fabric loader internal class "EntrypointUtils" didn't throw the same exception type in quilt.

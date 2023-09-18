@@ -16,6 +16,8 @@
 
 package net.fabricmc.loader.api;
 
+import org.quiltmc.loader.api.QuiltLoader;
+
 /**
  * Represents an exception that arises when obtaining entrypoints.
  * 
@@ -61,6 +63,12 @@ public class EntrypointException extends RuntimeException {
 	public EntrypointException(Throwable t) {
 		super(t);
 		this.key = "";
+	}
+
+	/** @param quiltLoader used to differentiate this from other constructors. */
+	public EntrypointException(QuiltLoader quiltLoader, org.quiltmc.loader.api.entrypoint.EntrypointException t) {
+		super(t);
+		this.key = t.getKey();
 	}
 
 	/**
