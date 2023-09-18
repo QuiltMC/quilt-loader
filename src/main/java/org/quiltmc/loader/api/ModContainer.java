@@ -17,6 +17,8 @@
 
 package org.quiltmc.loader.api;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -28,7 +30,8 @@ public interface ModContainer {
 	 * Returns the root directory of the mod (inside JAR/folder), exposing its contents.
 	 *
 	 * <p>A path returned by this method may be incompatible with {@link Path#toFile} as its FileSystem doesn't
-	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
+	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.<br>
+	 * {@link Files} contains methods that operate on {@link Path}s, instead of {@link File}.
 	 *
 	 * @return the root directory of the mod.
 	 */
@@ -40,7 +43,8 @@ public interface ModContainer {
 	 * <p>The path is not guaranteed to exist!</p>
 	 *
 	 * <p>A path returned by this method may be incompatible with {@link Path#toFile} as its FileSystem doesn't
-	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.
+	 * necessarily represent the OS file system, but potentially a virtual view of jar contents or another abstraction.<br>
+	 * {@link Files} contains methods that operate on {@link Path}s, instead of {@link File}.
 	 *
 	 * @param file The location from root, using {@code /} as a separator.
 	 * @return the path to a given file
