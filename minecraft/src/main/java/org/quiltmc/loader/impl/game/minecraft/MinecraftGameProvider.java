@@ -156,8 +156,9 @@ public class MinecraftGameProvider implements GameProvider {
 				}
 			});
 		}
-
-		return Collections.singletonList(new BuiltinMod(gameJars, metadata.build()));
+		List<Path> paths = new ArrayList<>(gameJars);
+		paths.addAll(miscGameLibraries);
+		return Collections.singletonList(new BuiltinMod(paths, metadata.build()));
 	}
 
 	public Path getGameJar() {
