@@ -43,7 +43,7 @@ public interface RuleContext {
 	 * {@link LoadOption} currently held, and calls {@link Rule#define(RuleDefiner)} once afterwards. */
 	void addRule(Rule rule);
 
-	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
+	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} sometime before solving. */
 	void redefine(Rule rule);
 
 	public static boolean isNegated(LoadOption option) {

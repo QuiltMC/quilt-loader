@@ -230,7 +230,7 @@ public class Sat4jWrapper implements RuleContext {
 		rulesChanged = true;
 	}
 
-	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
+	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} sometime before solving. */
 	@Override
 	public void redefine(Rule rule) {
 
