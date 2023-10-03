@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -67,6 +68,7 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 public class Sat4jWrapper implements RuleContext {
 
 	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	static final LogCategory CATEGORY = LogCategory.create("Sat4j");
 
 	public enum Sat4jSolveStep {
 
@@ -82,8 +84,6 @@ public class Sat4jWrapper implements RuleContext {
 			this.canAdd = canAdd;
 		}
 	}
-
-	private final LogCategory CATEGORY = LogCategory.create("Sat4j");
 
 	private volatile Sat4jSolveStep step = Sat4jSolveStep.DEFINE;
 
@@ -281,6 +281,14 @@ public class Sat4jWrapper implements RuleContext {
 					Log.info(CATEGORY, "Redefining rules");
 				}
 			}
+
+			List<RuleDefinition> rules = new ArrayList<>();
+			for (List<RuleDefinition> rule : ruleToDefinitions.values()) {
+				rules.addAll(rule);
+			}
+			RuleSet simplifiedRules = SolverPreProcessor.preProcess(new RuleSet(optionToWeight, rules));
+
+			// TODO: Disconnect rule defining from the actual solver, and instead use the simplified rules
 
 			rulesChanged = false;
 			optionToIndex.clear();

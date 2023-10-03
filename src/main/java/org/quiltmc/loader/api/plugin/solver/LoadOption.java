@@ -25,6 +25,18 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class LoadOption {
 
+	// Overridden equals and hashCode to prevent solving from having strange behaviour
+
+	@Override
+	public final boolean equals(Object obj) {
+		return super.equals(obj);
+	}
+
+	@Override
+	public final int hashCode() {
+		return super.hashCode();
+	}
+
 	/** @return A description of this load option, to be shown in the error gui when this load option is involved in a solver error. */
 	public abstract QuiltLoaderText describe();
 }
