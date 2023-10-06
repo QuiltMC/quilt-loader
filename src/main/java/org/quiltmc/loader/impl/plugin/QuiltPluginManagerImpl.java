@@ -1313,7 +1313,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	}
 
-	private void handleSolverFailure() throws TimeoutException {
+	private void handleSolverFailure() throws TimeoutException, ModSolvingError {
 
 		SolverErrorHelper helper = new SolverErrorHelper(this);
 		boolean failed = false;
@@ -1505,7 +1505,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	ModSolveResultImpl getPartialSolution() throws ModSolvingError, TimeoutException {
-		List<LoadOption> solution = solver.getSolution();
+		Collection<LoadOption> solution = solver.getSolution();
 
 		Map<String, ModLoadOption> directModsMap = new HashMap<>();
 		Map<String, ModLoadOption> providedModsMap = new HashMap<>();

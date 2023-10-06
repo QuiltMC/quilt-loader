@@ -30,6 +30,7 @@ import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
+import org.quiltmc.loader.impl.solver.Sat4jWrapper.Sat4jSolver;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.util.sat4j.pb.IPBSolver;
@@ -93,7 +94,7 @@ abstract class RuleDefinition {
 		return new RuleComputeResult.Removed(newConstants);
 	}
 
-	protected abstract IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException;
+	protected abstract IConstr[] put(Sat4jSolver wrapper, IPBSolver solver) throws ContradictionException;
 
 	static final class AtLeastOneOf extends RuleDefinition {
 
@@ -107,7 +108,7 @@ abstract class RuleDefinition {
 		}
 
 		@Override
-		protected IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException {
+		protected IConstr[] put(Sat4jSolver wrapper, IPBSolver solver) throws ContradictionException {
 			return new IConstr[] { solver.addClause(wrapper.mapOptionsToSat4jClause(options)) };
 		}
 
@@ -143,7 +144,7 @@ abstract class RuleDefinition {
 		}
 
 		@Override
-		protected IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException {
+		protected IConstr[] put(Sat4jSolver wrapper, IPBSolver solver) throws ContradictionException {
 			IVecInt clause = wrapper.mapOptionsToSat4jClause(options);
 			if (count == 1) {
 				return new IConstr[] { solver.addClause(clause) };
@@ -245,7 +246,7 @@ abstract class RuleDefinition {
 		}
 
 		@Override
-		protected IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException {
+		protected IConstr[] put(Sat4jSolver wrapper, IPBSolver solver) throws ContradictionException {
 			return new IConstr[] { solver.addAtMost(wrapper.mapOptionsToSat4jClause(options), count) };
 		}
 
@@ -267,7 +268,7 @@ abstract class RuleDefinition {
 		}
 
 		@Override
-		protected IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException {
+		protected IConstr[] put(Sat4jSolver wrapper, IPBSolver solver) throws ContradictionException {
 			// Sat4j doesn't seem to handle exactly correctly ATM
 			// however it's a non-issue, since internally it's just both atMost and atLeast anyway.
 			IVecInt clause = wrapper.mapOptionsToSat4jClause(options);
@@ -295,7 +296,7 @@ abstract class RuleDefinition {
 		}
 
 		@Override
-		protected IConstr[] put(Sat4jWrapper wrapper, IPBSolver solver) throws ContradictionException {
+		protected IConstr[] put(Sat4jSolver wrapper, IPBSolver solver) throws ContradictionException {
 			// Sat4j doesn't seem to handle exactly correctly ATM
 			// however it's a non-issue, since internally it's just both atMost and atLeast anyway.
 			IVecInt clause = wrapper.mapOptionsToSat4jClause(options);

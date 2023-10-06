@@ -29,11 +29,24 @@ public abstract class LoadOption {
 
 	@Override
 	public final boolean equals(Object obj) {
-		return super.equals(obj);
+		if (super.equals(obj)) {
+			return true;
+		}
+		if (!(obj instanceof LoadOption)) {
+			return false;
+		}
+		LoadOption other = (LoadOption) obj;
+		if (RuleContext.isNegated(this) && RuleContext.isNegated(other)) {
+			return RuleContext.negate(this).equals(RuleContext.negate(other));
+		}
+		return false;
 	}
 
 	@Override
 	public final int hashCode() {
+		if (RuleContext.isNegated(this)) {
+			return ~RuleContext.negate(this).hashCode();
+		}
 		return super.hashCode();
 	}
 

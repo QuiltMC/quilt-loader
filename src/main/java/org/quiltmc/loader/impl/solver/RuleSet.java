@@ -1,22 +1,26 @@
 package org.quiltmc.loader.impl.solver;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A set of {@link RuleDefinition} and {@link LoadOption}s that can be solved. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class RuleSet {
+public abstract class RuleSet {
 
 	// Non-solvable parts
 
@@ -32,27 +36,17 @@ public final class RuleSet {
 	/** Every {@link LoadOption} that needs to be solved, mapped to their weight. */
 	public final Map<LoadOption, Integer> options;
 
-	/** Every active {@link RuleDefinition} that influences the load options chosen. */
-	public final List<RuleDefinition> rules;
-
-	public RuleSet(Map<LoadOption, Map<Rule, Integer>> options, List<RuleDefinition> rules) {
+	private RuleSet(Map<LoadOption, Map<Rule, Integer>> options) {
 		Map<LoadOption, LoadOption> outputAliases = new HashMap<>();
 		Map<LoadOption, Integer> outputOptions = new HashMap<>();
-		List<RuleDefinition> outputRules = new ArrayList<>();
 
 		for (Map.Entry<LoadOption, Map<Rule, Integer>> entry : options.entrySet()) {
 			LoadOption option = entry.getKey();
 			Map<Rule, Integer> weights = entry.getValue();
-			Set<LoadOption> seen = new LinkedHashSet<>();
-			while (option instanceof AliasedLoadOption) {
-				LoadOption to = ((AliasedLoadOption) option).getTarget();
-				if (to == null) {
-					break;
-				} else if (seen.add(to)) {
-					outputAliases.put(option, to);
-					option = to;
-				} else {
-					throw new IllegalStateException("Looping alias " + seen);
+			if (option instanceof AliasedLoadOption) {
+				LoadOption target = ((AliasedLoadOption) option).getTarget();
+				if (target != null) {
+					option = target;
 				}
 			}
 
@@ -61,22 +55,99 @@ public final class RuleSet {
 				weight += value;
 			}
 
-			outputOptions.put(option, weight);
+			outputOptions.merge(option, weight, (a, b) -> a + b);
 		}
-
-		outputRules.addAll(rules);
 
 		this.constants = Collections.emptyMap();
 		this.aliases = Collections.unmodifiableMap(outputAliases);
 		this.options = Collections.unmodifiableMap(outputOptions);
-		this.rules = Collections.unmodifiableList(outputRules);
 	}
 
-	RuleSet(Map<LoadOption, Boolean> constants, Map<LoadOption, LoadOption> aliases, Map<LoadOption, Integer> options,
-		List<RuleDefinition> rules) {
+	private RuleSet(Map<LoadOption, Boolean> constants, Map<LoadOption, LoadOption> aliases, //
+		Map<LoadOption, Integer> options) {
+
 		this.constants = constants;
 		this.aliases = aliases;
 		this.options = options;
-		this.rules = rules;
+	}
+
+	public abstract boolean isFullySolved();
+
+	public Collection<LoadOption> getConstantSolution() {
+		Set<LoadOption> set = new HashSet<>();
+		getConstantSolution(set);
+		return set;
+	}
+
+	public void getConstantSolution(Collection<LoadOption> dst) {
+		for (Map.Entry<LoadOption, Boolean> entry : constants.entrySet()) {
+			if (entry.getValue()) {
+				dst.add(entry.getKey());
+			} else {
+				dst.add(RuleContext.negate(entry.getKey()));
+			}
+		}
+
+		for (Map.Entry<LoadOption, LoadOption> entry : aliases.entrySet()) {
+			LoadOption alias = entry.getKey();
+			LoadOption target = entry.getValue();
+			if (constants.get(target)) {
+				dst.add(alias);
+			} else {
+				dst.add(RuleContext.negate(alias));
+			}
+		}
+	}
+
+	public abstract void forEachRule(Consumer<RuleDefinition> consumer);
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static final class InputRuleSet extends RuleSet {
+
+		public final Map<Rule, List<RuleDefinition>> ruleToDefinitions;
+
+		public InputRuleSet(Map<LoadOption, Map<Rule, Integer>> options, //
+			Map<Rule, List<RuleDefinition>> ruleToDefinitions) {
+			super(options);
+			this.ruleToDefinitions = ruleToDefinitions;
+		}
+
+		@Override
+		public boolean isFullySolved() {
+			return options.isEmpty() && ruleToDefinitions.isEmpty();
+		}
+
+		@Override
+		public void forEachRule(Consumer<RuleDefinition> consumer) {
+			for (List<RuleDefinition> list : ruleToDefinitions.values()) {
+				list.forEach(consumer);
+			}
+		}
+	}
+
+	/** A {@link RuleSet} where the input {@link RuleDefinition}s cannot be easily mapped back to the original
+	 * {@link Rule}s. */
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static final class ProcessedRuleSet extends RuleSet {
+
+		/** Every active {@link RuleDefinition} that influences the load options chosen. */
+		public final List<RuleDefinition> rules;
+
+		ProcessedRuleSet(Map<LoadOption, Boolean> constants, Map<LoadOption, LoadOption> aliases, //
+			Map<LoadOption, Integer> options, List<RuleDefinition> rules) {
+
+			super(constants, aliases, options);
+			this.rules = rules;
+		}
+
+		@Override
+		public boolean isFullySolved() {
+			return options.isEmpty() && rules.isEmpty();
+		}
+
+		@Override
+		public void forEachRule(Consumer<RuleDefinition> consumer) {
+			rules.forEach(consumer);
+		}
 	}
 }

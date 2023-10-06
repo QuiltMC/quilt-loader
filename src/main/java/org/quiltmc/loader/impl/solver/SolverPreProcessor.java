@@ -11,6 +11,7 @@ import java.util.function.Function;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.impl.solver.RuleComputeResult.DeclaredConstants;
+import org.quiltmc.loader.impl.solver.RuleSet.ProcessedRuleSet;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -24,7 +25,7 @@ class SolverPreProcessor {
 	/** @return null if there was a contradiction in the source rules, or a processed {@link RuleSet} if we were
 	 *         successful. */
 	@Nullable
-	static RuleSet preProcess(RuleSet rules) {
+	static ProcessedRuleSet preProcess(RuleSet rules) {
 		return new SolverPreProcessor(rules).process();
 	}
 
@@ -54,9 +55,7 @@ class SolverPreProcessor {
 		this.options.putAll(rules.options);
 		this.optionsWithoutRules.addAll(options.keySet());
 
-		for (RuleDefinition rule : rules.rules) {
-			addRule(rule);
-		}
+		rules.forEachRule(this::addRule);
 	}
 
 	private void addRule(RuleDefinition rule) {
@@ -111,7 +110,7 @@ class SolverPreProcessor {
 	}
 
 	@Nullable
-	private RuleSet process() {
+	private ProcessedRuleSet process() {
 		final Function<LoadOption, Boolean> funcGetConstant = this::getConstantValue;
 
 		// Steps:
@@ -200,7 +199,7 @@ class SolverPreProcessor {
 				// Double-check that we don't already have a constant value
 				Boolean currentValue = constants.get(option);
 				if (currentValue == null) {
-					int weight = options.get(option);
+					int weight = options.remove(option);
 					// Load options if their weight is negative
 					// Don't load options if their weight is positive
 					// If the weight is zero then it's less clear
@@ -210,6 +209,8 @@ class SolverPreProcessor {
 						Log.info(Sat4jWrapper.CATEGORY, option + " is undecided, and has a weight of 0 ?");
 					}
 					constants.put(option, weight < 0);
+				} else {
+					options.remove(option);
 				}
 				changed = true;
 			}
@@ -217,6 +218,6 @@ class SolverPreProcessor {
 
 		} while (changed);
 
-		return new RuleSet(constants, aliases, options, new ArrayList<>(activeRules));
+		return new ProcessedRuleSet(constants, aliases, options, new ArrayList<>(activeRules));
 	}
 }
