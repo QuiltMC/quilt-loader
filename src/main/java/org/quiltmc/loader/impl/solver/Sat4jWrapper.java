@@ -236,9 +236,11 @@ public class Sat4jWrapper implements RuleContext {
 	public Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
 		checkCancelled();
 		Collection<LoadOption> solution = stage.getSolution();
-		Log.info(CATEGORY, "Final solution:");
-		for (LoadOption option : solution) {
-			Log.info(CATEGORY, option.toString());
+		if (LOG) {
+			Log.info(CATEGORY, "Final solution:");
+			for (LoadOption option : solution) {
+				Log.info(CATEGORY, option.toString());
+			}
 		}
 		return solution;
 	}
@@ -515,7 +517,9 @@ public class Sat4jWrapper implements RuleContext {
 					for (List<RuleDefinition> defs : originalRules.ruleToDefinitions.values()) {
 						ruleCount += defs.size();
 					}
-					Log.info(CATEGORY, "Pre-processing " + ruleCount + " rules and " + originalRules.options.size() + " options");
+					if (LOG) {
+						Log.info(CATEGORY, "Pre-processing " + ruleCount + " rules and " + originalRules.options.size() + " options");
+					}
 					ProcessedRuleSet processed;
 					try {
 						processed = SolverPreProcessor.preProcess(originalRules);
@@ -527,37 +531,42 @@ public class Sat4jWrapper implements RuleContext {
 					}
 
 					if (processed.isFullySolved()) {
-						Log.info(CATEGORY, "Fully solved solution via pre-processer");
+						if (LOG) {
+							Log.info(CATEGORY, "Fully solved solution via pre-processer");
+						}
 						stage = new SolvedStage(processed.getConstantSolution());
 						return true;
 					}
-					Log.info(CATEGORY, "Partially solved solution via pre-processer, continuing to optimisation");
-					Log.info(CATEGORY, " -> " + processed.rules.size() + " rules, " + processed.options.size() + " options");
-					if (processed.rules.isEmpty()) {
-						Log.info(CATEGORY, " ! 0 rules left, but still have the following options:");
-						for (LoadOption option : processed.options.keySet()) {
-							Log.info(CATEGORY, " left: " + option.toString());
+
+					if (LOG) {
+						Log.info(CATEGORY, "Partially solved solution via pre-processer, continuing to optimisation");
+						Log.info(CATEGORY, " -> " + processed.rules.size() + " rules, " + processed.options.size() + " options");
+						if (processed.rules.isEmpty()) {
+							Log.info(CATEGORY, " ! 0 rules left, but still have the following options:");
+							for (LoadOption option : processed.options.keySet()) {
+								Log.info(CATEGORY, " left: " + option.toString());
+							}
 						}
+						Log.info(CATEGORY, "Constant values:");
+						for (LoadOption option : processed.getConstantSolution()) {
+							Log.info(CATEGORY, option.toString());
+						}
+						Log.info(CATEGORY, "Unknown values:");
+						List<String> list = new ArrayList<>();
+						for (LoadOption option : processed.options.keySet()) {
+							list.add(option.toString());
+						}
+						list.sort(null);
+						list.forEach(item -> Log.info(CATEGORY, item));
+						list.clear();
+						Log.info(CATEGORY, "Remaining rules:");
+						for (RuleDefinition def : processed.rules) {
+							list.add(def.toString());
+						}
+						list.sort(null);
+						list.forEach(item -> Log.info(CATEGORY, item));
+						list.clear();
 					}
-					Log.info(CATEGORY, "Constant values:");
-					for (LoadOption option : processed.getConstantSolution()) {
-						Log.info(CATEGORY, option.toString());
-					}
-					Log.info(CATEGORY, "Unknown values:");
-					List<String> list = new ArrayList<>();
-					for (LoadOption option : processed.options.keySet()) {
-						list.add(option.toString());
-					}
-					list.sort(null);
-					list.forEach(item -> Log.info(CATEGORY, item));
-					list.clear();
-					Log.info(CATEGORY, "Remaining rules:");
-					for (RuleDefinition def : processed.rules) {
-						list.add(def.toString());
-					}
-					list.sort(null);
-					list.forEach(item -> Log.info(CATEGORY, item));
-					list.clear();
 					toOptimize = processed;
 				} else {
 					toOptimize = originalRules;
