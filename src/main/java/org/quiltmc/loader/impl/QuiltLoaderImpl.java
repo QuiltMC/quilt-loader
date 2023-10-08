@@ -129,7 +129,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.21.0-beta.5";
+	public static final String VERSION = "0.21.1-beta.1";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -146,7 +146,6 @@ public final class QuiltLoaderImpl {
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
-	protected final FileHasherImpl hasher = new FileHasherImpl(null);
 	protected final Map<String, String> modOriginHash = new HashMap<>();
 	protected final Map<Path, String> pathOriginHash = new HashMap<>();
 
@@ -348,6 +347,7 @@ public final class QuiltLoaderImpl {
 
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
+		FileHasherImpl hasher = new FileHasherImpl(null);
 
 		for (ModLoadOption mod : modList) {
 			Path from = mod.from();

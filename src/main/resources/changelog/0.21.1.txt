@@ -1,0 +1,3 @@
+Features:
+
+- Fixed keeping the FileHasherImpl around after it was needed, which also prevented some temporary virtual filesystems from being garbage collected after mod resolving was complete.
