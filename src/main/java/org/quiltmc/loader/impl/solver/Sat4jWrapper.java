@@ -516,11 +516,14 @@ public class Sat4jWrapper implements RuleContext {
 						ruleCount += defs.size();
 					}
 					Log.info(CATEGORY, "Pre-processing " + ruleCount + " rules and " + originalRules.options.size() + " options");
-					ProcessedRuleSet processed = SolverPreProcessor.preProcess(originalRules);
-					if (processed == null) {
-						// Contradiction
+					ProcessedRuleSet processed;
+					try {
+						processed = SolverPreProcessor.preProcess(originalRules);
+					} catch (ContradictionException e) {
 						// Should never happen, since we just validated the solution
-						throw new ModSolvingError("Failed to pre-process rule set " + originalRules);
+						// (It means there's a bug in the pre-processor)
+						// TODO: Collect the rules and store them in a reasonable format to use for reproduction!
+						throw new ModSolvingError("Failed to pre-process rule set " + originalRules, e);
 					}
 
 					if (processed.isFullySolved()) {
@@ -541,13 +544,20 @@ public class Sat4jWrapper implements RuleContext {
 						Log.info(CATEGORY, option.toString());
 					}
 					Log.info(CATEGORY, "Unknown values:");
+					List<String> list = new ArrayList<>();
 					for (LoadOption option : processed.options.keySet()) {
-						Log.info(CATEGORY, option.toString());
+						list.add(option.toString());
 					}
+					list.sort(null);
+					list.forEach(item -> Log.info(CATEGORY, item));
+					list.clear();
 					Log.info(CATEGORY, "Remaining rules:");
 					for (RuleDefinition def : processed.rules) {
-						Log.info(CATEGORY, def.toString());
+						list.add(def.toString());
 					}
+					list.sort(null);
+					list.forEach(item -> Log.info(CATEGORY, item));
+					list.clear();
 					toOptimize = processed;
 				} else {
 					toOptimize = originalRules;

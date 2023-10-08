@@ -1,20 +1,28 @@
 package org.quiltmc.loader.impl.solver;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.solver.RuleComputeResult.DeclaredConstants;
 import org.quiltmc.loader.impl.solver.RuleSet.ProcessedRuleSet;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 /** Pre-processes a {@link RuleSet} to reduce the problem that we pass to sat4j. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
@@ -22,18 +30,17 @@ class SolverPreProcessor {
 
 	// API
 
-	/** @return null if there was a contradiction in the source rules, or a processed {@link RuleSet} if we were
-	 *         successful. */
-	@Nullable
-	static ProcessedRuleSet preProcess(RuleSet rules) {
+	/** @return The processed {@link RuleSet} if we were successful.
+	 * @throws ContradictionException if there is a contradiction in the input rules. */
+	static ProcessedRuleSet preProcess(RuleSet rules) throws ContradictionException {
 		return new SolverPreProcessor(rules).process();
 	}
 
 	// Internals
 
-	private final Map<LoadOption, Boolean> constants = new HashMap<>();
-	private final Map<LoadOption, LoadOption> aliases = new HashMap<>();
-	private final Map<LoadOption, Integer> options = new HashMap<>();
+	private final Map<LoadOption, Boolean> constants;
+	private final Map<LoadOption, LoadOption> aliases;
+	private final Map<LoadOption, Integer> options;
 
 	/** All non-constant definitions. */
 	private final Set<RuleDefinition> activeRules = new LinkedHashSet<>();
@@ -49,13 +56,25 @@ class SolverPreProcessor {
 	 * on it's weight. */
 	private final Set<LoadOption> optionsWithoutRules = new HashSet<>();
 
+	/** Every set of options which are treated identically by a set of rules. */
+	private final Map<Set<LoadOption>, Set<RuleDefinition>> optionSet2rules = new HashMap<>();
+
 	private SolverPreProcessor(RuleSet rules) {
-		this.constants.putAll(rules.constants);
-		this.aliases.putAll(rules.aliases);
-		this.options.putAll(rules.options);
+		this.constants = new HashMap<>(rules.constants);
+		this.aliases = new HashMap<>(rules.aliases);
+		this.options = new HashMap<>(rules.options);
 		this.optionsWithoutRules.addAll(options.keySet());
 
 		rules.forEachRule(this::addRule);
+	}
+
+	private SolverPreProcessor(SolverPreProcessor parent, Map<LoadOption, Integer> optionSubMap, Set<
+		RuleDefinition> ruleSubSet) {
+		this.constants = parent.constants;
+		this.aliases = parent.aliases;
+		this.options = optionSubMap;
+		this.optionsWithoutRules.addAll(options.keySet());
+		ruleSubSet.forEach(this::addRule);
 	}
 
 	private void addRule(RuleDefinition rule) {
@@ -64,7 +83,9 @@ class SolverPreProcessor {
 			rulesToVisit.add(rule);
 		}
 
+		Set<LoadOption> optionSet = new HashSet<>();
 		for (LoadOption option : rule.options) {
+			optionSet.add(option);
 			if (option instanceof NegatedLoadOption) {
 				option = ((NegatedLoadOption) option).not;
 			}
@@ -72,13 +93,16 @@ class SolverPreProcessor {
 			option2rules.computeIfAbsent(option, o -> new HashSet<>()).add(rule);
 			optionsWithoutRules.remove(option);
 		}
+		optionSet2rules.computeIfAbsent(optionSet, set -> new HashSet<>()).add(rule);
 	}
 
 	private void removeRule(RuleDefinition rule) {
 		activeRules.remove(rule);
 		rulesToVisit.remove(rule);
 
+		Set<LoadOption> optionSet = new HashSet<>();
 		for (LoadOption option : rule.options) {
+			optionSet.add(option);
 			if (option instanceof NegatedLoadOption) {
 				option = ((NegatedLoadOption) option).not;
 			}
@@ -90,6 +114,12 @@ class SolverPreProcessor {
 					optionsWithoutRules.add(option);
 				}
 			}
+		}
+
+		Set<RuleDefinition> set = optionSet2rules.get(optionSet);
+		set.remove(rule);
+		if (set.isEmpty()) {
+			optionSet2rules.remove(optionSet);
 		}
 	}
 
@@ -109,12 +139,9 @@ class SolverPreProcessor {
 		return negate ? !value : value;
 	}
 
-	@Nullable
-	private ProcessedRuleSet process() {
+	private ProcessedRuleSet process() throws ContradictionException {
 		final Function<LoadOption, Boolean> funcGetConstant = this::getConstantValue;
 
-		// Steps:
-		// 1: propogate constants
 		boolean changed;
 		do {
 			changed = false;
@@ -128,7 +155,7 @@ class SolverPreProcessor {
 				}
 
 				if (result == RuleComputeResult.CONTRADICTION) {
-					return null;
+					throw new ContradictionException();
 				}
 
 				if (result == RuleComputeResult.TRIVIALLY_REMOVED) {
@@ -165,8 +192,7 @@ class SolverPreProcessor {
 								// Nothing changed
 								continue;
 							} else {
-								// A contradiction
-								return null;
+								throw new ContradictionException();
 							}
 						} else {
 							constants.put(option, newValue);
@@ -174,12 +200,8 @@ class SolverPreProcessor {
 						}
 
 						// Check all of the rules that affected it to see if they need to be propagated as well.
-						for (RuleDefinition affectedRule : option2rules.remove(option)) {
-							if (affectedRule != rule) {
-								// Instead of *actually* checking, we just append it to the list to be checked later
-								rulesToVisit.add(affectedRule);
-							}
-						}
+						// ...Although instead of *actually* checking, we just append it to the list to be checked later
+						rulesToVisit.addAll(option2rules.remove(option));
 					}
 
 				} else {
@@ -216,8 +238,657 @@ class SolverPreProcessor {
 			}
 			optionsWithoutRules.clear();
 
+			if (activeRules.size() == 1) {
+				// 1 rule left, that means we can choose a value for every constant
+				RuleDefinition rule = activeRules.iterator().next();
+				activeRules.remove(rule);
+				int min = rule.minimum();
+				int max = rule.maximum();
+				// Desired options are ones with a negative weight, ordered by least wanted to most wanted
+				List<LoadOption> desiredOptions = new ArrayList<>();
+				// Unwanted options are ones with a positive weight, ordered by least wanted to most wanted
+				List<LoadOption> unwantedOptions = new ArrayList<>();
+				// Indifferent options are ones with a weight of 0.
+				List<LoadOption> indifferentOptions = new ArrayList<>();
+
+				List<LoadOption> allOptions = new ArrayList<>();
+				Collections.addAll(allOptions, rule.options);
+				ToIntFunction<LoadOption> getWeight = option -> {
+					if (RuleContext.isNegated(option)) {
+						return -options.get(RuleContext.negate(option));
+					}
+					return options.get(option);
+				};
+				allOptions.sort(Comparator.comparingInt(getWeight).reversed());
+
+				LoadOption last = null;
+				int lastWeight = 0;
+				for (LoadOption option : allOptions) {
+
+					int weight = getWeight.applyAsInt(option);
+
+					if (last != null && weight == lastWeight) {
+						Log.warn(Sat4jWrapper.CATEGORY, "Two options have identical weight when choosing between them!");
+						Log.warn(Sat4jWrapper.CATEGORY, last.toString());
+						Log.warn(Sat4jWrapper.CATEGORY, option.toString());
+					}
+
+					if (weight > 0) {
+						unwantedOptions.add(option);
+					} else if (weight < 0) {
+						desiredOptions.add(option);
+					} else {
+						indifferentOptions.add(option);
+					}
+
+					last = option;
+					lastWeight = weight;
+				}
+
+				Set<LoadOption> takenOptions = new HashSet<>();
+
+				while (takenOptions.size() < min) {
+					if (!desiredOptions.isEmpty()) {
+						takenOptions.add(desiredOptions.remove(desiredOptions.size() - 1));
+						continue;
+					}
+					if (!indifferentOptions.isEmpty()) {
+						takenOptions.add(indifferentOptions.remove(indifferentOptions.size() - 1));
+					}
+					takenOptions.add(unwantedOptions.remove(unwantedOptions.size() - 1));
+				}
+
+				while (takenOptions.size() < max) {
+					if (desiredOptions.isEmpty()) {
+						break;
+					}
+					takenOptions.add(desiredOptions.remove(desiredOptions.size() - 1));
+				}
+
+				for (LoadOption option : allOptions) {
+					boolean value = takenOptions.remove(option);
+					if (RuleContext.isNegated(option)) {
+						option = RuleContext.negate(option);
+						value = !value;
+					}
+					constants.put(option, value);
+					options.remove(option);
+				}
+
+				assert takenOptions.isEmpty();
+
+				changed = true;
+			}
+
+			for (Map.Entry<Set<LoadOption>, Set<RuleDefinition>> entry : new ArrayList<>(optionSet2rules.entrySet())) {
+				Set<LoadOption> optionSet = entry.getKey();
+				Set<RuleDefinition> rules = new HashSet<>(entry.getValue());
+				if (rules.size() == 1) {
+					continue;
+				}
+				assert !rules.isEmpty();
+				// All rules boil down to "at least" and "at most"
+				// So we can always simplify down to just "between"
+				int min = 0;
+				int max = optionSet.size();
+				RuleDefinition currentMin = null;
+				RuleDefinition currentMax = null;
+				for (RuleDefinition def : rules) {
+					int min2 = def.minimum();
+					if (min2 > min) {
+						min = min2;
+						currentMin = def;
+					}
+					int max2 = def.maximum();
+					if (max2 < max) {
+						max = max2;
+						currentMax = def;
+					}
+				}
+				if (max < min) {
+					throw new ContradictionException();
+				}
+				Set<RuleDefinition> remaining = new HashSet<>();
+				remaining.add(currentMin);
+				remaining.add(currentMax);
+				remaining.remove(null);
+				final Set<RuleDefinition> removing;
+				if (remaining.size() == 1) {
+					removing = new HashSet<>();
+					removing.addAll(rules);
+					removing.removeAll(remaining);
+				} else {
+					removing = rules;
+					final Rule rule = remaining.iterator().next().rule;
+					final LoadOption[] array = optionSet.toArray(new LoadOption[0]);
+					if (max < optionSet.size()) {
+						if (min == max) {
+							addRule(new RuleDefinition.Exactly(rule, max, array));
+						} else if (min > 0) {
+							addRule(new RuleDefinition.Between(rule, min, max, array));
+						} else {
+							addRule(new RuleDefinition.AtMost(rule, max, array));
+						}
+					} else if (min == 1) {
+						addRule(new RuleDefinition.AtLeastOneOf(rule, array));
+					} else if (min > 0) {
+						addRule(new RuleDefinition.AtLeast(rule, min, array));
+					} else {
+						// None of the rules affect the options
+					}
+				}
+				removing.forEach(this::removeRule);
+				changed = true;
+			}
+
+			// Separate remaining rules into separate problems
+			List<SolverPreProcessor> subProblems = new ArrayList<>();
+			{
+				Set<LoadOption> remainingOptions = new HashSet<>();
+				Set<RuleDefinition> remainingRules = new HashSet<>();
+				remainingOptions.addAll(options.keySet());
+				remainingRules.addAll(activeRules);
+				while (!remainingOptions.isEmpty()) {
+					LoadOption next = remainingOptions.iterator().next();
+					remainingOptions.remove(next);
+					Set<LoadOption> openSet = new HashSet<>();
+					openSet.add(next);
+					Map<LoadOption, Integer> closedSet = new HashMap<>();
+					Set<RuleDefinition> ruleSubSet = new HashSet<>();
+					while (!openSet.isEmpty()) {
+						LoadOption sub = openSet.iterator().next();
+						openSet.remove(sub);
+						closedSet.put(sub, options.get(sub));
+						for (RuleDefinition def : option2rules.get(sub)) {
+							remainingRules.remove(def);
+							ruleSubSet.add(def);
+							for (LoadOption option : def.options) {
+								if (RuleContext.isNegated(option)) {
+									option = RuleContext.negate(option);
+								}
+								if (remainingOptions.remove(option)) {
+									openSet.add(option);
+								}
+							}
+						}
+					}
+					subProblems.add(new SolverPreProcessor(this, closedSet, ruleSubSet));
+				}
+			}
+
+			if (subProblems.isEmpty()) {
+				// No remaining options or rules
+			} else if (subProblems.size() == 1) {
+				// We weren't able to separate the problem any further, so there's nothing else we can do
+				changed |= detectRedundentSubRules();
+			} else {
+
+				Map<LoadOption, Integer> remainingOptions = new HashMap<>();
+				Set<RuleDefinition> remainingRules = new HashSet<>();
+
+				for (SolverPreProcessor processor : subProblems) {
+					processor.detectRedundentSubRules();
+					ProcessedRuleSet processedSet = processor.process();
+					if (processedSet == null) {
+						throw new ContradictionException();
+					}
+					remainingOptions.putAll(processedSet.options);
+					remainingRules.addAll(processedSet.rules);
+				}
+
+				return new ProcessedRuleSet(constants, aliases, remainingOptions, new ArrayList<>(remainingRules));
+			}
 		} while (changed);
 
 		return new ProcessedRuleSet(constants, aliases, options, new ArrayList<>(activeRules));
+	}
+
+	/** Checks every rule to see if it is a "redundant sub-set" of another rule. This mostly handles common
+	 * dependencies, but where some of the possible versions aren't valid for every dependency.
+	 * 
+	 * @return if anything changed. */
+	private boolean detectRedundentSubRules() throws ContradictionException {
+
+		boolean changed = false;
+
+		// For simplicities sake we just restart the loop anytime we handle redundant elements
+		outer_loop: do {
+			changed = false;
+
+			for (RuleDefinition rule1 : activeRules) {
+				// Includes negation
+				Set<LoadOption> exactOptions1 = new HashSet<>();
+				Collections.addAll(exactOptions1, rule1.options);
+
+				for (LoadOption option : rule1.options) {
+					if (RuleContext.isNegated(option)) {
+						option = RuleContext.negate(option);
+					}
+
+					for (RuleDefinition rule2 : option2rules.get(option)) {
+
+						Set<LoadOption> exactOptions2 = new HashSet<>();
+						Collections.addAll(exactOptions2, rule2.options);
+
+						if (exactOptions1.containsAll(exactOptions2)) {
+							if (exactOptions1.size() == exactOptions2.size()) {
+								// Since the rules affect exactly the same rules
+								// this will have already been handled by the
+								// "optionSet2rules" field and it's handling
+							} else {
+								changed = checkRulesForRedundency(rule1, exactOptions1, rule2, exactOptions2);
+							}
+						} else if (exactOptions2.containsAll(exactOptions1)) {
+							changed = checkRulesForRedundency(rule2, exactOptions2, rule1, exactOptions1);
+						} else {
+							continue;
+						}
+
+						if (changed) {
+							continue outer_loop;
+						}
+					}
+				}
+			}
+
+		} while (changed);
+
+		return changed;
+	}
+
+	/** Checks to see if we can simplify something based on two rules, where the smaller affects a strict subset of the
+	 * larger. */
+	private boolean checkRulesForRedundency(RuleDefinition larger, Set<LoadOption> largerSet, RuleDefinition smaller,
+		Set<LoadOption> smallerSet) throws ContradictionException {
+
+		// Definitions:
+		// "Included" is the set of options that are in both sets. It's equal to the options in smaller
+		// "Excluded" is the set of options that are in the larger set ONLY.
+
+		// A previous version of this method used a loop and "setAsConstant" to set constant values
+		// This causes problems since it doesn't properly propagate the constants to the other rules
+		// So instead we add a rule of "At Most 0" in order for the initial constant propagation to handle it.
+
+		// We have 4 types of rules, and larger and smaller could be any of either
+		// So the clearest way of handling this is to just enumerate them (all 16 possibilities)
+		switch (larger.type()) {
+			case AT_LEAST: {
+				// larger is AT LEAST minL
+				int minL = larger.minimum();
+				switch (smaller.type()) {
+					case AT_LEAST: {
+						// larger is AT LEAST minL
+						// smaller is AT LEAST minS
+						int minS = smaller.minimum();
+						if (minL <= minS) {
+							// Larger is fully redundant
+							removeRule(larger);
+							return true;
+						} else {
+							// We can't assume anything here
+							return false;
+						}
+					}
+					case AT_MOST: {
+						// larger is AT LEAST minL
+						// smaller is AT MOST maxS
+						// Nothing is redundant here
+						return false;
+					}
+					case EXACTLY: {
+						// larger is AT LEAST minL
+						// smaller is EXACTLY maxS
+						int maxS = smaller.maximum();
+						int minExcluded = minL - maxS;
+						if (minExcluded <= 0) {
+							removeRule(larger);
+						} else {
+							removeRule(larger);
+							addRule(new RuleDefinition.AtLeast(larger.rule, minExcluded, excluded(largerSet, smallerSet)));
+						}
+						return true;
+					}
+					case BETWEEN: {
+						// larger is AT LEAST minL
+						// smaller is BETWEEN minS and maxS
+						int minS = smaller.minimum();
+						int maxS = smaller.maximum();
+						// use the same logic as AT_LEAST since we can't make use of the upper bound
+						if (minL <= minS) {
+							// Larger is fully redundant
+							removeRule(larger);
+							return true;
+						} else {
+							// We can't assume anything here
+							return false;
+						}
+					}
+					default: {
+						throw new IllegalStateException("Unknown/new rule type " + smaller.type());
+					}
+				}
+			}
+			case AT_MOST: {
+				// larger is AT MOST maxL
+				int maxL = larger.maximum();
+				switch (smaller.type()) {
+					case AT_LEAST: {
+						// larger is AT MOST maxL
+						// smaller is AT LEAST minS
+						int minS = smaller.minimum();
+						if (maxL < minS) {
+							// Contradiction
+							throw new ContradictionException();
+						} else if (maxL == minS) {
+							// Excluded must all be FALSE
+							// Included is replaced with EXACTLY maxL
+							removeRule(smaller);
+							removeRule(larger);
+							addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							return true;
+						} else {
+							return false;
+						}
+					}
+					case AT_MOST: {
+						// larger is AT MOST maxL
+						// smaller is AT MOST maxS
+						int maxS = smaller.maximum();
+
+						if (maxL == maxS) {
+							removeRule(smaller);
+							return true;
+						} else {
+							return false;
+						}
+					}
+					case EXACTLY: {
+						// larger is AT MOST maxL
+						// smaller is EXACTLY minS
+						int minS = smaller.minimum();
+
+						if (minS > maxL) {
+							throw new ContradictionException();
+						} else {
+							removeRule(larger);
+							addRule(new RuleDefinition.AtMost(larger.rule, maxL - minS, excluded(largerSet, smallerSet)));
+							return true;
+						}
+					}
+					case BETWEEN: {
+						// larger is AT MOST maxL
+						// smaller is BETWEEN minS and maxS
+						int minS = smaller.minimum();
+						int maxS = smaller.maximum();
+						// minS < maxS is validated by Between#type()
+
+						if (maxL < minS) {
+							throw new ContradictionException();
+						}
+
+						if (maxL == minS) {
+							// This works the same as AT_MOST...AT_LEAST:
+							// Excluded must all be FALSE
+							// Included is replaced with EXACTLY maxL
+							removeRule(smaller);
+							removeRule(larger);
+							addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							return true;
+						}
+
+						if (maxL > maxS) {
+							return false;
+						}
+
+						if (maxL < maxS) {
+							// We need to change maxS to equal maxL
+							removeRule(smaller);
+							addRule(new RuleDefinition.Between(smaller.rule, minS, maxL, smaller.options));
+							return true;
+						} else {
+							return false;
+						}
+					}
+					default: {
+						throw new IllegalStateException("Unknown/new rule type " + smaller.type());
+					}
+				}
+			}
+			case EXACTLY: {
+				// larger is EXACTLY exactL
+				int exactL = larger.minimum();
+				switch (smaller.type()) {
+					case AT_LEAST: {
+						// larger is EXACTLY minL
+						// smaller is AT LEAST minS
+						int minS = smaller.minimum();
+
+						if (exactL < minS) {
+							throw new ContradictionException();
+						}
+
+						if (exactL == minS) {
+							// Excluded is all FALSE
+							// replace both with EXACTLY exactL of Included
+							removeRule(larger);
+							removeRule(smaller);
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.Exactly(larger.rule, exactL, smaller.options));
+							return true;
+						} else {
+							// exactL > minS
+							return false;
+						}
+					}
+					case AT_MOST: {
+						// larger is EXACTLY exactL
+						// smaller is AT MOST maxS
+						int maxS = smaller.maximum();
+						if (maxS > exactL) {
+							// The only thing we can do is propagate the smaller number down
+							removeRule(smaller);
+							addRule(new RuleDefinition.AtMost(smaller.rule, exactL, smaller.options));
+							return true;
+						}
+						return false;
+					}
+					case EXACTLY: {
+						// larger is EXACTLY exactL
+						// smaller is EXACTLY minS
+						int minS = smaller.minimum();
+						if (exactL < minS) {
+							throw new ContradictionException();
+						}
+
+						if (exactL == minS) {
+							// Excluded is all false
+							removeRule(larger);
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							return true;
+						}
+
+						// exactL > minS
+						removeRule(larger);
+						addRule(new RuleDefinition.Exactly(larger.rule, exactL - minS, excluded(largerSet, smallerSet)));
+						return true;
+					}
+					case BETWEEN: {
+						// larger is EXACTLY exactL
+						// smaller is BETWEEN minS and maxS
+						int minS = smaller.minimum();
+						int maxS = smaller.maximum();
+
+						if (exactL < minS) {
+							throw new ContradictionException();
+						}
+
+						if (exactL == minS) {
+							removeRule(larger);
+							removeRule(smaller);
+							addRule(new RuleDefinition.Exactly(smaller.rule, exactL, smaller.options));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							return true;
+						}
+
+						if (exactL >= maxS) {
+							// There's nothing we can do here
+							return false;
+						}
+
+						// Redefine the smaller rule to have an upper bound equal to exactL
+						removeRule(smaller);
+						addRule(new RuleDefinition.Between(smaller.rule, minS, exactL, smaller.options));
+						return true;
+					}
+					default: {
+						throw new IllegalStateException("Unknown/new rule type " + smaller.type());
+					}
+				}
+			}
+			case BETWEEN: {
+				// larger is BETWEEN minL and maxL
+				int minL = larger.minimum();
+				int maxL = larger.maximum();
+				switch (smaller.type()) {
+					case AT_LEAST: {
+						// larger is BETWEEN minL and maxL
+						// smaller is AT LEAST minS
+						int minS = smaller.minimum();
+
+						if (minS > maxL) {
+							throw new ContradictionException();
+						}
+
+						if (minS <= minL) {
+							// The only thing we can do here is push down the maximum
+							if (maxL < smaller.options.length) {
+								removeRule(smaller);
+								addRule(new RuleDefinition.Between(smaller.rule, minS, maxL, smaller.options));
+								return true;
+							} else {
+								return false;
+							}
+						}
+
+						if (minS < maxL) {
+							// Pull up the minimum
+							removeRule(larger);
+							addRule(new RuleDefinition.Between(larger.rule, minS, maxL, larger.options));
+
+							// And maybe push down the maximum
+							if (maxL < smaller.options.length) {
+								removeRule(smaller);
+								addRule(new RuleDefinition.Between(smaller.rule, minS, maxL, smaller.options));
+							}
+							return true;
+						}
+
+						// minS == maxL
+						// Redefine both as EXACTLY
+						// However this means we can apply the same logic as EXACTLY...EXACTLY
+						// Which means the smaller rule is kept as an EXACTLY
+						removeRule(smaller);
+						addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
+						// and the larger rule is removed, with all Excluded set to false
+						removeRule(larger);
+						addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+						return true;
+					}
+					case AT_MOST: {
+						// larger is BETWEEN minL and maxL
+						// smaller is AT MOST maxS
+						int maxS = smaller.maximum();
+
+						// I don't think we can work out anything here
+						// Except the obvious case if maxS > maxL
+						if (maxS > maxL) {
+							removeRule(smaller);
+							addRule(new RuleDefinition.AtMost(smaller.rule, maxL, smaller.options));
+							return true;
+						}
+
+						return false;
+					}
+					case EXACTLY: {
+						// larger is BETWEEN minL and maxL
+						// smaller is EXACTLY exactS
+						int exactS = smaller.minimum();
+
+						if (exactS < minL) {
+							removeRule(larger);
+							addRule(new RuleDefinition.Between(larger.rule, minL - exactS, maxL - exactS, excluded(largerSet, smallerSet)));
+							return true;
+						} else if (exactS <= maxL) {
+							removeRule(larger);
+							addRule(new RuleDefinition.AtMost(larger.rule, maxL - exactS, excluded(largerSet, smallerSet)));
+							return true;
+						}
+
+						// exactS > maxL
+						throw new ContradictionException();
+					}
+					case BETWEEN: {
+						// larger is BETWEEN minL and maxL
+						// smaller is BETWEEN minS and maxS
+						int minS = smaller.minimum();
+						int maxS = smaller.maximum();
+
+						if (minS > maxL) {
+							throw new ContradictionException();
+						}
+
+						if (minS == maxL) {
+							// Smaller is now Exactly minS
+							// Excluded is now At Most 0
+							removeRule(smaller);
+							addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
+							removeRule(larger);
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							return true;
+						}
+
+						boolean redefineLarger = false;
+						boolean redefineSmaller = false;
+
+						if (minL < minS) {
+							redefineLarger = true;
+							minL = minS;
+						}
+
+						if (maxL < maxS) {
+							redefineSmaller = true;
+							maxS = maxL;
+						}
+
+						if (redefineLarger) {
+							removeRule(larger);
+							addRule(new RuleDefinition.Between(larger.rule, minL, maxL, larger.options));
+						}
+
+						if (redefineSmaller) {
+							removeRule(smaller);
+							addRule(new RuleDefinition.Between(smaller.rule, minS, maxS, smaller.options));
+						}
+
+						return redefineLarger | redefineSmaller;
+					}
+					default: {
+						throw new IllegalStateException("Unknown/new rule type " + smaller.type());
+					}
+				}
+			}
+			default: {
+				throw new IllegalStateException("Unknown/new rule type " + larger.type());
+			}
+		}
+	}
+
+	private static LoadOption[] excluded(Set<LoadOption> largerSet, Set<LoadOption> smallerSet) {
+		Set<LoadOption> excluded = new HashSet<>();
+		excluded.addAll(largerSet);
+		excluded.removeAll(smallerSet);
+		return excluded.toArray(new LoadOption[0]);
 	}
 }

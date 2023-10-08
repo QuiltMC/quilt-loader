@@ -46,7 +46,7 @@ abstract class RuleDefinition {
 	final Rule rule;
 	final LoadOption[] options;
 
-	public RuleDefinition(Rule rule, LoadOption[] options) {
+	private RuleDefinition(Rule rule, LoadOption[] options) {
 		this.rule = rule;
 		options = Arrays.copyOf(options, options.length);
 
@@ -81,15 +81,25 @@ abstract class RuleDefinition {
 	/** @return True if this definition forces all of it's {@link LoadOption} values to have a constant value. */
 	/* package-private */ abstract boolean isConstant();
 
+	/* package-private */ abstract int minimum();
+
+	/* package-private */ abstract int maximum();
+
+	/* package-private */ abstract RuleType type();
+
 	/** Checks to see if the given set of constants would affect this rule, and puts any newly known constants into the
 	 * "newConstants" map. This should return null if there is a contradiction, or a rule definition to use instead if
 	 * this can still be a valid rule. */
 	/* package-private */ abstract RuleComputeResult computeConstants(Function<LoadOption, Boolean> currentConstants);
 
 	private static RuleComputeResult resultForcedTrue(List<LoadOption> newOptions) {
+		return resultForced(newOptions, true);
+	}
+
+	private static RuleComputeResult resultForced(List<LoadOption> newOptions, boolean value) {
 		Map<LoadOption, Boolean> newConstants = new HashMap<>();
 		for (LoadOption option : newOptions) {
-			newConstants.put(option, true);
+			newConstants.put(option, value);
 		}
 		return new RuleComputeResult.Removed(newConstants);
 	}
@@ -104,7 +114,7 @@ abstract class RuleDefinition {
 
 		@Override
 		public String toString() {
-			return "AtLeastOneOf " + Arrays.toString(options);
+			return "AtLeastOneOf " + options.length + Arrays.toString(options);
 		}
 
 		@Override
@@ -115,6 +125,21 @@ abstract class RuleDefinition {
 		@Override
 		boolean isConstant() {
 			return options.length == 1;
+		}
+
+		@Override
+		int minimum() {
+			return 1;
+		}
+
+		@Override
+		int maximum() {
+			return Integer.MAX_VALUE;
+		}
+
+		@Override
+		RuleType type() {
+			return RuleType.AT_LEAST;
 		}
 
 		@Override
@@ -133,7 +158,7 @@ abstract class RuleDefinition {
 
 		@Override
 		public String toString() {
-			return getClass().getSimpleName() + " " + count + " " + Arrays.toString(options);
+			return getClass().getSimpleName() + " " + count + " of " + options.length + Arrays.toString(options);
 		}
 	}
 
@@ -155,6 +180,21 @@ abstract class RuleDefinition {
 		@Override
 		boolean isConstant() {
 			return options.length == count;
+		}
+
+		@Override
+		int minimum() {
+			return count;
+		}
+
+		@Override
+		int maximum() {
+			return Integer.MAX_VALUE;
+		}
+
+		@Override
+		RuleType type() {
+			return RuleType.AT_LEAST;
 		}
 
 		static RuleComputeResult compute(final int required, RuleDefinition rule,
@@ -256,6 +296,21 @@ abstract class RuleDefinition {
 		}
 
 		@Override
+		int minimum() {
+			return 0;
+		}
+
+		@Override
+		int maximum() {
+			return count;
+		}
+
+		@Override
+		RuleType type() {
+			return RuleType.AT_MOST;
+		}
+
+		@Override
 		RuleComputeResult computeConstants(Function<LoadOption, Boolean> currentConstants) {
 			return Between.compute(0, count, this, currentConstants);
 		}
@@ -278,6 +333,21 @@ abstract class RuleDefinition {
 		@Override
 		boolean isConstant() {
 			return options.length == count;
+		}
+
+		@Override
+		int minimum() {
+			return count;
+		}
+
+		@Override
+		int maximum() {
+			return count;
+		}
+
+		@Override
+		RuleType type() {
+			return RuleType.EXACTLY;
 		}
 
 		@Override
@@ -305,12 +375,27 @@ abstract class RuleDefinition {
 
 		@Override
 		public String toString() {
-			return "Between " + min + ", " + max + " " + Arrays.toString(options);
+			return "Between " + min + ", " + max + " of " + options.length + Arrays.toString(options);
 		}
 
 		@Override
 		boolean isConstant() {
 			return options.length == min || options.length <= max;
+		}
+
+		@Override
+		int minimum() {
+			return min;
+		}
+
+		@Override
+		int maximum() {
+			return max;
+		}
+
+		@Override
+		RuleType type() {
+			return min == max ? RuleType.EXACTLY : RuleType.BETWEEN;
 		}
 
 		private static RuleComputeResult compute(int min, int max, RuleDefinition rule,
@@ -389,6 +474,11 @@ abstract class RuleDefinition {
 				// Force the remaining options to be true
 				// (This handles "max" correctly since we never decrease it separately from "min", and it starts off >=min
 				return resultForcedTrue(newOptions);
+			}
+
+			if (newMax == 0) {
+				// Force the remaining options to be false
+				return resultForced(newOptions, false);
 			}
 
 			LoadOption[] options = newOptions.toArray(new LoadOption[0]);
