@@ -70,6 +70,7 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 public class Sat4jWrapper implements RuleContext {
 
 	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	private static final boolean PRINT_RESULTS = Boolean.getBoolean(SystemProperties.PRINT_MOD_SOLVING_RESULTS);
 	static final LogCategory CATEGORY = LogCategory.create("Sat4j");
 
 	private volatile boolean cancelled = false;
@@ -236,7 +237,7 @@ public class Sat4jWrapper implements RuleContext {
 	public Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
 		checkCancelled();
 		Collection<LoadOption> solution = stage.getSolution();
-		if (LOG) {
+		if (PRINT_RESULTS) {
 			Log.info(CATEGORY, "Final solution:");
 			for (LoadOption option : solution) {
 				Log.info(CATEGORY, option.toString());
@@ -506,7 +507,7 @@ public class Sat4jWrapper implements RuleContext {
 			boolean success = solver.solver.isSatisfiable();
 
 			if (success) {
-				if (LOG) {
+				if (PRINT_RESULTS) {
 					Log.info(CATEGORY, "Found a valid solution, preparing to optimise it.");
 				}
 
@@ -517,7 +518,7 @@ public class Sat4jWrapper implements RuleContext {
 					for (List<RuleDefinition> defs : originalRules.ruleToDefinitions.values()) {
 						ruleCount += defs.size();
 					}
-					if (LOG) {
+					if (PRINT_RESULTS) {
 						Log.info(CATEGORY, "Pre-processing " + ruleCount + " rules and " + originalRules.options.size() + " options");
 					}
 					ProcessedRuleSet processed;
@@ -531,14 +532,14 @@ public class Sat4jWrapper implements RuleContext {
 					}
 
 					if (processed.isFullySolved()) {
-						if (LOG) {
+						if (PRINT_RESULTS) {
 							Log.info(CATEGORY, "Fully solved solution via pre-processer");
 						}
 						stage = new SolvedStage(processed.getConstantSolution());
 						return true;
 					}
 
-					if (LOG) {
+					if (PRINT_RESULTS) {
 						Log.info(CATEGORY, "Partially solved solution via pre-processer, continuing to optimisation");
 						Log.info(CATEGORY, " -> " + processed.rules.size() + " rules, " + processed.options.size() + " options");
 						if (processed.rules.isEmpty()) {
@@ -651,7 +652,7 @@ public class Sat4jWrapper implements RuleContext {
 		Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
 			checkCancelled();
 
-			if (LOG) {
+			if (PRINT_RESULTS) {
 				Log.info(CATEGORY, "Starting optimisation.");
 			}
 
@@ -671,7 +672,7 @@ public class Sat4jWrapper implements RuleContext {
 					}
 				} catch (TimeoutException e) {
 					if (success) {
-						if (LOG) {
+						if (PRINT_RESULTS) {
 							Log.info(CATEGORY, "Aborted optimisation due to timeout");
 						}
 						break;
@@ -680,7 +681,7 @@ public class Sat4jWrapper implements RuleContext {
 
 				success = true;
 
-				if (LOG) {
+				if (PRINT_RESULTS) {
 					Log.info(
 						CATEGORY, "Found solution #" + (++count) + " weight = " + optimiser.optimiser.calculateObjective()
 							.intValue() + " = " + Arrays.toString(optimiser.optimiser.model())

@@ -283,6 +283,9 @@ abstract class RuleDefinition {
 
 		public AtMost(Rule rule, int count, LoadOption[] options) {
 			super(rule, count, options);
+			if (count == 0) {
+				getClass();
+			}
 		}
 
 		@Override
@@ -292,7 +295,7 @@ abstract class RuleDefinition {
 
 		@Override
 		boolean isConstant() {
-			return options.length == 0 || count >= options.length;
+			return options.length == 0 || count >= options.length || count == 0;
 		}
 
 		@Override
@@ -332,7 +335,7 @@ abstract class RuleDefinition {
 
 		@Override
 		boolean isConstant() {
-			return options.length == count;
+			return options.length == count || count == 0;
 		}
 
 		@Override
@@ -380,7 +383,7 @@ abstract class RuleDefinition {
 
 		@Override
 		boolean isConstant() {
-			return options.length == min || options.length <= max;
+			return options.length == min || options.length <= max || max == 0;
 		}
 
 		@Override
@@ -453,6 +456,8 @@ abstract class RuleDefinition {
 					return resultForcedTrue(Arrays.asList(rule.options));
 				} else if (newMin <= 0 && newMax == rule.options.length) {
 					return RuleComputeResult.TRIVIALLY_REMOVED;
+				} else if (newMax == 0) {
+					return resultForced(Arrays.asList(rule.options), false);
 				} else {
 					// Nothing was a constant, so nothing changed.
 					return RuleComputeResult.IDENTICAL;

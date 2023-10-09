@@ -39,6 +39,7 @@ public final class SystemProperties {
 	public static final String REMAP_CLASSPATH_FILE = "loader.remapClasspathFile";
 	public static final String UNIT_TEST = "loader.unitTest";
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
+	public static final String PRINT_MOD_SOLVING_RESULTS = "loader.mod_solving.print_results";
 	public static final String MODS_DIRECTORY = "loader.modsDir";
 	public static final String CACHE_DIRECTORY = "loader.cacheDir";
 	public static final String CONFIG_DIRECTORY = "loader.configDir";

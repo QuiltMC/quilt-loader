@@ -24,9 +24,11 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
+import java.util.stream.Stream;
 
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -448,6 +450,74 @@ class SolverPreProcessor {
 					}
 					remainingOptions.putAll(processedSet.options);
 					remainingRules.addAll(processedSet.rules);
+
+					if (processedSet.isFullySolved()) {
+						continue;
+					}
+
+					Log.info(Sat4jWrapper.CATEGORY, "");
+					Log.info(Sat4jWrapper.CATEGORY, "Sub Problem: ");
+
+					// Log rule & options
+					// but as letters and array indices
+					Map<LoadOption, String> options = new HashMap<>();
+					char letter = 'A';
+					for (LoadOption option : processedSet.options.keySet().stream().sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
+						Log.info(Sat4jWrapper.CATEGORY, letter + ": " + option + " weight " + processedSet.options.get(option));
+						options.put(option, "+" + letter);
+						options.put(RuleContext.negate(option), "-" + letter);
+
+						if (letter == 'Z') {
+							letter = 'a';
+						} else if (letter == 'z') {
+							letter = '0';
+						} else {
+							letter++;
+						}
+					}
+
+					List<String> rules = new ArrayList<>();
+					for (RuleDefinition def : processedSet.rules) {
+						StringBuilder sb = new StringBuilder();
+
+						switch (def.type()) {
+							case AT_LEAST: {
+								sb.append("AtLeast    " + pad(def.minimum()) + "    ");
+								break;
+							}
+							case AT_MOST: {
+								sb.append("At Most    " + pad(def.maximum()) + "    ");
+								break;
+							}
+							case EXACTLY: {
+								sb.append("Exactly    " + pad(def.maximum()) + "    ");
+								break;
+							}
+							case BETWEEN: {
+								sb.append("Between " + pad(def.minimum()) + " and " + pad(def.maximum()));
+								break;
+							}
+						}
+						sb.append(" of ");
+						sb.append(pad(def.options.length));
+						sb.append("{ ");
+						boolean first = true;
+						for (LoadOption option : Stream.of(def.options).sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
+							if (first) {
+								first = false;
+							} else {
+								sb.append(", ");
+							}
+							sb.append(options.get(option));
+						}
+						sb.append(" }");
+
+						rules.add(sb.toString());
+					}
+					rules.sort(null);
+					for (String rule : rules) {
+						Log.info(Sat4jWrapper.CATEGORY, rule);
+					}
 				}
 
 				return new ProcessedRuleSet(constants, aliases, remainingOptions, new ArrayList<>(remainingRules));
@@ -457,17 +527,26 @@ class SolverPreProcessor {
 		return new ProcessedRuleSet(constants, aliases, options, new ArrayList<>(activeRules));
 	}
 
+	private String pad(int value) {
+		if (value < 10) {
+			return " " + value;
+		} else {
+			return "" + value;
+		}
+	}
+
 	/** Checks every rule to see if it is a "redundant sub-set" of another rule. This mostly handles common
 	 * dependencies, but where some of the possible versions aren't valid for every dependency.
 	 * 
 	 * @return if anything changed. */
 	private boolean detectRedundentSubRules() throws ContradictionException {
 
-		boolean changed = false;
+		boolean anythingChanged = false;
+		boolean changedThisLoop = false;
 
 		// For simplicities sake we just restart the loop anytime we handle redundant elements
 		outer_loop: do {
-			changed = false;
+			changedThisLoop = false;
 
 			for (RuleDefinition rule1 : activeRules) {
 				// Includes negation
@@ -490,24 +569,25 @@ class SolverPreProcessor {
 								// this will have already been handled by the
 								// "optionSet2rules" field and it's handling
 							} else {
-								changed = checkRulesForRedundency(rule1, exactOptions1, rule2, exactOptions2);
+								changedThisLoop = checkRulesForRedundency(rule1, exactOptions1, rule2, exactOptions2);
 							}
 						} else if (exactOptions2.containsAll(exactOptions1)) {
-							changed = checkRulesForRedundency(rule2, exactOptions2, rule1, exactOptions1);
+							changedThisLoop = checkRulesForRedundency(rule2, exactOptions2, rule1, exactOptions1);
 						} else {
 							continue;
 						}
 
-						if (changed) {
+						if (changedThisLoop) {
+							anythingChanged = true;
 							continue outer_loop;
 						}
 					}
 				}
 			}
 
-		} while (changed);
+		} while (changedThisLoop);
 
-		return changed;
+		return anythingChanged;
 	}
 
 	/** Checks to see if we can simplify something based on two rules, where the smaller affects a strict subset of the
@@ -546,7 +626,17 @@ class SolverPreProcessor {
 					case AT_MOST: {
 						// larger is AT LEAST minL
 						// smaller is AT MOST maxS
-						// Nothing is redundant here
+						int maxS = smaller.maximum();
+						if (maxS < smaller.options.length) {
+							int maxL = larger.options.length - smaller.options.length + maxS;
+							removeRule(larger);
+							if (maxL == minL) {
+								addRule(new RuleDefinition.Exactly(larger.rule, minL, larger.options));
+							} else {
+								addRule(new RuleDefinition.Between(larger.rule, minL, maxL, larger.options));
+							}
+							return true;
+						}
 						return false;
 					}
 					case EXACTLY: {
