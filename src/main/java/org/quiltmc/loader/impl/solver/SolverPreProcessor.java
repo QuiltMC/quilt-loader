@@ -258,7 +258,7 @@ class SolverPreProcessor {
 			if (activeRules.size() == 1) {
 				// 1 rule left, that means we can choose a value for every constant
 				RuleDefinition rule = activeRules.iterator().next();
-				chooseBasedOnOnly(rule);
+				chooseBasedOnOnly(rule, true);
 
 				changed = true;
 			}
@@ -324,10 +324,6 @@ class SolverPreProcessor {
 				changed = true;
 			}
 
-			while (searchForSelfSufficientRules()) {
-				changed = true;
-			}
-
 			// Separate remaining rules into separate problems
 			// We do this before any expensive "for each rule, check each rule" steps
 			List<SolverPreProcessor> subProblems = new ArrayList<>();
@@ -369,6 +365,7 @@ class SolverPreProcessor {
 			} else if (subProblems.size() == 1) {
 				// We weren't able to separate the problem any further, so there's nothing else we can do
 				changed |= detectRedundentSubRules();
+				changed |= searchForSelfSufficientRules();
 			} else {
 
 				Map<LoadOption, Integer> remainingOptions = new HashMap<>();
@@ -388,7 +385,7 @@ class SolverPreProcessor {
 					}
 
 					Log.info(Sat4jWrapper.CATEGORY, "");
-					Log.info(Sat4jWrapper.CATEGORY, "Sub Problem: ");
+					Log.info(Sat4jWrapper.CATEGORY, "Unsolved Sub Problem: ");
 
 					// Log rule & options
 					// but as letters and array indices
@@ -461,8 +458,7 @@ class SolverPreProcessor {
 
 	/** Picks a value for every {@link LoadOption} in this rule. This assumes that no other option is affected by this
 	 * choice. */
-	private void chooseBasedOnOnly(RuleDefinition rule) {
-		activeRules.remove(rule);
+	private void chooseBasedOnOnly(RuleDefinition rule, boolean putConstants) {
 		int min = rule.minimum();
 		int max = rule.maximum();
 		// Desired options are ones with a negative weight, ordered by least wanted to most wanted
@@ -532,10 +528,17 @@ class SolverPreProcessor {
 				option = option.negate();
 				value = !value;
 			}
-			constants.put(option, value);
-			options.remove(option);
+			if (putConstants) {
+				constants.put(option, value);
+				options.remove(option);
+			} else if (value) {
+				addRule(new RuleDefinition.AtLeast(rule.rule, 1, new LoadOption[] { option }));
+			} else {
+				addRule(new RuleDefinition.AtMost(rule.rule, 0, new LoadOption[] { option }));
+			}
 		}
 
+		removeRule(rule);
 		assert takenOptions.isEmpty();
 	}
 
@@ -551,10 +554,53 @@ class SolverPreProcessor {
 	 * 
 	 * @return if anything changed. */
 	private boolean searchForSelfSufficientRules() throws ContradictionException {
-		for (RuleDefinition rule : activeRules) {
-			
+		boolean changed = false;
+		for (RuleDefinition rule : new ArrayList<>(activeRules) ){
+			if (checkForSelfSufficientRule(rule)) {
+				changed = true;
+			}
 		}
-		return false;
+		return changed;
+	}
+
+	private boolean checkForSelfSufficientRule(RuleDefinition rule) {
+		Map<RuleDefinition, Set<LoadOption>> replacedRules = new HashMap<>();
+		LoadOption with = rule.options[0];
+		for (LoadOption option : rule.options) {
+			LoadOption original = option;
+			if (LoadOption.isNegated(option)) {
+				option = option.negate();
+			}
+			boolean foundMatch = false;
+			for (RuleDefinition rule2 : option2rules.get(option)) {
+				if (rule2 == rule) {
+					continue;
+				}
+				RuleDefinition simplified = rule2.blindlyReplace(original, with);
+				simplified = simplified.blindlyReplace(original.negate(), with.negate());
+				replacedRules.computeIfAbsent(simplified, r -> new HashSet<>()).add(original);
+			}
+		}
+
+		if (replacedRules.isEmpty()) {
+			// None of the options are even mentioned by any other rules
+			// That means we don't need to bother checking anything else
+			chooseBasedOnOnly(rule, true);
+			return true;
+		}
+
+		Set<LoadOption> expected = new HashSet<>();
+		Collections.addAll(expected, rule.options);
+		for (Set<LoadOption> set : replacedRules.values()) {
+			if (!expected.equals(set)) {
+				return false;
+			}
+		}
+
+		// If we've got here then we have a rule of which it's options only interact with other options in the same way
+		Log.info(Sat4jWrapper.CATEGORY, "Found self-sufficient candidate " + rule);
+		chooseBasedOnOnly(rule, false);
+		return true;
 	}
 
 	/** Checks every rule to see if it is a "redundant sub-set" of another rule. This mostly handles common

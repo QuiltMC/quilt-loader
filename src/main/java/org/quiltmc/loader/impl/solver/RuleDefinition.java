@@ -100,6 +100,32 @@ abstract class RuleDefinition {
 	 * this can still be a valid rule. */
 	/* package-private */ abstract RuleComputeResult computeConstants(Function<LoadOption, Boolean> currentConstants);
 
+	RuleDefinition blindlyReplace(LoadOption original, LoadOption with) {
+		int newMin = minimum();
+		int newMax = maximum();
+		LoadOption[] newOptions = new LoadOption[options.length];
+		for (int i = 0; i < options.length; i++) {
+			LoadOption op = options[i];
+			if (op.equals(original)) {
+				newOptions[i] = with;
+			} else {
+				newOptions[i] = op;
+			}
+		}
+		if (newMin == newMax) {
+			return new Exactly(rule, newMin, newOptions);
+		}
+		if (newMin > 0) {
+			if (newMax < newOptions.length) {
+				return new Between(rule, newMin, newMax, newOptions);
+			} else {
+				return new AtLeast(rule, newMin, newOptions);
+			}
+		} else {
+			return new AtMost(rule, newMax, newOptions);
+		}
+	}
+
 	@Override
 	public final boolean equals(Object obj) {
 		if (!(obj instanceof RuleDefinition)) {
