@@ -9,3 +9,4 @@ Features:
     * Added a system property to explain what this pre-processor is struggling with (partially simplified mod sets)
         * "loader.mod_solving.print_results" prints unsolved sub-problems, and the final chosen options.
         * This is an alternative to the very verbose "loader.debug.mod_solving" property.
+    * Made the log line "Aborted mod solving optimisation due to timeout" always print when it happens.

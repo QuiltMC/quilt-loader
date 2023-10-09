@@ -657,9 +657,8 @@ public class Sat4jWrapper implements RuleContext {
 					}
 				} catch (TimeoutException e) {
 					if (success) {
-						if (PRINT_RESULTS) {
-							Log.info(CATEGORY, "Aborted optimisation due to timeout");
-						}
+						// Always print, since it could be important
+						Log.info(CATEGORY, "Aborted mod solving optimisation due to timeout");
 						break;
 					}
 				}
