@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.api.plugin.solver;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.plugin.solver.LoadOption;
-import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** Used for the "inverse load" condition - if this is required by a {@link Rule} then it means the
- * {@link LoadOption} must not be loaded. */
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-final class NegatedLoadOption extends LoadOption {
-	final LoadOption not;
+/** Used for the "inverse load" condition - if this is required by a {@link Rule} then it means the {@link LoadOption}
+ * must not be loaded.
+ * <p>
+ * Plugins can negate {@link LoadOption}s with {@link LoadOption#negate()}, and test for negation with either
+ * "instanceof NegatedLoadOption" or LoadOption.isNegated */
+@QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
+public final class NegatedLoadOption extends LoadOption {
+	public final LoadOption not;
 
-	public NegatedLoadOption(LoadOption not) {
+	/* package-private */ NegatedLoadOption(LoadOption not) {
+		super(not);
+		if (not instanceof NegatedLoadOption) {
+			throw new IllegalArgumentException("Found double-negated negated load option!");
+		}
 		this.not = not;
 	}
 

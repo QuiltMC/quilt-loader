@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.NegatedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
@@ -194,18 +195,6 @@ public class Sat4jWrapper implements RuleContext {
 		stage = stage.onChange();
 	}
 
-	public static boolean isNegated(LoadOption option) {
-		return option instanceof NegatedLoadOption;
-	}
-
-	public static LoadOption negate(LoadOption option) {
-		if (option instanceof NegatedLoadOption) {
-			return ((NegatedLoadOption) option).not;
-		} else {
-			return new NegatedLoadOption(option);
-		}
-	}
-
 	// ###########
 	// # Solving #
 	// ###########
@@ -271,11 +260,7 @@ public class Sat4jWrapper implements RuleContext {
 
 		@Override
 		public LoadOption negate(LoadOption option) {
-			if (option instanceof NegatedLoadOption) {
-				return ((NegatedLoadOption) option).not;
-			}
-
-			return new NegatedLoadOption(RuleDefinition.process(option));
+			return RuleDefinition.process(option).negate();
 		}
 
 		@Override

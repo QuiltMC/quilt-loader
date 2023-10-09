@@ -98,7 +98,7 @@ public abstract class RuleSet {
 			if (entry.getValue()) {
 				dst.add(entry.getKey());
 			} else {
-				dst.add(RuleContext.negate(entry.getKey()));
+				dst.add(entry.getKey().negate());
 			}
 		}
 
@@ -108,7 +108,7 @@ public abstract class RuleSet {
 			if (constants.get(target)) {
 				dst.add(alias);
 			} else {
-				dst.add(RuleContext.negate(alias));
+				dst.add(alias.negate());
 			}
 		}
 	}

@@ -16,6 +16,9 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
+import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -24,6 +27,21 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * file, but in the future this might refer to something else that loader has control over). */
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class LoadOption {
+
+	/** @return A description of this load option, to be shown in the error gui when this load option is involved in a solver error. */
+	public abstract QuiltLoaderText describe();
+
+	public final LoadOption negate() {
+		if (this instanceof NegatedLoadOption) {
+			return ((NegatedLoadOption) this).not;
+		} else {
+			return new NegatedLoadOption(this);
+		}
+	}
+
+	public static boolean isNegated(LoadOption option) {
+		return option instanceof NegatedLoadOption;
+	}
 
 	// Overridden equals and hashCode to prevent solving from having strange behaviour
 
@@ -36,20 +54,34 @@ public abstract class LoadOption {
 			return false;
 		}
 		LoadOption other = (LoadOption) obj;
-		if (RuleContext.isNegated(this) && RuleContext.isNegated(other)) {
-			return RuleContext.negate(this).equals(RuleContext.negate(other));
+		if (isNegated(this) && isNegated(other)) {
+			return negate().equals(other.negate());
 		}
 		return false;
 	}
 
 	@Override
 	public final int hashCode() {
-		if (RuleContext.isNegated(this)) {
-			return ~RuleContext.negate(this).hashCode();
+		if (isNegated(this)) {
+			return ~negate().hashCode();
 		}
 		return super.hashCode();
 	}
 
-	/** @return A description of this load option, to be shown in the error gui when this load option is involved in a solver error. */
-	public abstract QuiltLoaderText describe();
+	// Internals
+
+	/** A {@link Comparator} for any {@link LoadOption}. This is guaranteed to be stable in a single run of a JVM, not
+	 * otherwise. */
+	public static final Comparator<LoadOption> COMPARATOR = (a, b) -> Long.compare(a.order, b.order);
+
+	private static final AtomicLong orderAssignment = new AtomicLong();
+	private final long order;
+
+	public LoadOption() {
+		order = orderAssignment.incrementAndGet();
+	}
+
+	/* package-private */ LoadOption(LoadOption negated) {
+		this.order = -negated.order;
+	}
 }

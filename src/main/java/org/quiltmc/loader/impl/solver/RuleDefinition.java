@@ -28,7 +28,6 @@ import java.util.function.Function;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
-import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.solver.Sat4jWrapper.Sat4jSolver;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -54,23 +53,32 @@ abstract class RuleDefinition {
 			options[i] = process(options[i]);
 		}
 
+		Arrays.sort(options, LoadOption.COMPARATOR);
+
 		this.options = options;
 	}
 
 	/* package-private */ static LoadOption process(LoadOption op) {
+		boolean negate = LoadOption.isNegated(op);
+		if (negate) {
+			op = op.negate();
+		}
 		if (op instanceof AliasedLoadOption) {
 			LoadOption target = ((AliasedLoadOption) op).getTarget();
 			if (target != null) {
 				op = target;
 			}
 		}
+		if (negate) {
+			op = op.negate();
+		}
 		return op;
 	}
 
 	/* package-private */ void validateOptions(Set<LoadOption> validOptions) {
 		for (LoadOption option : options) {
-			if (RuleContext.isNegated(option)) {
-				option = RuleContext.negate(option);
+			if (LoadOption.isNegated(option)) {
+				option = option.negate();
 			}
 			if (!validOptions.contains(option)) {
 				throw new IllegalStateException("Tried to define rule " + rule.getClass() + " " + rule + " as " + this + ", but the option " + option.getClass() + " " + option + " isn't registered!");
@@ -91,6 +99,28 @@ abstract class RuleDefinition {
 	 * "newConstants" map. This should return null if there is a contradiction, or a rule definition to use instead if
 	 * this can still be a valid rule. */
 	/* package-private */ abstract RuleComputeResult computeConstants(Function<LoadOption, Boolean> currentConstants);
+
+	@Override
+	public final boolean equals(Object obj) {
+		if (!(obj instanceof RuleDefinition)) {
+			return false;
+		}
+		if (obj == this) return true;
+		RuleDefinition other = (RuleDefinition) obj;
+		return type().equals(other.type())//
+			&& minimum() == other.minimum()//
+			&& maximum() == other.maximum()//
+			&& Arrays.equals(options, other.options);
+	}
+
+	@Override
+	public final int hashCode() {
+		int hash = type().hashCode();
+		hash = hash * 31 + minimum();
+		hash = hash * 31 + maximum();
+		hash = hash * 31 + Arrays.hashCode(options);
+		return hash;
+	}
 
 	private static RuleComputeResult resultForcedTrue(List<LoadOption> newOptions) {
 		return resultForced(newOptions, true);

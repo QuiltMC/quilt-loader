@@ -31,6 +31,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
 
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.NegatedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.impl.solver.RuleComputeResult.DeclaredConstants;
@@ -257,81 +258,7 @@ class SolverPreProcessor {
 			if (activeRules.size() == 1) {
 				// 1 rule left, that means we can choose a value for every constant
 				RuleDefinition rule = activeRules.iterator().next();
-				activeRules.remove(rule);
-				int min = rule.minimum();
-				int max = rule.maximum();
-				// Desired options are ones with a negative weight, ordered by least wanted to most wanted
-				List<LoadOption> desiredOptions = new ArrayList<>();
-				// Unwanted options are ones with a positive weight, ordered by least wanted to most wanted
-				List<LoadOption> unwantedOptions = new ArrayList<>();
-				// Indifferent options are ones with a weight of 0.
-				List<LoadOption> indifferentOptions = new ArrayList<>();
-
-				List<LoadOption> allOptions = new ArrayList<>();
-				Collections.addAll(allOptions, rule.options);
-				ToIntFunction<LoadOption> getWeight = option -> {
-					if (RuleContext.isNegated(option)) {
-						return -options.get(RuleContext.negate(option));
-					}
-					return options.get(option);
-				};
-				allOptions.sort(Comparator.comparingInt(getWeight).reversed());
-
-				LoadOption last = null;
-				int lastWeight = 0;
-				for (LoadOption option : allOptions) {
-
-					int weight = getWeight.applyAsInt(option);
-
-					if (last != null && weight == lastWeight) {
-						Log.warn(Sat4jWrapper.CATEGORY, "Two options have identical weight when choosing between them!");
-						Log.warn(Sat4jWrapper.CATEGORY, last.toString());
-						Log.warn(Sat4jWrapper.CATEGORY, option.toString());
-					}
-
-					if (weight > 0) {
-						unwantedOptions.add(option);
-					} else if (weight < 0) {
-						desiredOptions.add(option);
-					} else {
-						indifferentOptions.add(option);
-					}
-
-					last = option;
-					lastWeight = weight;
-				}
-
-				Set<LoadOption> takenOptions = new HashSet<>();
-
-				while (takenOptions.size() < min) {
-					if (!desiredOptions.isEmpty()) {
-						takenOptions.add(desiredOptions.remove(desiredOptions.size() - 1));
-						continue;
-					}
-					if (!indifferentOptions.isEmpty()) {
-						takenOptions.add(indifferentOptions.remove(indifferentOptions.size() - 1));
-					}
-					takenOptions.add(unwantedOptions.remove(unwantedOptions.size() - 1));
-				}
-
-				while (takenOptions.size() < max) {
-					if (desiredOptions.isEmpty()) {
-						break;
-					}
-					takenOptions.add(desiredOptions.remove(desiredOptions.size() - 1));
-				}
-
-				for (LoadOption option : allOptions) {
-					boolean value = takenOptions.remove(option);
-					if (RuleContext.isNegated(option)) {
-						option = RuleContext.negate(option);
-						value = !value;
-					}
-					constants.put(option, value);
-					options.remove(option);
-				}
-
-				assert takenOptions.isEmpty();
+				chooseBasedOnOnly(rule);
 
 				changed = true;
 			}
@@ -397,7 +324,12 @@ class SolverPreProcessor {
 				changed = true;
 			}
 
+			while (searchForSelfSufficientRules()) {
+				changed = true;
+			}
+
 			// Separate remaining rules into separate problems
+			// We do this before any expensive "for each rule, check each rule" steps
 			List<SolverPreProcessor> subProblems = new ArrayList<>();
 			{
 				Set<LoadOption> remainingOptions = new HashSet<>();
@@ -419,8 +351,8 @@ class SolverPreProcessor {
 							remainingRules.remove(def);
 							ruleSubSet.add(def);
 							for (LoadOption option : def.options) {
-								if (RuleContext.isNegated(option)) {
-									option = RuleContext.negate(option);
+								if (LoadOption.isNegated(option)) {
+									option = option.negate();
 								}
 								if (remainingOptions.remove(option)) {
 									openSet.add(option);
@@ -465,7 +397,7 @@ class SolverPreProcessor {
 					for (LoadOption option : processedSet.options.keySet().stream().sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
 						Log.info(Sat4jWrapper.CATEGORY, letter + ": " + option + " weight " + processedSet.options.get(option));
 						options.put(option, "+" + letter);
-						options.put(RuleContext.negate(option), "-" + letter);
+						options.put(option.negate(), "-" + letter);
 
 						if (letter == 'Z') {
 							letter = 'a';
@@ -527,12 +459,102 @@ class SolverPreProcessor {
 		return new ProcessedRuleSet(constants, aliases, options, new ArrayList<>(activeRules));
 	}
 
+	/** Picks a value for every {@link LoadOption} in this rule. This assumes that no other option is affected by this
+	 * choice. */
+	private void chooseBasedOnOnly(RuleDefinition rule) {
+		activeRules.remove(rule);
+		int min = rule.minimum();
+		int max = rule.maximum();
+		// Desired options are ones with a negative weight, ordered by least wanted to most wanted
+		List<LoadOption> desiredOptions = new ArrayList<>();
+		// Unwanted options are ones with a positive weight, ordered by least wanted to most wanted
+		List<LoadOption> unwantedOptions = new ArrayList<>();
+		// Indifferent options are ones with a weight of 0.
+		List<LoadOption> indifferentOptions = new ArrayList<>();
+
+		List<LoadOption> allOptions = new ArrayList<>();
+		Collections.addAll(allOptions, rule.options);
+		ToIntFunction<LoadOption> getWeight = option -> {
+			if (LoadOption.isNegated(option)) {
+				return -options.get(option.negate());
+			}
+			return options.get(option);
+		};
+		allOptions.sort(Comparator.comparingInt(getWeight).reversed());
+
+		LoadOption last = null;
+		int lastWeight = 0;
+		for (LoadOption option : allOptions) {
+
+			int weight = getWeight.applyAsInt(option);
+
+			if (last != null && weight == lastWeight) {
+				Log.warn(Sat4jWrapper.CATEGORY, "Two options have identical weight when choosing between them!");
+				Log.warn(Sat4jWrapper.CATEGORY, last.toString());
+				Log.warn(Sat4jWrapper.CATEGORY, option.toString());
+			}
+
+			if (weight > 0) {
+				unwantedOptions.add(option);
+			} else if (weight < 0) {
+				desiredOptions.add(option);
+			} else {
+				indifferentOptions.add(option);
+			}
+
+			last = option;
+			lastWeight = weight;
+		}
+
+		Set<LoadOption> takenOptions = new HashSet<>();
+
+		while (takenOptions.size() < min) {
+			if (!desiredOptions.isEmpty()) {
+				takenOptions.add(desiredOptions.remove(desiredOptions.size() - 1));
+				continue;
+			}
+			if (!indifferentOptions.isEmpty()) {
+				takenOptions.add(indifferentOptions.remove(indifferentOptions.size() - 1));
+			}
+			takenOptions.add(unwantedOptions.remove(unwantedOptions.size() - 1));
+		}
+
+		while (takenOptions.size() < max) {
+			if (desiredOptions.isEmpty()) {
+				break;
+			}
+			takenOptions.add(desiredOptions.remove(desiredOptions.size() - 1));
+		}
+
+		for (LoadOption option : allOptions) {
+			boolean value = takenOptions.remove(option);
+			if (LoadOption.isNegated(option)) {
+				option = option.negate();
+				value = !value;
+			}
+			constants.put(option, value);
+			options.remove(option);
+		}
+
+		assert takenOptions.isEmpty();
+	}
+
 	private String pad(int value) {
 		if (value < 10) {
 			return " " + value;
 		} else {
 			return "" + value;
 		}
+	}
+
+	/** Checks every rule to see if it's options don't actually affect the choice of any other options.
+	 * 
+	 * @return if anything changed. */
+	private boolean searchForSelfSufficientRules() throws ContradictionException {
+		for (RuleDefinition rule : activeRules) {
+			
+		}
+		return false;
 	}
 
 	/** Checks every rule to see if it is a "redundant sub-set" of another rule. This mostly handles common
@@ -554,8 +576,8 @@ class SolverPreProcessor {
 				Collections.addAll(exactOptions1, rule1.options);
 
 				for (LoadOption option : rule1.options) {
-					if (RuleContext.isNegated(option)) {
-						option = RuleContext.negate(option);
+					if (LoadOption.isNegated(option)) {
+						option = option.negate();
 					}
 
 					for (RuleDefinition rule2 : option2rules.get(option)) {

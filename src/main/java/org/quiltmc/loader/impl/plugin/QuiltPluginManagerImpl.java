@@ -1515,8 +1515,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		for (LoadOption option : solution) {
 
 			boolean load = true;
-			if (Sat4jWrapper.isNegated(option)) {
-				option = Sat4jWrapper.negate(option);
+			if (LoadOption.isNegated(option)) {
+				option = option.negate();
 				load = false;
 			}
 
