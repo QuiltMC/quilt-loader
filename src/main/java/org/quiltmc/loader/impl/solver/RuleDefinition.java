@@ -139,13 +139,21 @@ abstract class RuleDefinition {
 			&& Arrays.equals(options, other.options);
 	}
 
+	private int hashCache;
+
 	@Override
 	public final int hashCode() {
+		if (hashCache != 0) {
+			return hashCache;
+		}
 		int hash = type().hashCode();
 		hash = hash * 31 + minimum();
 		hash = hash * 31 + maximum();
 		hash = hash * 31 + Arrays.hashCode(options);
-		return hash;
+		if (hash == 0) {
+			hash = 1;
+		}
+		return this.hashCache = hash;
 	}
 
 	private static RuleComputeResult resultForcedTrue(List<LoadOption> newOptions) {

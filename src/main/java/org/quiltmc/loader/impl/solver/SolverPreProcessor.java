@@ -613,10 +613,14 @@ class SolverPreProcessor {
 		boolean changedThisLoop = false;
 
 		// For simplicities sake we just restart the loop anytime we handle redundant elements
-		outer_loop: do {
+		do {
 			changedThisLoop = false;
 
-			for (RuleDefinition rule1 : activeRules) {
+			rule_loop: for (RuleDefinition rule1 : activeRules.toArray(new RuleDefinition[0])) {
+
+				if (!activeRules.contains(rule1)) {
+					continue;
+				}
 
 				for (LoadOption option : rule1.options) {
 					if (LoadOption.isNegated(option)) {
@@ -641,11 +645,10 @@ class SolverPreProcessor {
 							continue;
 						}
 
-						changedThisLoop = checkRulesForRedundency(rule1, rule2, excluded);
-
-						if (changedThisLoop) {
+						if (checkRulesForRedundency(rule1, rule2, excluded)) {
+							changedThisLoop = true;
 							anythingChanged = true;
-							continue outer_loop;
+							continue rule_loop;
 						}
 					}
 				}

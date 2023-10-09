@@ -129,7 +129,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.21.0-temp.33";
+	public static final String VERSION = "0.21.0-temp.37";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
