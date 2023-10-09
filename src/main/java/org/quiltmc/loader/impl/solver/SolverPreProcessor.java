@@ -245,7 +245,7 @@ class SolverPreProcessor {
 					// Since we have no idea if it's a good idea to load the option or not
 					// For now, just reject them since we assume every option actually does something.
 					if (weight == 0) {
-						Log.info(Sat4jWrapper.CATEGORY, option + " is undecided, and has a weight of 0 ?");
+						Log.warn(Sat4jWrapper.CATEGORY, option + " is undecided, and has a weight of 0 ?");
 					}
 					constants.put(option, weight < 0);
 				} else {
@@ -381,6 +381,11 @@ class SolverPreProcessor {
 					remainingRules.addAll(processedSet.rules);
 
 					if (processedSet.isFullySolved()) {
+						continue;
+					}
+
+
+					if (!Sat4jWrapper.PRINT_RESULTS) {
 						continue;
 					}
 
@@ -598,7 +603,6 @@ class SolverPreProcessor {
 		}
 
 		// If we've got here then we have a rule of which it's options only interact with other options in the same way
-		Log.info(Sat4jWrapper.CATEGORY, "Found self-sufficient candidate " + rule);
 		chooseBasedOnOnly(rule, false);
 		return true;
 	}
@@ -612,7 +616,6 @@ class SolverPreProcessor {
 		boolean anythingChanged = false;
 		boolean changedThisLoop = false;
 
-		// For simplicities sake we just restart the loop anytime we handle redundant elements
 		do {
 			changedThisLoop = false;
 

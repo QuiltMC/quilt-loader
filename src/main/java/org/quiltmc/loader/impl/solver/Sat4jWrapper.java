@@ -70,8 +70,9 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Sat4jWrapper implements RuleContext {
 
-	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
-	private static final boolean PRINT_RESULTS = Boolean.getBoolean(SystemProperties.PRINT_MOD_SOLVING_RESULTS);
+	static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	static final boolean PRINT_RESULTS = LOG || Boolean.getBoolean(SystemProperties.PRINT_MOD_SOLVING_RESULTS);
+	private static final boolean DISABLE_PRE_PROCESS = Boolean.getBoolean(SystemProperties.DISABLE_MOD_SOLVING_PRE_PROCESSING);
 	static final LogCategory CATEGORY = LogCategory.create("Sat4j");
 
 	private volatile boolean cancelled = false;
@@ -199,8 +200,8 @@ public class Sat4jWrapper implements RuleContext {
 	// # Solving #
 	// ###########
 
-	/** Attempts to find a solution. This should be called during either definition or solving. If this returns true
-	 * then the {@link #getStep()} will be moved to {@link Sat4jSolveStep#RE_SOLVING}.
+	/** Attempts to find a solution. If this returns true then you should call {@link #getSolution()} to get it,
+	 * otherwise call {@link #getError()} to get the first reason why this doesn't have a solution.
 	 * 
 	 * @return True if a solution could be found, or false if one could not. */
 	public boolean hasSolution() throws TimeoutException, ModSolvingError {
@@ -497,8 +498,7 @@ public class Sat4jWrapper implements RuleContext {
 				}
 
 				final RuleSet toOptimize;
-				final boolean ENABLE_PRE_PROCESS = true;
-				if (ENABLE_PRE_PROCESS) {
+				if (!DISABLE_PRE_PROCESS) {
 					int ruleCount = 0;
 					for (List<RuleDefinition> defs : originalRules.ruleToDefinitions.values()) {
 						ruleCount += defs.size();
