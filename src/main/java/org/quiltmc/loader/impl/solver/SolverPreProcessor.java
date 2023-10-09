@@ -617,9 +617,6 @@ class SolverPreProcessor {
 			changedThisLoop = false;
 
 			for (RuleDefinition rule1 : activeRules) {
-				// Includes negation
-				Set<LoadOption> exactOptions1 = new HashSet<>();
-				Collections.addAll(exactOptions1, rule1.options);
 
 				for (LoadOption option : rule1.options) {
 					if (LoadOption.isNegated(option)) {
@@ -628,22 +625,23 @@ class SolverPreProcessor {
 
 					for (RuleDefinition rule2 : option2rules.get(option)) {
 
-						Set<LoadOption> exactOptions2 = new HashSet<>();
-						Collections.addAll(exactOptions2, rule2.options);
+						if (rule2.options.length >= rule1.options.length) {
+							// Handle rule2 > rule1 in another pass
 
-						if (exactOptions1.containsAll(exactOptions2)) {
-							if (exactOptions1.size() == exactOptions2.size()) {
-								// Since the rules affect exactly the same rules
-								// this will have already been handled by the
-								// "optionSet2rules" field and it's handling
-							} else {
-								changedThisLoop = checkRulesForRedundency(rule1, exactOptions1, rule2, exactOptions2);
-							}
-						} else if (exactOptions2.containsAll(exactOptions1)) {
-							changedThisLoop = checkRulesForRedundency(rule2, exactOptions2, rule1, exactOptions1);
-						} else {
+							// For rule1.length == rule2.length:
+							// Since the rules affect exactly the same rules
+							// this will have already been handled by the
+							// "optionSet2rules" field and it's handling
 							continue;
 						}
+
+						LoadOption[] excluded = computeExcluded(rule1, rule2);
+
+						if (excluded == null) {
+							continue;
+						}
+
+						changedThisLoop = checkRulesForRedundency(rule1, rule2, excluded);
 
 						if (changedThisLoop) {
 							anythingChanged = true;
@@ -658,10 +656,34 @@ class SolverPreProcessor {
 		return anythingChanged;
 	}
 
+	private static LoadOption[] computeExcluded(RuleDefinition rule1, RuleDefinition rule2) {
+		int excludedIndex = 0;
+		LoadOption[] excluded = new LoadOption[rule1.options.length - rule2.options.length];
+
+		int idx2 = 0;
+		for (int idx1 = 0; idx1 < rule1.options.length; idx1++) {
+			LoadOption op1 = rule1.options[idx1];
+			LoadOption op2 = idx2 >= rule2.options.length ? null : rule2.options[idx2];
+			if (op1.equals(op2)) {
+				idx2++;
+				continue;
+			}
+			if (excludedIndex == excluded.length) {
+				// Too many
+				return null;
+			}
+			excluded[excludedIndex++] = op1;
+		}
+
+		if (idx2 != rule2.options.length || excludedIndex != excluded.length) {
+			excluded = null;
+		}
+		return excluded;
+	}
+
 	/** Checks to see if we can simplify something based on two rules, where the smaller affects a strict subset of the
 	 * larger. */
-	private boolean checkRulesForRedundency(RuleDefinition larger, Set<LoadOption> largerSet, RuleDefinition smaller,
-		Set<LoadOption> smallerSet) throws ContradictionException {
+	private boolean checkRulesForRedundency(RuleDefinition larger, RuleDefinition smaller, LoadOption[] excluded) throws ContradictionException {
 
 		// Definitions:
 		// "Included" is the set of options that are in both sets. It's equal to the options in smaller
@@ -716,7 +738,7 @@ class SolverPreProcessor {
 							removeRule(larger);
 						} else {
 							removeRule(larger);
-							addRule(new RuleDefinition.AtLeast(larger.rule, minExcluded, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtLeast(larger.rule, minExcluded, excluded));
 						}
 						return true;
 					}
@@ -757,7 +779,7 @@ class SolverPreProcessor {
 							removeRule(smaller);
 							removeRule(larger);
 							addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
-							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 							return true;
 						} else {
 							return false;
@@ -784,7 +806,7 @@ class SolverPreProcessor {
 							throw new ContradictionException();
 						} else {
 							removeRule(larger);
-							addRule(new RuleDefinition.AtMost(larger.rule, maxL - minS, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, maxL - minS, excluded));
 							return true;
 						}
 					}
@@ -806,7 +828,7 @@ class SolverPreProcessor {
 							removeRule(smaller);
 							removeRule(larger);
 							addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
-							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 							return true;
 						}
 
@@ -846,7 +868,7 @@ class SolverPreProcessor {
 							// replace both with EXACTLY exactL of Included
 							removeRule(larger);
 							removeRule(smaller);
-							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 							addRule(new RuleDefinition.Exactly(larger.rule, exactL, smaller.options));
 							return true;
 						} else {
@@ -877,13 +899,13 @@ class SolverPreProcessor {
 						if (exactL == minS) {
 							// Excluded is all false
 							removeRule(larger);
-							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 							return true;
 						}
 
 						// exactL > minS
 						removeRule(larger);
-						addRule(new RuleDefinition.Exactly(larger.rule, exactL - minS, excluded(largerSet, smallerSet)));
+						addRule(new RuleDefinition.Exactly(larger.rule, exactL - minS, excluded));
 						return true;
 					}
 					case BETWEEN: {
@@ -900,7 +922,7 @@ class SolverPreProcessor {
 							removeRule(larger);
 							removeRule(smaller);
 							addRule(new RuleDefinition.Exactly(smaller.rule, exactL, smaller.options));
-							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 							return true;
 						}
 
@@ -965,7 +987,7 @@ class SolverPreProcessor {
 						addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
 						// and the larger rule is removed, with all Excluded set to false
 						removeRule(larger);
-						addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+						addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 						return true;
 					}
 					case AT_MOST: {
@@ -990,11 +1012,11 @@ class SolverPreProcessor {
 
 						if (exactS < minL) {
 							removeRule(larger);
-							addRule(new RuleDefinition.Between(larger.rule, minL - exactS, maxL - exactS, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.Between(larger.rule, minL - exactS, maxL - exactS, excluded));
 							return true;
 						} else if (exactS <= maxL) {
 							removeRule(larger);
-							addRule(new RuleDefinition.AtMost(larger.rule, maxL - exactS, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, maxL - exactS, excluded));
 							return true;
 						}
 
@@ -1017,7 +1039,7 @@ class SolverPreProcessor {
 							removeRule(smaller);
 							addRule(new RuleDefinition.Exactly(smaller.rule, minS, smaller.options));
 							removeRule(larger);
-							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded(largerSet, smallerSet)));
+							addRule(new RuleDefinition.AtMost(larger.rule, 0, excluded));
 							return true;
 						}
 
@@ -1055,12 +1077,5 @@ class SolverPreProcessor {
 				throw new IllegalStateException("Unknown/new rule type " + larger.type());
 			}
 		}
-	}
-
-	private static LoadOption[] excluded(Set<LoadOption> largerSet, Set<LoadOption> smallerSet) {
-		Set<LoadOption> excluded = new HashSet<>();
-		excluded.addAll(largerSet);
-		excluded.removeAll(smallerSet);
-		return excluded.toArray(new LoadOption[0]);
 	}
 }
