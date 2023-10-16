@@ -48,6 +48,7 @@ import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.LibClassifier;
 import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
 import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
+import org.quiltmc.loader.impl.game.minecraft.patch.TinyFDPatch;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.util.Arguments;
@@ -92,7 +93,8 @@ public class MinecraftGameProvider implements GameProvider {
 
 	private final GameTransformer transformer = new GameTransformer(
 			new EntrypointPatch(this),
-			new BrandingPatch());
+			new BrandingPatch(),
+			new TinyFDPatch());
 
 	@Override
 	public String getGameId() {
