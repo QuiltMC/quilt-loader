@@ -15,33 +15,31 @@ package org.quiltmc.loader.impl.game.minecraft.patch;
  * limitations under the License.
  */
 
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.quiltmc.loader.impl.entrypoint.GamePatch;
+import org.quiltmc.loader.impl.entrypoint.GamePatchContext;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.util.ListIterator;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public final class BrandingPatch extends GamePatch {
 	@Override
-	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, GamePatchContext context) {
 		for (String brandClassName : new String[] {
 				"net.minecraft.client.ClientBrandRetriever",
 				"net.minecraft.server.MinecraftServer"
 		}) {
-			ClassNode brandClass = readClass(classSource.apply(brandClassName));
+			ClassNode brandClass = context.getClassNode(brandClassName);
 
 			if (brandClass != null) {
 				if (applyBrandingPatch(brandClass)) {
-					classEmitter.accept(brandClass);
+					context.addPatchedClass(brandClass);
 				}
 			}
 		}
