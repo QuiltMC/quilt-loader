@@ -1,0 +1,3 @@
+Features:
+
+- Added LanguageAdapter.getDefault(), to allow other LanguageAdapters to use it as their fallback.

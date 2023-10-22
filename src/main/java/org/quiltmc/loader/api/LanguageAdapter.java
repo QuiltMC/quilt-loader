@@ -17,6 +17,8 @@
 
 package org.quiltmc.loader.api;
 
+import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
+
 /**
  * Creates instances of objects from custom notations.
  *
@@ -95,6 +97,15 @@ package org.quiltmc.loader.api;
  * </ul>
  */
 public interface LanguageAdapter {
+
+	/** Returns the default language adapter. Most mods will have no use for this method - instead it is intended for
+	 * other {@link LanguageAdapter}s to fallback to the default behaviour.
+	 * 
+	 * @return The default language adapter. */
+	public static LanguageAdapter getDefault() {
+		return DefaultLanguageAdapter.INSTANCE;
+	}
+
 	/**
 	 * Creates an object of {@code type} from an arbitrary string declaration.
 	 *
