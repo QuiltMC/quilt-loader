@@ -39,7 +39,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.quiltmc.loader.impl.entrypoint.GamePatch;
-
+import org.quiltmc.loader.impl.entrypoint.GamePatchContext;
 import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -65,7 +65,7 @@ public class EntrypointPatch extends GamePatch {
 	}
 
 	@Override
-	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, GamePatchContext context) {
 		EnvType type = launcher.getEnvironmentType();
 		String entrypoint = launcher.getEntrypoint();
 		Version gameVersion = getGameVersion();
@@ -77,7 +77,8 @@ public class EntrypointPatch extends GamePatch {
 		String gameEntrypoint = null;
 		boolean serverHasFile = true;
 		boolean isApplet = entrypoint.contains("Applet");
-		ClassNode mainClass = readClass(classSource.apply(entrypoint));
+		ClassNode mainClass = context.getClassNode(entrypoint);
+		Function<String, ClassReader> classSource = context::getClassSourceReader;
 
 		if (mainClass == null) {
 			throw new RuntimeException("Could not load main class " + entrypoint + "!");
@@ -192,7 +193,7 @@ public class EntrypointPatch extends GamePatch {
 		if (gameEntrypoint.equals(entrypoint) || is20w22aServerOrHigher) {
 			gameClass = mainClass;
 		} else {
-			gameClass = readClass(classSource.apply(gameEntrypoint));
+			gameClass = context.getClassNode(gameEntrypoint);
 			if (gameClass == null) throw new RuntimeException("Could not load game class " + gameEntrypoint + "!");
 		}
 
@@ -520,9 +521,9 @@ public class EntrypointPatch extends GamePatch {
 		}
 
 		if (gameClass != mainClass) {
-			classEmitter.accept(gameClass);
+			context.addPatchedClass(gameClass);
 		} else {
-			classEmitter.accept(mainClass);
+			context.addPatchedClass(mainClass);
 		}
 
 		if (isApplet) {
