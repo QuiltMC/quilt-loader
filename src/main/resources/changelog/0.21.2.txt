@@ -1,3 +1,4 @@
 Features:
 
 - Added LanguageAdapter.getDefault(), to allow other LanguageAdapters to use it as their fallback.
+- Added intermediary version detection on "Unfixable Conflicts" error, which just displays the mappings version verses the game version.
