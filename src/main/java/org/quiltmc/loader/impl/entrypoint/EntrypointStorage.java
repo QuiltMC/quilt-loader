@@ -22,6 +22,7 @@ import org.quiltmc.loader.api.LanguageAdapterException;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -146,14 +147,15 @@ public final class EntrypointStorage {
 		getOrCreateEntries("server").add(oe);
 	}
 
-	public void add(ModContainerExt modContainer, String key, AdapterLoadableClassEntry metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
-		if (!adapterMap.containsKey(metadata.getAdapter())) {
-			throw new Exception("Could not find adapter '" + metadata.getAdapter() + "' (mod " + modContainer.metadata().id() + "!)");
+	public void add(ModContainerExt modContainer, String key, ModEntrypoint metadata, Map<String, LanguageAdapter> adapterMap) throws Exception {
+		AdapterLoadableClassEntry data = (AdapterLoadableClassEntry) metadata;
+		if (!adapterMap.containsKey(data.getAdapter())) {
+			throw new Exception("Could not find adapter '" + data.getAdapter() + "' (mod " + modContainer.metadata().id() + "!)");
 		}
 
-		Log.debug(LogCategory.ENTRYPOINT, "Registering new-style initializer %s for mod %s (key %s)", metadata.getValue(), modContainer.metadata().id(), key);
+		Log.debug(LogCategory.ENTRYPOINT, "Registering new-style initializer %s for mod %s (key %s)", data.getValue(), modContainer.metadata().id(), key);
 		getOrCreateEntries(key).add(new NewEntry(
-				modContainer, adapterMap.get(metadata.getAdapter()), metadata.getValue()
+				modContainer, adapterMap.get(data.getAdapter()), data.getValue()
 				));
 	}
 

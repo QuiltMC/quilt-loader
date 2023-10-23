@@ -142,7 +142,7 @@ public class ProvidedModMetadata implements ModMetadataExt {
 	}
 
 	@Override
-	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
+	public Map<String, Collection<ModEntrypoint>> getEntrypoints() {
 		return metadata.getEntrypoints();
 	}
 

@@ -28,9 +28,11 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModLicense;
+import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.impl.fabric.metadata.CustomValueImpl;
 import org.quiltmc.loader.impl.fabric.metadata.MapBackedContactInformation;
 import org.quiltmc.loader.impl.fabric.metadata.SimplePerson;
@@ -340,20 +342,21 @@ public class GeneralExt2FabricMetadata implements FabricLoaderModMetadata {
 	@Override
 	public List<EntrypointMetadata> getEntrypoints(String type) {
 		List<EntrypointMetadata> list = new ArrayList<>();
-		Collection<AdapterLoadableClassEntry> quiltList = meta.getEntrypoints().get(type);
+		Collection<ModEntrypoint> quiltList = meta.getEntrypoints().get(type);
 		if (quiltList == null) {
 			return list;
 		}
-		for (AdapterLoadableClassEntry entrypoint : quiltList) {
+		for (ModEntrypoint entrypoint : quiltList) {
+			AdapterLoadableClassEntry data = (AdapterLoadableClassEntry) entrypoint;
 			list.add(new EntrypointMetadata() {
 				@Override
 				public String getValue() {
-					return entrypoint.getValue();
+					return data.getValue();
 				}
 
 				@Override
 				public String getAdapter() {
-					return entrypoint.getAdapter();
+					return data.getAdapter();
 				}
 			});
 		}

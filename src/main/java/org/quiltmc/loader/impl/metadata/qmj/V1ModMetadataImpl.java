@@ -63,8 +63,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	/* Internal fields */
 	private final ModLoadType loadType;
 	private final Collection<ProvidedMod> provides;
-	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
-//	private final Collection<AdapterLoadableClassEntry> plugins;
+	private final Map<String, Collection<ModEntrypoint>> entrypoints;
 	private final Collection<String> jars;
 	private final Map<String, String> languageAdapters;
 	private final Collection<String> repositories;
@@ -127,7 +126,6 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		this.loadType = builder.loadType;
 		this.provides = Collections.unmodifiableCollection(builder.provides);
 		this.entrypoints = Collections.unmodifiableMap(builder.entrypoints);
-//		this.plugins = Collections.unmodifiableCollection(builder.plugins);
 		this.jars = Collections.unmodifiableCollection(builder.jars);
 		this.languageAdapters = Collections.unmodifiableMap(builder.languageAdapters);
 		this.repositories = Collections.unmodifiableCollection(builder.repositories);
@@ -288,7 +286,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Nullable
 	@Override
-	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
+	public Map<String, Collection<ModEntrypoint>> getEntrypoints() {
 		return this.entrypoints;
 	}
 
