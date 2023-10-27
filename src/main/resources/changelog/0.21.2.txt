@@ -2,10 +2,12 @@ Features:
 
 - Added LanguageAdapter.getDefault(), to allow other LanguageAdapters to use it as their fallback.
 - Added intermediary version detection on "Unfixable Conflicts" error, which just displays the mappings version verses the game version.
+- Added legacy fabric loader class DependencyException, which broke a 1.17 version of Modern Industrialisation.
 - [#369] Added some minecraft libraries to the transform cache - this allows mixin to run on them again.
 
 Bug FIxes:
 
+- Fixed net.fabricmc.loader.util.version.SemanticVersionImpl not being used for fabric versions, which broke a 1.17 version of SmootherBedrock.
 - [#377] Added overlap detection to GamePatch.process, which fixes a 1.2.5 server not launching with quilt loader (#376).
 - [#375] Fix "guarenteed" typo instead of "guaranteed" (ix0rai)
 - [#371] Fix access widener remapping using the constant "named" instead of fetching the target namespace (heipiao233)

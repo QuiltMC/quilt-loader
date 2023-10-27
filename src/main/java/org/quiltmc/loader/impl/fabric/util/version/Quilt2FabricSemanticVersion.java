@@ -40,7 +40,7 @@ public class Quilt2FabricSemanticVersion extends Quilt2FabricVersion implements 
 		if (quilt == null) {
 			return null;
 		} else {
-			return new Quilt2FabricSemanticVersion(quilt);
+			return new SemanticVersionImpl(quilt);
 		}
 	}
 
