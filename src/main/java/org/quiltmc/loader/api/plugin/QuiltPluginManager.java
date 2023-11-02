@@ -62,8 +62,24 @@ public interface QuiltPluginManager {
 	 * <li>{@link NonZipException} if {@link FileSystems#newFileSystem(Path, ClassLoader)} throws a
 	 * {@link ProviderNotFoundException}.</li>
 	 * </ul>
-	 */
+	 * 
+	 * @see #loadZipNow(Path) */
 	QuiltPluginTask<Path> loadZip(Path zip);
+
+	/** Loads the specified zip file and returns a path to the root of it's contents.
+	 * <p>
+	 * How the given zip is loaded depends on loaders config settings - in particular the zip could be extracted to a
+	 * temporary folder on the same filesystem as the original zip.
+	 * <p>
+	 * WARNING: if this method allocates a new {@link FileSystem} then that will be closed, <em>unless</em> at least one
+	 * of the {@link QuiltLoaderPlugin}s {@link QuiltPluginContext#lockZip(Path) locks} it, or if a chosen mod is loaded
+	 * from it.
+	 * 
+	 * @throws IOException if something went wrong while loading the file.
+	 * @throws NonZipException if {@link FileSystems#newFileSystem(Path, ClassLoader)} throws a
+	 *             {@link ProviderNotFoundException}.
+	 * @see #loadZip(Path) */
+	Path loadZipNow(Path zip) throws IOException, NonZipException;
 
 	/** Creates a new in-memory read-write file system. This can be used for mods that aren't loaded from zips.
 	 *
