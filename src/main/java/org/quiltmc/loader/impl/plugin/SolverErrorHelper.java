@@ -156,7 +156,7 @@ class SolverErrorHelper {
 
 		OptionLink(LoadOption option) {
 			this.option = option;
-			if (RuleContext.isNegated(option)) {
+			if (LoadOption.isNegated(option)) {
 				throw new IllegalArgumentException("Call 'OptionLinkBase.get' instead of this!!");
 			}
 		}

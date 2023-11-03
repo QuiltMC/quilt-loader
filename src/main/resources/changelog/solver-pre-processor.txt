@@ -1,0 +1,12 @@
+Features:
+
+* Added a pre-processor step to mod solving.
+    * This greatly reduces the time taken for Sat4j to optimise the final mod set (pick the newest possible versions of every mod)
+        * Previously this was capped at 5 seconds.
+    * Added a warning when picking between two mods when we don't have any reason to pick one over the other.
+        * This can happen when two mods provide each other, or two mods provide the same version of a third mod.
+    * Added a system property to disable this "loader.mod_solving.disable_pre_processor"
+    * Added a system property to explain what this pre-processor is struggling with (partially simplified mod sets)
+        * "loader.mod_solving.print_results" prints unsolved sub-problems, and the final chosen options.
+        * This is an alternative to the very verbose "loader.debug.mod_solving" property.
+    * Made the log line "Aborted mod solving optimisation due to timeout" always print when it happens.
