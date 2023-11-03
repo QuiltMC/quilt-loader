@@ -414,7 +414,8 @@ public final class QuiltLoaderImpl {
 					List<Path> paths = new ArrayList<>();
 
 					long start = System.nanoTime();
-					paths.add(new QuiltZipFileSystem("transformed-mod-" + modid, transformedModBundle.resolve(modid)).getRoot());
+					String fsName = modid + "-" + modOption.version();
+					paths.add(new QuiltZipFileSystem(fsName, transformedModBundle.resolve(modid)).getRoot());
 					if (modOption.couldResourcesChange()) {
 						paths.add(modOption.resourceRoot());
 					}
@@ -429,7 +430,7 @@ public final class QuiltLoaderImpl {
 					 if (paths.size() == 1) {
 						 resourceRoot = paths.get(0);
 					 } else {
-						 resourceRoot = new QuiltJoinedFileSystem("final-mod-" + modid, paths).getRoot();
+						 resourceRoot = new QuiltJoinedFileSystem("_" + fsName, paths).getRoot();
 					 }
 				}
 			}

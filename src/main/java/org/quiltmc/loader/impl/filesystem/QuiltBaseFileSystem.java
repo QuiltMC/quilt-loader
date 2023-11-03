@@ -27,6 +27,7 @@ import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
@@ -36,11 +37,17 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
 	extends FileSystem {
+
 	static {
 		DelegatingUrlStreamHandlerFactory.load();
 	}
 
 	private static final Map<String, Integer> uniqueNames = new HashMap<>();
+	private static final AtomicLong SYNC_ASSIGNMENT = new AtomicLong();
+
+	/** This stores the "synchronization order" for "move" type operations where we need to synchronize on multiple
+	 * filesystems at once. */
+	final long syncOrder = SYNC_ASSIGNMENT.getAndIncrement();
 
 	final Class<FS> filesystemClass;
 	final Class<P> pathClass;

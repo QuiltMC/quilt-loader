@@ -10,4 +10,9 @@ Features:
         - "loader.mod_solving.print_results" prints unsolved sub-problems, and the final chosen options.
         - This is an alternative to the very verbose "loader.debug.mod_solving" property.
     - Made the log line "Aborted mod solving optimisation due to timeout" always print when it happens.
+- Removed the "transformed-mod-" prefix from virtual mod filesystem names, as it confused a lot of people.
+- Added the mod version after the mod id to filesystem names.
 
+Bug Fixes:
+
+- [#382] Fixed the virtual file systems not being thread-safe

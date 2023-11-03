@@ -170,19 +170,24 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 		}
 
 		ensureWriteable(path);
-		QuiltUnifiedEntry current = path.fs.getEntry(path);
 		QuiltUnifiedFile targetFile = null;
 
 		if (create) {
-			if (current != null) {
-				delete(path);
-			}
+			synchronized (path.fs) {
+				QuiltUnifiedEntry current = path.fs.getEntry(path);
+				if (current != null) {
+					delete(path);
+				}
 
-			path.fs.addEntryRequiringParent(targetFile = new QuiltMemoryFile.ReadWrite(path));
-		} else if (current instanceof QuiltUnifiedFile) {
-			targetFile = (QuiltUnifiedFile) current;
+				path.fs.addEntryRequiringParent(targetFile = new QuiltMemoryFile.ReadWrite(path));
+			}
 		} else {
-			throw new IOException("Cannot open an OutputStream on " + current);
+			QuiltUnifiedEntry current = path.fs.getEntry(path);
+			if (current instanceof QuiltUnifiedFile) {
+				targetFile = (QuiltUnifiedFile) current;
+			} else {
+				throw new IOException("Cannot open an OutputStream on " + current);
+			}
 		}
 
 		OutputStream stream = targetFile.createOutputStream(append, truncate);
@@ -243,13 +248,15 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 		throws IOException {
 
 		P path = toAbsolutePath(pathIn);
-		QuiltUnifiedEntry entry = path.fs.getEntry(path);
+		QuiltUnifiedEntry entry;
 
-		if (!path.getFileSystem().isReadOnly()) {
+		if (path.getFileSystem().isReadOnly()) {
+			entry = path.fs.getEntry(path);
+		} else {
 			boolean create = false;
 			for (OpenOption o : options) {
 				if (o == StandardOpenOption.CREATE_NEW) {
-					if (entry != null) {
+					if (path.fs.exists(path)) {
 						throw new IOException("File already exists: " + path);
 					}
 					create = true;
@@ -258,11 +265,18 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 				}
 			}
 
-			if (create && entry == null) {
-				if (!path.isAbsolute()) {
-					throw new IOException("Cannot work above the root!");
+			if (create) {
+				synchronized (path.fs) {
+					entry = path.fs.getEntry(path);
+					if (entry == null) {
+						if (!path.isAbsolute()) {
+							throw new IOException("Cannot work above the root!");
+						}
+						path.fs.addEntryRequiringParent(entry = new QuiltMemoryFile.ReadWrite(path));
+					}
 				}
-				path.fs.addEntryRequiringParent(entry = new QuiltMemoryFile.ReadWrite(path));
+			} else {
+				entry = path.fs.getEntry(path);
 			}
 		}
 
@@ -359,11 +373,13 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 	@Override
 	public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
 		P path = toAbsolutePath(dir);
-		if (path.fs.exists(path)) {
-			throw new FileAlreadyExistsException(path.toString());
+		synchronized (path.fs) {
+			if (path.fs.exists(path)) {
+				throw new FileAlreadyExistsException(path.toString());
+			}
+			ensureWriteable(path);
+			path.fs.addEntryRequiringParent(new QuiltUnifiedFolderWriteable(path));
 		}
-		ensureWriteable(path);
-		path.fs.addEntryRequiringParent(new QuiltUnifiedFolderWriteable(path));
 	}
 
 	@Override
@@ -391,7 +407,9 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 			return;
 		}
 
-		copy0(src, dst, false, options);
+		synchronized (dst.fs) {
+			copy0(src, dst, false, options);
+		}
 	}
 
 	@Override
@@ -403,7 +421,18 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 			return;
 		}
 
-		copy0(src, dst, true, options);
+		FS first = src.fs;
+		FS second = dst.fs;
+		if (first.syncOrder > second.syncOrder) {
+			first = dst.fs;
+			second = src.fs;
+		}
+
+		synchronized (first) {
+			synchronized (second) {
+				copy0(src, dst, true, options);
+			}
+		}
 	}
 
 	private void copy0(P src, P dst, boolean isMove, CopyOption[] options) throws IOException {
