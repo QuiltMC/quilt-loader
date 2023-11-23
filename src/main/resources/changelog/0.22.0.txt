@@ -16,3 +16,4 @@ Features:
 Bug Fixes:
 
 - [#382] Fixed the virtual file systems not being thread-safe
+- Fixed QuiltClassPath not being thread-safe
