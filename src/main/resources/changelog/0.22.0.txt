@@ -16,4 +16,5 @@ Features:
 Bug Fixes:
 
 - [#382] Fixed the virtual file systems not being thread-safe
-- Fixed QuiltClassPath not being thread-safe
+- Fixed QuiltClassPath not being thread-safe. This sometimes caused a number of odd issues
+    when mods tried to access resources during early loading.
