@@ -20,7 +20,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
 import org.quiltmc.loader.api.Version;
@@ -70,7 +72,21 @@ public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugi
 
 	// Runtime
 
-	Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints();
+	Map<String, Collection<ModEntrypoint>> getEntrypoints();
 
 	Map<String, String> languageAdapters();
+
+	/** Entrypoint holder. Since plugins aren't expected to read from this only creation is supported. */
+	@ApiStatus.NonExtendable
+	public interface ModEntrypoint {
+
+		/** @return A new {@link ModEntrypoint} using the default adapter and the given value. */
+		public static ModEntrypoint create(String value) {
+			return new AdapterLoadableClassEntry(value);
+		}
+
+		public static ModEntrypoint create(String adapter, String value) {
+			return new AdapterLoadableClassEntry(adapter, value);
+		}
+	}
 }

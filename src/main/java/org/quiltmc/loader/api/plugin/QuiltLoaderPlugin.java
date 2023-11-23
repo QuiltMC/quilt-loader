@@ -46,8 +46,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * will be opened, and checked for a "quilt.mod.json" file. If one is found, then it is loaded as a quilt mod (and
  * possibly as a new plugin - which will be loaded instantly, rather than waiting until the next cycle).</li>
  * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to
- * {@link #scanZip(Path, boolean, PluginGuiTreeNode)}</li>
- * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, boolean, PluginGuiTreeNode)}</li>
+ * {@link #scanZip(Path, ModLocation, PluginGuiTreeNode)}</li>
+ * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)}</li>
  * </ol>
  * </li>
  * <li>{@link #beforeSolve()} is called.</li>

@@ -65,6 +65,7 @@ import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -1130,8 +1131,8 @@ public final class QuiltLoaderImpl {
 					}
 				}
 
-				for (Map.Entry<String, Collection<AdapterLoadableClassEntry>> entry : mod.metadata().getEntrypoints().entrySet()) {
-					for (AdapterLoadableClassEntry e : entry.getValue()) {
+				for (Map.Entry<String, Collection<ModEntrypoint>> entry : mod.metadata().getEntrypoints().entrySet()) {
+					for (ModEntrypoint e : entry.getValue()) {
 						entrypointStorage.add(mod, entry.getKey(), e, adapterMap);
 					}
 				}

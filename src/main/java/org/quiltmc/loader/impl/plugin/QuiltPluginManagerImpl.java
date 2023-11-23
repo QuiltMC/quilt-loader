@@ -239,15 +239,22 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public QuiltPluginTask<Path> loadZip(Path zip) {
 		if (config.singleThreadedLoading) {
 			try {
-				return QuiltPluginTask.createFinished(loadZip0(zip));
+				return QuiltPluginTask.createFinished(loadZipNow(zip));
 			} catch (IOException | NonZipException e) {
 				return QuiltPluginTask.createFailed(e);
 			}
 		}
-		return submit(null, () -> loadZip0(zip));
+		return submit(null, () -> loadZipNow(zip));
 	}
 
+	/** Kept for backwards compatibility with the first versions of RGML-Quilt, as it invoked this using reflection. */
+	@Deprecated
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
+		return loadZipNow(zip);
+	}
+
+	@Override
+	public Path loadZipNow(Path zip) throws IOException, NonZipException {
 		String name = zip.getFileName().toString();
 		try {
 			QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();

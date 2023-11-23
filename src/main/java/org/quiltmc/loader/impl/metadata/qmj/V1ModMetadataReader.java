@@ -48,6 +48,7 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -91,7 +92,6 @@ public final class V1ModMetadataReader {
 		static final String GROUP = add("group");
 		static final String VERSION = add("version");
 		static final String ENTRYPOINTS = add("entrypoints");
-		static final String PLUGINS = add("plugins");
 		static final String JARS = add("jars");
 		static final String LANGUAGE_ADAPTERS = add("language_adapters");
 		static final String DEPENDS = add("depends");
@@ -179,20 +179,7 @@ public final class V1ModMetadataReader {
 					throw parseException(entrypointsValue, "entrypoints must be an object");
 				}
 
-				readAdapterLoadableClassEntries((JsonLoaderValue.ObjectImpl) entrypointsValue, QLKeys.ENTRYPOINTS, builder.entrypoints);
-			}
-
-			@Nullable
-			JsonLoaderValue pluginsValue = quiltLoader.get(QLKeys.PLUGINS);
-
-			if (pluginsValue != null) {
-				if (pluginsValue.type() != LoaderValue.LType.ARRAY) {
-					throw parseException(pluginsValue, "plugins must be an array");
-				}
-
-				for (LoaderValue entry : pluginsValue.asArray()) {
-					builder.plugins.add(readAdapterLoadableClassEntry((JsonLoaderValue) entry, QLKeys.PLUGINS));
-				}
+				readEntrypoints((JsonLoaderValue.ObjectImpl) entrypointsValue, QLKeys.ENTRYPOINTS, builder.entrypoints);
 			}
 
 			@Nullable
@@ -636,29 +623,29 @@ public final class V1ModMetadataReader {
 		}
 	}
 
-	private static void readAdapterLoadableClassEntries(JsonLoaderValue.ObjectImpl object, String inside, Map<String, List<AdapterLoadableClassEntry>> destination) {
+	private static void readEntrypoints(JsonLoaderValue.ObjectImpl object, String inside, Map<String, List<ModEntrypoint>> destination) {
 		for (Map.Entry<String, LoaderValue> entry : object.entrySet()) {
 			String entrypointKey = entry.getKey();
 			LoaderValue value = entry.getValue();
 
 			// Add the entry if not already present
 			destination.putIfAbsent(entrypointKey, new ArrayList<>());
-			List<AdapterLoadableClassEntry> entries = destination.get(entrypointKey);
+			List<ModEntrypoint> entries = destination.get(entrypointKey);
 
 			switch (value.type()) {
 			case ARRAY:
 				for (LoaderValue entrypoint : value.asArray()) {
-					entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) entrypoint, inside));
+					entries.add(readEntrypoint((JsonLoaderValue) entrypoint, inside));
 				}
 
 				break;
 			default:
-				entries.add(readAdapterLoadableClassEntry((JsonLoaderValue) value, inside));
+				entries.add(readEntrypoint((JsonLoaderValue) value, inside));
 			}
 		}
 	}
 
-	private static AdapterLoadableClassEntry readAdapterLoadableClassEntry(JsonLoaderValue entry, String inside) {
+	private static ModEntrypoint readEntrypoint(JsonLoaderValue entry, String inside) {
 		switch (entry.type()) {
 		case OBJECT:
 			LoaderValue.LObject entryObject = entry.asObject();
@@ -681,10 +668,10 @@ public final class V1ModMetadataReader {
 				throw parseException((JsonLoaderValue) value, String.format("adapter field inside \"%s\" must be a string", inside));
 			}
 
-			return new AdapterLoadableClassEntry(adapter.asString(), value.asString());
+			return ModEntrypoint.create(adapter.asString(), value.asString());
 		case STRING:
 			// Assume `default` as language adapter
-			return new AdapterLoadableClassEntry("default", entry.asString());
+			return ModEntrypoint.create("default", entry.asString());
 		default:
 			throw parseException(entry, String.format("value inside \"%s\" must be a string or object", inside));
 		}

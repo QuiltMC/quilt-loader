@@ -28,6 +28,7 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -55,8 +56,7 @@ public class V1ModMetadataBuilder {
 	/* Internal fields */
 	public ModLoadType loadType = ModLoadType.IF_REQUIRED;
 	public final List<ProvidedMod> provides = new ArrayList<>();
-	public final Map<String, List<AdapterLoadableClassEntry>> entrypoints = new LinkedHashMap<>();
-	public final List<AdapterLoadableClassEntry> plugins = new ArrayList<>();
+	public final Map<String, List<ModEntrypoint>> entrypoints = new LinkedHashMap<>();
 	public final List<String> jars = new ArrayList<>();
 	public final Map<String, String> languageAdapters = new LinkedHashMap<>();
 	public final List<String> repositories = new ArrayList<>();

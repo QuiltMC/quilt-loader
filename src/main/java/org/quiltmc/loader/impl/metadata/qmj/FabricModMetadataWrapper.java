@@ -58,7 +58,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final Collection<ModContributor> contributors;
 	private final List<String> jars;
 	private final Map<String, LoaderValue> customValues;
-	private final Map<String, Collection<AdapterLoadableClassEntry>> entrypoints;
+	private final Map<String, Collection<ModEntrypoint>> entrypoints;
 	private final List<ProvidedMod> provides;
 
 	public FabricModMetadataWrapper(FabricLoaderModMetadata fabricMeta) {
@@ -79,11 +79,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		fabricMeta.getCustomValues().forEach((key, value) -> customValues.put(key, convertCustomValue(value)));
 		this.customValues = Collections.unmodifiableMap(customValues);
 
-		Map<String, Collection<AdapterLoadableClassEntry>> e = new HashMap<>();
+		Map<String, Collection<ModEntrypoint>> e = new HashMap<>();
 		for (String key : fabricMeta.getEntrypointKeys()) {
-			Collection<AdapterLoadableClassEntry> c = new ArrayList<>();
+			Collection<ModEntrypoint> c = new ArrayList<>();
 			for (EntrypointMetadata entrypoint : fabricMeta.getEntrypoints(key)) {
-				c.add(new AdapterLoadableClassEntry(entrypoint.getAdapter(), entrypoint.getValue()));
+				c.add(ModEntrypoint.create(entrypoint.getAdapter(), entrypoint.getValue()));
 			}
 			e.put(key, Collections.unmodifiableCollection(c));
 		}
@@ -283,7 +283,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Map<String, Collection<AdapterLoadableClassEntry>> getEntrypoints() {
+	public Map<String, Collection<ModEntrypoint>> getEntrypoints() {
 		return entrypoints;
 	}
 
