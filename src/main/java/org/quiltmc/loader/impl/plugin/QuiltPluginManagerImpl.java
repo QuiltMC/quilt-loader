@@ -2219,43 +2219,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return list;
 	}
 
-	@Deprecated
-	private void addModOption(Path file, Map<ModLoadOption, BasePluginContext> map, PluginGuiTreeNode guiNode) {
-
-//		TODO: Re-add support for unknown files, by looping through all mod paths that don't have any load options at the very end of run()
-
-		if (map == null || map.isEmpty()) {
-
-			if (true) {
-				// Disable unhandled mod error until mods can actually declare loader plugins
-				Log.warn(LogCategory.DISCOVERY, "Unknown file in mods folder: " + describePath(file));
-				guiNode.addChild(QuiltLoaderText.translate("warn.unhandled_mod")).setDirectLevel(WarningLevel.WARN);
-				return;
-			}
-
-			Optional<Path> containingFile = getRealContainingFile(file);
-			QuiltLoaderText title = QuiltLoaderText.translate("error.unhandled_mod_file.title", describePath(containingFile.isPresent() ? containingFile.get() : file));
-			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
-			error.appendDescription(QuiltLoaderText.translate("error.unhandled_mod_file.desc"));
-			containingFile.ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", real.getFileName()), real));
-			error.appendReportText("No plugin could load " + describePath(file));
-			guiNode.addChild(QuiltLoaderText.translate("error.unhandled_mod_file"))
-				.setError(null, error);
-
-		} else if (map.size() == 1) {
-			ModLoadOption option = map.keySet().iterator().next();
-			BasePluginContext plugin = map.values().iterator().next();
-			addSingleModOption0(option, plugin, true, guiNode);
-		} else {
-			guiNode.addChild(QuiltLoaderText.translate("gui.warn.overloaded"));// TODO:translate
-			// TODO: Report the mod as being "overloaded"?
-			// or just add all, and let the solver figure out which is which.
-			for (Map.Entry<ModLoadOption, BasePluginContext> entry : map.entrySet()) {
-				addSingleModOption0(entry.getKey(), entry.getValue(), false, guiNode);
-			}
-		}
-	}
-
 	void addSingleModOption(ModLoadOption mod, BasePluginContext provider, boolean only, PluginGuiTreeNode guiNode) {
 		Path from = mod.from();
 		addSingleModOption0(mod, provider, only, guiNode);
