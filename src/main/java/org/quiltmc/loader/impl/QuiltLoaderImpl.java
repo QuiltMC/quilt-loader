@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.CodeSource;
 import java.security.ProtectionDomain;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -595,6 +596,8 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
+			handleUnknownFiles(result);
+
 			temporarySourcePaths = new HashMap<>();
 			for (ModLoadOption mod : result.directMods().values()) {
 				temporarySourcePaths.put(mod.from(), plugins.convertToSourcePaths(mod.from()));
@@ -737,6 +740,48 @@ public final class QuiltLoaderImpl {
 			throw new Error("System.exit(1) Failed!");
 		} catch (Exception e) {
 			throw new Error(e);
+		}
+	}
+
+	private void handleUnknownFiles(ModSolveResultImpl result) {
+
+		// TODO: Display this in an error message!
+		// (As we don't want this to be "optional")
+
+		Path absoluteGameDir = gameDir != null ? gameDir.toAbsolutePath().normalize() : null;
+		Path absoluteModsDir = modsDir != null ? modsDir.toAbsolutePath().normalize() : null;
+
+		AsciiTableGenerator table = new AsciiTableGenerator();
+		AsciiTableColumn sizeColumn = table.addColumn("Size (Bytes)", true);
+		AsciiTableColumn reasonColumn = table.addColumn("Type", false);
+		AsciiTableColumn pathColumn = table.addColumn("Path", false);
+		int count = 0;
+		NumberFormat format = NumberFormat.getIntegerInstance();
+		for (Map.Entry<Path, String> entry : result.getUnknownFiles().entrySet()) {
+			AsciiTableRow row = table.addRow();
+			Path path = entry.getKey();
+			if (Files.isRegularFile(path)) {
+				try {
+					long byteSize = Files.size(path);
+					row.put(sizeColumn, format.format(byteSize));
+				} catch (IOException e) {
+					Log.warn(LogCategory.DISCOVERY, "Failed to read the size of " + path, e);
+					row.put(sizeColumn, "<exception>");
+				}
+			}
+			row.put(reasonColumn, entry.getValue());
+			row.put(pathColumn, prefixPath(absoluteGameDir, absoluteModsDir, path));
+			count++;
+		}
+		for (Map.Entry<String, String> entry : result.getIrregularUnknownFiles().entrySet()) {
+			AsciiTableRow row = table.addRow();
+			row.put(reasonColumn, entry.getValue());
+			row.put(pathColumn, entry.getKey());
+			count++;
+		}
+
+		if (!table.isEmpty()) {
+			Log.info(LogCategory.DISCOVERY, count + " unknown / unsupported mod files found:\n" + table);
 		}
 	}
 

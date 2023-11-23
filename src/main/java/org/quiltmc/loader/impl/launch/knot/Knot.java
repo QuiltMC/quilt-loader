@@ -282,7 +282,7 @@ public final class Knot extends QuiltLauncherBase {
 
 	@Override
 	public void addToClassPath(Path path, ModContainer mod, URL origin, String... allowedPrefixes) {
-		Log.debug(LogCategory.KNOT, "Adding " + path + " to classpath.");
+		Log.debug(LogCategory.KNOT, "Adding " + path.getFileSystem() + " " + path + " to classpath.");
 
 		try {
 			URL url = UrlUtil.asUrl(path);

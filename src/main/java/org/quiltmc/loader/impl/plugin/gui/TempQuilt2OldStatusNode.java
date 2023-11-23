@@ -233,7 +233,7 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
 	@Override
 	public TempQuilt2OldStatusNode subIcon(QuiltLoaderIcon icon) {
-		this.subIcon =  PluginIconImpl.fromApi(icon);
+		this.subIcon = PluginIconImpl.fromApi(icon);
 		return this;
 	}
 

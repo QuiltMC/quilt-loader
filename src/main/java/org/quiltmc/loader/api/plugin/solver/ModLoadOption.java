@@ -40,6 +40,24 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class ModLoadOption extends LoadOption {
 
+	/** The sub-type of this mod. Used in
+	 * {@link QuiltLoaderPlugin#isHigherPriorityThan(Path, java.util.List, String, java.util.List)} to differentiate
+	 * types loaded by the same plugin.
+	 * <p>
+	 * Mods loaded by quilt loader itself use the empty string, as you can use the plugin ID to differentiate between
+	 * quilt and fabric mods. */
+	public final String subType;
+
+	/** Initialises {@link #subType} to the empty string. */
+	public ModLoadOption() {
+		this.subType = "";
+	}
+
+	/** @param subType The {@link #subType} to set. */
+	public ModLoadOption(String subType) {
+		this.subType = subType;
+	}
+
 	/** @return The plugin context for the plugin that loaded this mod. */
 	public abstract QuiltPluginContext loader();
 
