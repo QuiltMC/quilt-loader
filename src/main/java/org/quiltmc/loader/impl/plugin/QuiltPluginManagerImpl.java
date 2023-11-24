@@ -219,8 +219,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		customPathNames.put(gameDir, "<game>");
 		customPathNames.put(modsDir, "<mods>");
 
-		mainThreadTasks.add(new MainThreadTask.ScanModFolderTask(modsDir, QUILT_LOADER));
-
 		theQuiltPlugin = new StandardQuiltPlugin();
 		theFabricPlugin = new StandardFabricPlugin();
 	}
@@ -1225,6 +1223,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			scanClasspath();
 		}
 
+		theQuiltPluginContext.addFolderToScan(modsDir);
+
 		scanAdditionalMods(System.getProperty(SystemProperties.ADD_MODS), "system property");
 		scanAdditionalMods(QuiltLoaderImpl.InitHelper.get().getAdditionalModsArgument(), "argument");
 
@@ -1695,6 +1695,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			pluginsById.put(metadata.id(), pluginCtx);
 			for (String pkg : pluginCtx.classLoader.loadablePackages) {
 				pluginsByPackage.put(pkg, pluginCtx.classLoader);
+			}
+
+			for (Path folder : modFolders.keySet().toArray(new Path[0])) {
+				pluginCtx.plugin.onModFolderAdded(folder);
 			}
 
 			for (PathLoadState loadState : modPaths.values()) {

@@ -224,7 +224,6 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 		Path parent = context().manager().getParent(root);
 
 		if (!parent.getFileName().toString().endsWith(".jar")) {
-			System.out.println("Found file " + parent);
 			return null;
 		}
 
@@ -234,13 +233,6 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	@Override
 	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
 		return scan0(folder, QuiltLoaderGui.iconFolder(), location, false, guiNode);
-	}
-
-	@Override
-	public ModLoadOption[] scanUnknownFile(Path file, ModLocation location, PluginGuiTreeNode guiNode)
-		throws IOException {
-		System.out.println("Found file " + file);
-		return null;
 	}
 
 	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip,
