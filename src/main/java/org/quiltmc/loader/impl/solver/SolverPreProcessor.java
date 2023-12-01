@@ -21,11 +21,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Stream;
@@ -33,7 +35,7 @@ import java.util.stream.Stream;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.NegatedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
-import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.solver.RuleComputeResult.DeclaredConstants;
 import org.quiltmc.loader.impl.solver.RuleSet.ProcessedRuleSet;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -49,11 +51,28 @@ class SolverPreProcessor {
 
 	/** @return The processed {@link RuleSet} if we were successful.
 	 * @throws ContradictionException if there is a contradiction in the input rules. */
-	static ProcessedRuleSet preProcess(RuleSet rules) throws ContradictionException {
-		return new SolverPreProcessor(rules).process();
+	static ProcessedRuleSet preProcess(RuleSet rules) throws ModSolvingError {
+		try {
+			try {
+				return new SolverPreProcessor(rules).process();
+			} catch (ContradictionException e) {
+				throw new PreProcessException(Collections.singletonList(rules));
+			}
+		} catch (PreProcessException e) {
+			StringBuilder sb = new StringBuilder("Failed to pre-process a rule set!\n");
+			sb.append("\nSub Problems (Inner to Outer):");
+			List<RuleSet> list = new ArrayList<>(e.problems);
+			list.add(rules);
+			for (RuleSet problem : list) {
+				appendRuleSet(problem, rules, line -> sb.append("\n").append(line));
+			}
+			throw new ModSolvingError(sb.toString());
+		}
 	}
 
 	// Internals
+
+	private final RuleSet inputRuleSet;
 
 	private final Map<LoadOption, Boolean> constants;
 	private final Map<LoadOption, LoadOption> aliases;
@@ -77,6 +96,7 @@ class SolverPreProcessor {
 	private final Map<Set<LoadOption>, Set<RuleDefinition>> optionSet2rules = new HashMap<>();
 
 	private SolverPreProcessor(RuleSet rules) {
+		this.inputRuleSet = rules;
 		this.constants = new HashMap<>(rules.constants);
 		this.aliases = new HashMap<>(rules.aliases);
 		this.options = new HashMap<>(rules.options);
@@ -87,6 +107,12 @@ class SolverPreProcessor {
 
 	private SolverPreProcessor(SolverPreProcessor parent, Map<LoadOption, Integer> optionSubMap, Set<
 		RuleDefinition> ruleSubSet) {
+
+		this.inputRuleSet = new ProcessedRuleSet(
+			new HashMap<>(parent.constants), new HashMap<>(parent.aliases),
+			new HashMap<>(optionSubMap), new ArrayList<>(ruleSubSet)
+		);
+
 		this.constants = parent.constants;
 		this.aliases = parent.aliases;
 		this.options = optionSubMap;
@@ -140,6 +166,114 @@ class SolverPreProcessor {
 		}
 	}
 
+	private static void printRuleSet(RuleSet ruleSet) {
+		appendRuleSet(ruleSet, ruleSet, str -> Log.info(Sat4jWrapper.CATEGORY, str));
+	}
+
+	static void appendRuleSet(RuleSet ruleSet, RuleSet optionsSet, Consumer<String> dst) {
+		dst.accept("== Problem Start ==");
+		// Log rule & options
+		// but as letters and array indices
+		Map<LoadOption, String> options = new HashMap<>();
+		Map<LoadOption, String> optionLine = new LinkedHashMap<>();
+		Set<LoadOption> referenced = new HashSet<>();
+		int index = 0;
+		if (optionsSet.options.size() < 26) {
+			index = 0;
+		} else if (optionsSet.options.size() < 26 * 26) {
+			index = 26;
+		} else if (optionsSet.options.size() < 26 * 26 * 26) {
+			index = 26 * 26;
+		} else {
+			index = 26 * 26 * 26;
+		}
+		for (LoadOption option : optionsSet.options.keySet().stream().sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
+			String text = Integer.toString(index, 26).toUpperCase(Locale.ROOT);
+			StringBuilder text2 = new StringBuilder();
+			for (int i = 0; i < text.length(); i++) {
+				char c = text.charAt(i);
+				if ('0' <= c && c <= '9') {
+					c += 'A' - '0';
+				} else {
+					c += 10;
+				}
+				text2.append(c);
+			}
+			text = text2.toString();
+			String value;
+			Boolean constValue = ruleSet.constants.get(option);
+			if (constValue == null) {
+				value = "?";
+			} else {
+				value = constValue ? "t" : "f";
+			}
+			optionLine.put(option, text + ": " + value + " : " + option + " weight " + optionsSet.options.get(option));
+			options.put(option, "+" + text);
+			options.put(option.negate(), "-" + text);
+			index++;
+		}
+		List<String> rules = new ArrayList<>();
+		ruleSet.forEachRule(def -> {
+			StringBuilder sb = new StringBuilder();
+
+			switch (def.type()) {
+				case AT_LEAST: {
+					sb.append("AtLeast    " + pad(def.minimum()) + "    ");
+					break;
+				}
+				case AT_MOST: {
+					sb.append("At Most    " + pad(def.maximum()) + "    ");
+					break;
+				}
+				case EXACTLY: {
+					sb.append("Exactly    " + pad(def.maximum()) + "    ");
+					break;
+				}
+				case BETWEEN: {
+					sb.append("Between " + pad(def.minimum()) + " and " + pad(def.maximum()));
+					break;
+				}
+				default:
+					sb.append("UNKNOWN RULE TYPE " + def.type());
+					break;
+			}
+			sb.append(" of ");
+			sb.append(pad(def.options.length));
+			sb.append("{ ");
+			boolean first = true;
+			for (LoadOption option : Stream.of(def.options).sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
+				if (first) {
+					first = false;
+				} else {
+					sb.append(", ");
+				}
+				sb.append(options.get(option));
+				referenced.add(option);
+			}
+			sb.append(" }");
+
+			rules.add(sb.toString());
+		});
+		rules.sort(null);
+		for (Map.Entry<LoadOption, String> entry : optionLine.entrySet()) {
+			if (referenced.contains(entry.getKey()) || ruleSet == optionsSet) {
+				dst.accept(entry.getValue());
+			}
+		}
+		rules.forEach(dst);
+		dst.accept("== Problem End ==");
+	}
+
+	private static String pad(int value) {
+		if (value < 100) {
+			return "  " + value;
+		} else if (value < 10) {
+			return " " + value;
+		} else {
+			return "" + value;
+		}
+	}
+
 	private Boolean getConstantValue(LoadOption option) {
 		boolean negate = false;
 		if (option instanceof NegatedLoadOption) {
@@ -156,7 +290,7 @@ class SolverPreProcessor {
 		return negate ? !value : value;
 	}
 
-	private ProcessedRuleSet process() throws ContradictionException {
+	private ProcessedRuleSet process() throws ContradictionException, PreProcessException {
 		final Function<LoadOption, Boolean> funcGetConstant = this::getConstantValue;
 
 		boolean changed;
@@ -373,9 +507,20 @@ class SolverPreProcessor {
 
 				for (SolverPreProcessor processor : subProblems) {
 					processor.detectRedundentSubRules();
-					ProcessedRuleSet processedSet = processor.process();
-					if (processedSet == null) {
-						throw new ContradictionException();
+
+					ProcessedRuleSet processedSet;
+					try {
+						processedSet = processor.process();
+						if (processedSet == null) {
+							throw new ContradictionException();
+						}
+					} catch (PreProcessException e) {
+						List<RuleSet> list = new ArrayList<>();
+						list.addAll(e.problems);
+						list.add(processor.inputRuleSet);
+						throw new PreProcessException(list);
+					} catch (ContradictionException e) {
+						throw new PreProcessException(Collections.singletonList(processor.inputRuleSet));
 					}
 					remainingOptions.putAll(processedSet.options);
 					remainingRules.addAll(processedSet.rules);
@@ -391,67 +536,7 @@ class SolverPreProcessor {
 
 					Log.info(Sat4jWrapper.CATEGORY, "");
 					Log.info(Sat4jWrapper.CATEGORY, "Unsolved Sub Problem: ");
-
-					// Log rule & options
-					// but as letters and array indices
-					Map<LoadOption, String> options = new HashMap<>();
-					char letter = 'A';
-					for (LoadOption option : processedSet.options.keySet().stream().sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
-						Log.info(Sat4jWrapper.CATEGORY, letter + ": " + option + " weight " + processedSet.options.get(option));
-						options.put(option, "+" + letter);
-						options.put(option.negate(), "-" + letter);
-
-						if (letter == 'Z') {
-							letter = 'a';
-						} else if (letter == 'z') {
-							letter = '0';
-						} else {
-							letter++;
-						}
-					}
-
-					List<String> rules = new ArrayList<>();
-					for (RuleDefinition def : processedSet.rules) {
-						StringBuilder sb = new StringBuilder();
-
-						switch (def.type()) {
-							case AT_LEAST: {
-								sb.append("AtLeast    " + pad(def.minimum()) + "    ");
-								break;
-							}
-							case AT_MOST: {
-								sb.append("At Most    " + pad(def.maximum()) + "    ");
-								break;
-							}
-							case EXACTLY: {
-								sb.append("Exactly    " + pad(def.maximum()) + "    ");
-								break;
-							}
-							case BETWEEN: {
-								sb.append("Between " + pad(def.minimum()) + " and " + pad(def.maximum()));
-								break;
-							}
-						}
-						sb.append(" of ");
-						sb.append(pad(def.options.length));
-						sb.append("{ ");
-						boolean first = true;
-						for (LoadOption option : Stream.of(def.options).sorted(Comparator.comparing(LoadOption::toString)).toArray(LoadOption[]::new)) {
-							if (first) {
-								first = false;
-							} else {
-								sb.append(", ");
-							}
-							sb.append(options.get(option));
-						}
-						sb.append(" }");
-
-						rules.add(sb.toString());
-					}
-					rules.sort(null);
-					for (String rule : rules) {
-						Log.info(Sat4jWrapper.CATEGORY, rule);
-					}
+					printRuleSet(processedSet);
 				}
 
 				return new ProcessedRuleSet(constants, aliases, remainingOptions, new ArrayList<>(remainingRules));
@@ -545,14 +630,6 @@ class SolverPreProcessor {
 
 		removeRule(rule);
 		assert takenOptions.isEmpty();
-	}
-
-	private String pad(int value) {
-		if (value < 10) {
-			return " " + value;
-		} else {
-			return "" + value;
-		}
 	}
 
 	/** Checks every rule to see if it's options don't actually affect the choice of any other options.
