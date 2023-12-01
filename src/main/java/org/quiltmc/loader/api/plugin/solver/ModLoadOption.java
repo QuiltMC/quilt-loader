@@ -54,6 +54,15 @@ public abstract class ModLoadOption extends LoadOption {
 	/** @return The {@link Path} where this mod's classes and resources can be loaded from. */
 	public abstract Path resourceRoot();
 
+	/** Creates the root for the transform cache. This is only called once, and only if the transform cache needed to be
+	 * re-generated. This is intended to be used if you need to do anything expensive to create the files contained by
+	 * the mod.
+	 * 
+	 * @return The source for the transform cache. By default this returns {@link #resourceRoot()}. */
+	public Path createTransformRoot() {
+		return resourceRoot();
+	}
+
 	/** @return True if this mod MUST be loaded or false if this should be loaded depending on it's {@link ModLoadType}.
 	 *         Quilt returns true here for mods on the classpath and directly in the mods folder, but not when
 	 *         jar-in-jar'd. */
