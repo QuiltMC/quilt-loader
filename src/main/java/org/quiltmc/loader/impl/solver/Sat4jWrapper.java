@@ -506,16 +506,7 @@ public class Sat4jWrapper implements RuleContext {
 					if (PRINT_RESULTS) {
 						Log.info(CATEGORY, "Pre-processing " + ruleCount + " rules and " + originalRules.options.size() + " options");
 					}
-					ProcessedRuleSet processed;
-					try {
-						processed = SolverPreProcessor.preProcess(originalRules);
-					} catch (ContradictionException e) {
-						// Should never happen, since we just validated the solution
-						// (It means there's a bug in the pre-processor)
-						// TODO: Collect the rules and store them in a reasonable format to use for reproduction!
-						throw new ModSolvingError("Failed to pre-process rule set " + originalRules, e);
-					}
-
+					ProcessedRuleSet processed = SolverPreProcessor.preProcess(originalRules);
 					if (processed.isFullySolved()) {
 						if (PRINT_RESULTS) {
 							Log.info(CATEGORY, "Fully solved solution via pre-processer");
