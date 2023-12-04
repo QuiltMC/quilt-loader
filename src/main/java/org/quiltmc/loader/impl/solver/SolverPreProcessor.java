@@ -41,6 +41,7 @@ import org.quiltmc.loader.impl.solver.RuleSet.ProcessedRuleSet;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.util.sat4j.specs.ContradictionException;
 
 /** Pre-processes a {@link RuleSet} to reduce the problem that we pass to sat4j. */
@@ -52,11 +53,17 @@ class SolverPreProcessor {
 	/** @return The processed {@link RuleSet} if we were successful.
 	 * @throws ContradictionException if there is a contradiction in the input rules. */
 	static ProcessedRuleSet preProcess(RuleSet rules) throws ModSolvingError {
+		return preProcess(false, rules);
+	}
+
+	/** @return The processed {@link RuleSet} if we were successful.
+	 * @throws ContradictionException if there is a contradiction in the input rules. */
+	static ProcessedRuleSet preProcess(boolean debug, RuleSet rules) throws ModSolvingError {
 		try {
 			try {
-				return new SolverPreProcessor(rules).process();
+				return new SolverPreProcessor(debug, rules).process();
 			} catch (ContradictionException e) {
-				throw new PreProcessException(Collections.singletonList(rules));
+				throw new PreProcessException(Collections.singletonList(rules), e);
 			}
 		} catch (PreProcessException e) {
 			StringBuilder sb = new StringBuilder("Failed to pre-process a rule set!\n");
@@ -66,12 +73,15 @@ class SolverPreProcessor {
 			for (RuleSet problem : list) {
 				appendRuleSet(problem, rules, line -> sb.append("\n").append(line));
 			}
-			throw new ModSolvingError(sb.toString());
+			throw new ModSolvingError(sb.toString(), e);
 		}
 	}
 
 	// Internals
 
+	/** Set to true by {@link SolverTester} when testing a specific problem. This isn't enabled by a system property
+	 * because this is just too noisy */
+	private final boolean debug;
 	private final RuleSet inputRuleSet;
 
 	private final Map<LoadOption, Boolean> constants;
@@ -95,7 +105,8 @@ class SolverPreProcessor {
 	/** Every set of options which are treated identically by a set of rules. */
 	private final Map<Set<LoadOption>, Set<RuleDefinition>> optionSet2rules = new HashMap<>();
 
-	private SolverPreProcessor(RuleSet rules) {
+	private SolverPreProcessor(boolean debug, RuleSet rules) {
+		this.debug = debug;
 		this.inputRuleSet = rules;
 		this.constants = new HashMap<>(rules.constants);
 		this.aliases = new HashMap<>(rules.aliases);
@@ -107,6 +118,8 @@ class SolverPreProcessor {
 
 	private SolverPreProcessor(SolverPreProcessor parent, Map<LoadOption, Integer> optionSubMap, Set<
 		RuleDefinition> ruleSubSet) {
+
+		this.debug = parent.debug;
 
 		this.inputRuleSet = new ProcessedRuleSet(
 			new HashMap<>(parent.constants), new HashMap<>(parent.aliases),
@@ -120,7 +133,12 @@ class SolverPreProcessor {
 		ruleSubSet.forEach(this::addRule);
 	}
 
+	private static void log(String text) {
+		Log.info(LogCategory.SOLVING, text);
+	}
+
 	private void addRule(RuleDefinition rule) {
+		if (debug) log("   + " + rule);
 		activeRules.add(rule);
 		if (rule.isConstant()) {
 			rulesToVisit.add(rule);
@@ -140,6 +158,7 @@ class SolverPreProcessor {
 	}
 
 	private void removeRule(RuleDefinition rule) {
+		if (debug) log("   - " + rule);
 		activeRules.remove(rule);
 		rulesToVisit.remove(rule);
 
@@ -207,7 +226,13 @@ class SolverPreProcessor {
 			} else {
 				value = constValue ? "t" : "f";
 			}
-			optionLine.put(option, text + ": " + value + " : " + option + " weight " + optionsSet.options.get(option));
+			String optionStr;
+			if (option instanceof SolverTester.ReadOption) {
+				optionStr = ((SolverTester.ReadOption) option).text;
+			} else {
+				optionStr = option.toString();
+			}
+			optionLine.put(option, text + ": " + value + " : " + optionStr + " weight " + optionsSet.options.get(option));
 			options.put(option, "+" + text);
 			options.put(option.negate(), "-" + text);
 			index++;
@@ -265,9 +290,9 @@ class SolverPreProcessor {
 	}
 
 	private static String pad(int value) {
-		if (value < 100) {
+		if (value < 10) {
 			return "  " + value;
-		} else if (value < 10) {
+		} else if (value < 100) {
 			return " " + value;
 		} else {
 			return "" + value;
@@ -305,11 +330,14 @@ class SolverPreProcessor {
 					continue;
 				}
 
+				if (debug) log("CC: " + rule);
+
 				if (result == RuleComputeResult.CONTRADICTION) {
-					throw new ContradictionException();
+					throw new ContradictionException(rule.toString());
 				}
 
 				if (result == RuleComputeResult.TRIVIALLY_REMOVED) {
+					if (debug) log(" => TRIVIALLY_REMOVED");
 					removeRule(rule);
 					changed = true;
 					continue;
@@ -317,11 +345,13 @@ class SolverPreProcessor {
 
 				final RuleDefinition newRule;
 				if (result instanceof RuleComputeResult.DeclaredConstants) {
+					if (debug) log(" => " + result.getClass().getSimpleName());
 					RuleComputeResult.DeclaredConstants declared = (DeclaredConstants) result;
 					if (result instanceof RuleComputeResult.Removed) {
 						newRule = null;
 					} else if (result instanceof RuleComputeResult.Changed) {
 						newRule = ((RuleComputeResult.Changed) result).newDefintion;
+						if (debug) log(" -> " + newRule);
 					} else {
 						throw new IllegalStateException(
 							"Unknown subtype of RuleComputeResult " + result.getClass() + " " + result
@@ -331,6 +361,7 @@ class SolverPreProcessor {
 					for (Map.Entry<LoadOption, Boolean> entry : declared.newConstants.entrySet()) {
 						LoadOption option = entry.getKey();
 						boolean newValue = entry.getValue();
+						if (debug) log(" forced " + newValue + " " + option);
 
 						if (option instanceof NegatedLoadOption) {
 							option = ((NegatedLoadOption) option).not;
@@ -392,6 +423,7 @@ class SolverPreProcessor {
 			if (activeRules.size() == 1) {
 				// 1 rule left, that means we can choose a value for every constant
 				RuleDefinition rule = activeRules.iterator().next();
+				if (debug) log("Single remaining rule " + rule);
 				chooseBasedOnOnly(rule, true);
 
 				changed = true;
@@ -425,6 +457,7 @@ class SolverPreProcessor {
 				if (max < min) {
 					throw new ContradictionException();
 				}
+				if (debug) log("Merge:");
 				Set<RuleDefinition> remaining = new HashSet<>();
 				remaining.add(currentMin);
 				remaining.add(currentMax);
@@ -506,6 +539,10 @@ class SolverPreProcessor {
 				Set<RuleDefinition> remainingRules = new HashSet<>();
 
 				for (SolverPreProcessor processor : subProblems) {
+					if (debug) {
+						log("SUB PROBLEM");
+						appendRuleSet(processor.inputRuleSet, processor.inputRuleSet, SolverPreProcessor::log);
+					}
 					processor.detectRedundentSubRules();
 
 					ProcessedRuleSet processedSet;
@@ -518,9 +555,9 @@ class SolverPreProcessor {
 						List<RuleSet> list = new ArrayList<>();
 						list.addAll(e.problems);
 						list.add(processor.inputRuleSet);
-						throw new PreProcessException(list);
+						throw new PreProcessException(list, e);
 					} catch (ContradictionException e) {
-						throw new PreProcessException(Collections.singletonList(processor.inputRuleSet));
+						throw new PreProcessException(Collections.singletonList(processor.inputRuleSet), e);
 					}
 					remainingOptions.putAll(processedSet.options);
 					remainingRules.addAll(processedSet.rules);
@@ -548,7 +585,51 @@ class SolverPreProcessor {
 
 	/** Picks a value for every {@link LoadOption} in this rule. This assumes that no other option is affected by this
 	 * choice. */
-	private void chooseBasedOnOnly(RuleDefinition rule, boolean putConstants) {
+	private void chooseBasedOnOnly(RuleDefinition rule, boolean putConstants) throws ContradictionException {
+		if (debug) log("chooseBasedOnOnly " + rule);
+
+		// Firstly just make sure we're dealing with non-constant rules
+		RuleComputeResult computeResult = rule.computeConstants(this::getConstantValue);
+		if (computeResult == RuleComputeResult.IDENTICAL) {
+			// Do nothing
+		} else if (computeResult == RuleComputeResult.CONTRADICTION) {
+			throw new ContradictionException(rule.toString());
+		} else if (computeResult == RuleComputeResult.TRIVIALLY_REMOVED) {
+			// Nothing to do, since every option is already a constant
+			removeRule(rule);
+			return;
+		} else if (computeResult instanceof RuleComputeResult.DeclaredConstants) {
+			// This actually did declare some constants
+			RuleComputeResult.DeclaredConstants declare = (RuleComputeResult.DeclaredConstants) computeResult;
+
+			for (Map.Entry<LoadOption, Boolean> entry : declare.newConstants.entrySet()) {
+				LoadOption option = entry.getKey();
+				boolean value = entry.getValue();
+				if (LoadOption.isNegated(option)) {
+					option = option.negate();
+					value = !value;
+				}
+				if (putConstants) {
+					if (debug) log(" forced " + value + " " + option);
+					constants.put(option, value);
+					options.remove(option);
+				} else if (value) {
+					addRule(new RuleDefinition.AtLeast(rule.rule, 1, new LoadOption[] { option }));
+				} else {
+					addRule(new RuleDefinition.AtMost(rule.rule, 0, new LoadOption[] { option }));
+				}
+			}
+
+			removeRule(rule);
+			if (computeResult instanceof RuleComputeResult.Changed) {
+				addRule(rule = ((RuleComputeResult.Changed) computeResult).newDefintion);
+			} else {
+				return;
+			}
+		} else {
+			throw new IllegalStateException("Unknown RuleComputeResult " + computeResult);
+		}
+
 		int min = rule.minimum();
 		int max = rule.maximum();
 		// Desired options are ones with a negative weight, ordered by least wanted to most wanted
@@ -619,6 +700,7 @@ class SolverPreProcessor {
 				value = !value;
 			}
 			if (putConstants) {
+				if (debug) log(" forced " + value + " " + option);
 				constants.put(option, value);
 				options.remove(option);
 			} else if (value) {
@@ -645,7 +727,7 @@ class SolverPreProcessor {
 		return changed;
 	}
 
-	private boolean checkForSelfSufficientRule(RuleDefinition rule) {
+	private boolean checkForSelfSufficientRule(RuleDefinition rule) throws ContradictionException {
 		Map<RuleDefinition, Set<LoadOption>> replacedRules = new HashMap<>();
 		LoadOption with = rule.options[0];
 		for (LoadOption option : rule.options) {
@@ -689,6 +771,7 @@ class SolverPreProcessor {
 	 * 
 	 * @return if anything changed. */
 	private boolean detectRedundentSubRules() throws ContradictionException {
+		if (debug) log("detectRedundentSubRules");
 
 		boolean anythingChanged = false;
 		boolean changedThisLoop = false;
@@ -736,6 +819,7 @@ class SolverPreProcessor {
 
 		} while (changedThisLoop);
 
+		if (debug) log("end");
 		return anythingChanged;
 	}
 
@@ -767,6 +851,7 @@ class SolverPreProcessor {
 	/** Checks to see if we can simplify something based on two rules, where the smaller affects a strict subset of the
 	 * larger. */
 	private boolean checkRulesForRedundency(RuleDefinition larger, RuleDefinition smaller, LoadOption[] excluded) throws ContradictionException {
+		if (debug) log("checkRulesForRedundency " + larger + ", " + smaller);
 
 		// Definitions:
 		// "Included" is the set of options that are in both sets. It's equal to the options in smaller

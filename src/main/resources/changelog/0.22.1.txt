@@ -2,3 +2,7 @@ Features:
 
 - Changed the solver pre-processor to include it's state in the crash report when it encounters a contradiction.
     - This makes it easy for a loader developer to reproduce the solver state in order to debug it.
+
+Bug Fixes:
+
+- Fixed a solver pre-processor bug where chooseBasedOnOnly didn't check for new constants, resulting in later contradictions.

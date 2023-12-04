@@ -25,7 +25,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 class PreProcessException extends Exception {
 	final List<RuleSet> problems;
 
-	PreProcessException(List<RuleSet> problems) {
+	PreProcessException(List<RuleSet> problems, Throwable cause) {
+		super(cause);
 		this.problems = problems;
 	}
 }
