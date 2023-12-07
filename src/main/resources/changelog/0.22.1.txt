@@ -19,3 +19,4 @@ Bug Fixes:
 
 - Fixed a solver pre-processor bug where chooseBasedOnOnly didn't check for new constants, resulting in later contradictions.
 - Fixed QuiltClassPath.getResources not always returning all paths, when multiple mods ship the same file.
+- Fixed the forked gui not launching correctly on java 8 due to argument files being unsupported.

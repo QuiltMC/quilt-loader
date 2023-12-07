@@ -37,7 +37,7 @@ public abstract class MixinGuiMain extends Screen {
 
 	@Inject(method = "render", at = @At("RETURN"))
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta, CallbackInfo info) {
-	    graphics.drawShadowedText(textRenderer, "Quilt Test Mod", 2, this.height - 30, -1);
+		graphics.drawShadowedText(textRenderer, "Quilt Test Mod", 2, this.height - 30, -1);
 		TestMixinGuiHelper.help();
 	}
 }
