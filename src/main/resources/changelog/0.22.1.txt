@@ -2,7 +2,20 @@ Features:
 
 - Changed the solver pre-processor to include it's state in the crash report when it encounters a contradiction.
     - This makes it easy for a loader developer to reproduce the solver state in order to debug it.
+- Bumped provided version of Fabric Loader from 0.14.24 to 0.15.0
+- Added MixinExtras as a jar-in-jar mod inside of quilt loader.
+    - This is an additional library for creating mixins in more expressive and compatible ways.
+      For example "@WrapOperation" is a more compatible way of doing "@Redirect", if you don't need
+      to replace the method call in all circumstances.
+      For more information please see the MixinExtras wiki page: https://github.com/LlamaLad7/MixinExtras/wiki
+    - You can use the system property "-Dloader.disable_builtin_mixin_extras=true" to disable loader's builtin
+      version of mixin extras. As such mods that use mixin extras are encouraged to add it as a dependency in their
+      quilt.mod.json to make the crash more obvious when a user has disabled it but a mod requires it.
+- Re-added a previous fix that was added in 0.18.1-beta.1 and accidently removed in  0.18.1-beta.58:
+    - Changed the entrypoint hook to use the old fabric class when running in versions before 1.17.
+        - This allows NotEnoughCrashes to redirect our entrypoint
 
 Bug Fixes:
 
 - Fixed a solver pre-processor bug where chooseBasedOnOnly didn't check for new constants, resulting in later contradictions.
+- Fixed QuiltClassPath.getResources not always returning all paths, when multiple mods ship the same file.

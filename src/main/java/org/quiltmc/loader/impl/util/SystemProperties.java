@@ -92,6 +92,7 @@ public final class SystemProperties {
 	public static final String DEBUG_DUMP_FILESYSTEM_CONTENTS = "loader.debug.filesystem.dump_contents";
 	public static final String ALWAYS_DEFER_FILESYSTEM_OPERATIONS = "loader.workaround.defer_all_filesystem_operations";
 	public static final String DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE = "loader.quilt_class_path.disable_custom_table";
+	public static final String DISABLE_BUILTIN_MIXIN_EXTRAS = "loader.disable_builtin_mixin_extras";
 
 	// ##############
 	// # Validation #

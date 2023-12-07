@@ -20,10 +20,13 @@
     },
     "intermediate_mappings": "net.fabricmc:intermediary",
     "provides": [
-      {
-        "id": "fabricloader",
-        "version": "0.14.24"
-      }
-    ]
+        {
+          "id": "fabricloader",
+          "version": "0.15.0"
+        }
+      ],
+      "depends": [
+        "mixinextras"
+      ]
   }
 }

@@ -56,6 +56,7 @@ import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProvider.BuiltinMod;
@@ -78,6 +79,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	public static final boolean DISBALE_BUILTIN_MIXIN_EXTRAS = Boolean.getBoolean(SystemProperties.DISABLE_BUILTIN_MIXIN_EXTRAS);
 
 	private QuiltOverrides overrides;
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
@@ -273,6 +275,16 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				}
 
 				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
+				if (DISBALE_BUILTIN_MIXIN_EXTRAS) {
+					if (QuiltLoaderImpl.MOD_ID.equals(meta.id())) {
+						if (inner.toString().startsWith("/META-INF/jars/mixinextras-")) {
+							Log.info(LogCategory.GENERAL, "Disabling loader's builtin mixin extras library due to command line flag");
+							jarNode.addChild(QuiltLoaderText.translate("mixin_extras.disabled"));
+							jarNode.mainIcon(QuiltLoaderGui.iconDisabled());
+							continue;
+						}
+					}
+				}
 				context().addFileToScan(inner, jarNode, false);
 			}
 
@@ -377,6 +389,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				for (SingleOverrideEntry override : overrideList) {
 					replace(override.fuzzy, override.overrides.dependsOverrides, depends);
 					replace(override.fuzzy, override.overrides.breakOverrides, breaks);
+				}
+
+				if (QuiltLoaderImpl.MOD_ID.equals(metadata.id())) {
+					if (DISBALE_BUILTIN_MIXIN_EXTRAS) {
+						depends.removeIf(dep -> dep instanceof ModDependency.Only && ((ModDependency.Only) dep).id().id().equals("mixinextras"));
+					}
 				}
 
 				for (ModDependency dep : depends) {
