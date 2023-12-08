@@ -14,6 +14,12 @@ Features:
 - Re-added a previous fix that was added in 0.18.1-beta.1 and accidently removed in  0.18.1-beta.58:
     - Changed the entrypoint hook to use the old fabric class when running in versions before 1.17.
         - This allows NotEnoughCrashes to redirect our entrypoint
+- Added a new system property "loader.overrides.generate_file"
+    - You can enable this by adding " -Dloader.overrides.generate_file=true " to your Java arguments.
+    - This will create a new empty override file in the right place if one doesn't already exist.
+- Added a new system property "loader.debug.override_file".
+    - You can enable this by adding "-Dloader.debug.override_file=true" to your Java arguments.
+    - This logs a few messages when loading an override file, to help when debugging.
 
 Bug Fixes:
 

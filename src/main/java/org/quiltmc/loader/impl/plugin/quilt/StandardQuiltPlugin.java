@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.plugin.quilt;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,6 +81,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 	public static final boolean DEBUG_PRINT_STATE = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
 	public static final boolean DISBALE_BUILTIN_MIXIN_EXTRAS = Boolean.getBoolean(SystemProperties.DISABLE_BUILTIN_MIXIN_EXTRAS);
+	public static final boolean DEBUG_OVERRIDE_FILE = Boolean.getBoolean(SystemProperties.DEBUG_OVERRIDE_FILE);
 
 	private QuiltOverrides overrides;
 	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
@@ -91,17 +93,51 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	private void loadOverrides() {
-		Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json");
+		Path overrideFile = context().manager().getConfigDirectory().resolve("quilt-loader-overrides.json").toAbsolutePath();
+		if (DEBUG_OVERRIDE_FILE) {
+			Log.info(LogCategory.GENERAL, "Attempting to load the override file " + overrideFile);
+		}
+		boolean isNew = false;
 		try {
+			if (!Files.exists(overrideFile)) {
+				if (Boolean.getBoolean(SystemProperties.GENERATE_OVERRIDES_FILE)) {
+					Log.info(LogCategory.GENERAL, "Creating new (empty) override file at " + overrideFile);
+					Files.createFile(overrideFile);
+					isNew = true;
+				} else if (DEBUG_OVERRIDE_FILE) {
+					Log.info(LogCategory.GENERAL, "File not found.");
+				}
+			} else if (DEBUG_OVERRIDE_FILE) {
+				Log.info(LogCategory.GENERAL, "Found file, loading...");
+			}
 			overrides = new QuiltOverrides(overrideFile);
+			if (DEBUG_OVERRIDE_FILE) {
+				Log.info(LogCategory.GENERAL, "Valid overrides file loaded.");
+				Log.info(LogCategory.GENERAL, "It contains " + overrides.pathOverrides.size() + " path overrides and " + overrides.patternOverrides.size() +" pattern overrides:");
+				for (Map.Entry<String, ModOverrides> entry : overrides.pathOverrides.entrySet()) {
+					Log.info(LogCategory.GENERAL, "- " + entry.getKey());
+				}
+				for (Entry<Pattern, ModOverrides> entry : overrides.patternOverrides.entrySet()) {
+					Log.info(LogCategory.GENERAL, "- R\"" + entry.getKey() + "\"");
+				}
+			}
 		} catch (ParseException | IOException e) {
 			Exception[] mostRecentException = { e };
 			QuiltLoaderText title = QuiltLoaderText.translate("error.quilt_overrides.io_parse.title");
+			if (isNew) {
+				title = QuiltLoaderText.translate("error.quilt_overrides.new_blank_file.title");
+			}
 			QuiltDisplayedError error = QuiltLoaderGui.createError(title);
-			error.appendDescription(QuiltLoaderText.of(e.getMessage()));
+			if (isNew) {
+				error.appendDescription(QuiltLoaderText.translate("error.quilt_overrides.new_blank_file.desc"));
+			} else {
+				error.appendDescription(QuiltLoaderText.of(e.getMessage()));
+			}
 			error.appendThrowable(e);
 			error.addFileViewButton(QuiltLoaderText.translate("button.view_file", "config/"), overrideFile).icon(QuiltLoaderGui.iconFolder());
 			error.addFileEditButton(overrideFile).icon(QuiltLoaderGui.iconJsonFile());
+			error.addOpenLinkButton(QuiltLoaderText.translate("error.quilt_overrides.button.wiki"), "https://github.com/QuiltMC/quilt-loader/wiki/Dependency-Overrides");
+			final boolean changeTitleToo = isNew;
 			error.addActionButton(QuiltLoaderText.translate("button.reload"), () -> {
 				try {
 					overrides = new QuiltOverrides(overrideFile);
@@ -109,6 +145,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				} catch (ParseException | IOException e2) {
 					mostRecentException[0] = e2;
 					e2.printStackTrace();
+					if (changeTitleToo) {
+						// TODO: Change the title back!
+					}
 					error.clearDescription();
 					error.appendDescription(QuiltLoaderText.of(e2.getMessage()));
 				}
