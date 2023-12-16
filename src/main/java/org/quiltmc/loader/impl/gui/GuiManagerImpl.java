@@ -63,8 +63,11 @@ public class GuiManagerImpl implements PluginGuiManager {
 	public static final PluginIconImpl ICON_DISABLED = new PluginIconImpl("disabled");
 	public static final PluginIconImpl ICON_QUILT = new PluginIconImpl("quilt");
 	public static final PluginIconImpl ICON_FABRIC = new PluginIconImpl("fabric");
+	public static final PluginIconImpl ICON_WEB_LINK = new PluginIconImpl("web_link");
+	public static final PluginIconImpl ICON_CLIPBOARD = new PluginIconImpl("clipboard");
 	public static final PluginIconImpl ICON_TICK = new PluginIconImpl("tick");
 	public static final PluginIconImpl ICON_CROSS = new PluginIconImpl("lesser_cross");
+	public static final PluginIconImpl ICON_TREE_DOT = new PluginIconImpl("missing");
 	public static final PluginIconImpl ICON_LEVEL_FATAL = new PluginIconImpl("level_fatal");
 	public static final PluginIconImpl ICON_LEVEL_ERROR = new PluginIconImpl("level_error");
 	public static final PluginIconImpl ICON_LEVEL_WARN = new PluginIconImpl("level_warn");

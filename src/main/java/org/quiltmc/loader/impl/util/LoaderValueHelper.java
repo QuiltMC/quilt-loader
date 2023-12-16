@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.util;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.Function;
 
 import org.jetbrains.annotations.NotNull;
@@ -62,6 +63,14 @@ public class LoaderValueHelper<T extends Throwable> {
 			throw except("Expected to find '" + key + "' as a string, but got " + value);
 		}
 		return value.asString();
+	}
+
+	public <E extends Enum<E>> E expectEnum(Class<E> clazz, LoaderValue.LObject obj, String key) throws T {
+		LoaderValue value = obj.get(key);
+		if (value == null || value.type() != LType.STRING) {
+			throw except("Expected to find '" + key + "' as a string, but got " + value);
+		}
+		return expectEnum(clazz, value);
 	}
 
 	public String expectStringOrNull(LoaderValue.LObject obj, String key) throws T {
@@ -126,5 +135,15 @@ public class LoaderValueHelper<T extends Throwable> {
 			throw except("Expected " + value + " to be a string!");
 		}
 		return value.asString();
+	}
+
+	public <E extends Enum<E>> E expectEnum(Class<E> clazz, LoaderValue value) throws T {
+		String str = expectString(value);
+		for (E val : clazz.getEnumConstants()) {
+			if (str.equals(val.name())) {
+				return val;
+			}
+		}
+		throw except("Expected " + str + " to be one of " + Arrays.toString(clazz.getEnumConstants()));
 	}
 }

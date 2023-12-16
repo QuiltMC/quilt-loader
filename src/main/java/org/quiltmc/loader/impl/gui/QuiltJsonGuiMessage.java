@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LObject;
@@ -34,29 +33,30 @@ import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.plugin.LoaderValueFactory;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements QuiltDisplayedError {
+public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements QuiltDisplayedError, ButtonContainerImpl {
 
-	interface QuiltMessageListener {
+	interface QuiltMessageListener extends Listener, ButtonContainerListener {
 		default void onFixed() {}
 		default void onIconChanged() {}
 		default void onTitleChanged() {}
 		default void onDescriptionChanged() {}
 		default void onAdditionalInfoChanged() {}
+		default void onTreeNodeChanged() {}
 	}
 
-	private static final String DEFAULT_ICON = new String("level_error");
+	/** Intentionally not {@link QuiltLoaderGui#iconLevelError()} so we can use an identity check. */
+	private static final PluginIconImpl DEFAULT_ICON = new PluginIconImpl("level_error");
 
 	boolean fixed = false;
 
 	// Gui fields
 	public String title;
-	public String iconType = DEFAULT_ICON;
+	public PluginIconImpl icon = DEFAULT_ICON;
 	public final List<String> description = new ArrayList<>();
 	public final List<String> additionalInfo = new ArrayList<>();
 
@@ -64,8 +64,7 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 
 	public String subMessageHeader = "";
 	public final List<QuiltJsonGuiMessage> subMessages = new ArrayList<>();
-
-	final List<QuiltMessageListener> listeners = new ArrayList<>();
+	QuiltStatusNode treeNode = null;
 
 	// Report fields
 	final String reportingPlugin;
@@ -86,7 +85,12 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		this.reportingPlugin = null;
 		reportTrace = null;
 		title = HELPER.expectString(obj, "title");
-		iconType = HELPER.expectString(obj, "icon");
+		if (obj.containsKey("icon")) {
+			icon = readChild(HELPER.expectValue(obj, "icon"), PluginIconImpl.class);
+		}
+		if (obj.containsKey("tree_node")) {
+			treeNode = readChild(HELPER.expectValue(obj, "tree_node"), QuiltStatusNode.class);
+		}
 		subMessageHeader = HELPER.expectString(obj, "sub_message_header");
 
 		for (LoaderValue sub : HELPER.expectArray(obj, "description")) {
@@ -114,7 +118,12 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	@Override
 	protected void write0(Map<String, LoaderValue> map) {
 		map.put("title", lvf().string(title));
-		map.put("icon", lvf().string(iconType));
+		if (icon != null) {
+			map.put("icon", writeChild(icon));
+		}
+		if (treeNode != null) {
+			map.put("tree_node", writeChild(treeNode));
+		}
 		map.put("description", stringArray(description));
 		map.put("info", stringArray(additionalInfo));
 		map.put("buttons", lvf().array(write(buttons)));
@@ -206,95 +215,134 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	}
 
 	@Override
+	public QuiltLoaderIcon icon() {
+		return icon;
+	}
+
+	@Override
 	public QuiltDisplayedError setIcon(QuiltLoaderIcon icon) {
-		this.iconType = PluginIconImpl.fromApi(icon).path;
+		this.icon = PluginIconImpl.fromApi(icon);
 		if (shouldSendUpdates()) {
-			Map<String, LoaderValue> map = new HashMap<>();
-			map.put("icon", lvf().string(iconType));
-			sendUpdate("set_icon", lvf().object(map));
+			if (this.icon == null) {
+				sendSignal("clear_icon");
+			} else {
+				Map<String, LoaderValue> map = new HashMap<>();
+				map.put("icon", writeChild(this.icon));
+				sendUpdate("set_icon", lvf().object(map));
+			}
 		}
 		return this;
 	}
 
-	private QuiltJsonButton button(QuiltLoaderText name, QuiltBasicButtonAction action) {
-		return button(name, action, null);
+	@Override
+	public QuiltTreeNode treeNode() {
+		if (treeNode == null) {
+			treeNode(new QuiltStatusNode(this));
+		}
+		return treeNode;
 	}
 
-	private QuiltJsonButton button(QuiltLoaderText name, QuiltBasicButtonAction action, Runnable run) {
-		QuiltJsonButton button = new QuiltJsonButton(this, name.toString(), action.defaultIcon, action, run);
+	@Override
+	public QuiltDisplayedError treeNode(QuiltTreeNode node) {
+		this.treeNode = (QuiltStatusNode) node;
+		if (shouldSendUpdates()) {
+			if (node == null) {
+				sendSignal("remove_tree_node");
+			} else {
+				Map<String, LoaderValue> map = new HashMap<>();
+				map.put("tree_node", writeChild(this.treeNode));
+				sendUpdate("set_tree_node", lvf().object(map));
+			}
+		}
+		return this;
+	}
+
+	@Override
+	public QuiltJsonButton addButton(QuiltJsonButton button) {
 		buttons.add(button);
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("button", writeChild(button));
+			sendUpdate("add_button", lvf().object(map));
+		}
 		return button;
+	}
+
+	@Override
+	public QuiltJsonGuiMessage getThis() {
+		return this;
 	}
 
 	@Override
 	public QuiltErrorButton addFileViewButton(QuiltLoaderText name, Path openedPath) {
-		return button(name, QuiltBasicButtonAction.VIEW_FILE).arg("file", openedPath.toString());
+		return ButtonContainerImpl.super.addFileViewButton(name, openedPath);
 	}
 
 	@Override
 	public QuiltErrorButton addFileEditButton(QuiltLoaderText name, Path openedPath) {
-		return button(name, QuiltBasicButtonAction.EDIT_FILE).arg("file", openedPath.toString());
+		return ButtonContainerImpl.super.addFileEditButton(name, openedPath);
 	}
 
 	@Override
 	public QuiltErrorButton addFolderViewButton(QuiltLoaderText name, Path openedFolder) {
-		if (FasterFiles.isRegularFile(openedFolder)) {
-			return addFileViewButton(name, openedFolder);
-		} else {
-			return button(name, QuiltBasicButtonAction.VIEW_FOLDER).arg("folder", openedFolder.toString());
-		}
+		return ButtonContainerImpl.super.addFolderViewButton(name, openedFolder);
 	}
 
 	@Override
 	public QuiltErrorButton addOpenLinkButton(QuiltLoaderText name, String url) {
-		return button(name, QuiltBasicButtonAction.OPEN_WEB_URL).arg("url", url);
+		return ButtonContainerImpl.super.addOpenLinkButton(name, url);
 	}
 
 	@Override
 	public QuiltErrorButton addOpenQuiltSupportButton() {
-		QuiltJsonButton button = QuiltJsonButton.createUserSupportButton(this);
-		buttons.add(button);
-		return button;
+		return ButtonContainerImpl.super.addOpenQuiltSupportButton();
 	}
 
 	@Override
 	public QuiltErrorButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText) {
-		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_TEXT).arg("text", fullText);
+		return ButtonContainerImpl.super.addCopyTextToClipboardButton(name, fullText);
 	}
 
 	@Override
 	public QuiltErrorButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile) {
-		return button(name, QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE).arg("file", openedFile.toString());
+		return ButtonContainerImpl.super.addCopyFileToClipboardButton(name, openedFile);
 	}
 
 	@Override
 	public QuiltErrorButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action) {
-		QuiltJsonButton button = button(name, QuiltBasicButtonAction.RETURN_SIGNAL_ONCE, action);
-		button.disabledText = disabledText.toString();
-		return button;
+		return ButtonContainerImpl.super.addOnceActionButton(name, disabledText, action);
 	}
 
 	@Override
 	public QuiltErrorButton addActionButton(QuiltLoaderText name, Runnable action) {
-		return button(name, QuiltBasicButtonAction.RETURN_SIGNAL_MANY, action);
+		return ButtonContainerImpl.super.addActionButton(name, action);
 	}
 
 	@Override
 	public void setFixed() {
 		fixed = true;
-		if (/* Intentional identity check */ iconType == DEFAULT_ICON) {
+		if (/* Intentional identity check */ icon == DEFAULT_ICON) {
 			setIcon(QuiltLoaderGui.iconTick());
 		}
 		if (shouldSendUpdates()) {
 			sendSignal("fixed");
 		}
-		for (QuiltMessageListener l : listeners) {
-			l.onFixed();
-		}
+		invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onFixed);
 	}
 
+	@Override
 	public boolean isFixed() {
 		return fixed;
+	}
+
+	@Override
+	public void addOnFixedListener(Runnable action) {
+		listeners.add(new QuiltMessageListener() {
+			@Override
+			public void onFixed() {
+				action.run();
+			}
+		});
 	}
 
 	@Override
@@ -302,23 +350,17 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		switch (name) {
 			case "fixed": {
 				this.fixed = true;
-				for (QuiltMessageListener l : listeners) {
-					l.onFixed();
-				}
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onFixed);
 				return;
 			}
 			case "clear_description": {
 				description.clear();
-				for (QuiltMessageListener l : listeners) {
-					l.onDescriptionChanged();
-				}
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onDescriptionChanged);
 				return;
 			}
 			case "clear_additional_info": {
 				additionalInfo.clear();
-				for (QuiltMessageListener l : listeners) {
-					l.onAdditionalInfoChanged();
-				}
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onAdditionalInfoChanged);
 				return;
 			}
 			case "description":
@@ -331,21 +373,39 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 					(isDescription ? description : additionalInfo).add(line);
 				}
 
-				for (QuiltMessageListener l : listeners) {
-					if (isDescription) {
-						l.onDescriptionChanged();
-					} else {
-						l.onAdditionalInfoChanged();
-					}
+				if (isDescription) {
+					invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onDescriptionChanged);
+				} else {
+					invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onAdditionalInfoChanged);
 				}
 				return;
 			}
-			case "set_icon": {
-				iconType = HELPER.expectString(data, "icon");
-				for (QuiltMessageListener l : listeners) {
-					l.onIconChanged();
-				}
+			case "clear_icon": {
+				icon = null;
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onIconChanged);
 				return;
+			}
+			case "set_icon": {
+				icon = readChild(HELPER.expectValue(data, "icon"), PluginIconImpl.class);
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onIconChanged);
+				return;
+			}
+			case "set_tree_node": {
+				treeNode = readChild(HELPER.expectValue(data, "tree_node"), QuiltStatusNode.class);
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onTreeNodeChanged);
+				return;
+			}
+			case "remove_tree_node": {
+				treeNode = null;
+				invokeListeners(QuiltMessageListener.class, QuiltMessageListener::onTreeNodeChanged);
+				return;
+			}
+			case "add_button": {
+				LoaderValue value = HELPER.expectValue(data, "button");
+				QuiltJsonButton button = readChild(value, QuiltJsonButton.class);
+				buttons.add(button);
+				invokeListeners(ButtonContainerListener.class, l -> l.onButtonAdded(button));
+				break;
 			}
 			default: {
 				throw new IOException("Unhandled update '" + name + "'");

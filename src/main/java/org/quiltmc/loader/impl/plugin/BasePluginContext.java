@@ -23,15 +23,17 @@ import java.util.concurrent.Callable;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -42,7 +44,7 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	final String pluginId;
 	final RuleContext ruleContext = new ModRuleContext();
 
-	PluginGuiTreeNode extraModsRoot;
+	QuiltStatusNode extraModsRoot;
 	Collection<Rule> blameableRules = null;
 	Rule blamedRule = null;
 
@@ -67,9 +69,16 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
+	@Deprecated
 	public void addFileToScan(Path file, PluginGuiTreeNode guiNode, boolean direct) {
 		// TODO: Log / store / do something to store the plugin
-		manager.scanModFile(file, new ModLocationImpl(false, direct), guiNode);
+		manager.scanModFile(file, new ModLocationImpl(false, direct), (QuiltStatusNode) guiNode);
+	}
+
+	@Override
+	public void addFileToScan(Path file, QuiltTreeNode guiNode, boolean direct) {
+		// TODO: Log / store / do something to store the plugin
+		manager.scanModFile(file, new ModLocationImpl(false, direct), (QuiltStatusNode) guiNode);
 	}
 
 	@Override
@@ -110,7 +119,12 @@ abstract class BasePluginContext implements QuiltPluginContext {
 
 	@Override
 	public void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode guiNode) {
-		manager.addSingleModOption(mod, BasePluginContext.this, true, guiNode);
+		manager.addSingleModOption(mod, BasePluginContext.this, true, (QuiltStatusNode) guiNode);
+	}
+
+	@Override
+	public void addModLoadOption(ModLoadOption mod, QuiltTreeNode guiNode) {
+		manager.addSingleModOption(mod, BasePluginContext.this, true, (QuiltStatusNode) guiNode);
 	}
 
 	@Override
@@ -150,12 +164,11 @@ abstract class BasePluginContext implements QuiltPluginContext {
 			} else if (option instanceof ModLoadOption) {
 				ModLoadOption mod = (ModLoadOption) option;
 				if (extraModsRoot == null) {
-					extraModsRoot = manager.getModsFromPluginsGuiNode().addChild(QuiltLoaderText.translate("gui.text.plugin", pluginId),
-							SortOrder.ALPHABETICAL_ORDER
-					);
+					extraModsRoot = manager.getModsFromPluginsGuiNode().addChild(SortOrder.ALPHABETICAL_ORDER);
+					extraModsRoot.text(QuiltLoaderText.translate("gui.text.plugin", pluginId));
 				}
 
-				PluginGuiTreeNode guiNode = extraModsRoot.addChild(QuiltLoaderText.of(mod.id()));
+				QuiltStatusNode guiNode = extraModsRoot.addChild(QuiltLoaderText.of(mod.id()));
 				manager.addSingleModOption(mod, BasePluginContext.this, true, guiNode);
 			} else {
 				manager.addLoadOption(option, BasePluginContext.this);

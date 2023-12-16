@@ -24,25 +24,26 @@ import java.nio.file.Path;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-class UnsupportedModChecker {
+public class UnsupportedModChecker {
 
-	static UnsupportedModType checkFolder(Path folder) throws IOException {
-		return null;
+	static UnsupportedModDetails checkFolder(Path folder) throws IOException {
+		return new UnknownMod();
 	}
 
-	static UnsupportedModType checkUnknownFile(Path file) throws IOException {
-		return null;
+	static UnsupportedModDetails checkUnknownFile(Path file) throws IOException {
+		return new UnknownMod();
 	}
 
-	static UnsupportedModType checkZip(Path zipFile, Path zipRoot) throws IOException {
+	static UnsupportedModDetails checkZip(Path zipFile, Path zipRoot) throws IOException {
 		// (Neo)Forge check
-		UnsupportedModType type = checkForForgeMod(zipRoot);
+		UnsupportedModDetails type = checkForForgeMod(zipRoot);
 		if (type != null) {
 			return type;
 		}
@@ -52,10 +53,10 @@ class UnsupportedModChecker {
 			return type;
 		}
 		// TODO: Other checks!
-		return null;
+		return new UnknownMod();
 	}
 
-	private static UnsupportedModType checkForModloaderMod(Path zipRoot) throws IOException {
+	private static UnsupportedModDetails checkForModloaderMod(Path zipRoot) throws IOException {
 		for (Path child : FasterFiles.getChildren(zipRoot)) {
 			if (!FasterFiles.isRegularFile(child)) {
 				continue;
@@ -76,7 +77,7 @@ class UnsupportedModChecker {
 		return null;
 	}
 
-	private static UnsupportedModType checkForForgeMod(Path zipRoot) {
+	private static UnsupportedModDetails checkForForgeMod(Path zipRoot) {
 		// Older forge
 		Path mcmodInfo = zipRoot.resolve("mcmod.info");
 		if (FasterFiles.exists(mcmodInfo)) {
@@ -106,37 +107,54 @@ class UnsupportedModChecker {
 		return null;
 	}
 
-	static abstract class UnsupportedModType {
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public enum UnsupportedType {
+		UNKNOWN("unknown"),
+		RISUGAMIS_MODLOADER("risugamis_modloader"),
+		FORGE("forge"),
+		NEOFORGE("neoforge");
+
 		final String type;
 
-		UnsupportedModType(String type) {
+		private UnsupportedType(String type) {
+			this.type = type;
+		}
+	}
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static abstract class UnsupportedModDetails {
+		// This is a class rather than just folded into the enum above
+		// to allow individual files to have more specific description.
+		final UnsupportedType type;
+
+		UnsupportedModDetails(UnsupportedType type) {
 			this.type = type;
 		}
 
-		abstract void addToGui(PluginGuiTreeNode guiNode);
+		void addToFilesNode(QuiltTreeNode guiNode) {
+			String key = "unsupported_mod." + type.type + ".guiNode";
+			guiNode.addChild(QuiltLoaderText.translate(key)).level(QuiltWarningLevel.WARN);
+		}
 	}
 
-	static final class RisugamisModLoaderMod extends UnsupportedModType {
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static final class UnknownMod extends UnsupportedModDetails {
+		UnknownMod() {
+			super(UnsupportedType.UNKNOWN);
+		}
+	}
 
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static final class RisugamisModLoaderMod extends UnsupportedModDetails {
 		RisugamisModLoaderMod() {
-			super("risugamis_modloader");
-		}
-
-		@Override
-		void addToGui(PluginGuiTreeNode guiNode) {
-			guiNode.addChild(QuiltLoaderText.translate("unsupported_mod.risugamis_modloader.guiNode")).setDirectLevel(WarningLevel.WARN);
+			super(UnsupportedType.RISUGAMIS_MODLOADER);
 		}
 	}
 
-	static final class UnsupportedForgeMod extends UnsupportedModType {
-
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static final class UnsupportedForgeMod extends UnsupportedModDetails {
 		UnsupportedForgeMod(boolean neoforge) {
-			super(neoforge ? "neoforge" : "forge");
-		}
-
-		@Override
-		void addToGui(PluginGuiTreeNode guiNode) {
-			guiNode.addChild(QuiltLoaderText.translate("unsupported_mod." + type + ".guiNode")).setDirectLevel(WarningLevel.WARN);
+			super(neoforge ? UnsupportedType.NEOFORGE : UnsupportedType.FORGE);
 		}
 	}
 }

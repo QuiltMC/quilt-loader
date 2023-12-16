@@ -32,7 +32,7 @@ import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
-import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedModType;
+import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedModDetails;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -41,7 +41,7 @@ abstract class PathLoadState {
 
 	final Path path;
 	final ModLocationImpl location;
-	UnsupportedModType unsupportedType = null;
+	UnsupportedModDetails unsupportedType = null;
 
 	/** Map of plugin ID to list of {@link ModLoadOption} which was loaded by that plugin. This contains empty lists
 	 * rather than null values if the plugin didn't load anything from the mod. */

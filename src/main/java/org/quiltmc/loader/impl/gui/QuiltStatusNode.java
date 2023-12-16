@@ -18,75 +18,94 @@ package org.quiltmc.loader.impl.gui;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.function.UnaryOperator;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.impl.FormattedException;
+import org.quiltmc.loader.api.LoaderValue.LObject;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon.SubIconPosition;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class QuiltStatusNode extends QuiltGuiSyncBase {
-	private final QuiltStatusNode parent;
+public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTreeNode, PluginGuiTreeNode {
 
-	public String name;
+	interface TreeNodeListener extends Listener {
+		default void onTextChanged() {}
 
-	/** The icon type. There can be a maximum of 2 decorations (added with "+" symbols), or 3 if the
-	 * {@link #setWarningLevel(QuiltTreeWarningLevel) warning level} is set to
-	 * {@link QuiltTreeWarningLevel#NONE } */
-	public String iconType = QuiltJsonGui.ICON_TYPE_DEFAULT;
+		default void onIconChanged() {}
 
-	private QuiltTreeWarningLevel warningLevel = QuiltTreeWarningLevel.NONE;
+		default void onLevelChanged() {}
 
-	public boolean expandByDefault = false;
+		default void onMaxLevelChanged() {}
 
-	public final List<QuiltStatusNode> children = new ArrayList<>();
+		default void onChildAdded(QuiltStatusNode child) {}
+	}
+
+	private QuiltLoaderText apiText = QuiltLoaderText.EMPTY;
+	String text = "";
+
+	PluginIconImpl icon = new PluginIconImpl();
+
+	QuiltWarningLevel level = QuiltWarningLevel.NONE;
+	QuiltWarningLevel maxLevel = QuiltWarningLevel.NONE;
+	QuiltWarningLevel autoExpandLevel = QuiltWarningLevel.WARN;
+
+	private String sortPrefix = "";
+
+	final List<QuiltStatusNode> childNodesByAddition = new ArrayList<>();
+	final List<QuiltStatusNode> childNodesByAlphabetical = new ArrayList<>();
 
 	/** Extra text for more information. Lines should be separated by "\n". */
 	public String details;
 
-	QuiltStatusNode(QuiltStatusNode parent, String name) {
+	QuiltStatusNode(QuiltGuiSyncBase parent) {
 		super(parent);
-		this.parent = parent;
-		this.name = name;
 	}
 
 	QuiltStatusNode(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
 		super(parent, obj);
-		if (parent instanceof QuiltStatusNode) {
-			this.parent = (QuiltStatusNode) parent;
-		} else {
-			this.parent = null;
-		}
-		name = HELPER.expectString(obj, "name");
-		iconType = HELPER.expectString(obj, "icon");
-		warningLevel = QuiltTreeWarningLevel.read(HELPER.expectString(obj, "level"));
-		expandByDefault = HELPER.expectBoolean(obj, "expandByDefault");
+		text = HELPER.expectString(obj, "name");
+		icon = readChild(HELPER.expectValue(obj, "icon"), PluginIconImpl.class);
+		level = HELPER.expectEnum(QuiltWarningLevel.class, obj, "level");
+		maxLevel = HELPER.expectEnum(QuiltWarningLevel.class, obj, "maxLevel");
+		autoExpandLevel = HELPER.expectEnum(QuiltWarningLevel.class, obj, "autoExpandLevel");
 		details = obj.containsKey("details") ? HELPER.expectString(obj, "details") : null;
-		for (LoaderValue sub : HELPER.expectArray(obj, "children")) {
-			children.add(readChild(sub, QuiltStatusNode.class));
+		for (LoaderValue sub : HELPER.expectArray(obj, "children_by_addition")) {
+			childNodesByAddition.add(readChild(sub, QuiltStatusNode.class));
+		}
+		for (LoaderValue sub : HELPER.expectArray(obj, "children_by_alphabetical")) {
+			childNodesByAlphabetical.add(readChild(sub, QuiltStatusNode.class));
 		}
 	}
 
 	@Override
 	protected void write0(Map<String, LoaderValue> map) {
-		map.put("name", lvf().string(name));
-		map.put("icon", lvf().string(iconType));
-		map.put("level", lvf().string(warningLevel.lowerCaseName));
-		map.put("expandByDefault", lvf().bool(expandByDefault));
+		map.put("name", lvf().string(text));
+		map.put("icon", writeChild(icon));
+		map.put("level", lvf().string(level.name()));
+		map.put("maxLevel", lvf().string(maxLevel.name()));
+		map.put("autoExpandLevel", lvf().string(autoExpandLevel.name()));
 		if (details != null) {
 			map.put("details", lvf().string(details));
 		}
-		map.put("children", lvf().array(write(children)));
+		map.put("children_by_addition", lvf().array(write(childNodesByAddition)));
+		map.put("children_by_alphabetical", lvf().array(write(childNodesByAlphabetical)));
 	}
 
 	@Override
@@ -94,38 +113,317 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase {
 		return "tree_node";
 	}
 
-	public QuiltTreeWarningLevel getMaximumWarningLevel() {
-		return warningLevel;
+	@Override
+	void handleUpdate(String name, LObject data) throws IOException {
+		switch (name) {
+			case "set_icon": {
+				this.icon = readChild(HELPER.expectValue(data, "icon"), PluginIconImpl.class);
+				invokeListeners(TreeNodeListener.class, TreeNodeListener::onIconChanged);
+				break;
+			}
+			case "set_text": {
+				this.text = HELPER.expectString(data, "text");
+				invokeListeners(TreeNodeListener.class, TreeNodeListener::onTextChanged);
+				break;
+			}
+			case "set_level": {
+				this.level = HELPER.expectEnum(QuiltWarningLevel.class, data, "level");
+				invokeListeners(TreeNodeListener.class, TreeNodeListener::onLevelChanged);
+				break;
+			}
+			case "set_max_level": {
+				this.maxLevel = HELPER.expectEnum(QuiltWarningLevel.class, data, "max_level");
+				invokeListeners(TreeNodeListener.class, TreeNodeListener::onMaxLevelChanged);
+				break;
+			}
+			default: {
+				super.handleUpdate(name, data);
+			}
+		}
 	}
 
+	@Override
+	public QuiltStatusNode parent() {
+		return parent instanceof QuiltStatusNode ? (QuiltStatusNode) parent : null;
+	}
+
+	@Override
+	public QuiltLoaderIcon icon() {
+		return icon;
+	}
+
+	@Override
+	public QuiltTreeNode icon(QuiltLoaderIcon icon) {
+		this.icon = PluginIconImpl.fromApi(icon);
+		if (this.icon == null) {
+			this.icon = new PluginIconImpl();
+		}
+		invokeListeners(TreeNodeListener.class, TreeNodeListener::onIconChanged);
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("icon", writeChild(this.icon));
+			sendUpdate("set_icon", lvf().object(map));
+		}
+		return this;
+	}
+
+	@Override
+	public QuiltLoaderText text() {
+		return apiText;
+	}
+
+	@Override
+	public QuiltStatusNode text(QuiltLoaderText text) {
+		apiText = Objects.requireNonNull(text);
+		this.text = text.toString();
+		QuiltStatusNode p = parent();
+		if (p != null) {
+			p.sortChildren();
+		}
+		invokeListeners(TreeNodeListener.class, TreeNodeListener::onTextChanged);
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("text", lvf().string(this.text));
+			sendUpdate("set_text", lvf().object(map));
+		}
+		return this;
+	}
+
+	@Override
+	public QuiltWarningLevel level() {
+		return level;
+	}
+
+	@Override
+	public QuiltTreeNode level(QuiltWarningLevel level) {
+		this.level = Objects.requireNonNull(level);
+		invokeListeners(TreeNodeListener.class, TreeNodeListener::onLevelChanged);
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("level", lvf().string(this.level.name()));
+			sendUpdate("set_level", lvf().object(map));
+		}
+		recomputeMaxLevel();
+		return this;
+	}
+
+	private void recomputeMaxLevel() {
+		QuiltWarningLevel oldMaxLevel = maxLevel;
+		maxLevel = level;
+		for (QuiltStatusNode child : childIterable()) {
+			maxLevel = QuiltWarningLevel.getHighest(maxLevel, child.maxLevel);
+		}
+		if (maxLevel != oldMaxLevel) {
+			if (shouldSendUpdates()) {
+				Map<String, LoaderValue> map = new HashMap<>();
+				map.put("max_level", lvf().string(this.maxLevel.name()));
+				sendUpdate("set_max_level", lvf().object(map));
+			}
+			if (parent instanceof QuiltStatusNode) {
+				((QuiltStatusNode) parent).recomputeMaxLevel();
+			}
+		}
+	}
+
+	@Override
+	public QuiltWarningLevel maximumLevel() {
+		return maxLevel;
+	}
+
+	@Override
+	public int countAtLevel(QuiltWarningLevel level) {
+		int count = this.level == level ? 1 : 0;
+		for (QuiltStatusNode node : childIterable()) {
+			count += node.countAtLevel(level);
+		}
+		return count;
+	}
+
+	@Override
+	public QuiltTreeNode autoExpandLevel(QuiltWarningLevel level) {
+		autoExpandLevel = level;
+		return this;
+	}
+
+	public boolean getExpandByDefault() {
+		return autoExpandLevel.ordinal() >= maxLevel.ordinal();
+	}
+
+	public void setExpandByDefault(boolean expandByDefault) {
+		if (expandByDefault) {
+			autoExpandLevel(QuiltWarningLevel.values()[QuiltWarningLevel.values().length - 1]);
+		}
+	}
+
+	@Deprecated
+	public QuiltTreeWarningLevel getMaximumWarningLevel() {
+		switch (maxLevel) {
+			case FATAL:
+				return QuiltTreeWarningLevel.FATAL;
+			case ERROR:
+				return QuiltTreeWarningLevel.ERROR;
+			case WARN:
+				return QuiltTreeWarningLevel.WARN;
+			case CONCERN:
+				return QuiltTreeWarningLevel.CONCERN;
+			case INFO:
+				return QuiltTreeWarningLevel.INFO;
+			case NONE:
+			case DEBUG_ONLY:
+			default:
+				return QuiltTreeWarningLevel.NONE;
+		}
+	}
+
+	@Deprecated
 	public void setWarningLevel(QuiltTreeWarningLevel level) {
-		if (this.warningLevel == level || level == null) {
+		if (level == null) {
 			return;
 		}
-
-		if (warningLevel.isHigherThan(level)) {
-			// Reject high -> low level changes, since it's probably a mistake
-		} else {
-			if (parent != null && level.isHigherThan(parent.warningLevel)) {
-				parent.setWarningLevel(level);
+		switch (level) {
+			case FATAL: {
+				level(QuiltWarningLevel.FATAL);
+				return;
 			}
-
-			this.warningLevel = level;
+			case ERROR: {
+				level(QuiltWarningLevel.ERROR);
+				return;
+			}
+			case WARN: {
+				level(QuiltWarningLevel.WARN);
+				return;
+			}
+			case CONCERN: {
+				level(QuiltWarningLevel.CONCERN);
+				return;
+			}
+			case INFO: {
+				level(QuiltWarningLevel.INFO);
+				return;
+			}
+			case NONE: {
+				level(QuiltWarningLevel.NONE);
+				return;
+			}
+			default: {
+				throw new IllegalStateException("Unknown level " + level);
+			}
 		}
 	}
 
+	@Deprecated
 	public void setError() {
 		setWarningLevel(QuiltTreeWarningLevel.ERROR);
 	}
 
+	@Deprecated
 	public void setWarning() {
 		setWarningLevel(QuiltTreeWarningLevel.WARN);
 	}
 
+	@Deprecated
 	public void setInfo() {
 		setWarningLevel(QuiltTreeWarningLevel.INFO);
 	}
 
+	@Override
+	public QuiltStatusNode addChild(QuiltTreeNode.SortOrder sortOrder) {
+		QuiltStatusNode child = new QuiltStatusNode(this);
+		if (sortOrder == QuiltTreeNode.SortOrder.ADDITION_ORDER) {
+			childNodesByAddition.add(child);
+		} else {
+			childNodesByAlphabetical.add(child);
+		}
+		invokeListeners(TreeNodeListener.class, l -> l.onChildAdded(child));
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("sort_order", lvf().string(sortOrder.name()));
+			map.put("child", writeChild(child));
+			sendUpdate("add_child", lvf().object(map));
+		}
+		return child;
+	}
+
+	@Override
+	public QuiltStatusNode addChild() {
+		return addChild(QuiltTreeNode.SortOrder.ADDITION_ORDER);
+	}
+
+	@Override
+	public QuiltStatusNode addChild(QuiltLoaderText text) {
+		QuiltStatusNode child = addChild();
+		child.text(text);
+		return child;
+	}
+
+	@Override
+	public QuiltStatusNode addChild(QuiltLoaderText text, QuiltTreeNode.SortOrder sortOrder) {
+		return addChild(sortOrder).text(text);
+	}
+
+	void forEachChild(Consumer<? super QuiltStatusNode> consumer) {
+		childNodesByAddition.forEach(consumer);
+		childNodesByAlphabetical.forEach(consumer);
+	}
+
+	Iterable<QuiltStatusNode> childIterable() {
+		return () -> new Iterator<QuiltStatusNode>() {
+			final Iterator<QuiltStatusNode> first = childNodesByAddition.iterator();
+			final Iterator<QuiltStatusNode> second = childNodesByAlphabetical.iterator();
+
+			@Override
+			public boolean hasNext() {
+				return first.hasNext() || second.hasNext();
+			}
+
+			@Override
+			public QuiltStatusNode next() {
+				if (first.hasNext()) {
+					return first.next();
+				} else {
+					return second.next();
+				}
+			}
+		};
+	}
+
+	@Override
+	public String sortPrefix() {
+		return sortPrefix;
+	}
+
+	@Override
+	public QuiltStatusNode sortPrefix(String sortPrefix) {
+		if (sortPrefix == null) {
+			sortPrefix = "";
+		}
+		if (this.sortPrefix.equals(sortPrefix)) {
+			return this;
+		}
+		this.sortPrefix = sortPrefix;
+		QuiltStatusNode p = parent();
+		if (p != null) {
+			p.sortChildren();
+		}
+		if (shouldSendUpdates()) {
+			Map<String, LoaderValue> map = new HashMap<>();
+			map.put("sort_prefix", lvf().string(sortPrefix));
+			sendUpdate("set_sort_prefix", lvf().object(map));
+		}
+		return this;
+	}
+
+	private void sortChildren() {
+		childNodesByAlphabetical.sort((a, b) -> {
+			int cmp = a.sortPrefix.compareTo(b.sortPrefix);
+			if (cmp != 0) {
+				return cmp;
+			}
+			return a.text.compareTo(b.text);
+		});
+	}
+
+	@Deprecated
 	public QuiltStatusNode addChild(String string) {
 		int indent = 0;
 		QuiltTreeWarningLevel level = null;
@@ -166,126 +464,167 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase {
 		QuiltStatusNode to = this;
 
 		for (; indent > 0; indent--) {
-			if (to.children.isEmpty()) {
-				QuiltStatusNode node = new QuiltStatusNode(to, "");
-				to.children.add(node);
+			if (to.childNodesByAddition.isEmpty()) {
+				QuiltStatusNode node = to.addChild(QuiltTreeNode.SortOrder.ADDITION_ORDER);
 				to = node;
 			} else {
-				to = to.children.get(to.children.size() - 1);
+				to = to.childNodesByAddition.get(to.childNodesByAddition.size() - 1);
 			}
 
-			to.expandByDefault = true;
+			to.setExpandByDefault(true);
 		}
 
-		QuiltStatusNode child = new QuiltStatusNode(to, string);
+		QuiltStatusNode child = to.addChild(QuiltTreeNode.SortOrder.ADDITION_ORDER);
+		child.text(QuiltLoaderText.of(string));
 		child.setWarningLevel(level);
-		child.iconType = icon;
-		to.children.add(child);
 		return child;
 	}
 
-	public QuiltStatusNode addException(Throwable exception) {
-		return addException(
-			this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, UnaryOperator.identity()
-		);
+	// Deprecated PluginGuiTreeNode methods
+
+	@Override
+	@Deprecated
+	public QuiltTreeNode getNew() {
+		return this;
 	}
 
-	public QuiltStatusNode addCleanedException(Throwable exception) {
-		return addException(this, Collections.newSetFromMap(new IdentityHashMap<>()), exception, e -> {
-			// Remove some self-repeating exception traces from the tree
-			// (for example the RuntimeException that is is created unnecessarily by ForkJoinTask)
-			Throwable cause;
-
-			while ((cause = e.getCause()) != null) {
-				if (e.getSuppressed().length > 0) {
-					break;
-				}
-
-				String msg = e.getMessage();
-
-				if (msg == null) {
-					msg = e.getClass().getName();
-				}
-
-				if (!msg.equals(cause.getMessage()) && !msg.equals(cause.toString())) {
-					break;
-				}
-
-				e = cause;
-			}
-
-			return e;
-		});
+	@Override
+	@Deprecated
+	public PluginGuiTreeNode addChild(PluginGuiTreeNode.SortOrder sortOrder) {
+		return addChild(QuiltLoaderText.EMPTY, sortOrder);
 	}
 
-	private static QuiltStatusNode addException(QuiltStatusNode node, Set<Throwable> seen, Throwable exception,
-		UnaryOperator<Throwable> filter) {
-		if (!seen.add(exception)) {
-			return node;
-		}
-
-		exception = filter.apply(exception);
-		QuiltStatusNode sub = node.addExceptionNode(exception);
-
-		for (Throwable t : exception.getSuppressed()) {
-			addException(sub, seen, t, filter);
-		}
-
-		if (exception.getCause() != null) {
-			addException(sub, seen, exception.getCause(), filter);
-		}
-
-		return sub;
+	@Override
+	@Deprecated
+	public PluginGuiTreeNode addChild(QuiltLoaderText text, PluginGuiTreeNode.SortOrder sortOrder) {
+		QuiltTreeNode.SortOrder newOrder = sortOrder == PluginGuiTreeNode.SortOrder.ADDITION_ORDER
+			? QuiltTreeNode.SortOrder.ADDITION_ORDER
+			: QuiltTreeNode.SortOrder.ALPHABETICAL_ORDER;
+		return addChild(newOrder);
 	}
 
-	private QuiltStatusNode addExceptionNode(Throwable exception) {
-		String msg;
-
-		if (exception instanceof FormattedException) {
-			msg = Objects.toString(exception.getMessage());
-		} else if (exception.getMessage() == null || exception.getMessage().isEmpty()) {
-			msg = exception.toString();
-		} else {
-			msg = String.format("%s: %s", exception.getClass().getSimpleName(), exception.getMessage());
-		}
-
-		String[] lines = msg.split("\n");
-
-		QuiltStatusNode sub = new QuiltStatusNode(this, lines[0]);
-		children.add(sub);
-		sub.setError();
-		sub.expandByDefault = true;
-
-		for (int i = 1; i < lines.length; i++) {
-			sub.addChild(lines[i]);
-		}
-
-		return sub;
+	@Override
+	@Deprecated
+	public PluginGuiTreeNode setDirectLevel(WarningLevel level) {
+		level(fromOldLevel(level));
+		return this;
 	}
 
-	public QuiltStatusNode getFileNode(String file, String folderType, String fileType) {
-		QuiltStatusNode fileNode = this;
+	@Override
+	@Deprecated
+	public PluginGuiTreeNode setException(Throwable exception) {
+		return this;
+	}
 
-		pathIteration: for (String s : file.split("/")) {
-			if (s.isEmpty()) {
-				continue;
-			}
-
-			for (QuiltStatusNode c : fileNode.children) {
-				if (c.name.equals(s)) {
-					fileNode = c;
-					continue pathIteration;
-				}
-			}
-
-			if (fileNode.iconType.equals(QuiltJsonGui.ICON_TYPE_DEFAULT)) {
-				fileNode.iconType = folderType;
-			}
-
-			fileNode = fileNode.addChild(s);
+	@Deprecated
+	private static QuiltWarningLevel fromOldLevel(WarningLevel level) {
+		switch (level) {
+			case CONCERN:
+				return QuiltWarningLevel.CONCERN;
+			case DEBUG_ONLY:
+				return QuiltWarningLevel.DEBUG_ONLY;
+			case ERROR:
+				return QuiltWarningLevel.ERROR;
+			case FATAL:
+				return QuiltWarningLevel.FATAL;
+			case INFO:
+				return QuiltWarningLevel.INFO;
+			case NONE:
+				return QuiltWarningLevel.NONE;
+			case WARN:
+				return QuiltWarningLevel.WARN;
+			default:
+				throw new IllegalStateException("Unknown WarningLevel " + level);
 		}
+	}
 
-		fileNode.iconType = fileType;
-		return fileNode;
+	@Deprecated
+	private WarningLevel toOldLevel(QuiltWarningLevel level) {
+		switch (level) {
+			case CONCERN:
+				return WarningLevel.CONCERN;
+			case DEBUG_ONLY:
+				return WarningLevel.DEBUG_ONLY;
+			case ERROR:
+				return WarningLevel.ERROR;
+			case FATAL:
+				return WarningLevel.FATAL;
+			case INFO:
+				return WarningLevel.INFO;
+			case NONE:
+				return WarningLevel.NONE;
+			case WARN:
+				return WarningLevel.WARN;
+			default:
+				throw new IllegalStateException("Unknown QuiltWarningLevel " + level);
+		}
+	}
+
+	@Override
+	@Deprecated
+	public WarningLevel getDirectLevel() {
+		return toOldLevel(level());
+	}
+
+	@Override
+	@Deprecated
+	public WarningLevel getMaximumLevel() {
+		return toOldLevel(maximumLevel());
+	}
+
+	@Override
+	@Deprecated
+	public int countOf(WarningLevel level) {
+		return countAtLevel(fromOldLevel(level));
+	}
+
+	@Override
+	@Deprecated
+	public QuiltLoaderIcon mainIcon() {
+		QuiltLoaderIcon i = icon();
+		if (i == null) {
+			return QuiltLoaderGui.iconTreeDot();
+		}
+		for (SubIconPosition pos : SubIconPosition.values()) {
+			if (i.getDecoration(pos) != null) {
+				i = i.withDecoration(pos, null);
+			}
+		}
+		return i;
+	}
+
+	@Override
+	@Deprecated
+	public PluginGuiTreeNode mainIcon(QuiltLoaderIcon icon) {
+		for (SubIconPosition pos : SubIconPosition.values()) {
+			icon = icon.withDecoration(pos, icon().getDecoration(pos));
+		}
+		icon(icon);
+		return this;
+	}
+
+	@Override
+	@Deprecated
+	public @Nullable QuiltLoaderIcon subIcon() {
+		return icon.getDecoration(SubIconPosition.BOTTOM_RIGHT);
+	}
+
+	@Override
+	@Deprecated
+	public PluginGuiTreeNode subIcon(QuiltLoaderIcon subIcon) {
+		icon(icon().withDecoration(SubIconPosition.BOTTOM_RIGHT, subIcon));
+		return this;
+	}
+
+	@Override
+	@Deprecated
+	public void expandByDefault(boolean autoCollapse) {
+		autoExpandLevel(autoCollapse ? QuiltWarningLevel.NONE : QuiltWarningLevel.FATAL);
+	}
+
+	@Override
+	@Deprecated
+	public PluginGuiManager manager() {
+		return GuiManagerImpl.MANAGER;
 	}
 }

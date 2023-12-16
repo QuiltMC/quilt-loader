@@ -18,16 +18,13 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.awt.datatransfer.Clipboard;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,12 +36,21 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltBasicWindow;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
+import org.quiltmc.loader.api.gui.QuiltGuiMessagesTab;
+import org.quiltmc.loader.api.gui.QuiltGuiTreeTab;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
+import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+@Deprecated
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class QuiltJsonGui extends QuiltGuiSyncBase {
+public final class QuiltJsonGui<R> extends AbstractWindow<R> implements ButtonContainerImpl {
+	@Deprecated
 	public enum QuiltTreeWarningLevel {
 		FATAL,
 		ERROR,
@@ -127,41 +133,6 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 		}
 	}
 
-	public enum QuiltBasicButtonAction {
-		CLOSE("level_error"),
-		CONTINUE(ICON_TYPE_CONTINUE),
-		VIEW_FILE(ICON_TYPE_GENERIC_FILE, "file"),
-		EDIT_FILE(ICON_TYPE_GENERIC_FILE, "file"),
-		VIEW_FOLDER(ICON_TYPE_FOLDER, "folder"),
-		OPEN_FILE(ICON_TYPE_GENERIC_FILE, "file"),
-
-		/** Copies the given 'text' into the clipboard */
-		PASTE_CLIPBOARD_TEXT(ICON_TYPE_CLIPBOARD, "text"),
-
-		/** Copies the contents of a {@link File} (given in 'file') into the clipboard. */
-		PASTE_CLIPBOARD_FILE(ICON_TYPE_CLIPBOARD, "file"),
-
-		/** Copies a sub-sequence of characters from a {@link File} (given in 'file'), starting with the byte indexed by
-		 * 'from' and stopping one byte before 'to' */
-		PASTE_CLIPBOARD_FILE_SECTION(ICON_TYPE_CLIPBOARD, "file", "from", "to"),
-		OPEN_WEB_URL(ICON_TYPE_WEB, "url"),
-
-		/** Runs a {@link Runnable} in the original application, but only the first time the button is pressed. */
-		RETURN_SIGNAL_ONCE(ICON_TYPE_DEFAULT),
-
-		/** Runs a {@link Runnable} in the original application, every time the button is pressed. */
-		RETURN_SIGNAL_MANY(ICON_TYPE_DEFAULT);
-
-		public final String defaultIcon;
-		private final Set<String> requiredArgs;
-
-		private QuiltBasicButtonAction(String defaultIcon, String... args) {
-			this.defaultIcon = defaultIcon;
-			requiredArgs = new HashSet<>();
-			Collections.addAll(requiredArgs, args);
-		}
-	}
-
 	/** No icon is displayed. */
 	public static final String ICON_TYPE_DEFAULT = "";
 
@@ -220,9 +191,6 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 	 * of {@link #ICON_TYPE_TICK} */
 	public static final String ICON_TYPE_LESSER_CROSS = "lesser_cross";
 
-	public final CompletableFuture<Void> onClosedFuture = new CompletableFuture<>();
-
-	public final String title;
 	public final String mainText;
 
 	public String messagesTabName = "_MESSAGES_";
@@ -242,23 +210,24 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 		return tab;
 	}
 
-	public QuiltJsonButton addButton(String text, QuiltBasicButtonAction action) {
+	public QuiltJsonButton addButton(String text, QuiltJsonButton.QuiltBasicButtonAction action) {
 		return addButton(text, action.defaultIcon, action);
 	}
 
-	public QuiltJsonButton addButton(String text, String icon, QuiltBasicButtonAction action) {
+	public QuiltJsonButton addButton(String text, String icon, QuiltJsonButton.QuiltBasicButtonAction action) {
 		QuiltJsonButton button = new QuiltJsonButton(this, text, icon, action);
 		buttons.add(button);
 		return button;
 	}
 
+	public QuiltJsonButton addButton(String text, QuiltLoaderIcon icon, QuiltJsonButton.QuiltBasicButtonAction action) {
+		QuiltJsonButton btn = addButton(text, (String) null, action);
+		btn.icon(icon);
+		return btn;
+	}
+
 	public QuiltJsonGui(QuiltGuiSyncBase parent, LoaderValue.LObject obj) throws IOException {
-		super(null, obj);
-		if (parent != null) {
-			throw new IOException("Root guis can't have parents!");
-		}
-		onClosedFuture.thenRun(this::onClosed);
-		title = HELPER.expectString(obj, "title");
+		super(parent, obj);
 		mainText = HELPER.expectString(obj, "mainText");
 
 		messagesTabName = HELPER.expectString(obj, "messagesTabName");
@@ -277,7 +246,7 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 
 	@Override
 	protected void write0(Map<String, LoaderValue> map) {
-		map.put("title", lvf().string(title));
+		super.write0(map);
 		map.put("mainText", lvf().string(mainText));
 		map.put("messagesTabName", lvf().string(messagesTabName));
 		map.put("messages", lvf().array(write(messages)));
@@ -288,68 +257,6 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 	@Override
 	String syncType() {
 		return "root_gui";
-	}
-
-	public void open() {
-		sendSignal("open");
-	}
-
-	public void onClosed() {
-		sendSignal("closed");
-	}
-
-	public void waitUntilClosed() throws LoaderGuiException, LoaderGuiClosed {
-		try {
-			while (true) {
-				try {
-					onClosedFuture.get(1, TimeUnit.SECONDS);
-					break;
-				} catch (TimeoutException e) {
-					if (QuiltForkComms.getCurrentComms() == null) {
-						throw new LoaderGuiException("Forked communication failure; check the log for details!", e);
-					}
-				}
-			}
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			throw new LoaderGuiException(e);
-		} catch (ExecutionException e) {
-			throw new LoaderGuiException(e.getCause());
-		}
-
-		for (QuiltJsonGuiMessage message : messages) {
-			if (!message.fixed) {
-				throw LoaderGuiClosed.INSTANCE;
-			}
-		}
-	}
-
-	@Override
-	void handleUpdate(String name, LObject data) throws IOException {
-		switch (name) {
-			case "open": {
-				if (!QuiltForkComms.isServer()) {
-					throw new IOException("Can only open on the server!");
-				}
-
-				try {
-					QuiltMainWindow.open(this, false);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				return;
-			}
-			case "closed": {
-				if (!QuiltForkComms.isClient()) {
-					throw new IOException("Can only receive 'closed' on the client!");
-				}
-				onClosedFuture.complete(null);
-				return;
-			}
-			default: {
-				throw new IOException("Unknown update '" + name + "'");
-			}
-		}
 	}
 
 	public QuiltTreeWarningLevel getMaximumWarningLevel() {
@@ -363,19 +270,23 @@ public final class QuiltJsonGui extends QuiltGuiSyncBase {
 		return max;
 	}
 
-	static void expectName(JsonReader reader, String expected) throws IOException {
-		String name = reader.nextName();
-		if (!expected.equals(name)) {
-			throw new IOException("Expected '" + expected + "', but read '" + name + "'");
+	@Override
+	protected void openOnServer() {
+		try {
+			QuiltMainWindow.open(this, false);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
 
-	static String readStringOrNull(JsonReader reader) throws IOException {
-		if (reader.peek() == JsonToken.STRING) {
-			return reader.nextString();
-		} else {
-			reader.nextNull();
-			return null;
-		}
+	@Override
+	public QuiltJsonGui<R> getThis() {
+		return this;
+	}
+
+	@Override
+	public QuiltJsonButton addButton(QuiltJsonButton button) {
+		buttons.add(button);
+		return button;
 	}
 }

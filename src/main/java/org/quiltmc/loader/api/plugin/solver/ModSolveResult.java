@@ -19,9 +19,7 @@ package org.quiltmc.loader.api.plugin.solver;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

@@ -33,7 +33,6 @@ import java.security.CodeSource;
 import java.security.ProtectionDomain;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -43,6 +42,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -63,11 +63,17 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
 import org.quiltmc.loader.api.gui.LoaderGuiClosed;
+import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltBasicWindow;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltGuiMessagesTab;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -83,12 +89,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
-import org.quiltmc.loader.impl.gui.QuiltFork;
-import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
-import org.quiltmc.loader.impl.gui.QuiltJsonGuiTreeTab;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -99,6 +100,7 @@ import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedType;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
@@ -595,7 +597,7 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			handleUnknownFiles(result);
+			handleUnknownFiles(plugins, result);
 
 			temporarySourcePaths = new HashMap<>();
 			for (ModLoadOption mod : result.directMods().values()) {
@@ -615,11 +617,11 @@ public final class QuiltLoaderImpl {
 
 			boolean anyWarnings = false;
 
-			if (plugins.guiFileRoot.getMaximumLevel().ordinal() <= WarningLevel.WARN.ordinal()) {
+			if (plugins.guiFileRoot.maximumLevel().ordinal() <= QuiltWarningLevel.WARN.ordinal()) {
 				anyWarnings = true;
 			}
 
-			if (plugins.guiModsRoot.getMaximumLevel().ordinal() <= WarningLevel.WARN.ordinal()) {
+			if (plugins.guiModsRoot.maximumLevel().ordinal() <= QuiltWarningLevel.WARN.ordinal()) {
 				anyWarnings = true;
 			}
 
@@ -627,31 +629,26 @@ public final class QuiltLoaderImpl {
 				return result;
 			}
 
-			final String msg;
+			final QuiltLoaderText msg;
 			if (anyWarnings) {
-				int count = plugins.guiModsRoot.countOf(WarningLevel.WARN)//
-					+ plugins.guiFileRoot.countOf(WarningLevel.WARN);
-				msg = QuiltLoaderText.translate("msg.load_state.warns", count).toString();
+				int count = plugins.guiModsRoot.countAtLevel(QuiltWarningLevel.WARN)//
+					+ plugins.guiFileRoot.countAtLevel(QuiltWarningLevel.WARN);
+				msg = QuiltLoaderText.translate("msg.load_state.warns", count);
 			} else {
-				msg = QuiltLoaderText.translate("msg.load_state").toString();
+				msg = QuiltLoaderText.translate("msg.load_state");
 			}
 
-			QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + VERSION, msg);
-			QuiltJsonGuiTreeTab tab = tree.addTab("Files");
-			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
-			plugins.guiFileRoot.toNode(tab.node, false);
-
-			QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
-			plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
-			plugins.guiModsRoot.toNode(tab2.node, false);
-
-			String btnText = QuiltLoaderText.translate("button.continue_to", getGameProvider().getGameName()).toString();
-			tree.addButton(btnText, QuiltBasicButtonAction.CONTINUE);
+			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
+			window.title(QuiltLoaderText.of("Quilt Loader " + VERSION));
+			window.mainText(msg);
+			window.addTreeTab(QuiltLoaderText.translate("tab.file_list"), plugins.guiFileRoot);
+			window.addTreeTab(QuiltLoaderText.translate("tab.mod_list"), plugins.guiModsRoot);
+			window.addContinueButton().text(QuiltLoaderText.translate("button.continue_to", getGameProvider().getGameName()));
 
 			// TODO: Look into writing a report!
 
 			try {
-				QuiltGuiEntry.open(tree, null, true);
+				QuiltLoaderGui.open(window);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -678,63 +675,47 @@ public final class QuiltLoaderImpl {
 		}
 
 		String msg = "crash.during_setup." + provider.getGameId();
-		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, QuiltLoaderText.translate(msg).toString());
-		tree.messagesTabName = QuiltLoaderText.translate("tab.messages").toString();
+		QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
+		window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
+		window.mainText(QuiltLoaderText.translate(msg));
+
+		QuiltGuiMessagesTab messagesTab = window.addMessagesTab(QuiltLoaderText.translate("tab.messages"));
 
 		if (fullCrashText != null) {
-			QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
+			QuiltDisplayedError error = QuiltLoaderGui.createError(QuiltLoaderText.translate("error.failed_to_save_crash_report"));
 			error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
 			error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
 			error.appendAdditionalInformation(QuiltLoaderText.translate("error.failed_to_save_crash_report.info"));
 			error.addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), fullCrashText);
-			tree.messages.add(error);
+			messagesTab.addMessage(error);
 		}
 
 		int number = 1;
 		List<QuiltJsonGuiMessage> pluginErrors = plugins.getErrors();
 		for (QuiltJsonGuiMessage error : pluginErrors) {
 			if (number > 200) {
-				error = new QuiltJsonGuiMessage(tree, MOD_ID, QuiltLoaderText.translate("error.too_many_errors"));
+				error = new QuiltJsonGuiMessage(null, MOD_ID, QuiltLoaderText.translate("error.too_many_errors"));
 				error.appendDescription(QuiltLoaderText.translate("error.too_many_errors.desc", pluginErrors.size() - 200));
-				tree.messages.add(0, error);
+				messagesTab.addMessage(error);
 				break;
 			}
-			tree.messages.add(error);
+			messagesTab.addMessage(error);
 			number++;
 		}
 
-		// TODO: Move tab creation to the plugin manager
-		// so that the plugin manager can have tabs of both the file list
-		// AND mod list!
-		if (plugins.guiFileRoot.hasChildren()) {
-			QuiltJsonGuiTreeTab tab = tree.addTab("Files");
-			plugins.guiFileRoot.text(QuiltLoaderText.translate("tab.file_list"));
-			plugins.guiFileRoot.toNode(tab.node, false);
-		}
-
-		if (plugins.guiModsRoot.hasChildren()) {
-			QuiltJsonGuiTreeTab tab2 = tree.addTab("Mods");
-			plugins.guiModsRoot.text(QuiltLoaderText.translate("tab.mod_list"));
-			plugins.guiModsRoot.toNode(tab2.node, false);
-		}
+		window.addTreeTab(QuiltLoaderText.translate("tab.file_list"), plugins.guiFileRoot);
+		window.addTreeTab(QuiltLoaderText.translate("tab.mod_list"), plugins.guiModsRoot);
 
 		if (crashReportFile != null) {
-			tree.addButton(QuiltLoaderText.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//
-				.arg("file", crashReportFile.toString());
-			tree.addButton(QuiltLoaderText.translate("button.copy_crash_report").toString(), QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE)//
-				.arg("file", crashReportFile.toString());
+			window.addFileOpenButton(crashReportFile).text(QuiltLoaderText.translate("button.open_crash_report"));
+			window.addCopyFileToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportFile);
 		}
 
-		tree.addButton(QuiltLoaderText.translate("button.open_mods_folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
-			.arg("folder", getModsDir().toString());
-		tree.addButton(QuiltLoaderText.translate("button.exit").toString(), QuiltBasicButtonAction.CLOSE);
+		window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), getModsDir());
+		window.addContinueButton().text(QuiltLoaderText.translate("button.exit")).icon(QuiltLoaderGui.iconLevelError());
 
 		try {
-			try {
-				QuiltFork.openErrorGui(tree, true);
-			} catch (LoaderGuiClosed ignored) {
-				// Ignored
-			}
+			QuiltLoaderGui.open(window);
 			System.exit(1);
 			throw new Error("System.exit(1) Failed!");
 		} catch (Exception e) {
@@ -742,10 +723,30 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	private void handleUnknownFiles(ModSolveResultImpl result) {
+	private void handleUnknownFiles(QuiltPluginManagerImpl plugins, ModSolveResultImpl result) {
 
 		// TODO: Display this in an error message!
 		// (As we don't want this to be "optional")
+
+		{
+			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
+			window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
+			window.addOpenQuiltSupportButton();
+			QuiltErrorButton continueButton = window.addContinueButton();
+			continueButton.text(QuiltLoaderText.translate("button.ignore"));
+			continueButton.icon(QuiltLoaderGui.iconContinueIgnoring());
+			QuiltGuiMessagesTab unknownTab = window.addMessagesTab(QuiltLoaderText.translate("tab.unknown_mods"));
+			window.addTreeTab(QuiltLoaderText.translate("tab.file_list"), plugins.guiFileRoot);
+			window.addTreeTab(QuiltLoaderText.translate("tab.mod_list"), plugins.guiModsRoot);
+
+			plugins.guiUnknownMods.values().forEach(unknownTab::addMessage);
+
+			try {
+				QuiltLoaderGui.open(window);
+			} catch (LoaderGuiException e) {
+				// Ignored
+			}
+		}
 
 		Path absoluteGameDir = gameDir != null ? gameDir.toAbsolutePath().normalize() : null;
 		Path absoluteModsDir = modsDir != null ? modsDir.toAbsolutePath().normalize() : null;

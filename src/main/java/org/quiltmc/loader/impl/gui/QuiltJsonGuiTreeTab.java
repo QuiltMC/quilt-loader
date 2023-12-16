@@ -25,6 +25,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+@Deprecated
 public final class QuiltJsonGuiTreeTab extends QuiltGuiSyncBase {
 	public final QuiltStatusNode node;
 
@@ -33,7 +34,7 @@ public final class QuiltJsonGuiTreeTab extends QuiltGuiSyncBase {
 
 	public QuiltJsonGuiTreeTab(QuiltGuiSyncBase parent, String name) {
 		super(parent);
-		this.node = new QuiltStatusNode(null, name);
+		this.node = new QuiltStatusNode(this);
 	}
 
 	public QuiltStatusNode addChild(String name) {

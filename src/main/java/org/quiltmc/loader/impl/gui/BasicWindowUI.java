@@ -21,17 +21,18 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Desktop;
+import java.awt.Desktop.Action;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Toolkit;
-import java.awt.Desktop.Action;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -50,9 +51,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -78,65 +79,68 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.impl.gui.AbstractTab.TabChangeListener;
+import org.quiltmc.loader.impl.gui.BasicWindow.BasicWindowChangeListener;
+import org.quiltmc.loader.impl.gui.MessagesTab.MessageTabListener;
+import org.quiltmc.loader.impl.gui.PluginIconImpl.BlankIcon;
+import org.quiltmc.loader.impl.gui.PluginIconImpl.IconType;
 import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
 
-@Deprecated
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-class QuiltMainWindow {
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+class BasicWindowUI {
+	static BufferedImage missingImage = null;
 	static Icon missingIcon = null;
 
-	static void open(QuiltJsonGui<?> tree, boolean shouldWait) throws Exception {
+	static void open(BasicWindow<?> window) throws Exception {
 		QuiltUI.init();
 
 		SwingUtilities.invokeAndWait(() -> {
-			new QuiltMainWindow(tree).open();
+			new BasicWindowUI(window).open();
 		});
-
-		if (shouldWait) {
-			tree.onClosedFuture.get();
-		}
 	}
 
-	final JFrame window;
-	final QuiltJsonGui<?> jsonGui;
+	final JFrame swingFrame;
+	final BasicWindow<?> quiltWindow;
 	final IconSet icons;
 
-	public QuiltMainWindow(QuiltJsonGui<?> tree) {
-		this.jsonGui = tree;
-		window = new JFrame();
-		window.setVisible(false);
-		window.setTitle(tree.title);
+	public BasicWindowUI(BasicWindow<?> quiltWindow) {
+		this.quiltWindow = quiltWindow;
+		swingFrame = new JFrame();
+		swingFrame.setVisible(false);
+		swingFrame.setTitle(quiltWindow.title);
 
 		try {
 			List<BufferedImage> images = new ArrayList<>();
 			images.add(loadImage("/ui/icon/quilt_x16.png"));
 			images.add(loadImage("/ui/icon/quilt_x128.png"));
-			window.setIconImages(images);
+			swingFrame.setIconImages(images);
 			setTaskBarImage(images.get(1));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 		// TODO: change this back to normal after debugging
-		window.setMinimumSize(new Dimension(1, 1));
-		window.setPreferredSize(new Dimension(800, 480));
-		window.setLocationByPlatform(true);
-		window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		window.addWindowListener(new WindowAdapter() {
+		swingFrame.setMinimumSize(new Dimension(1, 1));
+		swingFrame.setPreferredSize(new Dimension(800, 480));
+		swingFrame.setLocationByPlatform(true);
+		swingFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		swingFrame.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosed(WindowEvent e) {
-				tree.onClosedFuture.complete(null);
+				quiltWindow.onClosedFuture.complete(null);
 			}
 		});
 
-		Container contentPane = window.getContentPane();
+		Container contentPane = swingFrame.getContentPane();
 
-		if (tree.mainText != null && !tree.mainText.isEmpty()) {
-			JLabel errorLabel = new JLabel(tree.mainText);
+		if (quiltWindow.mainText != null && !quiltWindow.mainText.isEmpty()) {
+			JLabel errorLabel = new JLabel(quiltWindow.mainText);
 			errorLabel.setHorizontalAlignment(SwingConstants.CENTER);
 			Font font = errorLabel.getFont();
 			errorLabel.setFont(font.deriveFont(font.getSize() * 2.0f));
@@ -145,56 +149,105 @@ class QuiltMainWindow {
 
 		icons = new IconSet();
 
-		if (tree.tabs.isEmpty() && tree.messages.isEmpty()) {
-			QuiltJsonGuiTreeTab tab = new QuiltJsonGuiTreeTab(null, "Opening Errors");
-			tab.addChild("No tabs provided! (Something is very broken)").setError();
-			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
-		} else if (tree.tabs.size() == 1 && tree.messages.isEmpty()) {
-			QuiltJsonGuiTreeTab tab = tree.tabs.get(0);
-			contentPane.add(createTreePanel(tab.node, tab.filterLevel, icons), BorderLayout.CENTER);
-		} else if (tree.tabs.isEmpty()) {
-			contentPane.add(createMessagesPanel(icons, tree.messages), BorderLayout.CENTER);
+		final JTabbedPane tabs;
+
+		if (quiltWindow.singleTabOnly) {
+			AbstractTab tab = quiltWindow.tabs.get(0);
+			contentPane.add(createPanel(null, tab), BorderLayout.CENTER);
+
+			tabs = null;
 		} else {
-			JTabbedPane tabs = new JTabbedPane();
+			tabs = new JTabbedPane();
 			contentPane.add(tabs, BorderLayout.CENTER);
 
-			if (!tree.messages.isEmpty()) {
-				tabs.addTab(tree.messagesTabName, icons.get(new IconInfo("level_error")), createMessagesPanel(icons, tree.messages));
-			}
-
-			for (QuiltJsonGuiTreeTab tab : tree.tabs) {
-				JPanel panel = createTreePanel(tab.node, tab.filterLevel, icons);
-				QuiltTreeWarningLevel maxLevel = tab.node.getMaximumWarningLevel();
-				if (maxLevel != QuiltTreeWarningLevel.NONE) {
-					tabs.addTab(tab.node.text, icons.get(new IconInfo("level_" + maxLevel.lowerCaseName)), panel);
-				} else {
-					tabs.addTab(tab.node.text, panel);
+			for (AbstractTab tab : quiltWindow.tabs) {
+				PluginIconImpl icon = tab.icon;
+				QuiltWarningLevel level = tab.level();
+				if (QuiltWarningLevel.NONE.compareTo(level) <= 0) {
+					if (icon == null) {
+						icon = PluginIconImpl.fromApi(level.icon());
+					} else {
+						icon = icon.withLevel(level);
+					}
 				}
+				tabs.addTab(tab.text, icons.get(icon), createPanel(tabs, tab));
 			}
-
 		}
 
-		if (!tree.buttons.isEmpty()) {
-			JPanel buttons = new JPanel();
-			contentPane.add(buttons, BorderLayout.SOUTH);
-			buttons.setLayout(new FlowLayout(FlowLayout.TRAILING));
+		JPanel buttons = new JPanel();
+		contentPane.add(buttons, BorderLayout.SOUTH);
+		buttons.setLayout(new FlowLayout(FlowLayout.TRAILING));
 
-			for (QuiltJsonButton button : tree.buttons) {
+		if (!quiltWindow.buttons.isEmpty()) {
+			for (QuiltJsonButton button : quiltWindow.buttons) {
 				convertToJButton(buttons, button);
 			}
 		}
+
+		quiltWindow.listeners.add(new BasicWindow.BasicWindowChangeListener() {
+			@Override
+			public void onButtonAdded(QuiltJsonButton button) {
+				convertToJButton(buttons, button);
+			}
+
+			@Override
+			public void onTitleChanged() {
+				swingFrame.setTitle(quiltWindow.title);
+			}
+
+			@Override
+			public void onAddTab(AbstractTab tab) {
+				if (tabs != null) {
+					PluginIconImpl icon = tab.icon;
+					QuiltWarningLevel level = tab.level();
+					if (QuiltWarningLevel.NONE.compareTo(level) <= 0) {
+						if (icon == null) {
+							icon = PluginIconImpl.fromApi(level.icon());
+						} else {
+							icon = icon.withLevel(level);
+						}
+					}
+					tabs.addTab(tab.text, icons.get(icon), createPanel(tabs, tab));
+				}
+			}
+		});
+	}
+
+	private JComponent createPanel(JTabbedPane tabContainer, AbstractTab tab) {
+		final JComponent panel;
+		if (tab instanceof MessagesTab) {
+			panel = createMessagesPanel(icons, (MessagesTab) tab);
+		} else if (tab instanceof TreeTab) {
+			TreeTab tree = (TreeTab) tab;
+			panel = createTreePanel(tree.rootNode, tree.visibilityLevel, icons);
+		} else {
+			throw new IllegalStateException("Unknown tab " + tab.getClass());
+		}
+
+		if (tabContainer == null) {
+			return panel;
+		}
+
+		tab.listeners.add(new AbstractTab.TabChangeListener() {
+			int index = quiltWindow.tabs.indexOf(tab);
+
+			@Override
+			public void onTextChanged() {
+				tabContainer.setTitleAt(index, tab.text);
+			}
+		});
+
+		return panel;
 	}
 
 	private void open() {
-		window.pack();
-		window.setVisible(true);
-		window.requestFocus();
+		swingFrame.pack();
+		swingFrame.setVisible(true);
+		swingFrame.requestFocus();
 	}
 
 	private void convertToJButton(JPanel addTo, QuiltJsonButton button) {
-		JButton btn = button.icon.isEmpty() 
-			? new JButton(button.text) 
-			: new JButton(button.text, icons.get(IconInfo.parse(button.icon)));
+		JButton btn = new JButton(button.text, icons.get(button.icon));
 		button.listeners.add(new QuiltJsonButton.QuiltButtonListener() {
 			@Override
 			public void onTextChanged() {
@@ -203,7 +256,7 @@ class QuiltMainWindow {
 
 			@Override
 			public void onIconChanged() {
-				btn.setIcon(icons.get(IconInfo.parse(button.icon)));
+				btn.setIcon(icons.get(button.icon));
 			}
 
 			@Override
@@ -218,13 +271,13 @@ class QuiltMainWindow {
 
 			switch (button.action) {
 				case CONTINUE: {
-					jsonGui.onClosedFuture.complete(null);
-					window.dispose();
+					quiltWindow.onClosedFuture.complete(null);
+					swingFrame.dispose();
 					return;
 				}
 				case CLOSE: {
-					jsonGui.onClosedFuture.complete(null);
-					window.dispose();
+					quiltWindow.onClosedFuture.complete(null);
+					swingFrame.dispose();
 					return;
 				}
 				case VIEW_FILE: {
@@ -265,7 +318,7 @@ class QuiltMainWindow {
 					throw new IllegalStateException("Unknown / unimplemented action " + button.action);
 			}
 
-//			if (button.type == QuiltJsonGui.QuiltBasicButtonAction.CLICK_ONCE) btn.setEnabled(false);
+			// if (button.type == QuiltJsonGui.QuiltBasicButtonAction.CLICK_ONCE) btn.setEnabled(false);
 		});
 	}
 
@@ -287,7 +340,7 @@ class QuiltMainWindow {
 		try {
 			Desktop.getDesktop().open(new File(file).getParentFile());
 		} catch (IOException | UnsupportedOperationException e) {
-			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to open '" + file + "'");
 			e.printStackTrace();
 		}
 	}
@@ -307,7 +360,7 @@ class QuiltMainWindow {
 				method.invoke(d, new File(file));
 				return true;
 			} catch (ReflectiveOperationException e) {
-				JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+				JOptionPane.showMessageDialog(swingFrame, "Failed to open '" + file + "'");
 				e.printStackTrace();
 			}
 		}
@@ -366,7 +419,7 @@ class QuiltMainWindow {
 		try {
 			Desktop.getDesktop().open(new File(file));
 		} catch (IOException | UnsupportedOperationException e) {
-			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to open '" + file + "'");
 			e.printStackTrace();
 		}
 	}
@@ -375,7 +428,7 @@ class QuiltMainWindow {
 		try {
 			Desktop.getDesktop().open(new File(file));
 		} catch (IOException | UnsupportedOperationException e) {
-			JOptionPane.showMessageDialog(window, "Failed to open '" + file + "'");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to open '" + file + "'");
 			e.printStackTrace();
 		}
 	}
@@ -389,7 +442,7 @@ class QuiltMainWindow {
 				desktop.open(new File(file));
 			}
 		} catch (IOException | UnsupportedOperationException e) {
-			JOptionPane.showMessageDialog(window, "Failed to edit '" + file + "'");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to edit '" + file + "'");
 			e.printStackTrace();
 		}
 	}
@@ -399,7 +452,7 @@ class QuiltMainWindow {
 			URI uri = new URI(url);
 			Desktop.getDesktop().browse(uri);
 		} catch (URISyntaxException | IOException | UnsupportedOperationException e) {
-			JOptionPane.showMessageDialog(window, "Failed to open '" + url + "'");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to open '" + url + "'");
 			e.printStackTrace();
 		}
 	}
@@ -409,7 +462,7 @@ class QuiltMainWindow {
 			StringSelection clipboard = new StringSelection(text);
 			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
 		} catch (IllegalStateException e) {
-			JOptionPane.showMessageDialog(window, "Failed to paste clipboard text!");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to paste clipboard text!");
 			e.printStackTrace();
 		}
 	}
@@ -420,15 +473,15 @@ class QuiltMainWindow {
 			StringSelection clipboard = new StringSelection(text);
 			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(clipboard, clipboard);
 		} catch (IllegalStateException e) {
-			JOptionPane.showMessageDialog(window, "Failed to paste clipboard text!");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to paste clipboard text!");
 			e.printStackTrace();
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(window, "Failed to open file to paste from: '" + file + "'!");
+			JOptionPane.showMessageDialog(swingFrame, "Failed to open file to paste from: '" + file + "'!");
 			e.printStackTrace();
 		}
 	}
 
-	private JComponent createMessagesPanel(IconSet icons, List<QuiltJsonGuiMessage> messages) {
+	private JComponent createMessagesPanel(IconSet icons, MessagesTab tab) {
 		JScrollPane pane = new JScrollPane();
 		pane.setOpaque(true);
 		pane.getVerticalScrollBar().setUnitIncrement(16);
@@ -437,19 +490,33 @@ class QuiltMainWindow {
 		outerPanel.setLayout(new BorderLayout());
 		outerPanel.setBackground(Color.WHITE);
 
-		JPanel panel = null;
+		class TabManager implements MessagesTab.MessageTabListener {
 
-		for (QuiltJsonGuiMessage message : messages) {
-			if (panel == null) {
-				panel = outerPanel;
-			} else {
-				JPanel outer = panel;
-				panel = new JPanel();
-				panel.setLayout(new BorderLayout());
-				panel.setBackground(Color.WHITE);
-				outer.add(panel, BorderLayout.CENTER);
+			JPanel panel = null;
+
+			@Override
+			public void onMessageAdded(QuiltJsonGuiMessage message) {
+				SwingUtilities.invokeLater(() -> addPanelForMessage(message));
 			}
-			panel.add(createMessagePanel(icons, message), BorderLayout.NORTH);
+
+			void addPanelForMessage(QuiltJsonGuiMessage message) {
+				if (panel == null) {
+					panel = outerPanel;
+				} else {
+					JPanel outer = panel;
+					panel = new JPanel();
+					panel.setLayout(new BorderLayout());
+					panel.setBackground(Color.WHITE);
+					outer.add(panel, BorderLayout.CENTER);
+				}
+				panel.add(createMessagePanel(icons, message), BorderLayout.NORTH);
+			}
+		}
+
+		TabManager manager = new TabManager();
+		tab.listeners.add(manager);
+		for (QuiltJsonGuiMessage message : tab.messages) {
+			manager.addPanelForMessage(message);
 		}
 
 		pane.setViewportView(outerPanel);
@@ -467,12 +534,41 @@ class QuiltMainWindow {
 		top.setAlignmentY(0);
 		top.setAlignmentX(0);
 
-		JLabel icon = new JLabel(icons.get(IconInfo.parse(message.icon), 32));
+		JLabel icon = new JLabel(icons.get(message.icon, 32));
 		icon.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 		top.add(icon, BorderLayout.WEST);
 		JLabel title = new JLabel(message.title);
 		title.setFont(title.getFont().deriveFont(Font.BOLD));
 		top.add(title, BorderLayout.CENTER);
+
+		/* CONTAINER
+		 * 
+		 * [NORTH]
+		 * | TOP
+		 * | [NORTH] - ICON, TEXT
+		 * | [CENTER]
+		 * | [SOUTH]
+		 * 
+		 * [CENTER]
+		 * | MESSAGES_CONTAINER
+		 * | [CENTER]
+		 * | | MESSAGE_1
+		 * | | [NORTH] - {Message 1}
+		 * | | [CENTER]
+		 * | | | MESSAGE_2
+		 * |
+		 * | [SOUTH]
+		 * | | TREE_PANEL
+		 * | | 
+		 * 
+		 * 
+		 * [SOUTH]
+		 * | { Buttons }
+		 * 
+		 */
+
+		JPanel messagesPanel = new JPanel();
+		container.add(messagesPanel, BorderLayout.CENTER);
 
 		AtomicReference<JPanel> currentOuterPanel = new AtomicReference<>();
 
@@ -481,12 +577,16 @@ class QuiltMainWindow {
 			static final int FLAG_UPDATE_TITLE = 1 << 0;
 			static final int FLAG_UPDATE_ICON = 1 << 1;
 			static final int FLAG_UPDATE_DESC = 1 << 2;
+			static final int FLAG_UPDATE_TREE = 1 << 4;
 
 			int updateFlags = 0;
 			String titleText = message.title;
-			String iconType = message.icon;
+			PluginIconImpl msgIcon = message.icon;
 			String[] description = message.description.toArray(new String[0]);
 			String[] additionalInfo = message.additionalInfo.toArray(new String[0]);
+			QuiltStatusNode tree = message.treeNode;
+
+			JComponent currentTreePanel = null;
 
 			@Override
 			public synchronized void onTitleChanged() {
@@ -497,7 +597,7 @@ class QuiltMainWindow {
 
 			@Override
 			public synchronized void onIconChanged() {
-				iconType = message.icon;
+				msgIcon = message.icon;
 				updateFlags |= FLAG_UPDATE_ICON;
 				SwingUtilities.invokeLater(this::update);
 			}
@@ -516,17 +616,28 @@ class QuiltMainWindow {
 				SwingUtilities.invokeLater(this::update);
 			}
 
+			@Override
+			public void onTreeNodeChanged() {
+				tree = message.treeNode;
+				updateFlags |= FLAG_UPDATE_TREE;
+				SwingUtilities.invokeLater(this::update);
+			}
+
 			synchronized void update() {
 				if ((updateFlags & FLAG_UPDATE_TITLE) != 0) {
 					title.setText(titleText);
 				}
 
 				if ((updateFlags & FLAG_UPDATE_ICON) != 0) {
-					icon.setIcon(icons.get(IconInfo.parse(iconType), 32));
+					icon.setIcon(icons.get(msgIcon, 32));
 				}
 
 				if ((updateFlags & FLAG_UPDATE_DESC) != 0) {
 					populateDescInfo();
+				}
+
+				if ((updateFlags & FLAG_UPDATE_TREE) != 0) {
+					populateTree();
 				}
 
 				updateFlags = 0;
@@ -535,7 +646,7 @@ class QuiltMainWindow {
 			void populateDescInfo() {
 				if (currentOuterPanel.get() != null) {
 					JPanel old = currentOuterPanel.getAndSet(null);
-					container.remove(old);
+					messagesPanel.remove(old);
 				}
 
 				JPanel panel = container;
@@ -545,6 +656,7 @@ class QuiltMainWindow {
 					panel.setAlignmentY(0);
 					panel.setLayout(new BorderLayout());
 					outer.add(panel, BorderLayout.CENTER);
+					currentOuterPanel.compareAndSet(null, panel);
 
 					panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
 				}
@@ -562,13 +674,28 @@ class QuiltMainWindow {
 					currentOuterPanel.compareAndSet(null, panel);
 				}
 
-				container.validate();
+				messagesPanel.validate();
+			}
+
+			void populateTree() {
+				if (currentTreePanel != null) {
+					messagesPanel.remove(currentTreePanel);
+					currentTreePanel = null;
+				}
+
+				if (tree != null) {
+					currentTreePanel = createTreePanel(tree, QuiltWarningLevel.NONE, icons);
+					messagesPanel.add(currentTreePanel, BorderLayout.SOUTH);
+				}
 			}
 		}
 
 		MessageListener listener = new MessageListener();
 
 		listener.populateDescInfo();
+		if (message.treeNode != null) {
+			listener.populateTree();
+		}
 
 		message.listeners.add(listener);
 
@@ -595,8 +722,8 @@ class QuiltMainWindow {
 		return outer;
 	}
 
-	private static JPanel createTreePanel(QuiltStatusNode rootNode, QuiltTreeWarningLevel minimumWarningLevel,
-										  IconSet iconSet) {
+	private static JPanel createTreePanel(QuiltStatusNode rootNode, QuiltWarningLevel minimumWarningLevel,
+		IconSet iconSet) {
 
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
@@ -635,7 +762,7 @@ class QuiltMainWindow {
 	}
 
 	private static InputStream loadStream(String str) throws FileNotFoundException {
-		InputStream stream = QuiltMainWindow.class.getResourceAsStream(str);
+		InputStream stream = BasicWindowUI.class.getResourceAsStream(str);
 
 		if (stream == null) {
 			throw new FileNotFoundException(str);
@@ -660,13 +787,20 @@ class QuiltMainWindow {
 	static final class IconSet {
 
 		/** Map of IconInfo -> Integer Size -> Real Icon. */
-		private final Map<IconInfo, Map<Integer, Icon>> icons = new HashMap<>();
+		private final Map<PluginIconImpl, Map<Integer, Icon>> icons = new HashMap<>();
 
-		public Icon get(IconInfo info) {
+		/** Map of Real Icon Type -> Integer Size -> Real Icon. */
+		private final Map<PluginIconImpl.IconType, Map<Integer, BufferedImage>> rawIcons = new HashMap<>();
+		private final Map<PluginIconImpl.UploadedIcon, NavigableMap<Integer, BufferedImage>> uploadedIcons = new HashMap<>();
+
+		public Icon get(PluginIconImpl info) {
 			return get(info, 16);
 		}
 
-		public Icon get(IconInfo info, int scale) {
+		public Icon get(PluginIconImpl info, int scale) {
+			if (info == null) {
+				return null;
+			}
 			// TODO: HDPI
 
 			Map<Integer, Icon> map = icons.computeIfAbsent(info, k -> new HashMap<>());
@@ -687,29 +821,78 @@ class QuiltMainWindow {
 			return icon;
 		}
 
-		Icon loadIcon(IconInfo info, int scale) throws IOException {
+		public BufferedImage get(PluginIconImpl.IconType info, int scale) {
+			// TODO: HDPI
+
+			Map<Integer, BufferedImage> map = rawIcons.computeIfAbsent(info, k -> new HashMap<>());
+
+			BufferedImage icon = map.get(scale);
+
+			if (icon == null) {
+				try {
+					icon = loadIcon(info, scale);
+				} catch (IOException e) {
+					e.printStackTrace();
+					icon = missingImage();
+				}
+
+				map.put(scale, icon);
+			}
+
+			return icon;
+		}
+
+		Icon loadIcon(PluginIconImpl info, int scale) throws IOException {
 			return new ImageIcon(generateIcon(info, scale));
 		}
 
-		BufferedImage generateIcon(IconInfo info, int scale) throws IOException {
+		BufferedImage loadIcon(PluginIconImpl.IconType info, int scale) throws IOException {
+			return generateIcon(info, scale);
+		}
+
+		BufferedImage generateIcon(PluginIconImpl info, int scale) throws IOException {
 			BufferedImage img = new BufferedImage(scale, scale, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D imgG2d = img.createGraphics();
 
-			BufferedImage main = loadImage(info.mainPath, false, scale);
-			if (main != null) {
-				imgG2d.drawImage(main, 0, 0, scale, scale, null);
+			IconType main = info.icon;
+			IconType[] sub = Arrays.copyOf(info.subIcons, 4);
+
+			if (main instanceof BlankIcon) {
+				if (sub[PluginIconImpl.BOTTOM_RIGHT] != null) {
+					main = sub[PluginIconImpl.BOTTOM_RIGHT];
+					sub[PluginIconImpl.BOTTOM_RIGHT] = null;
+				} else if (sub[PluginIconImpl.BOTTOM_LEFT] != null) {
+					main = sub[PluginIconImpl.BOTTOM_LEFT];
+					sub[PluginIconImpl.BOTTOM_LEFT] = null;
+				} else {
+					for (int i = 2; i < 4; i++) {
+						 if (sub[i] != null) {
+							main = sub[i];
+							sub[i] = null;
+							break;
+						 }
+					}
+					if (main instanceof BlankIcon) {
+						main = GuiManagerImpl.ICON_TREE_DOT.icon;
+					}
+				}
 			}
 
-			final int[][] coords = { { 0, scale / 2 }, { scale / 2, scale / 2 }, { scale / 2, 0 } };
+			BufferedImage mainImg = generateIcon(main, scale);
+			if (mainImg != null) {
+				imgG2d.drawImage(mainImg, 0, 0, scale, scale, null);
+			}
 
-			for (int i = 0; i < info.decor.length; i++) {
-				String decor = info.decor[i];
+			final int[][] coords = { { 0, scale / 2 }, { scale / 2, scale / 2 }, { scale / 2, 0 }, { 0, 0 } };
+
+			for (int i = 0; i < 4; i++) {
+				IconType decor = sub[i];
 
 				if (decor == null) {
 					continue;
 				}
 
-				BufferedImage decorImg = loadImage(decor, true, scale);
+				BufferedImage decorImg = generateIcon(decor, scale);
 				if (decorImg != null) {
 					imgG2d.drawImage(decorImg, coords[i][0], coords[i][1], scale / 2, scale / 2, null);
 				}
@@ -717,7 +900,63 @@ class QuiltMainWindow {
 			return img;
 		}
 
-		BufferedImage loadImage(String path, boolean isDecor, int scale) throws IOException {
+		BufferedImage generateIcon(PluginIconImpl.IconType info, int scale) throws IOException {
+			BufferedImage img = new BufferedImage(scale, scale, BufferedImage.TYPE_INT_ARGB);
+			if (info == null) {
+				return img;
+			}
+			Graphics2D imgG2d = img.createGraphics();
+
+			if (info instanceof PluginIconImpl.BuiltinIcon) {
+				String path = ((PluginIconImpl.BuiltinIcon) info).path;
+				BufferedImage main = loadImage(path, scale);
+				if (main != null) {
+					imgG2d.drawImage(main, 0, 0, scale, scale, null);
+				}
+			} else if (info instanceof PluginIconImpl.UploadedIcon) {
+				PluginIconImpl.UploadedIcon upl = (PluginIconImpl.UploadedIcon) info;
+				byte[][] srcImages = upl.imageBytes;
+
+				NavigableMap<Integer, BufferedImage> map = uploadedIcons.computeIfAbsent(upl, u -> new TreeMap<>());
+
+				if (map.isEmpty()) {
+					for (byte[] src : srcImages) {
+						BufferedImage sub = ImageIO.read(new ByteArrayInputStream(src));
+						map.put(sub.getWidth(), sub);
+					}
+				}
+
+
+				Entry<Integer, BufferedImage> bestSource = map.ceilingEntry(scale);
+				if (bestSource == null) {
+					bestSource = map.floorEntry(scale);
+				}
+
+				if (bestSource != null) {
+					imgG2d.drawImage(bestSource.getValue(), 0, 0, scale, scale, null);
+				}
+
+			} else if (info instanceof PluginIconImpl.LegacyUploadedIcon) {
+				int index = ((PluginIconImpl.LegacyUploadedIcon) info).index;
+
+				NavigableMap<Integer, BufferedImage> iconMap = QuiltForkServerMain.getCustomIcon(index);
+				Entry<Integer, BufferedImage> bestSource = iconMap.ceilingEntry(scale);
+				if (bestSource == null) {
+					bestSource = iconMap.floorEntry(scale);
+				}
+
+				if (bestSource != null) {
+					imgG2d.drawImage(bestSource.getValue(), 0, 0, scale, scale, null);
+				}
+			} else if (info instanceof PluginIconImpl.BlankIcon) {
+				// Nothing to draw
+			} else {
+				throw new IllegalStateException("Unknown / new icon type " + info.getClass());
+			}
+			return img;
+		}
+
+		BufferedImage loadImage(String path, int scale) throws IOException {
 			if (path.startsWith("!")) {
 				int iconId = Integer.parseInt(path.substring(1));
 				NavigableMap<Integer, BufferedImage> iconMap = QuiltForkServerMain.getCustomIcon(iconId);
@@ -734,17 +973,17 @@ class QuiltMainWindow {
 			// Mandate correct scale
 			// since we only ship x16 (main) and x8 (decor) we restrict file scale to that scale
 			final int fileScale;
-			if (isDecor) {
+			if (scale <= 8) {
 				fileScale = 8;
 			} else {
 				fileScale = 16;
 			}
-			return QuiltMainWindow.loadImage("/ui/icon/" + (isDecor ? "decoration/" : "") + path + "_x" + fileScale + ".png");
+			return BasicWindowUI.loadImage("/ui/icon/" + path + "_x" + fileScale + ".png");
 		}
 	}
 
-	private static Icon missingIcon() {
-		if (missingIcon == null) {
+	private static BufferedImage missingImage() {
+		if (missingImage == null) {
 			BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB);
 
 			for (int y = 0; y < 16; y++) {
@@ -765,106 +1004,16 @@ class QuiltMainWindow {
 				img.setRGB(i, 16 - i, 0x9b_00_00);
 			}
 
-			missingIcon = new ImageIcon(img);
+			missingImage = img;
 		}
-
-		return missingIcon;
+		return missingImage;
 	}
 
-	static final class IconInfo {
-		public final String mainPath;
-		public final String[] decor;
-		private final int hash;
-
-		IconInfo(String mainPath) {
-			this.mainPath = mainPath;
-			this.decor = new String[0];
-			hash = mainPath.hashCode();
+	private static Icon missingIcon() {
+		if (missingIcon == null) {
+			missingIcon = new ImageIcon(missingImage());
 		}
-
-		IconInfo(String mainPath, String[] decor) {
-			this.mainPath = mainPath;
-			this.decor = decor;
-			assert decor.length < 4 : "Cannot fit more than 3 decorations into an image (and leave space for the background)";
-
-			if (decor.length == 0) {
-				// To mirror the no-decor constructor
-				hash = mainPath.hashCode();
-			} else {
-				hash = mainPath.hashCode() * 31 + Arrays.hashCode(decor);
-			}
-		}
-
-		public static IconInfo parse(String desc) {
-			String[] split = desc.split("\\+");
-			if (split.length == 0 || (split.length == 1 && split[0].isEmpty())) {
-				return new IconInfo("missing");
-			}
-
-			List<String> decors = new ArrayList<>();
-			// The warning gap
-			decors.add(null);
-			for (int i = 1; i < split.length && i < 3; i++) {
-				decors.add(split[i]);
-			}
-
-			return new IconInfo(split[0], decors.toArray(new String[0]));
-		}
-
-		public static IconInfo fromNode(QuiltStatusNode node) {
-			String[] split = node.icon.split("\\+");
-
-			if (split.length == 1 && split[0].isEmpty()) {
-				split = new String[0];
-			}
-
-			final String main;
-			List<String> decors = new ArrayList<>();
-			QuiltTreeWarningLevel warnLevel = node.getMaximumWarningLevel();
-
-			if (split.length == 0) {
-				// Empty string, but we might replace it with a warning
-				if (warnLevel == QuiltTreeWarningLevel.NONE) {
-					main = "missing";
-				} else {
-					main = "level_" + warnLevel.lowerCaseName;
-				}
-			} else {
-				main = split[0];
-
-				if (warnLevel == QuiltTreeWarningLevel.NONE) {
-					// Just to add a gap
-					decors.add(null);
-				} else {
-					decors.add("level_" + warnLevel.lowerCaseName);
-				}
-
-				for (int i = 1; i < split.length && i < 3; i++) {
-					decors.add(split[i]);
-				}
-			}
-
-			return new IconInfo(main, decors.toArray(new String[0]));
-		}
-
-		@Override
-		public int hashCode() {
-			return hash;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (obj == this) {
-				return true;
-			}
-
-			if (obj == null || obj.getClass() != getClass()) {
-				return false;
-			}
-
-			IconInfo other = (IconInfo) obj;
-			return mainPath.equals(other.mainPath) && Arrays.equals(decor, other.decor);
-		}
+		return missingIcon;
 	}
 
 	private static final class CustomTreeCellRenderer extends DefaultTreeCellRenderer {
@@ -874,19 +1023,19 @@ class QuiltMainWindow {
 
 		private CustomTreeCellRenderer(IconSet icons) {
 			this.iconSet = icons;
-			//setVerticalTextPosition(TOP); // Move icons to top rather than centre
+			// setVerticalTextPosition(TOP); // Move icons to top rather than centre
 		}
 
 		@Override
 		public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded,
-				boolean leaf, int row, boolean hasFocus) {
+			boolean leaf, int row, boolean hasFocus) {
 			super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
 
 			setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
 			if (value instanceof CustomTreeNode) {
 				CustomTreeNode c = (CustomTreeNode) value;
-				setIcon(iconSet.get(c.getIconInfo()));
+				setIcon(iconSet.get(c.getIcon()));
 
 				if (c.node.details == null || c.node.details.isEmpty()) {
 					setToolTipText(null);
@@ -904,10 +1053,7 @@ class QuiltMainWindow {
 			return str;
 		}
 
-		str = str.replace("&", "&amp;")
-				.replace("<", "&lt;")
-				.replace(">", "&gt;")
-				.replace("\n", "<br>");
+		str = str.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>");
 
 		return "<html>" + str + "</html>";
 	}
@@ -916,14 +1062,14 @@ class QuiltMainWindow {
 		public final TreeNode parent;
 		public final QuiltStatusNode node;
 		public final List<CustomTreeNode> displayedChildren = new ArrayList<>();
-		private IconInfo iconInfo;
+		private PluginIconImpl iconInfo;
 
-		CustomTreeNode(TreeNode parent, QuiltStatusNode node, QuiltTreeWarningLevel minimumWarningLevel) {
+		CustomTreeNode(TreeNode parent, QuiltStatusNode node, QuiltWarningLevel minimumWarningLevel) {
 			this.parent = parent;
 			this.node = node;
 
 			for (QuiltStatusNode c : node.childIterable()) {
-				if (minimumWarningLevel.isHigherThan(c.getMaximumWarningLevel())) {
+				if (minimumWarningLevel.compareTo(c.maximumLevel()) < 0) {
 					continue;
 				}
 
@@ -931,9 +1077,17 @@ class QuiltMainWindow {
 			}
 		}
 
-		public IconInfo getIconInfo() {
+		public PluginIconImpl getIcon() {
 			if (iconInfo == null) {
-				iconInfo = IconInfo.fromNode(node);
+				if (node.icon == null) {
+					if (node.level().icon() == null) {
+						iconInfo = PluginIconImpl.fromApi(QuiltLoaderGui.iconTreeDot());
+					} else {
+						iconInfo = PluginIconImpl.fromApi(node.maximumLevel().icon());
+					}
+				} else {
+					iconInfo = node.icon.withLevel(node.maximumLevel());
+				}
 			}
 
 			return iconInfo;

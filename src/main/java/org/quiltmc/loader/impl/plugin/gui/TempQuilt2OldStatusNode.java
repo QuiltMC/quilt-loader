@@ -23,6 +23,7 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
@@ -32,6 +33,8 @@ import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/** @deprecated Replaced by {@link PluginGuiNodeWrapper}. */
+@Deprecated
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 
@@ -66,21 +69,26 @@ public class TempQuilt2OldStatusNode implements PluginGuiTreeNode {
 		childrenByAlphabetical = new ArrayList<>();
 	}
 
+	@Override
+	public QuiltTreeNode getNew() {
+		throw new UnsupportedOperationException("This class needs to be removed!");
+	}
+
 	public void toNode(QuiltStatusNode node, boolean debug) {
-		node.name = text.toString();
+		node.text(text);
 
 		if (mainIcon != GuiManagerImpl.ICON_NULL) {
-			node.iconType = mainIcon.withDecoration(subIcon).path;
+			node.icon(mainIcon.withDecoration(subIcon));
 		} else if (subIcon != null) {
-			node.iconType = subIcon.path;
+			node.icon(subIcon);
 		}
 
 		node.setWarningLevel(QuiltTreeWarningLevel.fromApiLevel(directLevel));
 
 		if (expandByDefault == null) {
-			node.expandByDefault = QuiltTreeWarningLevel.fromApiLevel(cachedLevel).isAtLeast(QuiltTreeWarningLevel.CONCERN);
+			node.setExpandByDefault(QuiltTreeWarningLevel.fromApiLevel(cachedLevel).isAtLeast(QuiltTreeWarningLevel.CONCERN));
 		} else {
-			node.expandByDefault = expandByDefault;
+			node.setExpandByDefault(expandByDefault);
 		}
 
 		for (TempQuilt2OldStatusNode n : childrenByAddition) {
