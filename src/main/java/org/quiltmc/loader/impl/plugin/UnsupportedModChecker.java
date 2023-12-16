@@ -69,7 +69,7 @@ public class UnsupportedModChecker {
 			if (fileName.startsWith("mod_") && fileName.endsWith(".class") && !fileName.contains("$")) {
 				try {
 					ClassReader cr = new ClassReader(Files.readAllBytes(child));
-					if ("BaseMod".equals(cr.getSuperName())) {
+					if ("BaseMod".equals(cr.getSuperName()) || "BaseModMP".equals(cr.getSuperName())) {
 						return new RisugamisModLoaderMod();
 					}
 				} catch (IOException ignored) {
