@@ -597,11 +597,15 @@ public final class QuiltLoaderImpl {
 		try {
 			ModSolveResultImpl result = plugins.run(true);
 
-			handleUnknownFiles(plugins, result);
+			boolean displayedMessage = handleUnknownFiles(plugins, result);
 
 			temporarySourcePaths = new HashMap<>();
 			for (ModLoadOption mod : result.directMods().values()) {
 				temporarySourcePaths.put(mod.from(), plugins.convertToSourcePaths(mod.from()));
+			}
+
+			if (displayedMessage) {
+				return result;
 			}
 
 			if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
@@ -723,10 +727,10 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	private void handleUnknownFiles(QuiltPluginManagerImpl plugins, ModSolveResultImpl result) {
-
-		// TODO: Display this in an error message!
-		// (As we don't want this to be "optional")
+	private boolean handleUnknownFiles(QuiltPluginManagerImpl plugins, ModSolveResultImpl result) {
+		if (plugins.guiUnknownMods.isEmpty()) {
+			return false;
+		}
 
 		{
 			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
@@ -734,7 +738,7 @@ public final class QuiltLoaderImpl {
 			window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), getModsDir());
 			window.addOpenQuiltSupportButton();
 			QuiltErrorButton continueButton = window.addContinueButton();
-			continueButton.text(QuiltLoaderText.translate("button.ignore"));
+			continueButton.text(QuiltLoaderText.translate("button.continue_to", getGameProvider().getGameName()));
 			continueButton.icon(QuiltLoaderGui.iconContinueIgnoring());
 			QuiltGuiMessagesTab unknownTab = window.addMessagesTab(QuiltLoaderText.translate("tab.unknown_mods"));
 			window.addTreeTab(QuiltLoaderText.translate("tab.file_list"), plugins.guiFileRoot);
@@ -785,6 +789,8 @@ public final class QuiltLoaderImpl {
 		if (!table.isEmpty()) {
 			Log.info(LogCategory.DISCOVERY, count + " unknown / unsupported mod files found:\n" + table);
 		}
+
+		return true;
 	}
 
 	public String createModTable() {
