@@ -27,6 +27,7 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltFork;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.gui.QuiltLoaderGuiImpl;
 
 /** Central API for dealing with opening guis on a separate process. Used since some games don't work properly on MacOS
  * if we open a swing window in the main process. */
@@ -72,7 +73,7 @@ public class QuiltLoaderGui {
 	/** @return A new {@link QuiltBasicWindow}. This hasn't been displayed yet.
 	 * @see #open(QuiltLoaderWindow) */
 	public static <R> QuiltBasicWindow<R> createBasicWindow(R defaultReturnValue) {
-		return QuiltFork.createBasicWindow(defaultReturnValue);
+		return QuiltLoaderGuiImpl.createBasicWindow(defaultReturnValue);
 	}
 
 	/** @return A new {@link QuiltBasicWindow}. This hasn't been displayed yet.
@@ -84,7 +85,7 @@ public class QuiltLoaderGui {
 	/** @return A new {@link QuiltTreeNode} that can be passed to many different windows rather than being limited to
 	 *         just one. */
 	public static QuiltTreeNode createTreeNode() {
-		return QuiltFork.createTreeNode();
+		return QuiltLoaderGuiImpl.createTreeNode();
 	}
 
 	/** Opens a window, waiting for the user to close it before returning the {@link QuiltLoaderWindow#returnValue()}.

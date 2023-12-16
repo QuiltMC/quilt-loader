@@ -99,8 +99,8 @@ import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.filesystem.ZeroByteFileException;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
-import org.quiltmc.loader.impl.gui.QuiltFork;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.gui.QuiltLoaderGuiImpl;
 import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataReader;
 import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedModDetails;
@@ -184,8 +184,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	public final GuiManagerImpl guiManager = GuiManagerImpl.MANAGER;
 	/** The root tree node for the "files" tab. */
-	public final QuiltStatusNode guiFileRoot = QuiltFork.createTreeNode();
-	public final QuiltStatusNode guiModsRoot =  QuiltFork.createTreeNode();
+	public final QuiltStatusNode guiFileRoot = QuiltLoaderGuiImpl.createTreeNode();
+	public final QuiltStatusNode guiModsRoot =  QuiltLoaderGuiImpl.createTreeNode();
 	private QuiltStatusNode guiNodeModsFromPlugins;
 	final Map<ModLoadOption, QuiltStatusNode> modGuiNodes = new HashMap<>();
 	final List<QuiltJsonGuiMessage> errors = new ArrayList<>();

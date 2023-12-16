@@ -80,14 +80,6 @@ public class QuiltFork {
 		return LoaderValueFactory.getFactory();
 	}
 
-	public static <R> QuiltBasicWindow<R> createBasicWindow(R defaultReturnValue) {
-		return new BasicWindow<>(defaultReturnValue);
-	}
-
-	public static QuiltStatusNode createTreeNode() {
-		return new QuiltStatusNode(null);
-	}
-
 	public static void openErrorGui(List<QuiltDisplayedError> errors) throws LoaderGuiException, LoaderGuiClosed {
 		QuiltBasicWindow<Boolean> window = QuiltLoaderGui.createBasicWindow(false);
 		window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
