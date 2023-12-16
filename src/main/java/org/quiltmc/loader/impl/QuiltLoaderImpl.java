@@ -731,6 +731,7 @@ public final class QuiltLoaderImpl {
 		{
 			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
 			window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
+			window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), getModsDir());
 			window.addOpenQuiltSupportButton();
 			QuiltErrorButton continueButton = window.addContinueButton();
 			continueButton.text(QuiltLoaderText.translate("button.ignore"));
@@ -739,6 +740,7 @@ public final class QuiltLoaderImpl {
 			window.addTreeTab(QuiltLoaderText.translate("tab.file_list"), plugins.guiFileRoot);
 			window.addTreeTab(QuiltLoaderText.translate("tab.mod_list"), plugins.guiModsRoot);
 
+			unknownTab.level(QuiltWarningLevel.WARN);
 			plugins.guiUnknownMods.values().forEach(unknownTab::addMessage);
 
 			try {

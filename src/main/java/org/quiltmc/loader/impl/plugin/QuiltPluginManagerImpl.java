@@ -44,7 +44,9 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -192,7 +194,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private QuiltStatusNode guiNodeModsFromPlugins;
 	final Map<ModLoadOption, QuiltStatusNode> modGuiNodes = new HashMap<>();
 	final List<QuiltJsonGuiMessage> errors = new ArrayList<>();
-	public final Map<UnsupportedModChecker.UnsupportedType, QuiltDisplayedError> guiUnknownMods = new HashMap<>();
+	public final Map<UnsupportedType, QuiltDisplayedError> guiUnknownMods = new TreeMap<>();
 
 	/** Only written by {@link #runSingleCycle()}, only read during crash report generation. */
 	private PerCycleStep perCycleStep;
@@ -874,54 +876,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		}
 
-		class TempNode {
-			final String name;
-			QuiltLoaderIcon typeIcon;
-			final Map<String, TempNode> children = new TreeMap<>();
-
-			UnsupportedModDetails details;
-
-			TempNode(String name) {
-				this.name = name;
-			}
-
-			void populate(QuiltTreeNode dst) {
-				if (children.isEmpty()) {
-					if (details != null) {
-						details.addToFilesNode(dst);
-					}
-					return;
-				}
-
-				StringBuilder sb = new StringBuilder();
-				TempNode start = this;
-				while (start.children.size() == 1) {
-					TempNode next = start.children.values().iterator().next();
-					if (next.typeIcon != QuiltLoaderGui.iconFolder()) {
-						break;
-					}
-					start = next;
-					if (sb.length() > 0) {
-						sb.append("/");
-					}
-					sb.append(start.name);
-				}
-
-				dst = dst.addChild(SortOrder.ALPHABETICAL_ORDER);
-				dst.text(QuiltLoaderText.of(sb.length() == 0 ? name : sb.toString()));
-				dst.icon(start.typeIcon);
-
-				if (details != null) {
-					details.addToFilesNode(dst);
-				}
-
-				for (TempNode child : start.children.values()) {
-					child.populate(dst.addChild(SortOrder.ALPHABETICAL_ORDER).text(QuiltLoaderText.of(child.name)).icon(child.typeIcon));
-				}
-			}
-		}
-
-		Map<UnsupportedType, TempNode> roots = new HashMap<>();
+		Map<UnsupportedType, SortedMap<String, UnsupportedModDetails>> filesList = new HashMap<>();
 
 		for (PathLoadState loadState : modPaths.values()) {
 			Path path = loadState.path;
@@ -937,54 +892,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					guiNode.addChild(QuiltLoaderText.translate("warn.unhandled_mod")).level(QuiltWarningLevel.WARN);
 				}
 
-				List<List<Path>> sourcePaths = convertToSourcePaths(path);
-				// Since this is a *user* path, we only handle the first path
-				if (sourcePaths.size() < 1) {
-					continue;
-				}
-
-				TempNode currentNode = roots.computeIfAbsent(type, t -> {
-					TempNode node = new TempNode("/");
-					node.typeIcon = QuiltLoaderGui.iconFolder();
-					return node;
-				});
-				for (Path subPath : sourcePaths.get(0)) {
-					if (absModsDir != null || absGameDir != null) {
-						Path real = subPath.toAbsolutePath();
-						if (absModsDir != null && real.startsWith(absModsDir)) {
-							currentNode = currentNode.children.computeIfAbsent("<mods>", t -> new TempNode("<mods>"));
-							currentNode.typeIcon = QuiltLoaderGui.iconFolder();
-							if (real.equals(absModsDir)) {
-								continue;
-							}
-							subPath = absModsDir.relativize(real);
-						} else if (absGameDir != null && real.startsWith(absGameDir)) {
-							currentNode = currentNode.children.computeIfAbsent("<game>", t -> new TempNode("<game>"));
-							currentNode.typeIcon = QuiltLoaderGui.iconFolder();
-							if (real.equals(absGameDir)) {
-								continue;
-							}
-							subPath = absGameDir.relativize(real);
-						}
-					}
-					for (Path element : subPath) {
-						String fileName = element.getFileName().toString();
-						currentNode = currentNode.children.computeIfAbsent(fileName, t -> new TempNode(fileName));
-						currentNode.typeIcon = QuiltLoaderGui.iconFolder();
-					}
-					currentNode.typeIcon = QuiltLoaderGui.iconUnknownFile();
-				}
-
-				currentNode.details = loadState.unsupportedType;
+				filesList.computeIfAbsent(type, t -> new TreeMap<>()).put(describePath(path), loadState.unsupportedType);
 			}
 		}
 
-		for (Map.Entry<UnsupportedType, TempNode> entry : roots.entrySet()) {
+		for (Map.Entry<UnsupportedType, SortedMap<String, UnsupportedModDetails>> entry : filesList.entrySet()) {
 			UnsupportedType type = entry.getKey();
-			TempNode node = entry.getValue();
-			QuiltDisplayedError message = QuiltLoaderGui.createError(QuiltLoaderText.of("todo: translate: Unknown mods of type " + type));
-			guiUnknownMods.put(type, message);
-			node.populate(message.treeNode());
+			guiUnknownMods.put(type, type.createMessage(entry.getValue()));
 		}
 	}
 

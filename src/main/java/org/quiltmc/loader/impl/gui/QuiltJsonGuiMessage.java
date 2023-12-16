@@ -215,6 +215,12 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 	}
 
 	@Override
+	public QuiltDisplayedError title(QuiltLoaderText text) {
+		this.title = text.toString();
+		return this;
+	}
+
+	@Override
 	public QuiltLoaderIcon icon() {
 		return icon;
 	}
@@ -234,28 +240,30 @@ public final class QuiltJsonGuiMessage extends QuiltGuiSyncBase implements Quilt
 		return this;
 	}
 
-	@Override
-	public QuiltTreeNode treeNode() {
-		if (treeNode == null) {
-			treeNode(new QuiltStatusNode(this));
-		}
-		return treeNode;
-	}
+	// Disabled because I'm not sure how to best go about adding this to a gui
 
-	@Override
-	public QuiltDisplayedError treeNode(QuiltTreeNode node) {
-		this.treeNode = (QuiltStatusNode) node;
-		if (shouldSendUpdates()) {
-			if (node == null) {
-				sendSignal("remove_tree_node");
-			} else {
-				Map<String, LoaderValue> map = new HashMap<>();
-				map.put("tree_node", writeChild(this.treeNode));
-				sendUpdate("set_tree_node", lvf().object(map));
-			}
-		}
-		return this;
-	}
+//	@Override
+//	public QuiltTreeNode treeNode() {
+//		if (treeNode == null) {
+//			treeNode(new QuiltStatusNode(this));
+//		}
+//		return treeNode;
+//	}
+//
+//	@Override
+//	public QuiltDisplayedError treeNode(QuiltTreeNode node) {
+//		this.treeNode = (QuiltStatusNode) node;
+//		if (shouldSendUpdates()) {
+//			if (node == null) {
+//				sendSignal("remove_tree_node");
+//			} else {
+//				Map<String, LoaderValue> map = new HashMap<>();
+//				map.put("tree_node", writeChild(this.treeNode));
+//				sendUpdate("set_tree_node", lvf().object(map));
+//			}
+//		}
+//		return this;
+//	}
 
 	@Override
 	public QuiltJsonButton addButton(QuiltJsonButton button) {

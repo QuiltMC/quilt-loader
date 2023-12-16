@@ -50,20 +50,12 @@ public interface QuiltDisplayedError extends QuiltGuiButtonContainer {
 	 * in the gui. */
 	QuiltDisplayedError appendThrowable(Throwable t);
 
+	QuiltDisplayedError title(QuiltLoaderText text);
+
 	QuiltLoaderIcon icon();
 
 	/** Defaults to {@link QuiltLoaderGui#iconLevelError()}. */
 	QuiltDisplayedError setIcon(QuiltLoaderIcon icon);
-
-	/** Obtains the current {@link QuiltTreeNode} for this error, or creates one if this doesn't have a tree node.
-	 * 
-	 * @return A tree node which is displayed after the text, but above any buttons. */
-	QuiltTreeNode treeNode();
-
-	/** Sets the {@link #treeNode()} to the given node. If you pass null the current tree node will be removed.
-	 * 
-	 * @return this. */
-	QuiltDisplayedError treeNode(QuiltTreeNode node);
 
 	// For backwards compatibility we need to keep these button methods around.
 

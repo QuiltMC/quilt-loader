@@ -163,7 +163,7 @@ class BasicWindowUI {
 			for (AbstractTab tab : quiltWindow.tabs) {
 				PluginIconImpl icon = tab.icon;
 				QuiltWarningLevel level = tab.level();
-				if (QuiltWarningLevel.NONE.compareTo(level) <= 0) {
+				if (level.icon() != null) {
 					if (icon == null) {
 						icon = PluginIconImpl.fromApi(level.icon());
 					} else {

@@ -20,9 +20,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.SortedMap;
+import java.util.SortedSet;
 
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
@@ -110,7 +114,14 @@ public class UnsupportedModChecker {
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 	public enum UnsupportedType {
 		UNKNOWN("unknown"),
-		RISUGAMIS_MODLOADER("risugamis_modloader"),
+		RISUGAMIS_MODLOADER("risugamis_modloader") {
+			@Override
+			QuiltDisplayedError createMessage(SortedMap<String, UnsupportedModDetails> files) {
+				QuiltDisplayedError message = super.createMessage(files);
+				message.addOpenLinkButton(QuiltLoaderText.of("Check RGML Quilt"), "https://github.com/sschr15/rgml-quilt");
+				return message;
+			}
+		},
 		FORGE("forge"),
 		NEOFORGE("neoforge");
 
@@ -118,6 +129,18 @@ public class UnsupportedModChecker {
 
 		private UnsupportedType(String type) {
 			this.type = type;
+		}
+
+		QuiltDisplayedError createMessage(SortedMap<String, UnsupportedModDetails> files) {
+			String key = "unsupported_mod." + type;
+			QuiltDisplayedError message = QuiltLoaderGui.createError();
+			message.title(QuiltLoaderText.translate(key + ".title", files.size()));
+			message.setIcon(QuiltLoaderGui.iconLevelWarn());
+			message.appendDescription(QuiltLoaderText.translate(key + ".desc"), QuiltLoaderText.of(" "));
+			for (String file : files.keySet()) {
+				message.appendDescription(QuiltLoaderText.of(file));
+			}
+			return message;
 		}
 	}
 

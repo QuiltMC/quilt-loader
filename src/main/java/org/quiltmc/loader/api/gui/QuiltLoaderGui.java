@@ -39,6 +39,14 @@ public class QuiltLoaderGui {
 	 * else.
 	 * 
 	 * @return A new {@link QuiltDisplayedError}. */
+	public static QuiltDisplayedError createError() {
+		return createError(QuiltLoaderText.EMPTY);
+	}
+
+	/** Creates a new error to be displayed in {@link #openErrorGui(QuiltDisplayedError)}. This doesn't do anything
+	 * else.
+	 * 
+	 * @return A new {@link QuiltDisplayedError}. */
 	public static QuiltDisplayedError createError(QuiltLoaderText title) {
 		return new QuiltJsonGuiMessage(null, null, title);
 	}
