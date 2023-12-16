@@ -42,6 +42,7 @@ public class SolverTester {
 
 	public static void main(String[] args) throws ModSolvingError, IOException {
 		Log.configureBuiltin(false, true);
+		Log.disableBuiltinFormatting();
 
 		Path input = Paths.get(args[0]);
 		Map<LoadOption, Boolean> constants = new HashMap<>();
@@ -133,14 +134,14 @@ public class SolverTester {
 		}
 
 		RuleSet ruleSet = new RuleSet.ProcessedRuleSet(constants, aliases, options, list);
-		ProcessedRuleSet processed = SolverPreProcessor.preProcess(ruleSet);
+		ProcessedRuleSet processed = SolverPreProcessor.preProcess(false, ruleSet);
 		System.out.println("Pre Process Success!");
 		System.out.println("Constants:");
 		Comparator<Entry<LoadOption, Boolean>> cmp = Comparator.comparing(entry -> optionKey(entry.getKey()));
 		for (Entry<LoadOption, Boolean> entry : processed.constants.entrySet().stream().sorted(cmp).collect(Collectors.toList())) {
 			LoadOption option = entry.getKey();
 			String key = optionKey(option);
-			System.out.println(key + " = " + (entry.getValue() ? "true " : "false" ) + "   " + option);
+			System.out.println(key + " = " + (entry.getValue() ? "true " : "false" ) + "   " + ((ReadOption) option).text);
 		}
 		System.out.println("Remaining problem:");
 		SolverPreProcessor.appendRuleSet(processed, ruleSet, System.out::println);
@@ -242,7 +243,7 @@ public class SolverTester {
 
 		@Override
 		public String toString() {
-			return text;
+			return key;
 		}
 
 		@Override

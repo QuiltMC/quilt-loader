@@ -75,6 +75,8 @@ public final class SystemProperties {
 	// defaults to 60 seconds; can be changed by setting the system property
 	public static final String DEBUG_RESOLUTION_TIME_LIMIT = "loader.debug.resolutionTimeLimit";
 	public static final String DEBUG_DUMP_OVERRIDE_PATHS = "loader.debug.dump_override_paths";
+	public static final String DEBUG_OVERRIDE_FILE = "loader.debug.override_file";
+	public static final String GENERATE_OVERRIDES_FILE = "loader.overrides.generate_file";
 	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
 	public static final String ENABLE_EXPERIMENTAL_LOADING_PLUGINS = "loader.experimental.allow_loading_plugins";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
@@ -92,6 +94,7 @@ public final class SystemProperties {
 	public static final String DEBUG_DUMP_FILESYSTEM_CONTENTS = "loader.debug.filesystem.dump_contents";
 	public static final String ALWAYS_DEFER_FILESYSTEM_OPERATIONS = "loader.workaround.defer_all_filesystem_operations";
 	public static final String DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE = "loader.quilt_class_path.disable_custom_table";
+	public static final String DISABLE_BUILTIN_MIXIN_EXTRAS = "loader.disable_builtin_mixin_extras";
 
 	// ##############
 	// # Validation #

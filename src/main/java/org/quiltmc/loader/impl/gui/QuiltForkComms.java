@@ -84,21 +84,16 @@ public class QuiltForkComms {
 		if (overridePort == null) {
 			File portFile = new File(medium.toString() + ".port");
 			File readyFile = new File(medium.toString() + ".ready");
-			File classpath = new File(medium.toString() + ".cp");
+			File classpathFile = new File(medium.toString() + ".cp");
 			if (portFile.exists()) {
 				portFile.delete();
 			}
 			if (readyFile.exists()) {
 				readyFile.delete();
 			}
-			if (classpath.exists()) {
-				classpath.delete();
+			if (classpathFile.exists()) {
+				classpathFile.delete();
 			}
-
-			// Write classpath to file
-			Files.write(classpath.toPath(), System.getProperty("java.class.path")
-				.replace(" ", "\" \"")
-				.getBytes(StandardCharsets.UTF_8));
 
 			List<String> commands = new ArrayList<>();
 			commands.add(System.getProperty("java.home") + File.separator + "bin" + File.separator + "java");
@@ -109,7 +104,15 @@ public class QuiltForkComms {
 			commands.add("-XX:MaxHeapFreeRatio=10");
 			commands.add("-XX:MinHeapFreeRatio=2");
 			commands.add("-cp");
-			commands.add("@" + classpath.toString());
+			String classpath = System.getProperty("java.class.path").replace(" ", "\" \"");
+			if (System.getProperty("java.version").startsWith("1.")) {
+				// Java 8 and below doesn't support @-file expansion
+				// I'm not sure exactly which version added @-file expansion, but it works in java 11
+				commands.add(classpath);
+			} else {
+				Files.write(classpathFile.toPath(), classpath.getBytes(StandardCharsets.UTF_8));
+				commands.add("@" + classpathFile.toString());
+			}
 			commands.add(QuiltForkServerMain.class.getName());
 
 			commands.add("--file");

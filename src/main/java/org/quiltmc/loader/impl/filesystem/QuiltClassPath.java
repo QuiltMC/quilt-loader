@@ -702,10 +702,11 @@ public class QuiltClassPath {
 
 		public Path get(String key) {
 			for (Path value : values) {
+				Path compare = value;
 				if (value instanceof OverlappingPath) {
-					value = ((OverlappingPath) value).paths[0];
+					compare = ((OverlappingPath) value).paths[0];
 				}
-				if (isEqual(key, value)) {
+				if (isEqual(key, compare)) {
 					return value;
 				}
 			}

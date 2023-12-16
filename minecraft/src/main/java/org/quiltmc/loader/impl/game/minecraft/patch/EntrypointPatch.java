@@ -51,6 +51,7 @@ import org.quiltmc.loader.impl.game.minecraft.Hooks;
 
 
 public class EntrypointPatch extends GamePatch {
+	/* QUILT */private static final VersionPredicate BEFORE_1_17 = createVersionPredicate("<=1.17");
 	private static final VersionPredicate VERSION_1_19_4 = createVersionPredicate(">=1.19.4-");
 
 	private final MinecraftGameProvider gameProvider;
@@ -60,7 +61,16 @@ public class EntrypointPatch extends GamePatch {
 	}
 
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
-		String methodName = String.format("start%s", type == EnvType.CLIENT ? "Client" : "Server");
+		String sideName = type == EnvType.CLIENT ? "Client" : "Server";
+		/* START OF QUILT */
+		// Compatibility for older fabric mods which redirect our start hook
+		if (BEFORE_1_17.test(getGameVersion())) {
+			String internalName = "net/fabricmc/loader/entrypoint/minecraft/hooks/Entrypoint" + sideName;
+			it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, internalName, "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
+			return;
+		}
+		/* END OF QUILT */
+		String methodName = String.format("start%s", sideName);
 		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, methodName, "(Ljava/io/File;Ljava/lang/Object;)V", false));
 	}
 
