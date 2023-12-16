@@ -19,10 +19,10 @@ package org.quiltmc.loader.impl.config;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.electronwill.nightconfig.toml.TomlParser;
-import com.electronwill.nightconfig.toml.TomlWriter;
 import org.quiltmc.config.api.ConfigEnvironment;
 import org.quiltmc.config.api.Serializer;
+import org.quiltmc.config.api.serializer.Json5Serializer;
+import org.quiltmc.config.api.serializer.TomlSerializer;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -40,8 +40,8 @@ public final class QuiltConfigImpl {
 	public static void init() {
 		Map<String, Serializer> serializerMap = new LinkedHashMap<>();
 
-		serializerMap.put("toml", new NightConfigSerializer<>("toml", new TomlParser(), new TomlWriter()));
-		serializerMap.put("json5", JsonFamilySerializer.JSON5);
+		serializerMap.put("toml", TomlSerializer.INSTANCE);
+		serializerMap.put("json5", Json5Serializer.INSTANCE);
 
 		for (Serializer serializer : QuiltLoaderImpl.INSTANCE.getEntrypoints("config_serializer", Serializer.class)) {
 			Serializer oldValue = serializerMap.put(serializer.getFileExtension(), serializer);
