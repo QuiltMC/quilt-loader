@@ -38,7 +38,6 @@ import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -256,74 +255,18 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTree
 	}
 
 	@Deprecated
-	public QuiltTreeWarningLevel getMaximumWarningLevel() {
-		switch (maxLevel) {
-			case FATAL:
-				return QuiltTreeWarningLevel.FATAL;
-			case ERROR:
-				return QuiltTreeWarningLevel.ERROR;
-			case WARN:
-				return QuiltTreeWarningLevel.WARN;
-			case CONCERN:
-				return QuiltTreeWarningLevel.CONCERN;
-			case INFO:
-				return QuiltTreeWarningLevel.INFO;
-			case NONE:
-			case DEBUG_ONLY:
-			default:
-				return QuiltTreeWarningLevel.NONE;
-		}
-	}
-
-	@Deprecated
-	public void setWarningLevel(QuiltTreeWarningLevel level) {
-		if (level == null) {
-			return;
-		}
-		switch (level) {
-			case FATAL: {
-				level(QuiltWarningLevel.FATAL);
-				return;
-			}
-			case ERROR: {
-				level(QuiltWarningLevel.ERROR);
-				return;
-			}
-			case WARN: {
-				level(QuiltWarningLevel.WARN);
-				return;
-			}
-			case CONCERN: {
-				level(QuiltWarningLevel.CONCERN);
-				return;
-			}
-			case INFO: {
-				level(QuiltWarningLevel.INFO);
-				return;
-			}
-			case NONE: {
-				level(QuiltWarningLevel.NONE);
-				return;
-			}
-			default: {
-				throw new IllegalStateException("Unknown level " + level);
-			}
-		}
-	}
-
-	@Deprecated
 	public void setError() {
-		setWarningLevel(QuiltTreeWarningLevel.ERROR);
+		level(QuiltWarningLevel.ERROR);
 	}
 
 	@Deprecated
 	public void setWarning() {
-		setWarningLevel(QuiltTreeWarningLevel.WARN);
+		level(QuiltWarningLevel.WARN);
 	}
 
 	@Deprecated
 	public void setInfo() {
-		setWarningLevel(QuiltTreeWarningLevel.INFO);
+		level(QuiltWarningLevel.INFO);
 	}
 
 	@Override
@@ -421,63 +364,6 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTree
 			}
 			return a.text.compareTo(b.text);
 		});
-	}
-
-	@Deprecated
-	public QuiltStatusNode addChild(String string) {
-		int indent = 0;
-		QuiltTreeWarningLevel level = null;
-
-		while (string.startsWith("\t")) {
-			indent++;
-			string = string.substring(1);
-		}
-
-		string = string.trim();
-
-		if (string.length() > 1) {
-			if (Character.isWhitespace(string.charAt(1))) {
-				level = QuiltTreeWarningLevel.fromChar(string.charAt(0));
-
-				if (level != null) {
-					string = string.substring(2);
-				}
-			}
-		}
-
-		string = string.trim();
-		String icon = "";
-
-		if (string.length() > 3) {
-			if ('$' == string.charAt(0)) {
-				Pattern p = Pattern.compile("\\$([a-z.+-]+)\\$");
-				Matcher match = p.matcher(string);
-				if (match.find()) {
-					icon = match.group(1);
-					string = string.substring(icon.length() + 2);
-				}
-			}
-		}
-
-		string = string.trim();
-
-		QuiltStatusNode to = this;
-
-		for (; indent > 0; indent--) {
-			if (to.childNodesByAddition.isEmpty()) {
-				QuiltStatusNode node = to.addChild(QuiltTreeNode.SortOrder.ADDITION_ORDER);
-				to = node;
-			} else {
-				to = to.childNodesByAddition.get(to.childNodesByAddition.size() - 1);
-			}
-
-			to.setExpandByDefault(true);
-		}
-
-		QuiltStatusNode child = to.addChild(QuiltTreeNode.SortOrder.ADDITION_ORDER);
-		child.text(QuiltLoaderText.of(string));
-		child.setWarningLevel(level);
-		return child;
 	}
 
 	// Deprecated PluginGuiTreeNode methods

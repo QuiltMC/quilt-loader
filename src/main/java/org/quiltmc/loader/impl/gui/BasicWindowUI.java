@@ -81,13 +81,8 @@ import javax.swing.tree.TreeNode;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
-import org.quiltmc.loader.impl.gui.AbstractTab.TabChangeListener;
-import org.quiltmc.loader.impl.gui.BasicWindow.BasicWindowChangeListener;
-import org.quiltmc.loader.impl.gui.MessagesTab.MessageTabListener;
 import org.quiltmc.loader.impl.gui.PluginIconImpl.BlankIcon;
 import org.quiltmc.loader.impl.gui.PluginIconImpl.IconType;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltTreeWarningLevel;
-import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;

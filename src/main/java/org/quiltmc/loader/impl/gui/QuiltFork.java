@@ -40,7 +40,6 @@ import org.quiltmc.loader.api.gui.QuiltGuiMessagesTab;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltLoaderWindow;
-import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
@@ -135,22 +134,6 @@ public class QuiltFork {
 
 		if (shouldWait) {
 			realWindow.waitUntilClosed();
-		}
-	}
-
-	public static void openErrorGui(QuiltJsonGui tree, boolean shouldWait) throws LoaderGuiException, LoaderGuiClosed {
-		if (true) throw new Error("Unsupported!");
-
-		if (COMMS == null) {
-			// Gui disabled, act as if the user pressed "ignore"
-			throw LoaderGuiClosed.INSTANCE;
-		}
-
-		tree.send();
-		tree.open();
-
-		if (shouldWait) {
-			tree.waitUntilClosed();
 		}
 	}
 
