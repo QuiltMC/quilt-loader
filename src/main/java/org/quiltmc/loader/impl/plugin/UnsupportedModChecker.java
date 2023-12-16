@@ -116,9 +116,11 @@ public class UnsupportedModChecker {
 		UNKNOWN("unknown"),
 		RISUGAMIS_MODLOADER("risugamis_modloader") {
 			@Override
-			QuiltDisplayedError createMessage(SortedMap<String, UnsupportedModDetails> files) {
-				QuiltDisplayedError message = super.createMessage(files);
-				message.addOpenLinkButton(QuiltLoaderText.of("Check RGML Quilt"), "https://github.com/sschr15/rgml-quilt");
+			QuiltDisplayedError createMessage(QuiltPluginManagerImpl manager, SortedMap<String, UnsupportedModDetails> files) {
+				QuiltDisplayedError message = super.createMessage(manager, files);
+				if (!manager.pluginsById.containsKey("rgml-quilt")) {
+					message.addOpenLinkButton(QuiltLoaderText.of("Check RGML Quilt"), "https://github.com/sschr15/rgml-quilt");
+				}
 				return message;
 			}
 		},
@@ -131,7 +133,7 @@ public class UnsupportedModChecker {
 			this.type = type;
 		}
 
-		QuiltDisplayedError createMessage(SortedMap<String, UnsupportedModDetails> files) {
+		QuiltDisplayedError createMessage(QuiltPluginManagerImpl manager, SortedMap<String, UnsupportedModDetails> files) {
 			String key = "unsupported_mod." + type;
 			QuiltDisplayedError message = QuiltLoaderGui.createError();
 			message.title(QuiltLoaderText.translate(key + ".title", files.size()));

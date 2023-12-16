@@ -893,7 +893,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		for (Map.Entry<UnsupportedType, SortedMap<String, UnsupportedModDetails>> entry : filesList.entrySet()) {
 			UnsupportedType type = entry.getKey();
-			guiUnknownMods.put(type, type.createMessage(entry.getValue()));
+			guiUnknownMods.put(type, type.createMessage(this, entry.getValue()));
 		}
 	}
 
