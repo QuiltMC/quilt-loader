@@ -643,30 +643,20 @@ class BasicWindowUI {
 					JPanel old = currentOuterPanel.getAndSet(null);
 					messagesPanel.remove(old);
 				}
+				JPanel panel = new JPanel();
+				panel.setLayout(new BoxLayout(panel, BoxLayout.PAGE_AXIS));
+				currentOuterPanel.set(panel);
+				messagesPanel.add(panel, BorderLayout.NORTH);
 
-				JPanel panel = container;
 				for (String desc : description) {
-					JPanel outer = panel;
-					panel = new JPanel();
-					panel.setAlignmentY(0);
-					panel.setLayout(new BorderLayout());
-					outer.add(panel, BorderLayout.CENTER);
-					currentOuterPanel.compareAndSet(null, panel);
-
-					panel.add(new JLabel(applyWrapping(desc)), BorderLayout.NORTH);
+					JLabel label = new JLabel(applyWrapping(desc));
+					panel.add(label);
 				}
 
 				for (String info : additionalInfo) {
-					JPanel outer = panel;
-					panel = new JPanel();
-					panel.setAlignmentY(0);
-					panel.setLayout(new BorderLayout());
-					outer.add(panel, BorderLayout.CENTER);
-
 					JLabel label = new JLabel(applyWrapping(info));
 					label.setFont(label.getFont().deriveFont(Font.ITALIC));
-					panel.add(label, BorderLayout.NORTH);
-					currentOuterPanel.compareAndSet(null, panel);
+					panel.add(label);
 				}
 
 				messagesPanel.validate();
