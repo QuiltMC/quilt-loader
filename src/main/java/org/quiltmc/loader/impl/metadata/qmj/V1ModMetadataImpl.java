@@ -307,7 +307,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Override
 	public Collection<String> mixins(EnvType env) {
-		return this.mixins.get(env);
+		return this.mixins.getOrDefault(env, Collections.emptyList());
 	}
 
 	@Override

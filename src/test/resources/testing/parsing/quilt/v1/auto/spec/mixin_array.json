@@ -17,7 +17,7 @@
         },
         {
             "config": "mixin4.config.json",
-            "environment": "server"
+            "environment": "dedicated_server"
         }
     ]
 }

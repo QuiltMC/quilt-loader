@@ -377,8 +377,11 @@ public final class V1ModMetadataReader {
 					builder.mixins.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(mixinValue.asString());
 					builder.mixins.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(mixinValue.asString());
 					break;
+				case OBJECT:
+					readMixin(mixinValue.asObject(), builder.mixins);
+					break;
 				default:
-					throw parseException(mixinValue, "mixin value must be an array of strings or a string");
+					throw parseException(mixinValue, "mixin value must be a string, a mixin entry, or a mixed array of either");
 				}
 			}
 
@@ -1017,21 +1020,44 @@ public final class V1ModMetadataReader {
 				destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(value.asString());
 			} else if (value.type() == LoaderValue.LType.OBJECT) {
 				LoaderValue.LObject object = value.asObject();
-				LoaderValue config = object.get("config");
+				readMixin(object, destination);
+			} else {
+				throw parseException((JsonLoaderValue) value, "Entry inside mixin must be a string or object");
+			}
+		}
+	}
 
-				if (config == null) {
-					throw parseException((JsonLoaderValue) value, "Mixin entry inside must have a config value");
-				}
-				LoaderValue environment = object.get("environment");
+	private static void readMixin(LoaderValue.LObject object, Map<EnvType, List<String>> destination) {
+		LoaderValue config = object.get("config");
 
-				if (environment == null) {
+		if (config == null) {
+			throw parseException((JsonLoaderValue) object, "Mixin entry inside must have a config value");
+		} else if (config.type() != LoaderValue.LType.STRING) {
+			throw parseException((JsonLoaderValue) object, "Mixin entry config must be a string");
+		}
+		LoaderValue environment = object.get("environment");
+
+		if (environment == null) {
+			destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(config.asString());
+			destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(config.asString());
+		} else {
+			if (environment.type() != LoaderValue.LType.STRING) {
+				throw parseException((JsonLoaderValue) object, "Mixin entry environment must be a string");
+			}
+
+			switch (environment.asString()) {
+				case "client":
+					destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(config.asString());
+					break;
+				case "dedicated_server":
+					destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(config.asString());
+					break;
+				case "*":
 					destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(config.asString());
 					destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(config.asString());
-				} else {
-					destination.computeIfAbsent(EnvType.valueOf(environment.asString().toUpperCase()), (env) -> new ArrayList<>()).add(config.asString());
-				}
-			} else {
-				throw parseException((JsonLoaderValue) value, "Entry inside mixins must be a string or object");
+					break;
+				default:
+					throw parseException((JsonLoaderValue) object, "Mixin entry environment must be one of 'client', 'dedicated_server', or '*'");
 			}
 		}
 	}
