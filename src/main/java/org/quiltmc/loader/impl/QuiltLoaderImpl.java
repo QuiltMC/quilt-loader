@@ -65,6 +65,7 @@ import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -92,7 +93,6 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
-import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
@@ -129,7 +129,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.21.0-beta.3";
+	public static final String VERSION = "0.23.0";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -146,7 +146,6 @@ public final class QuiltLoaderImpl {
 
 	protected final Map<String, ModContainerExt> modMap = new HashMap<>();
 
-	protected final FileHasherImpl hasher = new FileHasherImpl(null);
 	protected final Map<String, String> modOriginHash = new HashMap<>();
 	protected final Map<Path, String> pathOriginHash = new HashMap<>();
 
@@ -348,6 +347,7 @@ public final class QuiltLoaderImpl {
 
 		long zipStart = System.nanoTime();
 		String suffix = System.getProperty(SystemProperties.CACHE_SUFFIX, getEnvironmentType().name().toLowerCase(Locale.ROOT));
+		FileHasherImpl hasher = new FileHasherImpl(null);
 
 		for (ModLoadOption mod : modList) {
 			Path from = mod.from();
@@ -414,7 +414,8 @@ public final class QuiltLoaderImpl {
 					List<Path> paths = new ArrayList<>();
 
 					long start = System.nanoTime();
-					paths.add(new QuiltZipFileSystem("transformed-mod-" + modid, transformedModBundle.resolve(modid)).getRoot());
+					String fsName = modid + "-" + modOption.version();
+					paths.add(new QuiltZipFileSystem(fsName, transformedModBundle.resolve(modid)).getRoot());
 					if (modOption.couldResourcesChange()) {
 						paths.add(modOption.resourceRoot());
 					}
@@ -429,7 +430,7 @@ public final class QuiltLoaderImpl {
 					 if (paths.size() == 1) {
 						 resourceRoot = paths.get(0);
 					 } else {
-						 resourceRoot = new QuiltJoinedFileSystem("final-mod-" + modid, paths).getRoot();
+						 resourceRoot = new QuiltJoinedFileSystem("_" + fsName, paths).getRoot();
 					 }
 				}
 			}
@@ -1129,8 +1130,8 @@ public final class QuiltLoaderImpl {
 					}
 				}
 
-				for (Map.Entry<String, Collection<AdapterLoadableClassEntry>> entry : mod.metadata().getEntrypoints().entrySet()) {
-					for (AdapterLoadableClassEntry e : entry.getValue()) {
+				for (Map.Entry<String, Collection<ModEntrypoint>> entry : mod.metadata().getEntrypoints().entrySet()) {
+					for (ModEntrypoint e : entry.getValue()) {
 						entrypointStorage.add(mod, entry.getKey(), e, adapterMap);
 					}
 				}

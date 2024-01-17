@@ -441,7 +441,7 @@ public class InternalsHiderTransform {
 			if (replacements.isEmpty()) {
 				sb.append("Please don't use this, instead ask ");
 				sb.append(modFrom());
-				sb.append(" to declare a new public API that can have guarenteed backwards compatibility!");
+				sb.append(" to declare a new public API that can have guaranteed backwards compatibility!");
 			} else if (replacements.size() == 1) {
 				sb.append("Please don't use this, instead try using the public api ");
 				sb.append(replacements.get(0));

@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.game.minecraft;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -32,6 +33,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
@@ -45,6 +48,7 @@ import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.LibClassifier;
 import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
 import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
+import org.quiltmc.loader.impl.game.minecraft.patch.TinyFDPatch;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataBuilder;
 import org.quiltmc.loader.impl.util.Arguments;
@@ -89,7 +93,8 @@ public class MinecraftGameProvider implements GameProvider {
 
 	private final GameTransformer transformer = new GameTransformer(
 			new EntrypointPatch(this),
-			new BrandingPatch());
+			new BrandingPatch(),
+			new TinyFDPatch());
 
 	@Override
 	public String getGameId() {
@@ -156,8 +161,9 @@ public class MinecraftGameProvider implements GameProvider {
 				}
 			});
 		}
-
-		return Collections.singletonList(new BuiltinMod(gameJars, metadata.build()));
+		List<Path> paths = new ArrayList<>(gameJars);
+		paths.addAll(miscGameLibraries);
+		return Collections.singletonList(new BuiltinMod(paths, metadata.build()));
 	}
 
 	public Path getGameJar() {
@@ -377,10 +383,31 @@ public class MinecraftGameProvider implements GameProvider {
 				launcher.hideParentPath(obf);
 			}
 
-			obfJars = GameProviderHelper.deobfuscate(obfJars,
-					getGameId(), getNormalizedGameVersion(),
-					getLaunchDirectory(),
-					launcher);
+			try {
+				obfJars = GameProviderHelper.deobfuscate(obfJars,
+						getGameId(), getNormalizedGameVersion(),
+						getLaunchDirectory(),
+						launcher);
+			} catch (RuntimeException e) {
+				if ("Unfixable conflicts".equals(e.getMessage())) {
+					String source = launcher.getMappingConfiguration().getMappingsSource().replace(File.separator, "/");
+					// Check for known cases
+					// Intermediary
+					Pattern intermediary = Pattern.compile(".+/net/fabricmc/intermediary/([^/]+)/intermediary-([^/]+)\\.jar.+");
+					Matcher matcher = intermediary.matcher(source);
+					if (matcher.matches()) {
+						String version1 = matcher.group(1);
+						String version2 = matcher.group(2);
+						if (version1.equals(version2)) {
+							// Okay, probably an intermediary version
+							if (!version1.equals(getRawGameVersion())) {
+								throw new RuntimeException("Mappings version is mismatched with minecraft version " + version1 + " vs mc " + getRawGameVersion(), e);
+							}
+						}
+					}
+				}
+				throw e;
+			}
 
 			for (int i = 0; i < gameJars.size(); i++) {
 				Path newJar = obfJars.get(names[i]);

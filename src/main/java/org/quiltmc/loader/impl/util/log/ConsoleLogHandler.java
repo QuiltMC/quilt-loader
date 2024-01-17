@@ -28,6 +28,12 @@ public class ConsoleLogHandler implements LogHandler {
 	private static final LogLevel MIN_STDERR_LEVEL = LogLevel.ERROR;
 	private static final LogLevel MIN_STDOUT_LEVEL = LogLevel.getDefault();
 
+	private boolean useFormatting = true;
+
+	void configureFormatting(boolean useFormatting) {
+		this.useFormatting = useFormatting;
+	}
+
 	@Override
 	public void log(long time, LogLevel level, LogCategory category, String msg, Throwable exc, boolean fromReplay, boolean wasSuppressed) {
 		String formatted = formatLog(time, level, category, msg, exc);
@@ -39,8 +45,13 @@ public class ConsoleLogHandler implements LogHandler {
 		}
 	}
 
-	protected static String formatLog(long time, LogLevel level, LogCategory category, String msg, Throwable exc) {
-		String ret = String.format("[%tT] [%s] [%s/%s]: %s%n", time, level.name(), category.context, category.name, msg);
+	protected String formatLog(long time, LogLevel level, LogCategory category, String msg, Throwable exc) {
+		String ret;
+		if (useFormatting) {
+			ret = String.format("[%tT] [%s] [%s/%s]: %s%n", time, level.name(), category.context, category.name, msg);
+		} else {
+			ret = msg + "\n";
+		}
 
 		if (exc != null) {
 			StringWriter writer = new StringWriter(ret.length() + 500);

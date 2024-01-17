@@ -92,7 +92,7 @@ public interface QuiltPluginContext {
 	/** Submits a task to be completed after plugin resolution, but before the current cycle ends. The task may be
 	 * executed on a different thread, depending on loaders config options.
 	 * <p>
-	 * This should only be called by {@link QuiltLoaderPlugin#resolve(QuiltPluginContext, Object)},
+	 * This should only be called by {@link QuiltLoaderPlugin#resolve(TentativeLoadOption)},
 	 * {@link QuiltLoaderPlugin#finish(org.quiltmc.loader.api.plugin.solver.ModSolveResult)}, or by any tasks that are
 	 * passed to this function during their execution.
 	 * 
@@ -139,12 +139,12 @@ public interface QuiltPluginContext {
 	void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode fileNode);
 
 	/** Adds a tentative option which can be resolved later by
-	 * {@link QuiltLoaderPlugin#resolve(QuiltPluginContext, TentativeLoadOption)}, if it is selected.
+	 * {@link QuiltLoaderPlugin#resolve(TentativeLoadOption)}, if it is selected.
 	 * 
 	 * @param option */
 	<T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option);
 
-	/** Only callable during {@link QuiltLoaderPlugin#handleError(java.util.List)} to identify the given rule as one
+	/** Only callable during {@link QuiltLoaderPlugin#handleError(java.util.Collection)} to identify the given rule as one
 	 * which can be removed for the purposes of error message generation. */
 	void blameRule(Rule rule);
 }

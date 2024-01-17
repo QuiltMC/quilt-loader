@@ -1,0 +1,27 @@
+Features:
+
+- Added LanguageAdapter.getDefault(), to allow other LanguageAdapters to use it as their fallback.
+- Added intermediary version detection on "Unfixable Conflicts" error, which just displays the mappings version verses the game version.
+- Added legacy fabric loader class DependencyException, which broke a 1.17 version of Modern Industrialisation.
+- [#369] Added some minecraft libraries to the transform cache - this allows mixin to run on them again.
+
+Bug FIxes:
+
+- Fixed net.fabricmc.loader.util.version.SemanticVersionImpl not being used for fabric versions, which broke a 1.17 version of SmootherBedrock.
+- [#377] Added overlap detection to GamePatch.process, which fixes a 1.2.5 server not launching with quilt loader (#376).
+- [#375] Fix "guarenteed" typo instead of "guaranteed" (ix0rai)
+- [#371] Fix access widener remapping using the constant "named" instead of fetching the target namespace (heipiao233)
+
+Changes from upstream (fabric-loader 0.14.23 and 0.14.24)
+
+- Updated to ASM 9.6
+- Added FabricLoader.invokeEntrypoints
+- Fix a command injection vulnerability in vanilla Minecraft 20w21a -> 23w04a.
+
+    Changelog from fabric:
+
+    Fix a command injection vulnerability allowing malicious resource pack to unexpectedly execute code on Linux clients running vanilla Minecraft 1.16 (20w21a) -> 1.19.3 (23w04a).
+    It was recently found that the Tiny File Dialogs library is vulnerable to command injection techniques on Linux when invoked with untrusted data. This fix makes a small change in the create world `MoreOptionsDialog` screen to pass a hardcoded string as the dialog title.
+    Many thanks to ThatGravyBoat and Moulberry for investigating this issue and reporting it to fabric in confidence.
+
+(Fix originally committed by modmuss50 here: https://github.com/FabricMC/fabric-loader/commit/5d10144502f403a0c1356418821bc74b1c350436 )

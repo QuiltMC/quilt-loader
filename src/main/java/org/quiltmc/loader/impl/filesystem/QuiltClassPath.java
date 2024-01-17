@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
@@ -66,7 +67,7 @@ public class QuiltClassPath {
 	private static final boolean USE_CUSTOM_TABLE = !Boolean.getBoolean(SystemProperties.DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE);
 
 	private final List<Path> allRoots = VALIDATE ? new CopyOnWriteArrayList<>() : null;
-	private final List<Path> roots = new CopyOnWriteArrayList<>();
+	private final AtomicReference<Path[]> roots = new AtomicReference<>(new Path[0]);
 	private final FileMap files = USE_CUSTOM_TABLE ? new HashTableFileMap() : new StandardFileMap();
 
 	/** Set if {@link #VALIDATE} finds a problem. */
@@ -89,7 +90,7 @@ public class QuiltClassPath {
 
 			if (fs instanceof QuiltMemoryFileSystem.ReadWrite) {
 				Log.warn(LogCategory.GENERAL, "Adding read/write FS root to the classpath, this may slow down class loading: " + fs.name);
-				roots.add(root);
+				addRootToInternalArray(root);
 			} else {
 
 				files.ensureCapacityFor(fs.getEntryCount());
@@ -114,7 +115,7 @@ public class QuiltClassPath {
 
 			if ("jar".equals(fs.provider().getScheme())) {
 				// Assume it's read-only for speed
-				roots.add(root);
+				addRootToInternalArray(root);
 				beginScanning(root);
 				return;
 			}
@@ -123,8 +124,16 @@ public class QuiltClassPath {
 				Log.warn(LogCategory.GENERAL, "Adding unknown root to the classpath, this may slow down class loading: " + root.getFileSystem() + " " + root);
 			}
 
-			roots.add(root);
+			addRootToInternalArray(root);
 		}
+	}
+
+	private void addRootToInternalArray(Path root) {
+		roots.updateAndGet(array -> {
+			Path[] array2 = Arrays.copyOf(array, array.length + 1);
+			array2[array.length] = root;
+			return array2;
+		});
 	}
 
 	private void putQuickFile(String fileName, Path file) {
@@ -218,22 +227,40 @@ public class QuiltClassPath {
 					return FileVisitResult.CONTINUE;
 				}
 			});
-			roots.remove(zipRoot);
+			roots.updateAndGet(array -> {
+				Path[] array2 = new Path[array.length - 1];
+				int output = 0;
+				for (int i = 0; i < array.length; i++) {
+					Path old = array[i];
+					if (old != zipRoot) {
+						array2[output++] = old;
+					}
+				}
+				return array2;
+			});
 			long end = System.nanoTime();
-			Log.info(LogCategory.GENERAL, "Took " + (end - start) / 1000 + "us to scan " + zipRoot);
+			Log.info(LogCategory.GENERAL, "Took " + (end - start) / 1000 + "us to scan " + zipRoot.getFileSystem() + " " + zipRoot);
 		} catch (IOException e) {
 			Log.warn(LogCategory.GENERAL, "Failed to scan " + zipRoot + "!", e);
 		}
 	}
 
 	public Path findResource(String path) {
+		Path[] rootsCopy0 = roots.get();
 		Path quick = quickFindResource(path);
 		if (VALIDATE) {
-			Path slow = findResourceIn(allRoots, path);
+			Path slow = findResourceIn(allRoots.toArray(new Path[0]), path);
 			if (!Objects.equals(slow, quick)) {
+				Path quick2 = quickFindResource(path);
+				Path[] rootsCopy1 = roots.get();
 				IllegalStateException ex = new IllegalStateException(
-					"quickFindResource( " + path + " ) returned a different path to the slow find resource! ("
-						+ describePath(quick) + " vs " + describePath(slow) + ")"
+					"quickFindResource( " + path + " ) returned a different path to the slow find resource!"
+						+ "\nquick 1 = " + describePath(quick)
+						+ "\nslow = " + describePath(slow)
+						+ "\nquick 2 = " + describePath(quick2)
+						+ "\nroots 1 = " + describePaths(Arrays.asList(rootsCopy0))
+						+ "\nroots 2 = " + describePaths(Arrays.asList(rootsCopy1))
+						+ "\nall_roots = " + describePaths(allRoots)
 				);
 				ex.printStackTrace();
 				printFullDetail = true;
@@ -265,6 +292,19 @@ public class QuiltClassPath {
 		if (printFullDetail) {
 			Log.warn(LogCategory.GENERAL, "quickFindResource(" + path + ")");
 		}
+
+		// Obtaining the roots array before we get from the file map prevents a race condition
+		// where the following happens:
+		/*
+		 * step | findResource | scanner
+		 *  1   | files.get()  |
+		 *  2   |              | files.put()
+		 *  3   |              | roots.remove()
+		 *  4   | loop(roots)  |
+		 */
+		// Grabbing a copy of the roots array before we check in files ensures we never miss a path
+		// This fix is also applied to quickGetResources
+		Path[] fullArray = roots.get();
 		Path quick = files.get(absolutePath);
 
 		if (printFullDetail) {
@@ -274,7 +314,7 @@ public class QuiltClassPath {
 		if (quick instanceof HashCollisionPath) {
 			quick = ((HashCollisionPath) quick).get(absolutePath);
 			if (printFullDetail) {
-				Log.warn(LogCategory.GENERAL, "- after hash collisiion -> " + describePath(quick));
+				Log.warn(LogCategory.GENERAL, "- after hash collision -> " + describePath(quick));
 			}
 		}
 
@@ -285,11 +325,11 @@ public class QuiltClassPath {
 			return quick;
 		}
 
-		return findResourceIn(roots, path);
+		return findResourceIn(fullArray, path);
 	}
 
-	private static Path findResourceIn(List<Path> list, String path) {
-		for (Path root : list) {
+	private static Path findResourceIn(Path[] array, String path) {
+		for (Path root : array) {
 			Path ext = root.resolve(path);
 			if (FasterFiles.exists(ext)) {
 				return ext;
@@ -302,11 +342,14 @@ public class QuiltClassPath {
 		List<Path> quick = quickGetResources(path);
 		if (VALIDATE) {
 			List<Path> slow = new ArrayList<>();
-			getResourcesIn(allRoots, path, slow);
+			getResourcesIn(allRoots.toArray(new Path[0]), path, slow);
 			if (!quick.equals(slow)) {
+				List<Path> quick2 = quickGetResources(path);
 				IllegalStateException ex = new IllegalStateException(
-					"quickGetResources( " + path + " ) returned a different list of paths to the slow get resources! ("
-						+ describePaths(quick) + " vs " + describePaths(slow) + ")"
+					"quickGetResources( " + path + " ) returned a different list of paths to the slow get resources!"
+						+ "\nquick 1 = " + describePaths(quick)
+						+ "\nslow    = " + describePaths(slow)
+						+ "\nquick 2 = " + describePaths(quick2)
 				);
 				ex.printStackTrace();
 				printFullDetail = true;
@@ -335,6 +378,9 @@ public class QuiltClassPath {
 			absolutePath = "/" + path;
 		}
 
+		// Thread race condition fix
+		// see "quickFindResource" for details
+		Path[] rootsArray = roots.get();
 		Path quick = files.get(absolutePath);
 
 		if (quick instanceof HashCollisionPath) {
@@ -350,11 +396,11 @@ public class QuiltClassPath {
 			}
 		}
 
-		getResourcesIn(roots, path, paths);
+		getResourcesIn(rootsArray, path, paths);
 		return Collections.unmodifiableList(paths);
 	}
 
-	private static void getResourcesIn(List<Path> src, String path, List<Path> dst) {
+	private static void getResourcesIn(Path[] src, String path, List<Path> dst) {
 		for (Path root : src) {
 			Path ext = root.resolve(path);
 			if (FasterFiles.exists(ext)) {
@@ -457,7 +503,7 @@ public class QuiltClassPath {
 
 		abstract void put(Path newPath);
 
-		protected Path computeNewPath(Path current, Path file) {
+		protected static Path computeNewPath(Path current, Path file) {
 			if (current == null) {
 				return file;
 			} else if (current instanceof HashCollisionPath) {
@@ -577,7 +623,7 @@ public class QuiltClassPath {
 
 		private void rehash(int newSize) {
 			Path[] oldTable = table;
-			table = new Path[newSize];
+			Path[] newTable = new Path[newSize];
 			Path[] array1 = { null };
 			Path[] subIter = null;
 			for (Path sub : oldTable) {
@@ -600,10 +646,11 @@ public class QuiltClassPath {
 					} else {
 						hashPath = sub2;
 					}
-					int index = hashCode(hashPath) & table.length - 1;
-					table[index] = computeNewPath(table[index], sub2);
+					int index = hashCode(hashPath) & newTable.length - 1;
+					newTable[index] = computeNewPath(newTable[index], sub2);
 				}
 			}
+			table = newTable;
 		}
 	}
 
@@ -655,10 +702,11 @@ public class QuiltClassPath {
 
 		public Path get(String key) {
 			for (Path value : values) {
+				Path compare = value;
 				if (value instanceof OverlappingPath) {
-					value = ((OverlappingPath) value).paths[0];
+					compare = ((OverlappingPath) value).paths[0];
 				}
-				if (isEqual(key, value)) {
+				if (isEqual(key, compare)) {
 					return value;
 				}
 			}

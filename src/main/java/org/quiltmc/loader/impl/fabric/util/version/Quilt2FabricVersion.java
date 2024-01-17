@@ -36,7 +36,7 @@ public class Quilt2FabricVersion implements net.fabricmc.loader.api.Version {
 		if (quilt == null) {
 			return null;
 		} else if (quilt.isSemantic()) {
-			return new Quilt2FabricSemanticVersion(quilt.semantic());
+			return new SemanticVersionImpl(quilt.semantic());
 		} else {
 			return new Quilt2FabricVersion(quilt);
 		}

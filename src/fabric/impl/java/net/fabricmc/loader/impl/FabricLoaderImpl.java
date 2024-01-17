@@ -29,6 +29,7 @@ import net.fabricmc.loader.impl.entrypoint.EntrypointContainerImpl;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.entrypoint.EntrypointException;
+import org.quiltmc.loader.api.entrypoint.EntrypointUtil;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 
 import java.io.File;
@@ -38,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 @Deprecated
 public class FabricLoaderImpl extends FabricLoader {
@@ -62,6 +64,11 @@ public class FabricLoaderImpl extends FabricLoader {
 		} catch (EntrypointException e) {
 			throw new net.fabricmc.loader.api.EntrypointException(e.getKey(), e);
 		}
+	}
+
+	@Override
+	public <T> void invokeEntrypoints(String key, Class<T> type, Consumer<? super T> invoker) {
+		EntrypointUtil.invoke(key, type, invoker);
 	}
 
 	@Override

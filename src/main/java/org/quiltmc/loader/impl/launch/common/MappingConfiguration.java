@@ -43,6 +43,7 @@ public final class MappingConfiguration {
 
 	private String gameId;
 	private String gameVersion;
+	private String mappingsSource;
 	private TinyTree mappings;
 
 	public String getGameId() {
@@ -55,6 +56,12 @@ public final class MappingConfiguration {
 		initialize();
 
 		return gameVersion;
+	}
+
+	public String getMappingsSource() {
+		initialize();
+
+		return mappingsSource;
 	}
 
 	public boolean matches(String gameId, String gameVersion) {
@@ -112,6 +119,7 @@ public final class MappingConfiguration {
 
 					if (mappings.getMetadata().getNamespaces().contains(getTargetNamespace())) {
 						this.mappings = mappings;
+						this.mappingsSource = url.toString();
 						break;
 					}
 

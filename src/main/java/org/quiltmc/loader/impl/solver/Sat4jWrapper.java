@@ -20,6 +20,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -29,10 +30,13 @@ import java.util.Set;
 
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.NegatedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
+import org.quiltmc.loader.impl.solver.RuleSet.InputRuleSet;
+import org.quiltmc.loader.impl.solver.RuleSet.ProcessedRuleSet;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -66,77 +70,32 @@ import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Sat4jWrapper implements RuleContext {
 
-	private static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
-
-	public enum Sat4jSolveStep {
-
-		DEFINE(true),
-		SOLVE(true),
-		RE_SOLVING(false),
-		OPTIMISE(false),
-		DONE(false);
-
-		final boolean canAdd;
-
-		Sat4jSolveStep(boolean canAdd) {
-			this.canAdd = canAdd;
-		}
-	}
-
-	private final LogCategory CATEGORY = LogCategory.create("Sat4j");
-
-	private volatile Sat4jSolveStep step = Sat4jSolveStep.DEFINE;
-
-	/** Only available during {@link Sat4jSolveStep#SOLVE} */
-	private XplainPB explainer;
-
-	/** Only available during {@link Sat4jSolveStep#OPTIMISE} */
-	private volatile PseudoOptDecorator optimiser;
-
-	/** Set to {@link #explainer} during {@link Sat4jSolveStep#SOLVE}, and {@link #optimiser} during
-	 * {@link Sat4jSolveStep#OPTIMISE}. */
-	private IPBSolver solver;
-
-	private boolean rulesChanged = false;
+	static final boolean LOG = Boolean.getBoolean(SystemProperties.DEBUG_MOD_SOLVING);
+	static final boolean PRINT_RESULTS = LOG || Boolean.getBoolean(SystemProperties.PRINT_MOD_SOLVING_RESULTS);
+	private static final boolean DISABLE_PRE_PROCESS = Boolean.getBoolean(SystemProperties.DISABLE_MOD_SOLVING_PRE_PROCESSING);
+	static final LogCategory CATEGORY = LogCategory.create("Sat4j");
 
 	private volatile boolean cancelled = false;
 
 	private final Map<LoadOption, Map<Rule, Integer>> optionToWeight = new HashMap<>();
 	private final Map<Rule, List<RuleDefinition>> ruleToDefinitions = new HashMap<>();
 
-	private final Map<LoadOption, Integer> optionToIndex = new HashMap<>();
-	private final Map<Integer, LoadOption> indexToOption = new HashMap<>();
-
-	/** Only available during {@link Sat4jSolveStep#SOLVE}. */
-	private Map<IConstr, Rule> constraintToRule = null;
+	private CalculationStage stage = new DefineStage();
 
 	public Sat4jWrapper() {}
 
-	public Sat4jSolveStep getStep() {
-		return step;
-	}
-
 	/** Clears out this {@link Sat4jWrapper} of all data EXCEPT the added {@link Rule}s and {@link LoadOption}s. */
-	public void resetStep() {
-		optionToIndex.clear();
-		indexToOption.clear();
-		explainer = null;
-		optimiser = null;
-		solver = null;
+	public void resetStage() {
 		cancelled = false;
-		constraintToRule = null;
-		rulesChanged = true;
-		step = Sat4jSolveStep.DEFINE;
+		stage = new DefineStage();
 	}
 
 	// ############
 	// # Defining #
 	// ############
 
-	/** Adds a new {@link LoadOption}.*/
 	@Override
 	public void addOption(LoadOption option) {
-		validateCanAdd();
 		optionToWeight.put(option, new HashMap<>());
 
 		if (LOG) {
@@ -162,7 +121,6 @@ public class Sat4jWrapper implements RuleContext {
 
 	@Override
 	public void setWeight(LoadOption option, Rule key, int weight) {
-		validateCanAdd();
 		if (option instanceof AliasedLoadOption) {
 			LoadOption target = ((AliasedLoadOption) option).getTarget();
 			if (target != null) {
@@ -179,13 +137,10 @@ public class Sat4jWrapper implements RuleContext {
 
 	@Override
 	public void removeOption(LoadOption option) {
-		validateCanAdd();
-
 		if (LOG) {
 			Log.info(CATEGORY, "Removing option " + option);
 		}
 
-		indexToOption.remove(optionToIndex.remove(option));
 		optionToWeight.remove(option);
 
 		List<Rule> rulesToRedefine = new ArrayList<>();
@@ -209,8 +164,6 @@ public class Sat4jWrapper implements RuleContext {
 			Log.info(CATEGORY, "Added rule " + rule);
 		}
 
-		validateCanAdd();
-
 		ruleToDefinitions.put(rule, new ArrayList<>(1));
 
 		for (LoadOption option : optionToWeight.keySet()) {
@@ -225,12 +178,12 @@ public class Sat4jWrapper implements RuleContext {
 			Log.info(CATEGORY, "Removed rule " + rule);
 		}
 
-		validateCanAdd();
 		ruleToDefinitions.remove(rule);
-		rulesChanged = true;
+		stage = stage.onChange();
 	}
 
-	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
+	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} sometime
+	 * before solving. */
 	@Override
 	public void redefine(Rule rule) {
 
@@ -238,83 +191,22 @@ public class Sat4jWrapper implements RuleContext {
 			Log.info(CATEGORY, "Redefining rule " + rule);
 		}
 
-		validateCanAdd();
 		ruleToDefinitions.put(rule, new ArrayList<>(1));
-		rulesChanged = true;
 		rule.define(new RuleDefinerInternal(rule));
-	}
-
-	public static boolean isNegated(LoadOption option) {
-		return option instanceof NegatedLoadOption;
-	}
-
-	public static LoadOption negate(LoadOption option) {
-		if (option instanceof NegatedLoadOption) {
-			return ((NegatedLoadOption) option).not;
-		} else {
-			return new NegatedLoadOption(option);
-		}
-	}
-
-	private void validateCanAdd() {
-		if (!getStep().canAdd) {
-			throw new IllegalStateException("Cannot add new options/rules during " + getStep());
-		}
+		stage = stage.onChange();
 	}
 
 	// ###########
 	// # Solving #
 	// ###########
 
-	/** Attempts to find a solution. This should be called during either definition or solving. If this returns true
-	 * then the {@link #getStep()} will be moved to {@link Sat4jSolveStep#RE_SOLVING}.
+	/** Attempts to find a solution. If this returns true then you should call {@link #getSolution()} to get it,
+	 * otherwise call {@link #getError()} to get the first reason why this doesn't have a solution.
 	 * 
 	 * @return True if a solution could be found, or false if one could not. */
-	public boolean hasSolution() throws TimeoutException {
-
+	public boolean hasSolution() throws TimeoutException, ModSolvingError {
 		checkCancelled();
-
-		if (step == Sat4jSolveStep.DEFINE || (step == Sat4jSolveStep.SOLVE && rulesChanged)) {
-
-			if (LOG) {
-				if (step != Sat4jSolveStep.DEFINE) {
-					Log.info(CATEGORY, "Redefining rules");
-				}
-			}
-
-			rulesChanged = false;
-			optionToIndex.clear();
-			indexToOption.clear();
-			constraintToRule = new HashMap<>();
-			solver = SolverFactory.newDefault();
-			solver = explainer = new XplainPB(solver);
-			putDefinitions();
-
-		} else if (step != Sat4jSolveStep.SOLVE) {
-			throw new IllegalStateException("Wrong step to call findSolution! (" + step + ")");
-		}
-		step = Sat4jSolveStep.SOLVE;
-
-		boolean success = explainer.isSatisfiable();
-
-		if (success) {
-			if (LOG) {
-				Log.info(CATEGORY, "Found a valid solution, preparing to optimise it.");
-			}
-
-			explainer = null;
-			solver = new OptToPBSATAdapter(optimiser = new PseudoOptDecorator(SolverFactory.newDefault()));
-			// optimiser.setTimeoutForFindingBetterSolution(2);
-			step = Sat4jSolveStep.RE_SOLVING;
-			optionToIndex.clear();
-			indexToOption.clear();
-			solver.setVerbose(true);
-			constraintToRule = null;
-			putDefinitions();
-			return true;
-		} else {
-			return false;
-		}
+		return stage.hasSolution();
 	}
 
 	/** @return The error that prevented {@link #hasSolution()} from returning true.
@@ -322,15 +214,7 @@ public class Sat4jWrapper implements RuleContext {
 	 *             methods have been called since the last call to {@link #hasSolution()}. */
 	public Collection<Rule> getError() throws TimeoutException {
 		checkCancelled();
-
-		Collection<IConstr> constraints = explainer.explain();
-		Set<Rule> rules = new HashSet<>();
-
-		for (IConstr c : constraints) {
-			rules.add(constraintToRule.get(c));
-		}
-
-		return rules;
+		return stage.getError();
 	}
 
 	/** Computes and returns the optimised solution.
@@ -338,219 +222,32 @@ public class Sat4jWrapper implements RuleContext {
 	 * @return The solution.
 	 * @throws TimeoutException if the optimisation was cancelled before it completed. This will only be thrown if it
 	 *             hasn't computed any solutions when it is cancelled.
-	 * @throws IllegalStateException if this is not in the {@link Sat4jSolveStep#RE_SOLVING} step. */
-	public List<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
+	 * @throws IllegalStateException if {@link #hasSolution()} didn't just return true, or if any other methods have
+	 *             been called since the last call to {@link #hasSolution()}. */
+	public Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
 		checkCancelled();
-
-		if (LOG) {
-			Log.info(CATEGORY, "Starting optimisation.");
-		}
-
-		int count = 0;
-		boolean success = false;
-
-		// 5 second timeout - this will regularly be hit by users
-		// as such this needs to be fairly short, but not too short as then there's no time to optimise.
-		// ALSO this happens *every cycle*
-		optimiser.setTimeoutForFindingBetterSolution(5);
-
-		while (true) {
-
-			try {
-				if (!optimiser.admitABetterSolution()) {
-					break;
-				}
-			} catch (TimeoutException e) {
-				if (success) {
-					if (LOG) {
-						Log.info(CATEGORY, "Aborted optimisation due to timeout");
-					}
-					break;
-				}
-			}
-
-			step = Sat4jSolveStep.OPTIMISE;
-			success = true;
-
-			if (LOG) {
-				Log.info(
-					CATEGORY, "Found solution #" + (++count) + " weight = " + optimiser.calculateObjective().intValue()
-						+ " = " + Arrays.toString(optimiser.model())
-				);
-			}
-
-			try {
-				optimiser.discardCurrentSolution();
-			} catch (ContradictionException e) {
-				// This means we're *already* optimal?
-				if (LOG) {
-					Log.info(CATEGORY, "Found optimal solution!");
-				}
-				break;
+		Collection<LoadOption> solution = stage.getSolution();
+		if (PRINT_RESULTS) {
+			Log.info(CATEGORY, "Final solution:");
+			for (LoadOption option : solution) {
+				Log.info(CATEGORY, option.toString());
 			}
 		}
-
-		if (!success) {
-			throw new ModSolvingError(
-				"We just solved this! Something must have gone wrong internally..." + ruleToDefinitions
-			);
-		}
-
-		int[] model = optimiser.model();
-		List<LoadOption> list = new ArrayList<>();
-
-		for (int value : model) {
-			if (value < 0) {
-				// Negated, so ignored
-				continue;
-			}
-
-			LoadOption option = indexToOption.get(value);
-			if (option == null) {
-				throw new ModSolvingError("Unknown value " + value);
-			}
-			list.add(option);
-		}
-
-		step = Sat4jSolveStep.DONE;
-
-		return list;
-	}
-
-	/** This method cancels the current operation, if there is one running. */
-	public boolean cancel() {
-		IPBSolver s = solver;
-		if (s != null) {
-			s.expireTimeout();
-			return true;
-		}
-		return false;
-	}
-
-	/** This method cancels the current operation, if we are in the given step, otherwise this does nothing. */
-	public boolean cancelIf(Sat4jSolveStep step) {
-		IPBSolver s = solver;
-		if (s != null && this.step == step) {
-			s.expireTimeout();
-			return true;
-		}
-		return false;
+		return solution;
 	}
 
 	/** Cancels any current and future operation. */
-	public void hardCancel() {
+	public void cancel() {
 		cancelled = true;
-		cancel();
 	}
 
 	// ############
 	// # Internal #
 	// ############
 
-	/* package-private */ IVecInt mapOptionsToSat4jClause(LoadOption[] options) {
-		IVecInt vec = new VecInt(options.length);
-
-		for (LoadOption option : options) {
-			boolean negated = false;
-
-			if (option instanceof NegatedLoadOption) {
-				negated = true;
-				option = ((NegatedLoadOption) option).not;
-			}
-
-			int value = putOptionRaw(option);
-
-			if (negated) {
-				value = -value;
-			}
-
-			vec.push(value);
-		}
-
-		return vec;
-	}
-
-	private int putOptionRaw(LoadOption option) {
-		Integer objVal = optionToIndex.get(option);
-
-		if (objVal == null) {
-			objVal = solver.nextFreeVarId(true);
-			optionToIndex.put(option, objVal);
-			indexToOption.put(objVal, option);
-
-			if (LOG) {
-				Log.info(CATEGORY, objVal + " = " + option);
-			}
-		}
-
-		int value = objVal;
-		return value;
-	}
-
 	private void checkCancelled() throws TimeoutException {
 		if (cancelled) {
 			throw new TimeoutException();
-		}
-	}
-
-	private void putDefinitions() {
-		if (constraintToRule != null) {
-			constraintToRule.clear();
-		}
-
-		for (LoadOption option : optionToWeight.keySet()) {
-			putOptionRaw(option);
-		}
-
-		for (Map.Entry<Rule, List<RuleDefinition>> entry : ruleToDefinitions.entrySet()) {
-			Rule rule = entry.getKey();
-
-			for (RuleDefinition def : entry.getValue()) {
-				addRuleDefinition(rule, def);
-			}
-		}
-
-		if (optimiser != null) {
-			int count = optionToWeight.size();
-			IVecInt vars = new VecInt(count);
-			IVec<BigInteger> coeffs = new Vec<>(count);
-
-			for (LoadOption option : optionToWeight.keySet()) {
-				Map<Rule, Integer> weights = optionToWeight.get(option);
-				Integer value = optionToIndex.get(option);
-				if (value == null) {
-					throw new NullPointerException(option + " isn't in the optionToIndex map!");
-				}
-				vars.push(value);
-				int totalWeight = 0;
-				for (int weight : weights.values()) {
-					totalWeight += weight;
-				}
-				coeffs.push(BigInteger.valueOf(totalWeight));
-			}
-
-			optimiser.setObjectiveFunction(new ObjectiveFunction(vars, coeffs));
-		}
-	}
-
-	private void addRuleDefinition(Rule rule, RuleDefinition def) {
-
-		def.validateOptions(optionToWeight.keySet());
-
-		IConstr[] added;
-		try {
-			added = def.put(this, solver);
-		} catch (ContradictionException e) {
-			// Should never happen
-			throw new IllegalStateException("Failed to add the definition " + def, e);
-		}
-
-		if (constraintToRule != null) {
-			for (IConstr c : added) {
-				if (c != null) {
-					constraintToRule.put(c, rule);
-				}
-			}
 		}
 	}
 
@@ -564,11 +261,7 @@ public class Sat4jWrapper implements RuleContext {
 
 		@Override
 		public LoadOption negate(LoadOption option) {
-			if (option instanceof NegatedLoadOption) {
-				return ((NegatedLoadOption) option).not;
-			}
-
-			return new NegatedLoadOption(RuleDefinition.process(option));
+			return RuleDefinition.process(option).negate();
 		}
 
 		@Override
@@ -588,17 +281,11 @@ public class Sat4jWrapper implements RuleContext {
 		}
 
 		private void rule(RuleDefinition def) {
-			validateCanAdd();
-
 			if (LOG) {
 				Log.info(CATEGORY, "Rule " + def);
 			}
 
 			ruleToDefinitions.computeIfAbsent(rule, r -> new ArrayList<>()).add(def);
-
-			if (solver != null) {
-				addRuleDefinition(rule, def);
-			}
 		}
 
 		@Override
@@ -651,6 +338,410 @@ public class Sat4jWrapper implements RuleContext {
 				);
 			}
 			rule(new RuleDefinition.Between(rule, min, max, options));
+		}
+	}
+
+	/** Contains the actual Sat4j fields for computation. */
+	/* package-private */ static abstract class Sat4jSolver {
+
+		final IPBSolver solver;
+		final RuleSet inputRules;
+
+		final Map<LoadOption, Integer> optionToIndex = new HashMap<>();
+		final Map<Integer, LoadOption> indexToOption = new HashMap<>();
+
+		public Sat4jSolver(IPBSolver solver, RuleSet rules) {
+			this.solver = solver;
+			this.inputRules = rules;
+
+			for (LoadOption option : rules.options.keySet()) {
+				putOptionRaw(option);
+			}
+		}
+
+		/* package-private */ IVecInt mapOptionsToSat4jClause(LoadOption[] options) {
+			IVecInt vec = new VecInt(options.length);
+
+			for (LoadOption option : options) {
+				boolean negated = false;
+
+				if (option instanceof NegatedLoadOption) {
+					negated = true;
+					option = ((NegatedLoadOption) option).not;
+				}
+
+				int value = putOptionRaw(option);
+
+				if (negated) {
+					value = -value;
+				}
+
+				vec.push(value);
+			}
+
+			return vec;
+		}
+
+		private int putOptionRaw(LoadOption option) {
+			Integer objVal = optionToIndex.get(option);
+
+			if (objVal == null) {
+				objVal = solver.nextFreeVarId(true);
+				optionToIndex.put(option, objVal);
+				indexToOption.put(objVal, option);
+
+				if (LOG) {
+					Log.info(CATEGORY, objVal + " = " + option);
+				}
+			}
+
+			int value = objVal;
+			return value;
+		}
+
+		private IConstr[] addRuleDefinition(RuleDefinition def) {
+
+			def.validateOptions(optionToIndex.keySet());
+
+			IConstr[] constraints;
+			try {
+				constraints = def.put(this, solver);
+			} catch (ContradictionException e) {
+				// Should never happen
+				throw new IllegalStateException("Failed to add the definition " + def, e);
+			}
+
+			return constraints;
+		}
+	}
+
+	private static final class Sat4jSolverSatisfiable extends Sat4jSolver {
+
+		private final XplainPB explainer;
+
+		private final Map<IConstr, Rule> constraintToRule = new HashMap<>();
+
+		public Sat4jSolverSatisfiable(InputRuleSet rules) {
+			super(new XplainPB(SolverFactory.newDefault()), rules);
+			this.explainer = (XplainPB) solver;
+
+			for (Map.Entry<Rule, List<RuleDefinition>> entry : rules.ruleToDefinitions.entrySet()) {
+				Rule rule = entry.getKey();
+
+				for (RuleDefinition def : entry.getValue()) {
+					for (IConstr constraint : super.addRuleDefinition(def)) {
+						if (constraint != null) {
+							constraintToRule.put(constraint, rule);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	private static final class Sat4jSolverOptimizer extends Sat4jSolver {
+
+		/** Only available during {@link Sat4jSolveStep#OPTIMISE} */
+		private final PseudoOptDecorator optimiser;
+
+		public Sat4jSolverOptimizer(RuleSet rules) {
+			super(new OptToPBSATAdapter(new PseudoOptDecorator(SolverFactory.newDefault())), rules);
+			this.optimiser = (PseudoOptDecorator) ((OptToPBSATAdapter) solver).decorated();
+
+			rules.forEachRule(super::addRuleDefinition);
+
+			int count = rules.options.size();
+			IVecInt vars = new VecInt(count);
+			IVec<BigInteger> coeffs = new Vec<>(count);
+
+			for (Map.Entry<LoadOption, Integer> entry : rules.options.entrySet()) {
+				Integer value = optionToIndex.get(entry.getKey());
+				if (value == null) {
+					throw new NullPointerException(entry.getKey() + " isn't in the optionToIndex map!");
+				}
+				vars.push(value);
+				coeffs.push(BigInteger.valueOf(entry.getValue()));
+			}
+
+			optimiser.setObjectiveFunction(new ObjectiveFunction(vars, coeffs));
+		}
+	}
+
+	private abstract class CalculationStage {
+
+		abstract CalculationStage onChange();
+
+		abstract boolean hasSolution() throws TimeoutException, ModSolvingError;
+
+		abstract Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError;
+
+		abstract Collection<Rule> getError() throws TimeoutException;
+	}
+
+	private final class DefineStage extends CalculationStage {
+
+		@Override
+		CalculationStage onChange() {
+			return this;
+		}
+
+		@Override
+		boolean hasSolution() throws TimeoutException, ModSolvingError {
+
+			InputRuleSet originalRules = new InputRuleSet(optionToWeight, ruleToDefinitions);
+			Sat4jSolverSatisfiable solver = new Sat4jSolverSatisfiable(originalRules);
+			boolean success = solver.solver.isSatisfiable();
+
+			if (success) {
+				if (PRINT_RESULTS) {
+					Log.info(CATEGORY, "Found a valid solution, preparing to optimise it.");
+				}
+
+				final RuleSet toOptimize;
+				if (!DISABLE_PRE_PROCESS) {
+					int ruleCount = 0;
+					for (List<RuleDefinition> defs : originalRules.ruleToDefinitions.values()) {
+						ruleCount += defs.size();
+					}
+					if (PRINT_RESULTS) {
+						Log.info(CATEGORY, "Pre-processing " + ruleCount + " rules and " + originalRules.options.size() + " options");
+					}
+					ProcessedRuleSet processed = SolverPreProcessor.preProcess(originalRules);
+					if (processed.isFullySolved()) {
+						if (PRINT_RESULTS) {
+							Log.info(CATEGORY, "Fully solved solution via pre-processer");
+						}
+						stage = new SolvedStage(processed.getConstantSolution());
+						return true;
+					}
+
+					if (PRINT_RESULTS) {
+						Log.info(CATEGORY, "Partially solved solution via pre-processer, continuing to optimisation");
+						Log.info(CATEGORY, " -> " + processed.rules.size() + " rules, " + processed.options.size() + " options");
+						if (processed.rules.isEmpty()) {
+							Log.info(CATEGORY, " ! 0 rules left, but still have the following options:");
+							for (LoadOption option : processed.options.keySet()) {
+								Log.info(CATEGORY, " left: " + option.toString());
+							}
+						}
+						Log.info(CATEGORY, "Constant values:");
+						for (LoadOption option : processed.getConstantSolution()) {
+							Log.info(CATEGORY, option.toString());
+						}
+						Log.info(CATEGORY, "Unknown values:");
+						List<String> list = new ArrayList<>();
+						for (LoadOption option : processed.options.keySet()) {
+							list.add(option.toString());
+						}
+						list.sort(null);
+						list.forEach(item -> Log.info(CATEGORY, item));
+						list.clear();
+						Log.info(CATEGORY, "Remaining rules:");
+						for (RuleDefinition def : processed.rules) {
+							list.add(def.toString());
+						}
+						list.sort(null);
+						list.forEach(item -> Log.info(CATEGORY, item));
+						list.clear();
+					}
+					toOptimize = processed;
+				} else {
+					toOptimize = originalRules;
+				}
+
+				Sat4jSolverOptimizer optimizer = new Sat4jSolverOptimizer(toOptimize);
+				stage = new OptimizationStage(optimizer);
+				return true;
+			} else {
+				Collection<IConstr> constraints = solver.explainer.explain();
+				Set<Rule> error = new HashSet<>();
+
+				for (IConstr c : constraints) {
+					error.add(solver.constraintToRule.get(c));
+				}
+
+				stage = new ErrorStage(error);
+				return false;
+			}
+		}
+
+		@Override
+		Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
+			throw new IllegalStateException("Call hasSolution first!");
+		}
+
+		@Override
+		Collection<Rule> getError() throws TimeoutException {
+			throw new IllegalStateException("Call hasSolution first!");
+		}
+	}
+
+	private final class ErrorStage extends CalculationStage {
+
+		private final Collection<Rule> error;
+
+		ErrorStage(Collection<Rule> error) {
+			this.error = error;
+		}
+
+		@Override
+		CalculationStage onChange() {
+			return new DefineStage();
+		}
+
+		@Override
+		boolean hasSolution() throws TimeoutException {
+			return false;
+		}
+
+		@Override
+		Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
+			throw new IllegalStateException("hasSolution() returned false, so there is no solution!");
+		}
+
+		@Override
+		Collection<Rule> getError() throws TimeoutException {
+			return error;
+		}
+	}
+
+	/** Used when we have validated that a rule set contains valid entries, and just needs to be optimised */
+	private final class OptimizationStage extends CalculationStage {
+
+		final Sat4jSolverOptimizer optimiser;
+
+		OptimizationStage(Sat4jSolverOptimizer optimiser) {
+			this.optimiser = optimiser;
+		}
+
+		@Override
+		CalculationStage onChange() {
+			return new DefineStage();
+		}
+
+		@Override
+		boolean hasSolution() throws TimeoutException {
+			return true;
+		}
+
+		@Override
+		Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
+			checkCancelled();
+
+			if (PRINT_RESULTS) {
+				Log.info(CATEGORY, "Starting optimisation.");
+			}
+
+			int count = 0;
+			boolean success = false;
+
+			// 5 second timeout - this will regularly be hit by users
+			// as such this needs to be fairly short, but not too short as then there's no time to optimise.
+			// ALSO this happens *every cycle*
+			optimiser.optimiser.setTimeoutForFindingBetterSolution(5);
+
+			while (true) {
+
+				try {
+					if (!optimiser.optimiser.admitABetterSolution()) {
+						break;
+					}
+				} catch (TimeoutException e) {
+					if (success) {
+						// Always print, since it could be important
+						Log.info(CATEGORY, "Aborted mod solving optimisation due to timeout");
+						break;
+					}
+				}
+
+				success = true;
+
+				if (PRINT_RESULTS) {
+					Log.info(
+						CATEGORY, "Found solution #" + (++count) + " weight = " + optimiser.optimiser.calculateObjective()
+							.intValue() + " = " + Arrays.toString(optimiser.optimiser.model())
+					);
+				}
+
+				try {
+					optimiser.optimiser.discardCurrentSolution();
+				} catch (ContradictionException e) {
+					// This means we're *already* optimal?
+					if (LOG) {
+						Log.info(CATEGORY, "Found optimal solution!");
+					}
+					break;
+				}
+			}
+
+			if (!success) {
+				throw new ModSolvingError(
+					"We just solved this! Something must have gone wrong internally..." + ruleToDefinitions
+				);
+			}
+
+			int[] model = optimiser.optimiser.model();
+			List<LoadOption> list = new ArrayList<>();
+			optimiser.inputRules.getConstantSolution(list);
+
+			for (int value : model) {
+				if (value < 0) {
+					// Negated, so ignored
+					continue;
+				}
+
+				LoadOption option = optimiser.indexToOption.get(value);
+				if (option == null) {
+					throw new ModSolvingError("Unknown value " + value);
+				}
+				list.add(option);
+			}
+
+			stage = new SolvedStage(list);
+			return list;
+		}
+
+		@Override
+		Collection<Rule> getError() throws TimeoutException {
+			throw new IllegalStateException("hasSolution() returned true, so there is no error!");
+		}
+	}
+
+	/** Indicates that the {@link SolverPreProcessor} was able to fully solve the rules, or we've fully optimised the
+	 * solution through Sat4j. */
+	private final class SolvedStage extends CalculationStage {
+
+		final Collection<LoadOption> solution;
+
+		SolvedStage(RuleSet complete) {
+			Set<LoadOption> set = new HashSet<>();
+			complete.getConstantSolution(set);
+
+			this.solution = Collections.unmodifiableSet(set);
+		}
+
+		SolvedStage(Collection<LoadOption> solution) {
+			this.solution = Collections.unmodifiableCollection(solution);
+		}
+
+		@Override
+		CalculationStage onChange() {
+			return new DefineStage();
+		}
+
+		@Override
+		boolean hasSolution() throws TimeoutException {
+			return true;
+		}
+
+		@Override
+		Collection<LoadOption> getSolution() throws TimeoutException, ModSolvingError {
+			return solution;
+		}
+
+		@Override
+		Collection<Rule> getError() throws TimeoutException {
+			throw new IllegalStateException("hasSolution() returned true, so there is no error!");
 		}
 	}
 }

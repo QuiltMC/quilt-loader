@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2023 QuiltMC
+ * Copyright 2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,23 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.solver;
+package org.quiltmc.loader.impl.entrypoint;
 
-import org.quiltmc.loader.api.gui.QuiltLoaderText;
-import org.quiltmc.loader.api.plugin.solver.LoadOption;
-import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.jetbrains.annotations.ApiStatus;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** Used for the "inverse load" condition - if this is required by a {@link Rule} then it means the
- * {@link LoadOption} must not be loaded. */
+@ApiStatus.NonExtendable
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-final class NegatedLoadOption extends LoadOption {
-	final LoadOption not;
+public interface GamePatchContext {
 
-	public NegatedLoadOption(LoadOption not) {
-		this.not = not;
-	}
+	/** @return A {@link ClassReader} which reads the original class file. */
+	ClassReader getClassSourceReader(String className);
 
-	@Override
-	public String toString() {
-		return "NOT " + not;
-	}
+	/** @return A {@link ClassNode}, which may have already been modified by another {@link GamePatch}. */
+	ClassNode getClassNode(String className);
 
-	@Override
-	public QuiltLoaderText describe() {
-		return QuiltLoaderText.translate("solver.option.negated", not.describe());
-	}
+	void addPatchedClass(ClassNode patchedClass);
 }

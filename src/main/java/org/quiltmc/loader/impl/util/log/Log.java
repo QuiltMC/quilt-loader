@@ -59,6 +59,16 @@ public final class Log {
 		}
 	}
 
+	/** Disables the formatting if the current logger is the builtin / console logger. This is intended to be called in
+	 * loader's tests, where we don't need to know the time, log level, or category of the messages. */
+	public static void disableBuiltinFormatting() {
+		LogHandler handler = Log.handler;
+
+		if (handler instanceof ConsoleLogHandler) {
+			((ConsoleLogHandler) handler).configureFormatting(false);
+		}
+	}
+
 	public static void error(LogCategory category, String format, Object... args) {
 		logFormat(LogLevel.ERROR, category, format, args);
 	}

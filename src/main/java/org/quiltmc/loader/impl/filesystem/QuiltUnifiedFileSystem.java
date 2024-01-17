@@ -103,8 +103,6 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 			return copy(source, target, options);
 		}
 		QuiltUnifiedPath dst = provider().toAbsolutePath(target);
-		QuiltUnifiedEntry dstEntry = getEntry(dst);
-
 		boolean canExist = false;
 
 		for (CopyOption option : options) {
@@ -113,20 +111,20 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 			}
 		}
 
-		if (canExist) {
-			provider().deleteIfExists(dst);
-		} else if (dstEntry != null) {
-			throw new FileAlreadyExistsException(dst.toString());
+		synchronized (this) {
+			if (canExist) {
+				provider().deleteIfExists(dst);
+			} else if (getEntry(dst) != null) {
+				throw new FileAlreadyExistsException(dst.toString());
+			}
+			addEntryRequiringParent(new QuiltUnifiedCopyOnWriteFile(dst, source));
 		}
-
-		addEntryRequiringParent(new QuiltUnifiedCopyOnWriteFile(dst, source));
 		return dst;
 	}
 
 	@Override
 	public Path mount(Path source, Path target, MountOption... options) throws IOException {
 		QuiltUnifiedPath dst = provider().toAbsolutePath(target);
-		QuiltUnifiedEntry dstEntry = getEntry(dst);
 
 		boolean canExist = false;
 		boolean readOnly = false;
@@ -156,20 +154,23 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 			throw new IllegalArgumentException("Can't specify both READ_ONLY and COPY_ON_WRITE : " + Arrays.toString(options));
 		}
 
+		synchronized (this) {
+			QuiltUnifiedEntry dstEntry = getEntry(dst);
 
-		if (canExist) {
-			provider().deleteIfExists(dst);
-		} else if (dstEntry != null) {
-			throw new FileAlreadyExistsException(dst.toString());
-		}
+			if (canExist) {
+				provider().deleteIfExists(dst);
+			} else if (dstEntry != null) {
+				throw new FileAlreadyExistsException(dst.toString());
+			}
 
-		if (copyOnWrite) {
-			dstEntry = new QuiltUnifiedCopyOnWriteFile(dst, source);
-		} else {
-			dstEntry = new QuiltUnifiedMountedFile(dst, source, readOnly);
+			if (copyOnWrite) {
+				dstEntry = new QuiltUnifiedCopyOnWriteFile(dst, source);
+			} else {
+				dstEntry = new QuiltUnifiedMountedFile(dst, source, readOnly);
+			}
+			addEntryRequiringParent(dstEntry);
+			return dst;
 		}
-		addEntryRequiringParent(dstEntry);
-		return dst;
 	}
 
 	@Override

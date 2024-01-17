@@ -18,9 +18,13 @@
 package org.quiltmc.loader.api;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.metadata.qmj.ModLicenseImpl;
 
 /**
  * Representation of a license a mod may use.
+ * 
+ * @see <a href="https://spdx.org/licenses/">SPDX identifier</a>
  */
 @ApiStatus.NonExtendable
 public interface ModLicense {
@@ -44,4 +48,18 @@ public interface ModLicense {
 	 * @return a short description of the license, empty if there is no description
 	 */
 	String description();
+
+	/** Looks up a {@link ModLicense} from the given SPDX license ID, returning null if quilt-loader is unaware of
+	 * it. */
+	@Nullable
+	public static ModLicense fromIdentifier(String identifier) {
+		return ModLicenseImpl.fromIdentifier(identifier);
+	}
+
+	/** Looks up a {@link ModLicense} from the given SPDX license ID, returning a new {@link ModLicense} (with
+	 * {@link #name()} and {@link #id()} set to the passed identifier, the other fields blank) if quilt-loader is
+	 * unaware of it. */
+	public static ModLicense fromIdentifierOrDefault(String identifier) {
+		return ModLicenseImpl.fromIdentifierOrDefault(identifier);
+	}
 }

@@ -1,6 +1,12 @@
 Features:
-- Move Loader's runtime transformers to the transform cache (#352)
+- Move Loader's runtime transformers to the transform cache [#352]
   - This gives us a chance to dogfood the transform cache in more situations and may slightly reduce load times.
-# TODO: add some information about the loom "mods" block and how to configure it
+  - With this change, we are starting the process of requiring Class Path Groups to be properly configured by every mod.
+    See the [template mod](https://github.com/QuiltMC/quilt-template-mod/blob/1.20.1/build.gradle#L21) for more information.
+
 Bug Fixes:
-- Transform cache no longer regenerates each launch (#356)
+-  [#356] Transform cache no longer regenerates each launch
+- [#366] Fix backwards compatibility issue where mods incorrectly using the fabric loader internal class "EntrypointUtils" didn't throw the same exception type in quilt.
+- [#367] Parse pre-1.6 arguments
+- Quiet overzealous logging when using split source sets
+

@@ -1,0 +1,5 @@
+Features:
+
+- Fixed keeping the FileHasherImpl around after it was needed, which also prevented some temporary virtual filesystems from being garbage collected after mod resolving was complete.
+- [#330] Updated FlexVer to 1.1.0 (EnnuiL)
+- [#378] Added versioning support for 1.20.3 snapshots (LostLuma)

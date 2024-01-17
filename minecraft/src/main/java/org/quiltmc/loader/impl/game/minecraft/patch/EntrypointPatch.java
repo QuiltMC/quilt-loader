@@ -39,7 +39,7 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
 import org.quiltmc.loader.impl.entrypoint.GamePatch;
-
+import org.quiltmc.loader.impl.entrypoint.GamePatchContext;
 import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
 import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -51,6 +51,7 @@ import org.quiltmc.loader.impl.game.minecraft.Hooks;
 
 
 public class EntrypointPatch extends GamePatch {
+	/* QUILT */private static final VersionPredicate BEFORE_1_17 = createVersionPredicate("<=1.17");
 	private static final VersionPredicate VERSION_1_19_4 = createVersionPredicate(">=1.19.4-");
 
 	private final MinecraftGameProvider gameProvider;
@@ -60,12 +61,21 @@ public class EntrypointPatch extends GamePatch {
 	}
 
 	private void finishEntrypoint(EnvType type, ListIterator<AbstractInsnNode> it) {
-		String methodName = String.format("start%s", type == EnvType.CLIENT ? "Client" : "Server");
+		String sideName = type == EnvType.CLIENT ? "Client" : "Server";
+		/* START OF QUILT */
+		// Compatibility for older fabric mods which redirect our start hook
+		if (BEFORE_1_17.test(getGameVersion())) {
+			String internalName = "net/fabricmc/loader/entrypoint/minecraft/hooks/Entrypoint" + sideName;
+			it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, internalName, "start", "(Ljava/io/File;Ljava/lang/Object;)V", false));
+			return;
+		}
+		/* END OF QUILT */
+		String methodName = String.format("start%s", sideName);
 		it.add(new MethodInsnNode(Opcodes.INVOKESTATIC, Hooks.INTERNAL_NAME, methodName, "(Ljava/io/File;Ljava/lang/Object;)V", false));
 	}
 
 	@Override
-	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, GamePatchContext context) {
 		EnvType type = launcher.getEnvironmentType();
 		String entrypoint = launcher.getEntrypoint();
 		Version gameVersion = getGameVersion();
@@ -77,7 +87,8 @@ public class EntrypointPatch extends GamePatch {
 		String gameEntrypoint = null;
 		boolean serverHasFile = true;
 		boolean isApplet = entrypoint.contains("Applet");
-		ClassNode mainClass = readClass(classSource.apply(entrypoint));
+		ClassNode mainClass = context.getClassNode(entrypoint);
+		Function<String, ClassReader> classSource = context::getClassSourceReader;
 
 		if (mainClass == null) {
 			throw new RuntimeException("Could not load main class " + entrypoint + "!");
@@ -192,7 +203,7 @@ public class EntrypointPatch extends GamePatch {
 		if (gameEntrypoint.equals(entrypoint) || is20w22aServerOrHigher) {
 			gameClass = mainClass;
 		} else {
-			gameClass = readClass(classSource.apply(gameEntrypoint));
+			gameClass = context.getClassNode(gameEntrypoint);
 			if (gameClass == null) throw new RuntimeException("Could not load game class " + gameEntrypoint + "!");
 		}
 
@@ -520,9 +531,9 @@ public class EntrypointPatch extends GamePatch {
 		}
 
 		if (gameClass != mainClass) {
-			classEmitter.accept(gameClass);
+			context.addPatchedClass(gameClass);
 		} else {
-			classEmitter.accept(mainClass);
+			context.addPatchedClass(mainClass);
 		}
 
 		if (isApplet) {

@@ -1,6 +1,5 @@
 /*
- * Copyright 2016 FabricMC
- * Copyright 2022-2023 QuiltMC
+ * Copyright 2023 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +14,15 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.impl.entrypoint;
+package org.quiltmc.loader.impl.solver;
 
-import java.util.function.Consumer;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-import org.quiltmc.loader.api.QuiltLoader;
-
-@Deprecated
-public class EntrypointUtils {
-
-	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
-		try {
-			org.quiltmc.loader.impl.entrypoint.EntrypointUtils.invoke(name, type, invoker);
-		} catch (org.quiltmc.loader.api.entrypoint.EntrypointException e) {
-			throw new net.fabricmc.loader.api.EntrypointException((QuiltLoader) null, e);
-		}
-	}
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+enum RuleType {
+	AT_LEAST,
+	AT_MOST,
+	EXACTLY,
+	BETWEEN;
 }

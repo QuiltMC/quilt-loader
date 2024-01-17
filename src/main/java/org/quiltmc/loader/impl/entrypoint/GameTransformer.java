@@ -95,8 +95,45 @@ public class GameTransformer {
 				}
 			};
 
+			Map<String, ClassNode> tempClassNodes = new HashMap<>();
+			Map<String, ClassNode> addedClassNodes = new HashMap<>();
+
+			GamePatchContext context = new GamePatchContext() {
+
+				@Override
+				public ClassReader getClassSourceReader(String className) {
+					return classSource.apply(className);
+				}
+
+				@Override
+				public ClassNode getClassNode(String className) {
+					ClassNode node = tempClassNodes.get(className);
+					if (node == null) {
+						node = GamePatch.readClass(getClassSourceReader(className));
+						tempClassNodes.put(className, node);
+					}
+					return node;
+				}
+
+				@Override
+				public void addPatchedClass(ClassNode node) {
+					String key = node.name.replace('/', '.');
+					if (tempClassNodes.get(key) == node) {
+						addedClassNodes.put(key, node);
+					} else if (addedClassNodes.containsKey(key)) {
+						throw new RuntimeException("Duplicate addPatchedClasses call: " + key);
+					} else {
+						GameTransformer.this.addPatchedClass(node);
+					}
+				}
+			};
+
 			for (GamePatch patch : patches) {
-				patch.process(launcher, classSource, this::addPatchedClass);
+				patch.process(launcher, context);
+			}
+
+			for (ClassNode node : addedClassNodes.values()) {
+				addPatchedClass(node);
 			}
 		} catch (IOException e) {
 			throw ExceptionUtil.wrap(e);

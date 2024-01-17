@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
-import org.quiltmc.loader.impl.solver.Sat4jWrapper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -43,14 +42,18 @@ public interface RuleContext {
 	 * {@link LoadOption} currently held, and calls {@link Rule#define(RuleDefiner)} once afterwards. */
 	void addRule(Rule rule);
 
-	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} */
+	/** Clears any current definitions this rule is associated with, and calls {@link Rule#define(RuleDefiner)} sometime before solving. */
 	void redefine(Rule rule);
 
+	/** @deprecated Replaced by {@link LoadOption#isNegated(LoadOption)} */
+	@Deprecated
 	public static boolean isNegated(LoadOption option) {
-		return Sat4jWrapper.isNegated(option);
+		return LoadOption.isNegated(option);
 	}
 
+	/** @deprecated Replaced by {@link LoadOption#negate()} */
+	@Deprecated
 	public static LoadOption negate(LoadOption option) {
-		return Sat4jWrapper.negate(option);
+		return option.negate();
 	}
 }

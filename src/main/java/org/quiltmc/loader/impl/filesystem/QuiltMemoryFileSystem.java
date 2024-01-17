@@ -521,26 +521,6 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 		}
 
 		@Override
-		public Path createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException {
-			dir = dir.toAbsolutePath().normalize();
-			Deque<Path> stack = new ArrayDeque<>();
-			Path p = dir;
-			do {
-				if (isDirectory(p)) {
-					break;
-				} else {
-					stack.push(p);
-				}
-			} while ((p = p.getParent()) != null);
-
-			while (!stack.isEmpty()) {
-				provider().createDirectory(stack.pop(), attrs);
-			}
-
-			return dir;
-		}
-
-		@Override
 		public boolean isWritable(Path path) {
 			return exists(path);
 		}

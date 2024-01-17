@@ -239,15 +239,22 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public QuiltPluginTask<Path> loadZip(Path zip) {
 		if (config.singleThreadedLoading) {
 			try {
-				return QuiltPluginTask.createFinished(loadZip0(zip));
+				return QuiltPluginTask.createFinished(loadZipNow(zip));
 			} catch (IOException | NonZipException e) {
 				return QuiltPluginTask.createFailed(e);
 			}
 		}
-		return submit(null, () -> loadZip0(zip));
+		return submit(null, () -> loadZipNow(zip));
 	}
 
+	/** Kept for backwards compatibility with the first versions of RGML-Quilt, as it invoked this using reflection. */
+	@Deprecated
 	private Path loadZip0(Path zip) throws IOException, NonZipException {
+		return loadZipNow(zip);
+	}
+
+	@Override
+	public Path loadZipNow(Path zip) throws IOException, NonZipException {
 		String name = zip.getFileName().toString();
 		try {
 			QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();
@@ -1313,7 +1320,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	}
 
-	private void handleSolverFailure() throws TimeoutException {
+	private void handleSolverFailure() throws TimeoutException, ModSolvingError {
 
 		SolverErrorHelper helper = new SolverErrorHelper(this);
 		boolean failed = false;
@@ -1505,7 +1512,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	ModSolveResultImpl getPartialSolution() throws ModSolvingError, TimeoutException {
-		List<LoadOption> solution = solver.getSolution();
+		Collection<LoadOption> solution = solver.getSolution();
 
 		Map<String, ModLoadOption> directModsMap = new HashMap<>();
 		Map<String, ModLoadOption> providedModsMap = new HashMap<>();
@@ -1515,8 +1522,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		for (LoadOption option : solution) {
 
 			boolean load = true;
-			if (Sat4jWrapper.isNegated(option)) {
-				option = Sat4jWrapper.negate(option);
+			if (LoadOption.isNegated(option)) {
+				option = option.negate();
 				load = false;
 			}
 

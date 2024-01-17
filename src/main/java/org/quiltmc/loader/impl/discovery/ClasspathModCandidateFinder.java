@@ -122,7 +122,8 @@ public class ClasspathModCandidateFinder {
 				Path resolvedPath = Paths.get(path);
 
 				if (!Files.exists(resolvedPath)) {
-					Log.warn(LogCategory.DISCOVERY, "Skipping missing class path group entry %s", path);
+					// It's actually pretty typical for class path group entries to be missing in multi-mod projects.
+					Log.debug(LogCategory.DISCOVERY, "Skipping missing class path group entry %s", path);
 					continue;
 				}
 

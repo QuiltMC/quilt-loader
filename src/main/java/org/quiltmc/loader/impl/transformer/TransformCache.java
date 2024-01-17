@@ -66,7 +66,7 @@ class TransformCache {
 		this.orderedMods = orderedMods.stream().filter(mod -> mod.needsTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())).collect(Collectors.toList());
 
 		for (ModLoadOption mod : this.orderedMods) {
-			Path modSrc = mod.resourceRoot();
+			Path modSrc = mod.createTransformRoot();
 			Path modDst = root.resolve(mod.id());
 			modRoots.put(mod, modDst);
 

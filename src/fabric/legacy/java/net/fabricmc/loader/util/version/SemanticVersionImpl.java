@@ -19,6 +19,9 @@ package net.fabricmc.loader.util.version;
 
 import java.util.Optional;
 
+import org.quiltmc.loader.api.VersionFormatException;
+import org.quiltmc.loader.impl.fabric.util.version.Quilt2FabricSemanticVersion;
+
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
@@ -27,15 +30,30 @@ import net.fabricmc.loader.api.VersionParsingException;
  * @deprecated Internal API, do not use
  */
 @Deprecated
-public class SemanticVersionImpl implements SemanticVersion {
+public class SemanticVersionImpl extends Quilt2FabricSemanticVersion implements SemanticVersion {
 	private final SemanticVersion parent;
 
 	protected SemanticVersionImpl() {
+		super(null);
 		parent = null;
 	}
 
 	public SemanticVersionImpl(String version, boolean storeX) throws VersionParsingException {
-		parent = SemanticVersion.parse(version);
+		super(parseQuilt(version));
+		parent = null;
+	}
+
+	private static org.quiltmc.loader.api.Version.Semantic parseQuilt(String version) throws VersionParsingException {
+		try {
+			return org.quiltmc.loader.api.Version.Semantic.of(version);
+		} catch (VersionFormatException e) {
+			throw new VersionParsingException(e);
+		}
+	}
+
+	public SemanticVersionImpl(org.quiltmc.loader.api.Version.Semantic quilt) {
+		super(quilt);
+		this.parent = null;
 	}
 
 	public SemanticVersion getParent() {
@@ -44,47 +62,47 @@ public class SemanticVersionImpl implements SemanticVersion {
 
 	@Override
 	public int getVersionComponentCount() {
-		return parent.getVersionComponentCount();
+		return parent == null ? super.getVersionComponentCount() : parent.getVersionComponentCount();
 	}
 
 	@Override
 	public int getVersionComponent(int pos) {
-		return parent.getVersionComponent(pos);
+		return parent == null ? super.getVersionComponent(pos) : parent.getVersionComponent(pos);
 	}
 
 	@Override
 	public Optional<String> getPrereleaseKey() {
-		return parent.getPrereleaseKey();
+		return parent == null ? super.getPrereleaseKey() : parent.getPrereleaseKey();
 	}
 
 	@Override
 	public Optional<String> getBuildKey() {
-		return parent.getBuildKey();
+		return parent == null ? super.getBuildKey() : parent.getBuildKey();
 	}
 
 	@Override
 	public String getFriendlyString() {
-		return parent.getFriendlyString();
+		return parent == null ? super.getFriendlyString() : parent.getFriendlyString();
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		return parent.equals(o);
+		return parent == null ? super.equals(o) : parent.equals(o);
 	}
 
 	@Override
 	public int hashCode() {
-		return parent.hashCode();
+		return parent == null ? super.hashCode() : parent.hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return parent.toString();
+		return parent == null ? super.toString() : parent.toString();
 	}
 
 	@Override
 	public boolean hasWildcard() {
-		return parent.hasWildcard();
+		return parent == null ? super.hasWildcard() : parent.hasWildcard();
 	}
 
 	public boolean equalsComponentsExactly(SemanticVersionImpl other) {
@@ -99,6 +117,6 @@ public class SemanticVersionImpl implements SemanticVersion {
 
 	@Override
 	public int compareTo(Version o) {
-		return parent.compareTo(o);
+		return parent == null ? super.compareTo(o) : parent.compareTo(o);
 	}
 }

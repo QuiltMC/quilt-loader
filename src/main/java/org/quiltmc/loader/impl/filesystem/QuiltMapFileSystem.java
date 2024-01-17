@@ -166,17 +166,19 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 			}
 		}
 
-		QuiltUnifiedEntry entry = getEntry(parent);
-		if (entry instanceof QuiltUnifiedFolderWriteable) {
-			addEntryWithoutParents0(newEntry, execCtor);
-			((QuiltUnifiedFolderWriteable) entry).children.add(path);
-		} else if (entry == null) {
-			throw execCtor.apply("Cannot put entry " + path + " because the parent folder doesn't exist!");
-		} else {
-			throw execCtor.apply("Cannot put entry " + path + " because the parent is not a folder (was " + entry + ")");
-		}
+		synchronized (this) {
+			QuiltUnifiedEntry entry = getEntry(parent);
+			if (entry instanceof QuiltUnifiedFolderWriteable) {
+				addEntryWithoutParents0(newEntry, execCtor);
+				((QuiltUnifiedFolderWriteable) entry).children.add(path);
+			} else if (entry == null) {
+				throw execCtor.apply("Cannot put entry " + path + " because the parent folder doesn't exist!");
+			} else {
+				throw execCtor.apply("Cannot put entry " + path + " because the parent is not a folder (was " + entry + ")");
+			}
 
-		validate();
+			validate();
+		}
 	}
 
 	protected void addEntryAndParents(QuiltUnifiedEntry newEntry) throws IOException {
@@ -187,7 +189,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		addEntryAndParents0(newEntry, IllegalStateException::new);
 	}
 
-	private <T extends Throwable> void addEntryAndParents0(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
+	private synchronized <T extends Throwable> void addEntryAndParents0(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
 		P path = addEntryWithoutParents0(newEntry, execCtor);
 		P parent = path;
 		P previous = path;
@@ -235,7 +237,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		}
 	}
 
-	protected boolean removeEntry(P path, boolean throwIfMissing) throws IOException {
+	protected synchronized boolean removeEntry(P path, boolean throwIfMissing) throws IOException {
 		path = path.toAbsolutePath().normalize();
 
 		QuiltUnifiedEntry current = getEntry(path);
@@ -321,7 +323,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 	}
 
 	@Override
-	public Path createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException {
+	public synchronized Path createDirectories(Path dir, FileAttribute<?>... attrs) throws IOException {
 		dir = dir.toAbsolutePath().normalize();
 		Deque<Path> stack = new ArrayDeque<>();
 		Path p = dir;
