@@ -67,7 +67,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<String> jars;
 	private final Map<String, String> languageAdapters;
 	private final Collection<String> repositories;
-	private final Collection<String> mixins;
+	private final Map<EnvType, Collection<String>> mixins;
 	private final Collection<String> accessWideners;
 	private final ModEnvironment environment;
 	private final @Nullable ModPlugin plugin;
@@ -131,7 +131,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		this.repositories = Collections.unmodifiableCollection(builder.repositories);
 
 		// Move to plugins
-		this.mixins = Collections.unmodifiableCollection(builder.mixins);
+		this.mixins = Collections.unmodifiableMap(builder.mixins);
 		this.accessWideners = Collections.unmodifiableCollection(builder.accessWideners);
 		this.environment = builder.env;
 
@@ -307,7 +307,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 
 	@Override
 	public Collection<String> mixins(EnvType env) {
-		return this.mixins;
+		return this.mixins.getOrDefault(env, Collections.emptyList());
 	}
 
 	@Override
