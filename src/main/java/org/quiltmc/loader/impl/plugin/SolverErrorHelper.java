@@ -40,6 +40,7 @@ import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -51,6 +52,7 @@ import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -340,14 +342,13 @@ class SolverErrorHelper {
 	private static void setIconFromMod(QuiltPluginManagerImpl manager, ModLoadOption mandatoryMod,
 		QuiltDisplayedError error) {
 		// TODO: Only upload a ModLoadOption's icon once!
-		Map<Integer, BufferedImage> modIcons = new HashMap<>();
+		Map<String, byte[]> images = new HashMap<>();
 		for (int size : new int[] { 16, 32 }) {
 			String iconPath = mandatoryMod.metadata().icon(size);
-			if (iconPath != null) {
+			if (iconPath != null && ! images.containsKey(iconPath)) {
 				Path path = mandatoryMod.resourceRoot().resolve(iconPath);
 				try (InputStream stream = Files.newInputStream(path)) {
-					BufferedImage image = ImageIO.read(stream);
-					modIcons.put(image.getWidth(), image);
+					images.put(iconPath, FileUtil.readAllBytes(stream));
 				} catch (IOException io) {
 					// TODO: Warn about this somewhere!
 					io.printStackTrace();
@@ -355,8 +356,8 @@ class SolverErrorHelper {
 			}
 		}
 
-		if (!modIcons.isEmpty()) {
-			error.setIcon(manager.guiManager.allocateIcon(modIcons));
+		if (!images.isEmpty()) {
+			error.setIcon(QuiltLoaderGui.createIcon(images.values().toArray(new byte[0][])));
 		}
 	}
 

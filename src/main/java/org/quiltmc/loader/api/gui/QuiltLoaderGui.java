@@ -102,8 +102,13 @@ public class QuiltLoaderGui {
 
 	// Icons
 
-	public static QuiltLoaderIcon createIcon(BufferedImage image) {
-		return createIcon(Collections.singletonMap(image.getWidth(), image));
+	public static QuiltLoaderIcon createIcon(byte[] imageBytes) {
+		return createIcon(new byte[][] { imageBytes });
+	}
+
+	/** @param images Array of differently sized images, to be chosen by the UI. */
+	public static QuiltLoaderIcon createIcon(byte[][] images) {
+		return GuiManagerImpl.allocateIcons(images);
 	}
 
 	public static QuiltLoaderIcon createIcon(Map<Integer, BufferedImage> images) {
