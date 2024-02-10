@@ -32,6 +32,7 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.EntrypointMetadata;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
@@ -61,7 +62,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	private final Map<String, Collection<ModEntrypoint>> entrypoints;
 	private final List<ProvidedMod> provides;
 
-	public FabricModMetadataWrapper(FabricLoaderModMetadata fabricMeta) {
+	public FabricModMetadataWrapper(FabricLoaderModMetadata fabricMeta) throws ParseMetadataException {
 		this.fabricMeta = fabricMeta;
 		net.fabricmc.loader.api.Version fabricVersion = fabricMeta.getVersion();
 		this.version = Version.of(fabricVersion.getFriendlyString());
@@ -196,7 +197,7 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		return null;
 	}
 
-	private static Collection<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from) {
+	private static Collection<ModDependency> genDepends(Collection<net.fabricmc.loader.api.metadata.ModDependency> from) throws ParseMetadataException {
 		List<ModDependency> out = new ArrayList<>();
 		for (net.fabricmc.loader.api.metadata.ModDependency f : from) {
 			List<org.quiltmc.loader.api.VersionInterval> quiltIntervals = new ArrayList<>();
@@ -216,7 +217,11 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 				quiltIntervals.add(new VersionIntervalImpl(newMin, versionInterval.isMinInclusive(), newMax, versionInterval.isMaxInclusive()));
 			}
 
-			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dependency", new ModDependencyIdentifierImpl(f.getModId()), VersionRange.ofIntervals(quiltIntervals), null, false, null));
+			VersionRange range = VersionRange.ofIntervals(quiltIntervals);
+			if (range.isEmpty()) {
+				throw new ParseMetadataException("Dependency version range was empty for " + f);
+			}
+			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dependency", new ModDependencyIdentifierImpl(f.getModId()), range, null, false, null));
 		}
 		return Collections.unmodifiableList(Arrays.asList(out.toArray(new ModDependency[0])));
 	}

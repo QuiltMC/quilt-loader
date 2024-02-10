@@ -84,7 +84,7 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 	// Optional (custom values)
 	private final Map<String, CustomValue> customValues;
 
-	private FabricModMetadataWrapper cache2quilt;
+	private final FabricModMetadataWrapper wrapped2quilt;
 
 	V1ModMetadataFabric(String id, Version version, Collection<String> provides,
 						ModEnvironment environment, Map<String, List<EntrypointMetadata>> entrypoints, Collection<NestedJarEntry> jars,
@@ -93,7 +93,7 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 			/* @Nullable */ String name, @Nullable String description,
 						Collection<Person> authors, Collection<Person> contributors, @Nullable ContactInformation contact, Collection<String> license, IconEntry icon,
 						Map<String, String> languageAdapters,
-						Map<String, CustomValue> customValues) {
+						Map<String, CustomValue> customValues) throws ParseMetadataException {
 		this.id = id;
 		this.version = version;
 		this.provides = Collections.unmodifiableCollection(provides);
@@ -132,14 +132,13 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 
 		this.languageAdapters = Collections.unmodifiableMap(languageAdapters);
 		this.customValues = Collections.unmodifiableMap(customValues);
+
+		this.wrapped2quilt = new FabricModMetadataWrapper(this);
 	}
 
 	@Override
 	public InternalModMetadata asQuiltModMetadata() {
-		if (cache2quilt == null) {
-			cache2quilt = new FabricModMetadataWrapper(this);
-		}
-		return cache2quilt;
+		return wrapped2quilt;
 	}
 
 	@Override
