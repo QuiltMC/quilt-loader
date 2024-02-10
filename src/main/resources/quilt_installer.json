@@ -48,6 +48,14 @@
       {
         "name": "org.quiltmc:quilt-config:${quilt_config}",
         "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc.quilt-config.serializers:json5:${quilt_config}",
+        "url": "https://maven.quiltmc.org/repository/release/"
+      },
+      {
+        "name": "org.quiltmc.quilt-config.serializers:toml:${quilt_config}",
+        "url": "https://maven.quiltmc.org/repository/release/"
       }
     ],
     "server": [

@@ -107,8 +107,8 @@ dependencies {
 	/*include*/ api "org.quiltmc:quilt-json5:${project.quilt_json5}"
 	include "org.quiltmc:quilt-loader-sat4j:${project.quilt_loader_sat4j}"
 
-	include "com.electronwill.night-config:core:${project.night_config}"
-	include "com.electronwill.night-config:toml:${project.night_config}"
+	implementation "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
+	implementation "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
 	api "org.quiltmc:quilt-config:${project.quilt_config}"
 
 	development "io.github.llamalad7:mixinextras-fabric:$mixin_extras"
@@ -118,8 +118,8 @@ dependencies {
 	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
 
 
-	shadow "com.electronwill.night-config:core:${project.night_config}"
-	shadow "com.electronwill.night-config:toml:${project.night_config}"
+	shadow "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
+	shadow "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
 	shadow "org.quiltmc.parsers:json:${project.quilt_parsers}"
 	include "org.quiltmc.parsers:json:${project.quilt_parsers}"
 	include "com.unascribed:flexver-java:${project.flexver}"
