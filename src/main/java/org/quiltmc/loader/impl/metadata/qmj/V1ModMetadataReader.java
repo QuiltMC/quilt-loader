@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,11 +32,12 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import net.fabricmc.api.EnvType;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.json5.exception.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
@@ -371,13 +371,17 @@ public final class V1ModMetadataReader {
 			if (mixinValue != null) {
 				switch (mixinValue.type()) {
 				case ARRAY:
-					readStringList((JsonLoaderValue.ArrayImpl) mixinValue, "mixin", builder.mixins);
+					readMixins((JsonLoaderValue.ArrayImpl) mixinValue, builder.mixins);
 					break;
 				case STRING:
-					builder.mixins.add(mixinValue.asString());
+					builder.mixins.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(mixinValue.asString());
+					builder.mixins.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(mixinValue.asString());
+					break;
+				case OBJECT:
+					readMixin(mixinValue.asObject(), builder.mixins);
 					break;
 				default:
-					throw parseException(mixinValue, "mixin value must be an array of strings or a string");
+					throw parseException(mixinValue, "mixin value must be a string, a mixin entry, or a mixed array of either");
 				}
 			}
 
@@ -1005,6 +1009,55 @@ public final class V1ModMetadataReader {
 						return VersionRange.ofExact(v);
 					}
 				}
+			}
+		}
+	}
+
+	private static void readMixins(JsonLoaderValue.ArrayImpl array, Map<EnvType, List<String>> destination) {
+		for (LoaderValue value : array) {
+			if (value.type() == LoaderValue.LType.STRING) {
+				destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(value.asString());
+				destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(value.asString());
+			} else if (value.type() == LoaderValue.LType.OBJECT) {
+				LoaderValue.LObject object = value.asObject();
+				readMixin(object, destination);
+			} else {
+				throw parseException((JsonLoaderValue) value, "Entry inside mixin must be a string or object");
+			}
+		}
+	}
+
+	private static void readMixin(LoaderValue.LObject object, Map<EnvType, List<String>> destination) {
+		LoaderValue config = object.get("config");
+
+		if (config == null) {
+			throw parseException((JsonLoaderValue) object, "Mixin entry inside must have a config value");
+		} else if (config.type() != LoaderValue.LType.STRING) {
+			throw parseException((JsonLoaderValue) object, "Mixin entry config must be a string");
+		}
+		LoaderValue environment = object.get("environment");
+
+		if (environment == null) {
+			destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(config.asString());
+			destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(config.asString());
+		} else {
+			if (environment.type() != LoaderValue.LType.STRING) {
+				throw parseException((JsonLoaderValue) object, "Mixin entry environment must be a string");
+			}
+
+			switch (environment.asString()) {
+				case "client":
+					destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(config.asString());
+					break;
+				case "dedicated_server":
+					destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(config.asString());
+					break;
+				case "*":
+					destination.computeIfAbsent(EnvType.CLIENT, (env) -> new ArrayList<>()).add(config.asString());
+					destination.computeIfAbsent(EnvType.SERVER, (env) -> new ArrayList<>()).add(config.asString());
+					break;
+				default:
+					throw parseException((JsonLoaderValue) object, "Mixin entry environment must be one of 'client', 'dedicated_server', or '*'");
 			}
 		}
 	}

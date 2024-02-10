@@ -22,6 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.fabricmc.api.EnvType;
+
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
@@ -61,7 +63,7 @@ public class V1ModMetadataBuilder {
 	public final Map<String, String> languageAdapters = new LinkedHashMap<>();
 	public final List<String> repositories = new ArrayList<>();
 	/* TODO: Move to plugins */
-	public final List<String> mixins = new ArrayList<>();
+	public final Map<EnvType, List<String>> mixins = new HashMap<>();
 	public final List<String> accessWideners = new ArrayList<>();
 	public ModEnvironment env = ModEnvironment.UNIVERSAL;
 
