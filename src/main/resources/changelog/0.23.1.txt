@@ -1,0 +1,16 @@
+Features:
+
+- Added support for sided mixins in a quilt.mod.json files:
+    - See https://github.com/QuiltMC/rfcs/pull/89/files for the spec changes
+
+For example:
+
+"mixin": [
+   {
+      "config": "modid_client.mixins.json",
+      "environment": "client"
+   },
+   "modid.mixins.json"
+]
+
+would load `modid.mixins.json` on both dedicated servers and clients, and not load `modid_client.mixins.json` on the dedicated server.

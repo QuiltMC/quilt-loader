@@ -1,0 +1,13 @@
+{
+    "schema_version": 1,
+    "quilt_loader": {
+        "group": "org.example",
+        "id": "some_id",
+        "version": "1.0.0",
+        "intermediate_mappings": "net.fabricmc:intermediary"
+    },
+    "mixin": [
+        "mixin.config.json",
+        "mixin2.config.json"
+    ]
+}
