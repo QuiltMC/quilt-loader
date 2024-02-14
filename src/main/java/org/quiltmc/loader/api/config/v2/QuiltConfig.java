@@ -18,9 +18,6 @@ package org.quiltmc.loader.api.config.v2;
 
 import org.quiltmc.config.api.Config;
 import org.quiltmc.config.api.ReflectiveConfig;
-import org.quiltmc.config.api.annotations.ConfigFieldAnnotationProcessor;
-import org.quiltmc.config.api.values.ValueList;
-import org.quiltmc.config.api.values.ValueMap;
 import org.quiltmc.config.impl.ConfigImpl;
 import org.quiltmc.config.implementor_api.ConfigFactory;
 import org.quiltmc.loader.impl.config.QuiltConfigImpl;
