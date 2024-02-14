@@ -23,7 +23,7 @@ import org.jetbrains.annotations.ApiStatus;
 /** A reported error during plugin loading, which is shown in the error screen. This doesn't necessarily indicate an
  * error - however reporting any errors will cause the plugin loading to halt at the end of the current cycle. */
 @ApiStatus.NonExtendable
-public interface QuiltDisplayedError {
+public interface QuiltDisplayedError extends QuiltGuiButtonContainer {
 
 	/** Adds more lines which are shown in the log and the crash report file, NOT in the gui.
 	 * 
@@ -50,49 +50,74 @@ public interface QuiltDisplayedError {
 	 * in the gui. */
 	QuiltDisplayedError appendThrowable(Throwable t);
 
+	QuiltDisplayedError title(QuiltLoaderText text);
+
+	QuiltLoaderIcon icon();
+
 	/** Defaults to {@link QuiltLoaderGui#iconLevelError()}. */
 	QuiltDisplayedError setIcon(QuiltLoaderIcon icon);
 
+	// For backwards compatibility we need to keep these button methods around.
+
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
+	@Override
 	default QuiltErrorButton addFileViewButton(Path openedPath) {
-		return addFileViewButton(QuiltLoaderText.translate("button.view_file", openedPath.getFileName()), openedPath);
+		return QuiltGuiButtonContainer.super.addFileViewButton(openedPath);
 	}
 
 	/** Adds a button to this error, which will open a file browser, selecting the given file. */
+	@Override
 	QuiltErrorButton addFileViewButton(QuiltLoaderText name, Path openedPath);
 
 	/** Adds a button to this error, which will open a file editor, editing the given file. */
+	@Override
 	default QuiltErrorButton addFileEditButton(Path openedPath) {
-		return addFileEditButton(QuiltLoaderText.translate("button.edit_file", openedPath.getFileName()), openedPath);
+		return QuiltGuiButtonContainer.super.addFileEditButton(openedPath);
 	}
 
 	/** Adds a button to this error, which will open a file editor, editing the given file. */
+	@Override
 	QuiltErrorButton addFileEditButton(QuiltLoaderText name, Path openedPath);
 
 	/** Adds a button to this error, which will open a file browser showing the selected folder. */
+	@Override
 	QuiltErrorButton addFolderViewButton(QuiltLoaderText name, Path openedFolder);
 
 	/** Adds a button to this error, which will open the specified URL in a browser window. */
+	@Override
 	QuiltErrorButton addOpenLinkButton(QuiltLoaderText name, String url);
 
 	/** Adds a button to this error, which opens the quilt user support forum. */
+	@Override
 	QuiltErrorButton addOpenQuiltSupportButton();
 
+	@Override
 	QuiltErrorButton addCopyTextToClipboardButton(QuiltLoaderText name, String fullText);
 
+	@Override
 	QuiltErrorButton addCopyFileToClipboardButton(QuiltLoaderText name, Path openedFile);
 
+	@Override
 	QuiltErrorButton addOnceActionButton(QuiltLoaderText name, QuiltLoaderText disabledText, Runnable action);
 
+	@Override
 	QuiltErrorButton addActionButton(QuiltLoaderText name, Runnable action);
 
 	/** Changes this error message to be "fixed". If {@link #setIcon(QuiltLoaderIcon)} hasn't been called then the icon
 	 * is set to {@link QuiltLoaderGui#iconTick()} */
 	void setFixed();
 
+	/** @return True if {@link #setFixed()} has been called. */
+	boolean isFixed();
+
+	/** Adds an action that will be ran when {@link #setFixed()} is called. */
+	void addOnFixedListener(Runnable action);
+
 	@ApiStatus.NonExtendable
 	public interface QuiltErrorButton {
 		QuiltErrorButton text(QuiltLoaderText text);
+
+		QuiltLoaderIcon icon();
 
 		QuiltErrorButton icon(QuiltLoaderIcon icon);
 

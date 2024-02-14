@@ -19,11 +19,26 @@ package org.quiltmc.loader.api.plugin.gui;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+/** @deprecated Replaced / moved to public API: {@link QuiltTreeNode}. */
+
+@QuiltLoaderInternal(value = QuiltLoaderInternalType.PLUGIN_API, replacements = QuiltTreeNode.class)
+@Deprecated
 public interface PluginGuiTreeNode {
 
+	/** @return The newer API version of this node. */
+	QuiltTreeNode getNew();
+
+	/** @deprecated Replaced / moved to public API: {@link QuiltWarningLevel}. */
+	@Deprecated
+	@QuiltLoaderInternal(value = QuiltLoaderInternalType.PLUGIN_API, replacements = QuiltWarningLevel.class)
 	public enum WarningLevel {
 
 		/** A serious error that forces loading to halt immediately, and display the current state of loading.
@@ -59,6 +74,8 @@ public interface PluginGuiTreeNode {
 		DEBUG_ONLY;
 	}
 
+	@QuiltLoaderInternal(value = QuiltLoaderInternalType.PLUGIN_API, replacements = QuiltTreeNode.SortOrder.class)
+	@Deprecated
 	public enum SortOrder {
 		ADDITION_ORDER,
 		ALPHABETICAL_ORDER,

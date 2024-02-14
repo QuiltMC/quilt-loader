@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +36,7 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -63,8 +66,11 @@ public class GuiManagerImpl implements PluginGuiManager {
 	public static final PluginIconImpl ICON_DISABLED = new PluginIconImpl("disabled");
 	public static final PluginIconImpl ICON_QUILT = new PluginIconImpl("quilt");
 	public static final PluginIconImpl ICON_FABRIC = new PluginIconImpl("fabric");
+	public static final PluginIconImpl ICON_WEB_LINK = new PluginIconImpl("web_link");
+	public static final PluginIconImpl ICON_CLIPBOARD = new PluginIconImpl("clipboard");
 	public static final PluginIconImpl ICON_TICK = new PluginIconImpl("tick");
 	public static final PluginIconImpl ICON_CROSS = new PluginIconImpl("lesser_cross");
+	public static final PluginIconImpl ICON_TREE_DOT = new PluginIconImpl("missing");
 	public static final PluginIconImpl ICON_LEVEL_FATAL = new PluginIconImpl("level_fatal");
 	public static final PluginIconImpl ICON_LEVEL_ERROR = new PluginIconImpl("level_error");
 	public static final PluginIconImpl ICON_LEVEL_WARN = new PluginIconImpl("level_warn");
@@ -90,6 +96,12 @@ public class GuiManagerImpl implements PluginGuiManager {
 		return new PluginIconImpl(index);
 	}
 
+	public static QuiltLoaderIcon allocateIcons(byte[][] imageBytes) {
+		PluginIconImpl icon = new PluginIconImpl(imageBytes);
+		icon.send();
+		return icon;
+	}
+
 	public static QuiltLoaderIcon getModIcon(ModContainer mod) {
 		if (mod == null) {
 			return ICON_GENERIC_FILE;
@@ -101,28 +113,23 @@ public class GuiManagerImpl implements PluginGuiManager {
 	}
 
 	private static QuiltLoaderIcon computeModIcon(ModContainer mod) {
-		Map<Integer, BufferedImage> map = new HashMap<>();
+		Map<String, byte[]> images = new HashMap<>();
 		for (int size : new int[] { 16, 32 }) {
-			String pathStr = mod.metadata().icon(size);
-			if (pathStr == null) {
-				continue;
-			}
-			Path path = mod.getPath(pathStr);
-			if (!FasterFiles.isRegularFile(path)) {
-				continue;
-			}
-			try (InputStream stream = Files.newInputStream(path)) {
-				BufferedImage image = ImageIO.read(stream);
-				map.put(image.getWidth(), image);
-			} catch (IOException e) {
-				// TODO: Warn about this somewhere!
-				e.printStackTrace();
+			String iconPath = mod.metadata().icon(size);
+			if (iconPath != null && ! images.containsKey(iconPath)) {
+				Path path = mod.getPath(iconPath);
+				try (InputStream stream = Files.newInputStream(path)) {
+					images.put(iconPath, FileUtil.readAllBytes(stream));
+				} catch (IOException io) {
+					// TODO: Warn about this somewhere!
+					io.printStackTrace();
+				}
 			}
 		}
-		if (map.isEmpty()) {
+		if (images.isEmpty()) {
 			return ICON_GENERIC_FILE;
 		}
-		return allocateIcons(map);
+		return allocateIcons(images.values().toArray(new byte[0][]));
 	}
 
 	// Builtin

@@ -17,38 +17,32 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.imageio.ImageIO;
 
-import org.quiltmc.json5.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LObject;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltBasicWindow;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
+import org.quiltmc.loader.api.gui.QuiltGuiMessagesTab;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
-import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltLoaderWindow;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
-import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage.QuiltMessageListener;
 import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -87,40 +81,51 @@ public class QuiltFork {
 	}
 
 	public static void openErrorGui(List<QuiltDisplayedError> errors) throws LoaderGuiException, LoaderGuiClosed {
-		QuiltJsonGui tree = new QuiltJsonGui("Quilt Loader " + QuiltLoaderImpl.VERSION, "");
-		tree.buttons.add(QuiltJsonButton.createUserSupportButton(tree));
-		QuiltJsonButton continueButton = tree.addButton(QuiltLoaderText.of("button.ignore").toString(), QuiltBasicButtonAction.CONTINUE);
+		QuiltBasicWindow<Boolean> window = QuiltLoaderGui.createBasicWindow(false);
+		window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
+		window.addOpenQuiltSupportButton();
+		QuiltErrorButton continueButton = window.addContinueButton();
+		continueButton.text(QuiltLoaderText.translate("button.ignore"));
 		continueButton.icon(QuiltLoaderGui.iconContinueIgnoring());
+		QuiltGuiMessagesTab messages = window.addMessagesTab(QuiltLoaderText.EMPTY);
+		window.restrictToSingleTab();
 		for (QuiltDisplayedError error : errors) {
-			QuiltJsonGuiMessage msg = (QuiltJsonGuiMessage) error;
-			msg.listeners.add(new QuiltJsonGuiMessage.QuiltMessageListener() {
-				@Override
-				public void onFixed() {
-					for (QuiltDisplayedError error : errors) {
-						if (!((QuiltJsonGuiMessage) error).isFixed()) {
-							return;
-						}
+			error.addOnFixedListener(() -> {
+				for (QuiltDisplayedError e : errors) {
+					if (!e.isFixed()) {
+						return;
 					}
-					continueButton.text(QuiltLoaderText.of("button.continue"));
-					continueButton.icon(QuiltLoaderGui.iconContinue());
 				}
+				continueButton.text(QuiltLoaderText.of("button.continue"));
+				continueButton.icon(QuiltLoaderGui.iconContinue());
+				window.returnValue(true);
 			});
-			tree.messages.add(msg);
+			messages.addMessage(error);
 		}
-		openErrorGui(tree, true);
-	}
 
-	public static void openErrorGui(QuiltJsonGui tree, boolean shouldWait) throws LoaderGuiException, LoaderGuiClosed {
-		if (COMMS == null) {
-			// Gui disabled, act as if the user pressed "ignore"
+		if (!QuiltLoaderGui.open(window)) {
 			throw LoaderGuiClosed.INSTANCE;
 		}
+	}
 
-		tree.send();
-		tree.open();
+	public static <R> R open(QuiltLoaderWindow<R> window) throws LoaderGuiException {
+		open(window, true);
+		return window.returnValue();
+	}
+
+	public static void open(QuiltLoaderWindow<?> window, boolean shouldWait) throws LoaderGuiException {
+		if (COMMS == null) {
+			// Gui disabled, act as if the user pressed "ignore" or just closed the window immediately
+			return;
+		}
+
+		AbstractWindow<?> realWindow = (AbstractWindow<?>) window;
+
+		realWindow.send();
+		realWindow.open();
 
 		if (shouldWait) {
-			tree.waitUntilClosed();
+			realWindow.waitUntilClosed();
 		}
 	}
 

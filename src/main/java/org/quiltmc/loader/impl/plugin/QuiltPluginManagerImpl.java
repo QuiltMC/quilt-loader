@@ -43,6 +43,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -51,7 +52,6 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.ZipException;
-import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
@@ -64,6 +64,9 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.minecraft.MinecraftQuiltLoader;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.NonZipException;
@@ -73,8 +76,8 @@ import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.QuiltPluginTask;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
+import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -91,16 +94,19 @@ import org.quiltmc.loader.impl.filesystem.QuiltBaseFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltMemoryPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
+import org.quiltmc.loader.impl.filesystem.ZeroByteFileException;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.gui.QuiltLoaderGuiImpl;
+import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.metadata.qmj.V1ModMetadataReader;
+import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedModDetails;
+import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedType;
 import org.quiltmc.loader.impl.plugin.base.InternalModContainerBase;
 import org.quiltmc.loader.impl.plugin.fabric.StandardFabricPlugin;
-import org.quiltmc.loader.impl.plugin.gui.TempQuilt2OldStatusNode;
 import org.quiltmc.loader.impl.plugin.quilt.ModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
@@ -132,8 +138,6 @@ import net.fabricmc.api.EnvType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
-	private static final String QUILT_ID = "quilt_loader";
-
 	public final boolean simulationOnly;
 	public final QuiltLoaderConfig config;
 	final GameProvider game;
@@ -143,13 +147,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private final Path absGameDir, absModsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
-	final Map<String, Integer> allocatedFileSystemIndices = new HashMap<>();
 	Map<Path, List<List<Path>>> sourcePaths;
 
 	public final FileHasherImpl hasher;
 
+	/** Map of folder to the plugin id which added it. */
 	final Map<Path, String> modFolders = new LinkedHashMap<>();
-	final Map<Path, ModLoadOption> modPaths = new LinkedHashMap<>();
+	final Map<Path, QuiltStatusNode> modPathGuiNodes = new HashMap<>();
+	final Map<Path, PathLoadState> modPaths = new LinkedHashMap<>();
 	final Map<ModLoadOption, String> modProviders = new HashMap<>();
 	final Map<String, PotentialModSet> modIds = new LinkedHashMap<>();
 
@@ -177,13 +182,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	final Queue<MainThreadTask> mainThreadTasks;
 
-	public final GuiManagerImpl guiManager = new GuiManagerImpl();
+	public final GuiManagerImpl guiManager = GuiManagerImpl.MANAGER;
 	/** The root tree node for the "files" tab. */
-	public final TempQuilt2OldStatusNode guiFileRoot = new TempQuilt2OldStatusNode(guiManager);
-	public final TempQuilt2OldStatusNode guiModsRoot = new TempQuilt2OldStatusNode(guiManager);
-	private PluginGuiTreeNode guiNodeModsFromPlugins;
-	final Map<ModLoadOption, PluginGuiTreeNode> modGuiNodes = new HashMap<>();
+	public final QuiltStatusNode guiFileRoot = QuiltLoaderGuiImpl.createTreeNode();
+	public final QuiltStatusNode guiModsRoot =  QuiltLoaderGuiImpl.createTreeNode();
+	private QuiltStatusNode guiNodeModsFromPlugins;
+	final Map<ModLoadOption, QuiltStatusNode> modGuiNodes = new HashMap<>();
 	final List<QuiltJsonGuiMessage> errors = new ArrayList<>();
+	public final Map<UnsupportedType, QuiltDisplayedError> guiUnknownMods = new TreeMap<>();
 
 	/** Only written by {@link #runSingleCycle()}, only read during crash report generation. */
 	private PerCycleStep perCycleStep;
@@ -192,7 +198,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private int cycleNumber = 0;
 
 	// TEMP
-	final Deque<PluginGuiTreeNode> state = new ArrayDeque<>();
+	final Deque<QuiltTreeNode> state = new ArrayDeque<>();
 
 	public QuiltPluginManagerImpl(Path gameDir, Path configDir, Path modsDir, Path cacheDir, GameProvider game, QuiltLoaderConfig options) {
 		this(gameDir, configDir, modsDir, cacheDir, game, false, options);
@@ -217,8 +223,6 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		customPathNames.put(gameDir, "<game>");
 		customPathNames.put(modsDir, "<mods>");
-
-		mainThreadTasks.add(new MainThreadTask.ScanModFolderTask(modsDir, QUILT_ID));
 
 		theQuiltPlugin = new StandardQuiltPlugin();
 		theFabricPlugin = new StandardFabricPlugin();
@@ -262,8 +266,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			return qRoot;
 		} catch (IOException e) {
 			if (name.endsWith(".zip") || name.endsWith(".jar")) {
+				if (e instanceof ZeroByteFileException) {
+					throw e;
+				}
 				// Something probably went wrong while trying to load them as zips
-				throw new IOException("Failed to read " + zip + " as a zip file!", e);
+				throw new IOException("Failed to read " + zip + " as a zip file: " + e.getMessage(), e);
 			} else {
 				throw new NonZipException(e);
 			}
@@ -590,13 +597,25 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	@Override
+	@Deprecated
 	public @Nullable String getModProvider(Path mod) {
 		return modProviders.get(getModLoadOption(mod));
 	}
 
 	@Override
+	@Deprecated
 	public @Nullable ModLoadOption getModLoadOption(Path file) {
-		return modPaths.get(file);
+		PathLoadState loadState = modPaths.get(file);
+		if (loadState == null) {
+			return null;
+		}
+		return loadState.getCurrentModOption();
+	}
+
+	@Override
+	public @Nullable Map<String, List<ModLoadOption>> getModLoadOptions(Path mod) {
+		PathLoadState loadState = modPaths.get(mod);
+		return loadState == null ? null : loadState.getMap();
 	}
 
 	// by Mod ID
@@ -705,7 +724,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	// # Internal #
 	// ############
 
-	public PluginGuiTreeNode getModsFromPluginsGuiNode() {
+	public QuiltStatusNode getModsFromPluginsGuiNode() {
 		if (guiNodeModsFromPlugins == null) {
 			guiNodeModsFromPlugins = guiFileRoot.addChild(QuiltLoaderText.translate("gui.text.floating_mods_from_plugins"));
 		}
@@ -836,20 +855,45 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		for (Entry<String, PotentialModSet> entry : modIds.entrySet()) {
 			String id = entry.getKey();
 			PotentialModSet set = entry.getValue();
-			PluginGuiTreeNode gui = guiModsRoot.addChild(QuiltLoaderText.of(id), SortOrder.ALPHABETICAL_ORDER);
+			QuiltStatusNode gui = guiModsRoot.addChild(QuiltLoaderText.of(id), SortOrder.ALPHABETICAL_ORDER);
 			if (set.all.size() > 1) {
-				gui.mainIcon(gui.manager().iconFolder());
+				gui.icon(QuiltLoaderGui.iconFolder());
 			} else {
-				gui.mainIcon(gui.manager().iconUnknownFile());
+				gui.icon(QuiltLoaderGui.iconUnknownFile());
 			}
 
 			for (ModLoadOption option : set.all) {
-				PluginGuiTreeNode modNode = gui.addChild(QuiltLoaderText.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER);
+				QuiltStatusNode modNode = gui.addChild(QuiltLoaderText.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER);
 				option.populateModsTabInfo(modNode);
 				if (result != null && result.directMods().containsValue(option)) {
-					modNode.subIcon(modNode.manager().iconTick());
+					modNode.icon(modNode.icon().withDecoration(QuiltLoaderGui.iconTick()));
 				}
 			}
+		}
+
+		Map<UnsupportedType, SortedMap<String, UnsupportedModDetails>> filesList = new HashMap<>();
+
+		for (PathLoadState loadState : modPaths.values()) {
+			Path path = loadState.path;
+			ModLoadOption current = loadState.getCurrentModOption();
+			QuiltStatusNode guiNode = modPathGuiNodes.get(path);
+			if (current == null) {
+				final UnsupportedType type;
+				if (loadState.unsupportedType != null) {
+					type = loadState.unsupportedType.type;
+					loadState.unsupportedType.addToFilesNode(guiNode);
+				} else {
+					type = UnsupportedType.UNKNOWN;
+					guiNode.addChild(QuiltLoaderText.translate("warn.unhandled_mod")).level(QuiltWarningLevel.WARN);
+				}
+
+				filesList.computeIfAbsent(type, t -> new TreeMap<>()).put(describePath(path), loadState.unsupportedType);
+			}
+		}
+
+		for (Map.Entry<UnsupportedType, SortedMap<String, UnsupportedModDetails>> entry : filesList.entrySet()) {
+			UnsupportedType type = entry.getKey();
+			guiUnknownMods.put(type, type.createMessage(this, entry.getValue()));
 		}
 	}
 
@@ -1122,7 +1166,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		List<String> allLines = new ArrayList<>();
 
-		List<String> boxLines = insideBox.get(modPaths.get(path));
+		List<String> boxLines = insideBox.get(modPaths.get(path).getCurrentModOption());
 		if (boxLines != null) {
 			allLines.addAll(boxLines);
 		}
@@ -1184,8 +1228,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	private ModSolveResultImpl runInternal(boolean scanClasspath) throws ModResolutionException, TimeoutException {
 
-		theQuiltPluginContext = addBuiltinPlugin(theQuiltPlugin, QUILT_ID);
-		theFabricPluginContext = addBuiltinPlugin(theFabricPlugin, "quilted_fabric_loader");
+		theQuiltPluginContext = addBuiltinPlugin(theQuiltPlugin, QUILT_LOADER);
+		theFabricPluginContext = addBuiltinPlugin(theFabricPlugin, QUILTED_FABRIC_LOADER);
 
 		if (game != null) {
 			theQuiltPlugin.addBuiltinMods(game);
@@ -1194,6 +1238,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		if (scanClasspath) {
 			scanClasspath();
 		}
+
+		theQuiltPluginContext.addFolderToScan(modsDir);
 
 		scanAdditionalMods(System.getProperty(SystemProperties.ADD_MODS), "system property");
 		scanAdditionalMods(QuiltLoaderImpl.InitHelper.get().getAdditionalModsArgument(), "argument");
@@ -1215,7 +1261,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	private void scanClasspath() {
-		PluginGuiTreeNode classpathRoot = guiFileRoot.addChild(QuiltLoaderText.translate("gui.text.classpath"));
+		QuiltStatusNode classpathRoot = guiFileRoot.addChild(QuiltLoaderText.translate("gui.text.classpath"));
 
 		ClasspathModCandidateFinder.findCandidatesStatic((paths) -> {
 			final Path path;
@@ -1227,9 +1273,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 			if (FasterFiles.exists(path)) {
 				String name = describePath(path);
-				PluginGuiTreeNode clNode = classpathRoot.addChild(QuiltLoaderText.of(name), SortOrder.ALPHABETICAL_ORDER);
+				QuiltStatusNode clNode = classpathRoot.addChild(QuiltLoaderText.of(name), SortOrder.ALPHABETICAL_ORDER);
 				if (FasterFiles.isDirectory(path)) {
-					clNode.mainIcon(clNode.manager().iconFolder());
+					clNode.icon(QuiltLoaderGui.iconFolder());
 				}
 				scanModFile(path, new ModLocationImpl(true, true), clNode);
 			}
@@ -1429,9 +1475,23 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load"));
 		}
 
-		WarningLevel maximumLevel = guiFileRoot.getMaximumLevel();
-		if (maximumLevel == WarningLevel.FATAL || maximumLevel == WarningLevel.ERROR) {
+		QuiltWarningLevel maximumLevel = guiFileRoot.maximumLevel();
+		if (maximumLevel == QuiltWarningLevel.FATAL || maximumLevel == QuiltWarningLevel.ERROR) {
 			throw new TreeContainsModError();
+		}
+	}
+
+	BasePluginContext getPlugin(String id) {
+		switch (id) {
+			case QUILT_LOADER: {
+				return theQuiltPluginContext;
+			}
+			case QUILTED_FABRIC_LOADER: {
+				return theFabricPluginContext;
+			}
+			default: {
+				return pluginsById.get(id);
+			}
 		}
 	}
 
@@ -1547,11 +1607,31 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			extraResults.put(cls, createLoadResult(cls, map));
 		}
 
+		SortedMap<Path, String> unknownRegularFiles = new TreeMap<>();
+		SortedMap<String, String> unknownIrregularFies = new TreeMap<>();
+
+		path_loop: for (PathLoadState loadState : modPaths.values()) {
+			String type = loadState.unsupportedType != null ? loadState.unsupportedType.type.type : "unknown";
+			for (String plugin : loadState.getPlugins()) {
+				if (!loadState.getLoadedBy(plugin).isEmpty()) {
+					continue path_loop;
+				}
+			}
+			Path path = loadState.path;
+			if (path.getFileSystem() == FileSystems.getDefault()) {
+				unknownRegularFiles.put(path, type);
+			} else {
+				unknownIrregularFies.put(describePath(path), type);
+			}
+		}
+
 		directModsMap = Collections.unmodifiableMap(directModsMap);
 		providedModsMap = Collections.unmodifiableMap(providedModsMap);
 		extraResults = Collections.unmodifiableMap(extraResults);
+		unknownRegularFiles = Collections.unmodifiableSortedMap(unknownRegularFiles);
+		unknownIrregularFies = Collections.unmodifiableSortedMap(unknownIrregularFies);
 
-		return new ModSolveResultImpl(directModsMap, providedModsMap, extraResults);
+		return new ModSolveResultImpl(directModsMap, providedModsMap, extraResults, unknownRegularFiles, unknownIrregularFies);
 	}
 
 	private static void putMod(Map<String, ModLoadOption> modMap, String id, ModLoadOption mod) throws ModSolvingError {
@@ -1633,6 +1713,27 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				pluginsByPackage.put(pkg, pluginCtx.classLoader);
 			}
 
+			for (Path folder : modFolders.keySet().toArray(new Path[0])) {
+				pluginCtx.plugin.onModFolderAdded(folder);
+			}
+
+			for (PathLoadState loadState : modPaths.values()) {
+				List<ModLoadOption> fromQuilt = loadState.getLoadedBy(theQuiltPluginContext.pluginId);
+				if (fromQuilt != null && fromQuilt.size() > 0) {
+					continue;
+				}
+
+				QuiltStatusNode guiNode = modPathGuiNodes.get(loadState.path);
+
+				if (loadState instanceof PathLoadState.Folder) {
+					scanFolderWithPlugin(loadState, pluginCtx, guiNode);
+				} else if (loadState instanceof PathLoadState.Zip) {
+					scanZipWithPlugin(((PathLoadState.Zip) loadState).insideZipRoot, loadState, pluginCtx, guiNode);
+				} else if (loadState instanceof PathLoadState.UnknownFile) {
+					scanUnknownFileWithPlugin(loadState, pluginCtx, guiNode);
+				}
+			}
+
 		} catch (ReflectiveOperationException e) {
 			throw new ModSolvingError(
 				"Failed to load the plugin '" + metadata.id() + "' from " + describePath(from.from()), e
@@ -1675,9 +1776,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	void scanModFolder(Path path, String pluginSrc) {
 
-		PluginGuiTreeNode folderRoot = guiFileRoot.addChild(QuiltLoaderText.of(describePath(path)));
-		folderRoot.mainIcon(guiFileRoot.manager().iconFolder());
-		folderRoot.addChild(QuiltLoaderText.translate("gui.text.loaded_by_plugin", pluginSrc)).debug();
+		QuiltStatusNode folderRoot = guiFileRoot.addChild(QuiltLoaderText.of(describePath(path)));
+		folderRoot.icon(QuiltLoaderGui.iconFolder());
+		folderRoot.addChild(QuiltLoaderText.translate("gui.text.loaded_by_plugin", pluginSrc)).level(QuiltWarningLevel.DEBUG_ONLY);
 
 		for (QuiltLoaderPlugin plugin : plugins.keySet()) {
 			plugin.onModFolderAdded(path);
@@ -1696,9 +1797,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return false;
 	}
 
-	private void scanModFolder0(Path path, PluginGuiTreeNode guiNode) {
+	private void scanModFolder0(Path path, QuiltStatusNode guiNode) {
 		try {
-			Map<Path, PluginGuiTreeNode> guiNodeMap = new HashMap<>();
+			Map<Path, QuiltStatusNode> guiNodeMap = new HashMap<>();
 			guiNodeMap.put(path, guiNode);
 
 			int maxDepth = config.loadSubFolders ? Integer.MAX_VALUE : 2;
@@ -1719,11 +1820,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						String name = relative.getFileName().toString();
 
 						Path parent = dir.getParent();
-						final PluginGuiTreeNode node;
+						final QuiltStatusNode node;
 						if (dir == path) {
 							node = guiNode;
 						} else {
-							PluginGuiTreeNode pNode = guiNodeMap.get(parent);
+							QuiltStatusNode pNode = guiNodeMap.get(parent);
 
 							if (pNode != null) {
 								node = pNode.addChild(QuiltLoaderText.of(name), SortOrder.ALPHABETICAL_ORDER);
@@ -1732,15 +1833,15 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 							}
 						}
 
-						node.mainIcon(QuiltLoaderGui.iconFolder());
+						node.icon(QuiltLoaderGui.iconFolder());
 
 						guiNodeMap.put(dir, node);
 
 						if (!dir.equals(path) && !config.loadSubFolders) {
-							node.subIcon(QuiltLoaderGui.iconDisabled());
+							node.icon(node.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 							node.addChild(QuiltLoaderText.translate("warn.sub_folders_disabled"))//
-								.setDirectLevel(WarningLevel.WARN)//
-								.subIcon(QuiltLoaderGui.iconDisabled());
+								.level(QuiltWarningLevel.WARN)
+								.icon(QuiltLoaderGui.iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
@@ -1762,48 +1863,48 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 									try {
 										if (V1ModMetadataReader.readVersionSpecifier(sub).isSatisfiedBy(gameVersion)) {
-											node.subIcon(QuiltLoaderGui.iconTick());
+											node.icon(node.icon().withDecoration(QuiltLoaderGui.iconTick()));
 											node.addChild(QuiltLoaderText.translate("gui.text.game_version_match", gameVersion))
-												.mainIcon(QuiltLoaderGui.iconTick());
+												.icon(QuiltLoaderGui.iconTick());
 										} else {
-											node.subIcon(QuiltLoaderGui.iconDisabled());
+											node.icon(node.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 											node.addChild(QuiltLoaderText.translate("gui.text.game_version_mismatch", gameVersion))
-												.setDirectLevel(WarningLevel.INFO)//
-												.subIcon(QuiltLoaderGui.iconDisabled());
+												.level(QuiltWarningLevel.INFO)//
+												.icon(QuiltLoaderGui.iconDisabled());
 											return FileVisitResult.SKIP_SUBTREE;
 										}
 									} catch (VersionFormatException e) {
 										Log.warn(LogCategory.DISCOVERY, "Invalid game version specifier '" + sub + "'", e);
-										node.setDirectLevel(WarningLevel.WARN);
+										node.level(QuiltWarningLevel.WARN);
 										node.addChild(QuiltLoaderText.translate("warn.invalid_version_specifier", e.getMessage()))
-											.setDirectLevel(WarningLevel.WARN);
+											.level(QuiltWarningLevel.WARN);
 										return FileVisitResult.SKIP_SUBTREE;
 									}
 								}
 							} else {
-								node.subIcon(QuiltLoaderGui.iconDisabled());
+								node.icon(node.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 								node.addChild(QuiltLoaderText.translate("gui.text.game_versions_disabled"))
-									.setDirectLevel(WarningLevel.WARN)//
-									.subIcon(QuiltLoaderGui.iconDisabled());
+									.level(QuiltWarningLevel.WARN)//
+									.icon(QuiltLoaderGui.iconDisabled());
 								return FileVisitResult.SKIP_SUBTREE;
 							}
 						}
 
 						if (name.endsWith(".disabled")) {
-							node.subIcon(QuiltLoaderGui.iconDisabled());
+							node.icon(node.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
 						if (name.startsWith(".")) { // ignore dot-folders
-							node.subIcon(node.manager().iconDisabled());
+							node.icon(node.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 
 						if (Files.exists(dir.resolve("quilt_loader_ignored"))) {
-							node.subIcon(node.manager().iconDisabled());
+							node.icon(node.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 							node.addChild(QuiltLoaderText.translate("warn.sub_folder_ignored"))
-								.setDirectLevel(WarningLevel.WARN)//
-								.mainIcon(node.manager().iconDisabled());
+								.level(QuiltWarningLevel.WARN)//
+								.icon(QuiltLoaderGui.iconDisabled());
 							return FileVisitResult.SKIP_SUBTREE;
 						}
 					}
@@ -1814,8 +1915,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 
 					Path parent = file.getParent();
-					PluginGuiTreeNode pNode = guiNodeMap.get(parent);
-					final PluginGuiTreeNode node;
+					QuiltStatusNode pNode = guiNodeMap.get(parent);
+					final QuiltStatusNode node;
 
 					String name = file.getFileName().toString();
 
@@ -1835,34 +1936,54 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	void scanFolderAsMod(Path folder, ModLocationImpl location, PluginGuiTreeNode guiNode) {
-		Map<ModLoadOption, BasePluginContext> map = new HashMap<>();
+	void scanFolderAsMod(Path folder, ModLocationImpl location, QuiltStatusNode guiNode) {
+		PathLoadState loadState = modPaths.computeIfAbsent(folder, f -> new PathLoadState.Folder(folder, location));
+		boolean isQuilt = false;
 
 		for (BasePluginContext ctx : plugins.values()) {
-			ModLoadOption[] mods;
-			try {
-				mods = ctx.plugin().scanFolder(folder, location, guiNode);
-			} catch (IOException e) {
-				// FOR NOW
-				// TODO: Proper error handling!
-				throw new Error("The plugin '" + ctx.pluginId() + "' failed to load " + describePath(folder), e);
-			}
 
-			if (mods != null && mods.length > 0) {
-				for (ModLoadOption mod : mods) {
-					map.put(mod, ctx);
-				}
+			final List<ModLoadOption> list;
+			list = scanFolderWithPlugin(loadState, ctx, guiNode);
 
-				if (ctx == theQuiltPlugin.context()) {
-					break;
-				}
+			if (!list.isEmpty() && ctx == theQuiltPlugin.context()) {
+				isQuilt = true;
+				break;
 			}
 		}
 
-		addModOption(folder, map, guiNode);
+		if (!isQuilt) {
+			try {
+				loadState.unsupportedType = UnsupportedModChecker.checkFolder(folder);
+			} catch (IOException e) {
+				// TODO: Proper error handling!
+				throw new Error("Failed to check " + describePath(folder) + " as an unsupported mod!", e);
+			}
+		}
 	}
 
-	void scanModFile(Path file, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+	private List<ModLoadOption> scanFolderWithPlugin(PathLoadState loadState, BasePluginContext ctx, QuiltStatusNode guiNode) {
+		ModLoadOption[] mods;
+		try {
+			mods = ctx.plugin().scanFolder(loadState.path, loadState.location, guiNode);
+		} catch (IOException e) {
+			// FOR NOW
+			// TODO: Proper error handling!
+			throw new Error("The plugin '" + ctx.pluginId() + "' failed to load " + describePath(loadState.path), e);
+		}
+		final List<ModLoadOption> list;
+		if (mods != null && mods.length > 0) {
+			list = Collections.unmodifiableList(Arrays.asList(mods.clone()));
+			for (ModLoadOption mod : mods) {
+				addSingleModOption0(mod, ctx, mods.length == 1, guiNode);
+			}
+		} else {
+			list = Collections.emptyList();
+		}
+		loadState.add(this, ctx, list);
+		return list;
+	}
+
+	void scanModFile(Path file, ModLocationImpl location, QuiltStatusNode guiNode) {
 
 		// We only propose a file as a possible mod in the following scenarios:
 		// General: must not end with ".disabled".
@@ -1874,16 +1995,16 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		// require opening the file's metadata
 
 		String fileName = file.getFileName().toString();
-		guiNode.mainIcon(guiNode.manager().iconUnknownFile());
+		guiNode.icon(QuiltLoaderGui.iconUnknownFile());
 
 		if (fileName.startsWith(".")) {
-			guiNode.subIcon(guiNode.manager().iconDisabled());
+			guiNode.icon(guiNode.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 			guiNode.sortPrefix("disabled");
 			guiNode.addChild(QuiltLoaderText.translate("gui.text.file_hidden_dot_prefixed"))// TODO translate
-				.subIcon(guiNode.manager().iconDisabled());
+				.icon(QuiltLoaderGui.iconDisabled());
 			return;
 		} else if (fileName.endsWith(".disabled")) {
-			guiNode.subIcon(guiNode.manager().iconDisabled());
+			guiNode.icon(guiNode.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 			guiNode.sortPrefix("disabled");
 			return;
 		}
@@ -1897,11 +2018,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	private void scanModFile0(Path file, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+	private void scanModFile0(Path file, ModLocationImpl location, QuiltStatusNode guiNode) {
+
+		modPathGuiNodes.put(file, guiNode);
+
 		try {
 			if (Files.isHidden(file)) {
 				guiNode.sortPrefix("disabled");
-				guiNode.subIcon(guiNode.manager().iconDisabled());
+				guiNode.icon(guiNode.icon().withDecoration(QuiltLoaderGui.iconDisabled()));
 				guiNode.addChild(QuiltLoaderText.translate("gui.text.file_hidden"));// TODO translate
 				return;
 			}
@@ -1915,7 +2039,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			);
 			error.appendThrowable(e);
 
-			guiNode.addChild(title).setError(e, error);
+			guiNode.addChild(title).level(QuiltWarningLevel.ERROR);
 			e.printStackTrace();
 
 			return;
@@ -1933,9 +2057,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		try {
 			Path zipRoot = loadZip0(file);
 			if (file.getFileName().toString().endsWith(".jar")) {
-				guiNode.mainIcon(guiNode.manager().iconJarFile());
+				guiNode.icon(QuiltLoaderGui.iconJarFile());
 			} else {
-				guiNode.mainIcon(guiNode.manager().iconZipFile());
+				guiNode.icon(QuiltLoaderGui.iconZipFile());
 			}
 
 			if (this.config.singleThreadedLoading) {
@@ -1943,6 +2067,20 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			} else {
 				mainThreadTasks.add(new MainThreadTask.ScanZipTask(file, zipRoot, location, guiNode));
 			}
+
+		} catch (ZeroByteFileException e) {
+
+			QuiltLoaderText title = QuiltLoaderText.translate("gui.error.zerobytezip.title");
+			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
+			error.appendReportText("Encountered zero byte file " + describePath(file) + "!");
+			error.appendDescription(QuiltLoaderText.translate("gui.error.zerobytezip.desc.0"));
+			error.appendDescription(QuiltLoaderText.of(describePath(file)));
+			error.appendThrowable(e);
+			getRealContainingFile(file).ifPresent(real -> {
+				error.addFileViewButton(real).icon(QuiltLoaderGui.iconZipFile());
+			});
+
+			guiNode.addChild(QuiltLoaderText.translate("gui.error.zerobytezip")).level(QuiltWarningLevel.ERROR);
 
 		} catch (ZipException e) {
 
@@ -1960,7 +2098,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.zipexception", e.getMessage()))// TODO: translate
-				.setError(e, error);
+				.level(QuiltWarningLevel.ERROR);
 
 		} catch (IOException e) {
 
@@ -1974,11 +2112,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			});
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.error.ioexception", e.getMessage()))// TODO: translate
-				.setError(e, error);
+				.level(QuiltWarningLevel.ERROR);
 
 		} catch (NonZipException e) {
 
-			guiNode.mainIcon(QuiltLoaderGui.iconUnknownFile());
+			guiNode.icon(QuiltLoaderGui.iconUnknownFile());
 
 			if (this.config.singleThreadedLoading) {
 				scanUnknownFile(file, location, guiNode);
@@ -1989,112 +2127,131 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	/** Called by {@link MainThreadTask.ScanZipTask} */
-	void scanZip(Path zipFile, Path zipRoot, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+	void scanZip(Path zipFile, Path zipRoot, ModLocationImpl location, QuiltStatusNode guiNode) {
 
 		try {
 			state.push(guiNode);
 
-			Map<ModLoadOption, BasePluginContext> map = new HashMap<>();
+			PathLoadState loadState = modPaths.computeIfAbsent(zipFile, f -> new PathLoadState.Zip(zipFile, location, zipRoot));
+
+			boolean isQuilt = false;
 
 			for (BasePluginContext ctx : plugins.values()) {
-				ModLoadOption[] mods;
-				try {
-					mods = ctx.plugin().scanZip(zipRoot, location, guiNode);
-				} catch (IOException e) {
-					// FOR NOW
-					// TODO: Proper error handling!
-					throw new Error(
-						"The plugin '" + ctx.pluginId() + "' failed to load '" + describePath(zipFile) + "'", e
-					);
-				}
-
-				if (mods != null && mods.length > 0) {
-					for (ModLoadOption mod : mods) {
-						map.put(mod, ctx);
-					}
-
-					if (ctx == theQuiltPlugin.context()) {
-						break;
-					}
+				List<ModLoadOption> list = scanZipWithPlugin(zipRoot, loadState, ctx, guiNode);
+				if (!list.isEmpty() && ctx == theQuiltPlugin.context()) {
+					isQuilt = true;
+					break;
 				}
 			}
 
-			addModOption(zipFile, map, guiNode);
+			if (!isQuilt) {
+				try {
+					loadState.unsupportedType = UnsupportedModChecker.checkZip(zipFile, zipRoot);
+				} catch (IOException e) {
+					// TODO: Proper error handling!
+					throw new Error("Failed to check " + describePath(zipFile) + " as an unsupported mod!", e);
+				}
+			}
 
 		} finally {
 			state.pop();
 		}
+	}
+
+	private List<ModLoadOption> scanZipWithPlugin(Path zipRoot, PathLoadState loadState, BasePluginContext ctx, QuiltStatusNode guiNode) {
+		ModLoadOption[] mods;
+		try {
+			mods = ctx.plugin().scanZip(zipRoot, loadState.location, guiNode);
+		} catch (IOException e) {
+			// FOR NOW
+			// TODO: Proper error handling!
+			throw new Error(
+				"The plugin '" + ctx.pluginId() + "' failed to load '" + describePath(loadState.path) + "'", e
+			);
+		}
+
+		final List<ModLoadOption> list;
+
+		if (mods != null && mods.length > 0) {
+			list = Collections.unmodifiableList(Arrays.asList(mods.clone()));
+			for (ModLoadOption mod : mods) {
+				addSingleModOption0(mod, ctx, mods.length == 1, guiNode);
+			}
+		} else {
+			list = Collections.emptyList();
+		}
+		loadState.add(this, ctx, list);
+		return list;
 	}
 
 	/** Called by {@link MainThreadTask.ScanUnknownFileTask} */
-	void scanUnknownFile(Path file, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+	void scanUnknownFile(Path file, ModLocationImpl location, QuiltStatusNode guiNode) {
 
 		try {
 			state.push(guiNode);
 
-			Map<ModLoadOption, BasePluginContext> map = new HashMap<>();
+			PathLoadState loadState = modPaths.computeIfAbsent(file, f -> new PathLoadState.UnknownFile(file, location));
+			boolean isQuilt = false;
 
 			for (BasePluginContext ctx : plugins.values()) {
-				ModLoadOption[] mods;
-				try {
-					mods = ctx.plugin().scanUnknownFile(file, location, guiNode);
-				} catch (IOException e) {
-					// FOR NOW
-					// TODO: Proper error handling!
-					throw new Error("The plugin '" + ctx.pluginId() + "' failed to load " + describePath(file), e);
-				}
-
-				if (mods != null && mods.length > 0) {
-					for (ModLoadOption mod : mods) {
-						map.put(mod, ctx);
-					}
-
-					if (ctx == theQuiltPlugin.context()) {
-						break;
-					}
+				List<ModLoadOption> list = scanUnknownFileWithPlugin(loadState, ctx, guiNode);
+				if (!list.isEmpty() && ctx == theQuiltPlugin.context()) {
+					isQuilt = true;
+					break;
 				}
 			}
 
-			addModOption(file, map, guiNode);
+			if (!isQuilt) {
+				try {
+					loadState.unsupportedType = UnsupportedModChecker.checkUnknownFile(file);
+				} catch (IOException e) {
+					// TODO: Proper error handling!
+					throw new Error("Failed to check " + describePath(file) + " as an unsupported mod!", e);
+				}
+			}
 		} finally {
 			state.pop();
 		}
 	}
 
-	private void addModOption(Path file, Map<ModLoadOption, BasePluginContext> map, PluginGuiTreeNode guiNode) {
-		if (map == null || map.isEmpty()) {
+	private List<ModLoadOption> scanUnknownFileWithPlugin(PathLoadState loadState, BasePluginContext ctx, QuiltStatusNode guiNode) {
 
-			if (true) {
-				// Disable unhandled mod error until mods can actually declare loader plugins
-				Log.warn(LogCategory.DISCOVERY, "Unknown file in mods folder: " + describePath(file));
-				guiNode.addChild(QuiltLoaderText.translate("warn.unhandled_mod")).setDirectLevel(WarningLevel.WARN);
-				return;
+		Path file = loadState.path;
+		ModLoadOption[] mods;
+		try {
+			mods = ctx.plugin().scanUnknownFile(file, loadState.location, guiNode);
+		} catch (IOException e) {
+			// FOR NOW
+			// TODO: Proper error handling!
+			throw new Error("The plugin '" + ctx.pluginId() + "' failed to load " + describePath(file), e);
+		}
+
+		final List<ModLoadOption> list;
+		if (mods != null && mods.length > 0) {
+			list = Collections.unmodifiableList(Arrays.asList(mods.clone()));
+			for (ModLoadOption mod : mods) {
+				addSingleModOption0(mod, ctx, mods.length == 1, guiNode);
 			}
-
-			Optional<Path> containingFile = getRealContainingFile(file);
-			QuiltLoaderText title = QuiltLoaderText.translate("error.unhandled_mod_file.title", describePath(containingFile.isPresent() ? containingFile.get() : file));
-			QuiltDisplayedError error = reportError(theQuiltPluginContext, title);
-			error.appendDescription(QuiltLoaderText.translate("error.unhandled_mod_file.desc"));
-			containingFile.ifPresent(real -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", real.getFileName()), real));
-			error.appendReportText("No plugin could load " + describePath(file));
-			guiNode.addChild(QuiltLoaderText.translate("error.unhandled_mod_file"))
-				.setError(null, error);
-
-		} else if (map.size() == 1) {
-			ModLoadOption option = map.keySet().iterator().next();
-			BasePluginContext plugin = map.values().iterator().next();
-			addSingleModOption(option, plugin, true, guiNode);
 		} else {
-			guiNode.addChild(QuiltLoaderText.translate("gui.warn.overloaded"));// TODO:translate
-			// TODO: Report the mod as being "overloaded"?
-			// or just add all, and let the solver figure out which is which.
-			for (Map.Entry<ModLoadOption, BasePluginContext> entry : map.entrySet()) {
-				addSingleModOption(entry.getKey(), entry.getValue(), false, guiNode);
-			}
+			list = Collections.emptyList();
+		}
+		loadState.add(this, ctx, list);
+		return list;
+	}
+
+	void addSingleModOption(ModLoadOption mod, BasePluginContext provider, boolean only, QuiltStatusNode guiNode) {
+		Path from = mod.from();
+		addSingleModOption0(mod, provider, only, guiNode);
+
+		if (mod instanceof AliasedLoadOption) {
+			addLoadOption(mod, provider);
+		} else {
+			PathLoadState loadState = modPaths.computeIfAbsent(from, f -> new PathLoadState.ExtraMod(from));
+			loadState.add(this, provider, Collections.singletonList(mod));
 		}
 	}
 
-	void addSingleModOption(ModLoadOption mod, BasePluginContext provider, boolean only, PluginGuiTreeNode guiNode) {
+	private void addSingleModOption0(ModLoadOption mod, BasePluginContext provider, boolean only, QuiltStatusNode guiNode) {
 		String id = mod.id();
 		Version version = mod.version();
 		Path from = mod.from();
@@ -2123,22 +2280,19 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			pluginIdsChanged |= idsWithPlugins.add(id);
 		}
 
-		modPaths.put(from, mod);
 		modProviders.put(mod, provider.pluginId());
 		modGuiNodes.put(mod, guiNode);
 
-		PluginGuiTreeNode loadedBy = guiNode.addChild(QuiltLoaderText.translate("gui.text.mod_loaded_by", provider.pluginId()))//
-						.mainIcon(mod.modTypeIcon());
+		QuiltStatusNode loadedBy = guiNode.addChild(QuiltLoaderText.translate("gui.text.loaded_by_plugin", provider.pluginId()));
+		loadedBy.icon(mod.modTypeIcon());
 
 		if (only) {
-			guiNode.subIcon(mod.modTypeIcon());
-			loadedBy.debug();
+			guiNode.icon(guiNode.icon().withDecoration(mod.modTypeIcon()));
+			loadedBy.level(QuiltWarningLevel.DEBUG_ONLY);
 		}
 
 		guiNode.addChild(QuiltLoaderText.translate("gui.text.id", id));
 		guiNode.addChild(QuiltLoaderText.translate("gui.text.version", version.raw()));
-
-		addLoadOption(mod, provider);
 	}
 
 	// ###############

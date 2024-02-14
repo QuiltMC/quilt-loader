@@ -48,6 +48,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
@@ -98,6 +99,9 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 			BufferedInputStream pushback = new BufferedInputStream(fileStream);
 			pushback.mark(header.length);
 			int readLength = pushback.read(header);
+			if (readLength == 0 || readLength == -1) {
+				throw new ZeroByteFileException("Zip start header not found - 0 byte file!");
+			}
 			if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.HEADER)) {
 				if (!(source instanceof SharedByteChannels)) {
 					throw new IOException("Cannot read a custom compressed stream that isn't on the default file system!");
@@ -149,6 +153,8 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 
 				if (entryName.endsWith("/")) {
 					createDirectories(path);
+				} else if (exists(path)) {
+					throw new IOException("Duplicate entry " + path);
 				} else {
 					addEntryAndParents(new QuiltZipFile(path, source, entry, zip));
 				}

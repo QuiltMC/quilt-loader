@@ -23,7 +23,31 @@ import org.jetbrains.annotations.ApiStatus;
 @ApiStatus.NonExtendable
 public interface QuiltLoaderIcon {
 
+	public enum SubIconPosition {
+		BOTTOM_LEFT,
+		BOTTOM_RIGHT,
+		TOP_RIGHT,
+		TOP_LEFT;
+	}
+
+	QuiltLoaderIcon getDecoration(SubIconPosition position);
+
 	/** Returns a new icon with a sub-icon added to this main icon. The given sub-icon must not already have sub-icons.
-	 * If the given sub-icon is null then this is returned. */
+	 * If the given sub-icon is null then this is returned.
+	 * <p>
+	 * This adds icons in the following order: BOTTOM_RIGHT, TOP_RIGHT, TOP_LEFT, BOTTOM_LEFT. */
 	QuiltLoaderIcon withDecoration(QuiltLoaderIcon subIcon);
+
+	/** Returns a new icon with a sub-icon added to this main icon, if the level has a non-null
+	 * {@link QuiltWarningLevel#icon()}.
+	 * <p>
+	 * This always adds the level to the BOTTOM_LEFT, unless there is already an icon present there and another position
+	 * is free. */
+	QuiltLoaderIcon withLevel(QuiltWarningLevel level);
+
+	/** Returns a new icon with a sub-icon added to this main icon. The given sub-icon must not already have sub-icons.
+	 * If the given sub-icon is null then this is returned.
+	 * <p>
+	 * This always adds an icon to the given position, or replaces an icon if one is already there. */
+	QuiltLoaderIcon withDecoration(SubIconPosition position, QuiltLoaderIcon subIcon);
 }

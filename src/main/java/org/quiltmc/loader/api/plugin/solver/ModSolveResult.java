@@ -16,6 +16,8 @@
 
 package org.quiltmc.loader.api.plugin.solver;
 
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 
@@ -32,6 +34,14 @@ public interface ModSolveResult {
 	Map<String, ModLoadOption> providedMods();
 
 	<O> SpecificLoadOptionResult<O> getResult(Class<O> clazz);
+
+	/** @return A map of all found files which were not able to be loaded, mapped to the reason why they were unable to
+	 *         be loaded. This only contains paths on the {@link FileSystems#getDefault() default filesystem} */
+	Map<Path, String> getUnknownFiles();
+
+	/** @return A map of all found paths which were not able to be loaded, mapped to the reason why they were unable to
+	 *         be loaded. This doesn't contain any {@link Path}s in {@link #getUnknownFiles()} */
+	Map<String, String> getIrregularUnknownFiles();
 
 	public interface SpecificLoadOptionResult<O> {
 		Collection<O> getOptions();

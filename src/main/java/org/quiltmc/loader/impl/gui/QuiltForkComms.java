@@ -180,6 +180,10 @@ public class QuiltForkComms {
 		currentComms.set(this);
 	}
 
+	static void setServer() {
+		setSide(ForkSide.SERVER);
+	}
+
 	private static void setSide(ForkSide expectedSide) {
 		if (side != null && side != expectedSide) {
 			throw new IllegalStateException("Cannot change from " + side + " to " + expectedSide);

@@ -27,6 +27,7 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltFork;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
+import org.quiltmc.loader.impl.gui.QuiltLoaderGuiImpl;
 
 /** Central API for dealing with opening guis on a separate process. Used since some games don't work properly on MacOS
  * if we open a swing window in the main process. */
@@ -34,6 +35,14 @@ public class QuiltLoaderGui {
 	private QuiltLoaderGui() {}
 
 	// Gui opening
+
+	/** Creates a new error to be displayed in {@link #openErrorGui(QuiltDisplayedError)}. This doesn't do anything
+	 * else.
+	 * 
+	 * @return A new {@link QuiltDisplayedError}. */
+	public static QuiltDisplayedError createError() {
+		return createError(QuiltLoaderText.EMPTY);
+	}
 
 	/** Creates a new error to be displayed in {@link #openErrorGui(QuiltDisplayedError)}. This doesn't do anything
 	 * else.
@@ -61,10 +70,45 @@ public class QuiltLoaderGui {
 		QuiltFork.openErrorGui(errors);
 	}
 
+	/** @return A new {@link QuiltBasicWindow}. This hasn't been displayed yet.
+	 * @see #open(QuiltLoaderWindow) */
+	public static <R> QuiltBasicWindow<R> createBasicWindow(R defaultReturnValue) {
+		return QuiltLoaderGuiImpl.createBasicWindow(defaultReturnValue);
+	}
+
+	/** @return A new {@link QuiltBasicWindow}. This hasn't been displayed yet.
+	 * @see #open(QuiltLoaderWindow) */
+	public static QuiltBasicWindow<Void> createBasicWindow() {
+		return createBasicWindow(null);
+	}
+
+	/** @return A new {@link QuiltTreeNode} that can be passed to many different windows rather than being limited to
+	 *         just one. */
+	public static QuiltTreeNode createTreeNode() {
+		return QuiltLoaderGuiImpl.createTreeNode();
+	}
+
+	/** Opens a window, waiting for the user to close it before returning the {@link QuiltLoaderWindow#returnValue()}.
+	 * 
+	 * @throws LoaderGuiException if something went wrong while opening the gui */
+	public static <R> R open(QuiltLoaderWindow<R> window) throws LoaderGuiException {
+		return QuiltFork.open(window);
+	}
+
+	/** @throws LoaderGuiException if something went wrong while opening the gui */
+	public static void open(QuiltLoaderWindow<?> window, boolean shouldWait) throws LoaderGuiException {
+		QuiltFork.open(window, shouldWait);
+	}
+
 	// Icons
 
-	public static QuiltLoaderIcon createIcon(BufferedImage image) {
-		return createIcon(Collections.singletonMap(image.getWidth(), image));
+	public static QuiltLoaderIcon createIcon(byte[] imageBytes) {
+		return createIcon(new byte[][] { imageBytes });
+	}
+
+	/** @param images Array of differently sized images, to be chosen by the UI. */
+	public static QuiltLoaderIcon createIcon(byte[][] images) {
+		return GuiManagerImpl.allocateIcons(images);
 	}
 
 	public static QuiltLoaderIcon createIcon(Map<Integer, BufferedImage> images) {
@@ -141,12 +185,24 @@ public class QuiltLoaderGui {
 		return GuiManagerImpl.ICON_FABRIC;
 	}
 
+	public static QuiltLoaderIcon iconWeb() {
+		return GuiManagerImpl.ICON_WEB_LINK;
+	}
+
+	public static QuiltLoaderIcon iconClipboard() {
+		return GuiManagerImpl.ICON_CLIPBOARD;
+	}
+
 	public static QuiltLoaderIcon iconTick() {
 		return GuiManagerImpl.ICON_TICK;
 	}
 
 	public static QuiltLoaderIcon iconCross() {
 		return GuiManagerImpl.ICON_CROSS;
+	}
+
+	public static QuiltLoaderIcon iconTreeDot() {
+		return GuiManagerImpl.ICON_TREE_DOT;
 	}
 
 	public static QuiltLoaderIcon iconLevelFatal() {

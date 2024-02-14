@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
@@ -42,6 +41,12 @@ import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public interface QuiltPluginManager {
+
+	/** The {@link QuiltPluginContext#pluginId()} for Quilt Loader itself. */
+	public static final String QUILT_LOADER = "quilt_loader";
+
+	/** The {@link QuiltPluginContext#pluginId()} for the fabric plugin loader. */
+	public static final String QUILTED_FABRIC_LOADER = "quilted_fabric_loader";
 
 	// #######
 	// Loading
@@ -176,14 +181,14 @@ public interface QuiltPluginManager {
 	// by Path
 
 	/** @return An unmodifiable set of all the {@link Path}s that have been recognised as a mod. Use
-	 *         {@link #getModProvider(Path)} or {@link #getModLoadOption(Path)} for more details about the mod. */
+	 *         {@link #getModLoadOptions(Path)} for more details about the mod. */
 	Set<Path> getModPaths();
 
 	/** @param mod The path to the mod. This should always be one that was passed to
 	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
 	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
-	 * @return The mod id of the loader plugin that added a mod directly from the given path. */
+	 * @return The mod id of the loader plugin that is currently loading the given mod. */
 	@Nullable
 	String getModProvider(Path mod);
 
@@ -191,9 +196,20 @@ public interface QuiltPluginManager {
 	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
 	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
-	 * @return The mod load option that is loaded from the given path. */
+	 * @return The mod load option that is loaded from the given path.
+	 * @deprecated Replaced by {@link #getModLoadOptions(Path)}, since this only returns a single load option! */
 	@Nullable
+	@Deprecated
 	ModLoadOption getModLoadOption(Path mod);
+
+	/** @param mod The path to the mod. This should always be one that was passed to
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)}, or the
+	 *            {@link #getParent(Path)} of a path passed to
+	 *            {@link QuiltLoaderPlugin#scanZip(Path, ModLocation, PluginGuiTreeNode)}. Alternatively you can pass in
+	 *            a path returned by {@link #getModPaths()}.
+	 * @return A map of potential mod load options, keyed by the {@link QuiltPluginContext#pluginId()}. */
+	@Nullable
+	Map<String, List<ModLoadOption>> getModLoadOptions(Path mod);
 
 	// by Mod ID
 

@@ -17,12 +17,15 @@
 package org.quiltmc.loader.impl.gui;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LObject;
@@ -32,13 +35,22 @@ import org.quiltmc.loader.impl.util.LoaderValueHelper;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+
 /** Helper class for quilt gui objects which need to have state synced from client to server. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 abstract class QuiltGuiSyncBase {
 
-	static final AtomicInteger IDS = new AtomicInteger();
+	static final AtomicInteger IDS;
 	static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
 	static final Map<Integer, QuiltGuiSyncBase> ALL_OBJECTS = new ConcurrentHashMap<>();
+
+	static {
+		if (QuiltForkComms.isServer()) {
+			IDS = new AtomicInteger(Integer.MIN_VALUE);
+		} else {
+			IDS = new AtomicInteger();
+		}
+	}
 
 	enum WriteState {
 		NOT_YET,
@@ -46,10 +58,14 @@ abstract class QuiltGuiSyncBase {
 		FINISHED;
 	}
 
+	interface Listener {}
+
 	final QuiltGuiSyncBase parent;
 	final int id;
 	Map<Integer, QuiltGuiSyncBase> children;
 	private WriteState writeState = WriteState.NOT_YET;
+
+	final List<Listener> listeners = new ArrayList<>();
 
 	private QuiltGuiSyncBase(QuiltGuiSyncBase parent, int id) {
 		this.parent = parent;
@@ -93,7 +109,11 @@ abstract class QuiltGuiSyncBase {
 			throw new IOException("Bad remote class '" + className + "'");
 		}
 
-		createObject(parent, cls, HELPER.expectObject(packet, "data"));
+		Object obj = createObject(parent, cls, HELPER.expectObject(packet, "data"));
+
+		if (parent != null) {
+			parent.onChildAdded((QuiltGuiSyncBase) obj);
+		}
 	}
 
 	private static <Q> Q createObject(QuiltGuiSyncBase parent, Class<Q> cls, LObject data) throws IOException {
@@ -107,6 +127,12 @@ abstract class QuiltGuiSyncBase {
 		} catch (ReflectiveOperationException e) {
 			throw new IOException(e);
 		}
+	}
+
+	/** Called when the child is created with this as it's parent, but NOT when it's created from
+	 * {@link #readChild(LoaderValue, Class)} and the child hasn't already been sent. */
+	void onChildAdded(QuiltGuiSyncBase child) {
+		
 	}
 
 	static void updateObject(LObject obj) throws IOException {
@@ -189,7 +215,7 @@ abstract class QuiltGuiSyncBase {
 			throw new NullPointerException();
 		}
 
-		if (sync.parent == this && writeState == WriteState.STARTED) {
+		if (sync.parent == this && writeState == WriteState.STARTED && sync.writeState == WriteState.NOT_YET) {
 			return sync.write();
 		} else {
 			sync.send();
@@ -207,7 +233,7 @@ abstract class QuiltGuiSyncBase {
 			if (clazz.isInstance(sync)) {
 				return clazz.cast(sync);
 			} else {
-				throw new IOException("");
+				throw new IOException(sync + " is not an instance of " + clazz);
 			}
 		} else {
 			return createObject(this, clazz, HELPER.expectObject(value));
@@ -220,5 +246,13 @@ abstract class QuiltGuiSyncBase {
 
 	final boolean shouldSendUpdates() {
 		return writeState == WriteState.FINISHED;
+	}
+
+	<L> void invokeListeners(Class<L> clazz, Consumer<L> invoker) {
+		for (Object listener : this.listeners) {
+			if (clazz.isInstance(listener)) {
+				invoker.accept(clazz.cast(listener));
+			}
+		}
 	}
 }
