@@ -94,7 +94,7 @@ public final class QuiltGuiEntry {
 			}
 
 			if (crashReportFile != null) {
-				window.addFileViewButton(QuiltLoaderText.translate("button.open_crash_report"), crashReportFile);
+				window.addFileOpenButton(QuiltLoaderText.translate("button.open_crash_report"), crashReportFile);
 				window.addCopyFileToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportFile);
 			}
 
