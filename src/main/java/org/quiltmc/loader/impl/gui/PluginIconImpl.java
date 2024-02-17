@@ -98,6 +98,11 @@ public final class PluginIconImpl extends QuiltGuiSyncBase implements QuiltLoade
 		return "icon";
 	}
 
+	@Deprecated
+	public static QuiltLoaderIcon deprecatedForFabric(String path) {
+		return new PluginIconImpl(path);
+	}
+
 	public static PluginIconImpl fromApi(QuiltLoaderIcon icon) {
 		if (icon instanceof PluginIconImpl) {
 			return (PluginIconImpl) icon;

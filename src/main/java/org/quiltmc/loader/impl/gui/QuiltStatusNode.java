@@ -24,8 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
