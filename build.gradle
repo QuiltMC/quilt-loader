@@ -73,7 +73,9 @@ sourceSets {
 }
 
 configurations {
-	include
+	include {
+	   transitive = false
+	}
 
 	implementation {
 		extendsFrom include
@@ -111,12 +113,16 @@ dependencies {
 	include "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
 	api "org.quiltmc:quilt-config:${project.quilt_config}"
 
+	include "com.electronwill.night-config:core:${project.night_config}"
+	include "com.electronwill.night-config:toml:${project.night_config}"
+	shadow "com.electronwill.night-config:core:${project.night_config}"
+	shadow "com.electronwill.night-config:toml:${project.night_config}"
+
 	development "io.github.llamalad7:mixinextras-fabric:$mixin_extras"
 
 	// also must update in minecraft AND minecraft test
 	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-
 
 	shadow "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
 	shadow "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
