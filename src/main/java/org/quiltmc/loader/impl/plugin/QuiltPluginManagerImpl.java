@@ -877,7 +877,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			Path path = loadState.path;
 			ModLoadOption current = loadState.getCurrentModOption();
 			QuiltStatusNode guiNode = modPathGuiNodes.get(path);
-			if (current == null) {
+			if (current == null && !loadState.isDuplicate) {
 				final UnsupportedType type;
 				if (loadState.unsupportedType != null) {
 					type = loadState.unsupportedType.type;
@@ -1611,6 +1611,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		SortedMap<String, String> unknownIrregularFies = new TreeMap<>();
 
 		path_loop: for (PathLoadState loadState : modPaths.values()) {
+			if (loadState.isDuplicate) {
+				continue;
+			}
 			String type = loadState.unsupportedType != null ? loadState.unsupportedType.type.type : "unknown";
 			for (String plugin : loadState.getPlugins()) {
 				if (!loadState.getLoadedBy(plugin).isEmpty()) {
@@ -1718,6 +1721,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			for (PathLoadState loadState : modPaths.values()) {
+				if (loadState.isDuplicate) {
+					continue;
+				}
 				List<ModLoadOption> fromQuilt = loadState.getLoadedBy(theQuiltPluginContext.pluginId);
 				if (fromQuilt != null && fromQuilt.size() > 0) {
 					continue;
@@ -1970,17 +1976,22 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// TODO: Proper error handling!
 			throw new Error("The plugin '" + ctx.pluginId() + "' failed to load " + describePath(loadState.path), e);
 		}
-		final List<ModLoadOption> list;
-		if (mods != null && mods.length > 0) {
-			list = Collections.unmodifiableList(Arrays.asList(mods.clone()));
-			for (ModLoadOption mod : mods) {
-				addSingleModOption0(mod, ctx, mods.length == 1, guiNode);
+
+		if (mods == null || mods.length == 0) {
+			return Collections.emptyList();
+		}
+
+		List<ModLoadOption> list = new ArrayList<>();
+		boolean isDuplicate = true;
+		for (ModLoadOption mod : mods) {
+			if (addSingleModOption0(mod, ctx, mods.length == 1, guiNode)) {
+				list.add(mod);
+				isDuplicate = false;
 			}
-		} else {
-			list = Collections.emptyList();
 		}
 		loadState.add(this, ctx, list);
-		return list;
+		loadState.isDuplicate |= isDuplicate;
+		return Arrays.asList(mods);
 	}
 
 	void scanModFile(Path file, ModLocationImpl location, QuiltStatusNode guiNode) {
@@ -2170,18 +2181,21 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			);
 		}
 
-		final List<ModLoadOption> list;
+		if (mods == null || mods.length == 0) {
+			return Collections.emptyList();
+		}
 
-		if (mods != null && mods.length > 0) {
-			list = Collections.unmodifiableList(Arrays.asList(mods.clone()));
-			for (ModLoadOption mod : mods) {
-				addSingleModOption0(mod, ctx, mods.length == 1, guiNode);
+		List<ModLoadOption> list = new ArrayList<>();
+		boolean isDuplicate = true;
+		for (ModLoadOption mod : mods) {
+			if (addSingleModOption0(mod, ctx, mods.length == 1, guiNode)) {
+				list.add(mod);
+				isDuplicate = false;
 			}
-		} else {
-			list = Collections.emptyList();
 		}
 		loadState.add(this, ctx, list);
-		return list;
+		loadState.isDuplicate |= isDuplicate;
+		return Arrays.asList(mods);
 	}
 
 	/** Called by {@link MainThreadTask.ScanUnknownFileTask} */
@@ -2226,32 +2240,44 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			throw new Error("The plugin '" + ctx.pluginId() + "' failed to load " + describePath(file), e);
 		}
 
-		final List<ModLoadOption> list;
-		if (mods != null && mods.length > 0) {
-			list = Collections.unmodifiableList(Arrays.asList(mods.clone()));
-			for (ModLoadOption mod : mods) {
-				addSingleModOption0(mod, ctx, mods.length == 1, guiNode);
+		if (mods == null || mods.length == 0) {
+			return Collections.emptyList();
+		}
+
+		List<ModLoadOption> list = new ArrayList<>();
+		boolean isDuplicate = true;
+		for (ModLoadOption mod : mods) {
+			if (addSingleModOption0(mod, ctx, mods.length == 1, guiNode)) {
+				list.add(mod);
+				isDuplicate = false;
 			}
-		} else {
-			list = Collections.emptyList();
 		}
 		loadState.add(this, ctx, list);
-		return list;
+		loadState.isDuplicate |= isDuplicate;
+		return Arrays.asList(mods);
 	}
 
 	void addSingleModOption(ModLoadOption mod, BasePluginContext provider, boolean only, QuiltStatusNode guiNode) {
 		Path from = mod.from();
-		addSingleModOption0(mod, provider, only, guiNode);
+		boolean added = addSingleModOption0(mod, provider, only, guiNode);
 
 		if (mod instanceof AliasedLoadOption) {
-			addLoadOption(mod, provider);
+			if (added) {
+				addLoadOption(mod, provider);
+			}
 		} else {
 			PathLoadState loadState = modPaths.computeIfAbsent(from, f -> new PathLoadState.ExtraMod(from));
-			loadState.add(this, provider, Collections.singletonList(mod));
+			if (added) {
+				loadState.add(this, provider, Collections.singletonList(mod));
+			} else {
+				loadState.isDuplicate = true;
+			}
 		}
 	}
 
-	private void addSingleModOption0(ModLoadOption mod, BasePluginContext provider, boolean only, QuiltStatusNode guiNode) {
+	/** @return False if the mod was rejected by this being a development environment and it's a duplicate of another
+	 *         mod, true otherwise. */
+	private boolean addSingleModOption0(ModLoadOption mod, BasePluginContext provider, boolean only, QuiltStatusNode guiNode) {
 		String id = mod.id();
 		Version version = mod.version();
 		Path from = mod.from();
@@ -2261,7 +2287,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		ModLoadOption current = set.byVersionSingles.get(version);
 		if (current != null && current.isMandatory() && mod.isMandatory() && current.getClass() == mod.getClass() && QuiltLoader.isDevelopmentEnvironment()) {
 			Log.warn(LogCategory.SOLVING, String.format("Ignoring duplicate mod %s of the same version %s loaded from %s", id, version, from));
-			return;
+			return false;
 		}
 
 		List<ModLoadOption> already = set.byVersionAll.computeIfAbsent(version, v -> new ArrayList<>());
@@ -2293,6 +2319,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		guiNode.addChild(QuiltLoaderText.translate("gui.text.id", id));
 		guiNode.addChild(QuiltLoaderText.translate("gui.text.version", version.raw()));
+
+		return true;
 	}
 
 	// ###############

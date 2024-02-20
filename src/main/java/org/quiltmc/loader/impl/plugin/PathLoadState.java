@@ -27,10 +27,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.gui.QuiltDisplayedError;
-import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
-import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedModDetails;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -42,6 +39,13 @@ abstract class PathLoadState {
 	final Path path;
 	final ModLocationImpl location;
 	UnsupportedModDetails unsupportedType = null;
+
+	/** Set if this path is an exact duplicate of another mandatory mod, and we're on the classpath, and we're in a dev
+	 * environment
+	 * 
+	 * @see QuiltPluginManagerImpl#addSingleModOption0(ModLoadOption, BasePluginContext, boolean,
+	 *      org.quiltmc.loader.impl.gui.QuiltStatusNode) */
+	boolean isDuplicate = false;
 
 	/** Map of plugin ID to list of {@link ModLoadOption} which was loaded by that plugin. This contains empty lists
 	 * rather than null values if the plugin didn't load anything from the mod. */
