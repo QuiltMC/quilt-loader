@@ -21,6 +21,7 @@ dependencies {
 
 	implementation project(":minecraft")
 	implementation project(":minecraft").sourceSets.main.output
+	implementation project(":")
 	implementation project(":").sourceSets.main.output
 	// so that it works on runtime
 	implementation "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"

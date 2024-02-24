@@ -124,7 +124,7 @@ public class VersionRangeImpl extends AbstractSet<VersionInterval> implements Ve
 			sb.append(iter.next());
 
 			while (iter.hasNext()) {
-				sb.append(" ∪ "); //TODO: there is probably a more logical way of notating this, but this is what i learned.
+				sb.append(" U "); //TODO: there is probably a more logical way of notating this, but this is what i learned.
 				sb.append(iter.next());
 			}
 
