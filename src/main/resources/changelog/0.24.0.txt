@@ -5,7 +5,7 @@ Features:
       is now described as `Iris requires version 0.5.7, 0.5.8, or 0.5.9 of sodium`
 - Updated to Quilt Config 1.2 (ix0rai)
 - Added a new unknown or unsupported file screen, which shows a warning if neoforge, forge, or modloader mods are found in the mods folder, or any other unknown files.
-- That screen is also shown in a table in the log.
+    - That screen is also shown in a table in the log.
 - Moved more of loaders GUI abstractions to the api package.
     - Most mods will have no use for these, as they are primarily intended for early warnings.
 - [#385](https://github.com/QuiltMC/quilt-loader/pull/385) Added "Path Retention" to the plugin management system. This is a major improvement, and brings loader plugins much closer to stabilising.
@@ -13,7 +13,7 @@ Features:
 - Improved fabric to quilt metadata handling.
 - Added "net.fabricmc.loader.impl.gui.FabricGuiEntry" and "net.fabricmc.loader.impl.gui.FabricStatusTree", as some mods use them. (Although these are *internal* classes in fabric-loader, so mods are discouraged from using them).
 
-Features from Fabric Loader `0.15.7`:
+Features from Fabric Loader `0.15.4` through `0.15.7`:
 
 - [FabricLoader#876](https://github.com/FabricMC/fabric-loader/pull/876) [commit](https://github.com/QuiltMC/quilt-loader/commit/3389b7c222af1448e2625f593be189ca9c4d573d) Fix inputGameJars ObjectShare mutating after being set (Originally by tildejustin)
 - [FabricLoader#890](https://github.com/FabricMC/fabric-loader/pull/890) [commit](https://github.com/QuiltMC/quilt-loader/commit/e6bdf3b62ae528eb754ec625f7a306790fa4f108) Added support for 1.20.5 in 2024 in McVersionLookup. (Originally by WinPlay02)
