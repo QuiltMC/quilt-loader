@@ -58,10 +58,15 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @SuppressWarnings("unchecked") // TODO make more specific
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
-	public QuiltJoinedFileSystemProvider() {}
+	public QuiltJoinedFileSystemProvider() {
+		if (instance == null) {
+			instance = this;
+		}
+	}
 
 	public static final String SCHEME = "quilt.jfs";
 
+	private static QuiltJoinedFileSystemProvider instance;
 	private static final Map<String, WeakReference<QuiltJoinedFileSystem>> ACTIVE_FILESYSTEMS = new HashMap<>();
 
 	static {
@@ -107,12 +112,25 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 	}
 
 	public static QuiltJoinedFileSystemProvider instance() {
+		QuiltJoinedFileSystemProvider found = findInstance();
+		if (found != null) {
+			return found;
+		}
+		throw new IllegalStateException("Unable to load QuiltJoinedFileSystemProvider via services!");
+	}
+
+	public static QuiltJoinedFileSystemProvider findInstance() {
+		if (instance != null) {
+			return instance;
+		}
+
 		for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
 			if (provider instanceof QuiltJoinedFileSystemProvider) {
 				return (QuiltJoinedFileSystemProvider) provider;
 			}
 		}
-		throw new IllegalStateException("Unable to load QuiltJoinedFileSystemProvider via services!");
+
+		return instance;
 	}
 
 	@Override

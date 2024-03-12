@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
@@ -30,20 +29,39 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class QuiltMemoryFileSystemProvider extends QuiltMapFileSystemProvider<QuiltMemoryFileSystem, QuiltMemoryPath> {
-	public QuiltMemoryFileSystemProvider() {}
+	public QuiltMemoryFileSystemProvider() {
+		if (instance == null) {
+			instance = this;
+		}
+	}
 
 	public static final String SCHEME = "quilt.mfs";
+
+	private static QuiltMemoryFileSystemProvider instance;
 
 	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
 	static final QuiltFSP<QuiltMemoryFileSystem> PROVIDER = new QuiltFSP<>(SCHEME);
 
 	public static QuiltMemoryFileSystemProvider instance() {
+		QuiltMemoryFileSystemProvider found = findInstance();
+		if (found != null) {
+			return found;
+		}
+		throw new IllegalStateException("Unable to load QuiltMemoryFileSystemProvider via services!");
+	}
+
+	public static QuiltMemoryFileSystemProvider findInstance() {
+		if (instance != null) {
+			return instance;
+		}
+
 		for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
 			if (provider instanceof QuiltMemoryFileSystemProvider) {
 				return (QuiltMemoryFileSystemProvider) provider;
 			}
 		}
-		throw new IllegalStateException("Unable to load QuiltMemoryFileSystemProvider via services!");
+
+		return instance;
 	}
 
 	@Override

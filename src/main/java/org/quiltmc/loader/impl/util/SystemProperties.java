@@ -101,6 +101,7 @@ public final class SystemProperties {
 	public static final String DISABLE_BUILTIN_MIXIN_EXTRAS = "loader.disable_builtin_mixin_extras";
 	/** whether the loader should display unsupported mods with the GUI or ignore and continue starting up the game. */
 	public static final String IGNORE_UNSUPPORTED_MODS = "loader.ignore_unsupported_mods";
+	public static final String BOOT_LIBRARY_ROOT = "loader.boot.library_root";
 
 	/** Disables loader from registering its {@link URLStreamHandlerFactory} with
 	 * {@link URL#setURLStreamHandlerFactory(URLStreamHandlerFactory)}. This */

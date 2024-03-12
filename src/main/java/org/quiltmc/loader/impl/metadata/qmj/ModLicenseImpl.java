@@ -17,7 +17,7 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.JsonReader;
+import org.quiltmc.parsers.json.JsonReader;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;

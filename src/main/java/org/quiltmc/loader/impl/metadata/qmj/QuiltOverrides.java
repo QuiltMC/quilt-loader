@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LArray;
 import org.quiltmc.loader.api.LoaderValue.LObject;
