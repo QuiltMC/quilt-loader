@@ -30,11 +30,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonToken;
-import org.quiltmc.json5.JsonWriter;
-import org.quiltmc.json5.exception.MalformedSyntaxException;
-import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.JsonToken;
+import org.quiltmc.parsers.json.JsonWriter;
+import org.quiltmc.parsers.json.MalformedSyntaxException;
+import org.quiltmc.parsers.json.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

@@ -23,9 +23,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.parsers.json.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
