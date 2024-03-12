@@ -29,18 +29,37 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltZipFileSystemProvider extends QuiltMapFileSystemProvider<QuiltZipFileSystem, QuiltZipPath> {
+	public QuiltZipFileSystemProvider() {
+		if (instance == null) {
+			instance = this;
+		}
+	}
 
 	public static final String SCHEME = "quilt.zfs";
 	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
 	static final QuiltFSP<QuiltZipFileSystem> PROVIDER = new QuiltFSP<>(SCHEME);
+	private static QuiltZipFileSystemProvider instance;
 
 	public static QuiltZipFileSystemProvider instance() {
+		QuiltZipFileSystemProvider found = findInstance();
+		if (found != null) {
+			return found;
+		}
+		throw new IllegalStateException("Unable to load QuiltZipFileSystemProvider via services!");
+	}
+
+	public static QuiltZipFileSystemProvider findInstance() {
+		if (instance != null) {
+			return instance;
+		}
+
 		for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
 			if (provider instanceof QuiltZipFileSystemProvider) {
 				return (QuiltZipFileSystemProvider) provider;
 			}
 		}
-		throw new IllegalStateException("Unable to load QuiltZipFileSystemProvider via services!");
+
+		return instance;
 	}
 
 	@Override
