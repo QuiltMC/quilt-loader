@@ -806,7 +806,7 @@ class SolverErrorHelper {
 			error.appendReportText(report.toString(), "");
 
 			if (!reason.isEmpty()) {
-				error.appendReportText("Reason: " + reason, "");
+				error.appendReportText("Breaking mod's reason: " + reason, "");
 			}
 
 			for (ModLoadOption mod : from) {
