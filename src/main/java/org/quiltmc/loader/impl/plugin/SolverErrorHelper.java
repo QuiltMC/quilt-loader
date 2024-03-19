@@ -553,7 +553,8 @@ class SolverErrorHelper {
 		ModLoadOption from = modC.option;
 		Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
 		allBreakingOptions.addAll(ruleE.getConflictingOptions());
-		this.errors.add(new BreakageError(modOn, versionsOn, from, allBreakingOptions));
+		String reason = ruleE.publicDep.reason();
+		this.errors.add(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
 
 		return true;
 	}
@@ -708,13 +709,15 @@ class SolverErrorHelper {
 		final VersionRange versionsOn;
 		final Set<ModLoadOption> from = new LinkedHashSet<>();
 		final Set<ModLoadOption> allBreakingOptions;
+		final String reason;
 
 		BreakageError(ModDependencyIdentifier modOn, VersionRange versionsOn, ModLoadOption from, Set<
-			ModLoadOption> allBreakingOptions) {
+			ModLoadOption> allBreakingOptions, String reason) {
 			this.modOn = modOn;
 			this.versionsOn = versionsOn;
 			this.from.add(from);
 			this.allBreakingOptions = allBreakingOptions;
+			this.reason = reason;
 		}
 
 		@Override
@@ -761,6 +764,11 @@ class SolverErrorHelper {
 
 			setIconFromMod(manager, mandatoryMod, error);
 
+			if (!reason.isEmpty()) {
+				error.appendDescription(QuiltLoaderText.translate("error.reason", reason));
+				// A newline after the reason was desired here, but do you think Swing loves nice things?
+			}
+
 			Map<Path, ModLoadOption> realPaths = new LinkedHashMap<>();
 
 			for (ModLoadOption mod : from) {
@@ -797,8 +805,12 @@ class SolverErrorHelper {
 			report.append(", which is present!");
 			error.appendReportText(report.toString(), "");
 
+			if (!reason.isEmpty()) {
+				error.appendReportText("Reason: " + reason, "");
+			}
+
 			for (ModLoadOption mod : from) {
-				error.appendReportText("- " + manager.describePath(mod.from()));
+				error.appendReportText("- " + manager.describePath(mod.from()), "");
 			}
 		}
 	}
