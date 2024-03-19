@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.transformer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.AnnotationVisitor;
@@ -37,7 +38,7 @@ public class RequiresStrippingVisitor extends ClassVisitor {
 
 	private static final String REQUIRES_DESCRIPTOR = Type.getDescriptor(Requires.class);
 
-	private final String[] modList;
+	private final List<String> modList;
 
 	private String[] interfaces;
 
@@ -64,21 +65,24 @@ public class RequiresStrippingVisitor extends ClassVisitor {
 
 		@Override
 		public AnnotationVisitor visitArray(String name) {
-			AnnotationVisitor visitor = super.visitArray(name);
+			if ("mods".equals(name)) {
+				return new AnnotationVisitor(api) {
 
-			return new AnnotationVisitor(api, visitor) {
+					@Override
+					public void visit(String name, Object value) {
+						if (!isModLoaded(String.valueOf(value), modList)) {
+							onModsMismatch.run();
 
-				@Override
-				public void visit(String name, Object value) {
-					if ("mods".equals(name) && !isModLoaded(String.valueOf(value), modList)) {
-						onModsMismatch.run();
-
-						if (stripLambdas && onModsMismatchLambdas != null) {
-							onModsMismatchLambdas.run();
+							if (stripLambdas && onModsMismatchLambdas != null) {
+								onModsMismatchLambdas.run();
+							}
 						}
 					}
-				}
-			};
+				};
+			}
+			else {
+				return null;
+			}
 		}
 	}
 
@@ -95,7 +99,9 @@ public class RequiresStrippingVisitor extends ClassVisitor {
 	public RequiresStrippingVisitor(int api, StrippingDataContainer data, List<ModLoadOption> modList) {
 		super(api);
 		this.data = data;
-		this.modList = modList.stream().map(ModLoadOption::id).toArray(String[]::new);
+		List<String> list = new ArrayList<>();
+		modList.stream().map(ModLoadOption::id).forEach(list::add);
+		this.modList = list;
 	}
 
 	@Override
@@ -161,12 +167,7 @@ public class RequiresStrippingVisitor extends ClassVisitor {
 		};
 	}
 
-	private boolean isModLoaded(String requirement, String[] loadedMods) {
-		for (String mod : loadedMods) {
-			if (mod.equals(requirement)) {
-				return true;
-			}
-		}
-		return false;
+	private boolean isModLoaded(String requirement, List<String> loadedMods) {
+		return loadedMods.contains(requirement);
 	}
 }
