@@ -18,6 +18,7 @@ package org.quiltmc.loader.impl.transformer;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
@@ -34,15 +35,17 @@ import org.objectweb.asm.ClassWriter;
 
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 
+import org.quiltmc.loader.impl.util.StrippingDataContainer;
+
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
-	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
+	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, List<ModLoadOption> modList, byte[] bytes) {
 		boolean isMinecraftClass = mod.id().equals("minecraft");
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
-		boolean environmentStrip = !isMinecraftClass || isDevelopment;
+		boolean strip = !isMinecraftClass || isDevelopment;
 		boolean applyAccessWidener = isMinecraftClass && accessWidener.getTargets().contains(name);
 
-		if (!transformAccess && !environmentStrip && !applyAccessWidener) {
+		if (!transformAccess && !strip && !applyAccessWidener) {
 			return bytes;
 		}
 
@@ -51,9 +54,14 @@ final class QuiltTransformer {
 		ClassVisitor visitor = null;
 		int visitorCount = 0;
 
-		if (environmentStrip) {
-			EnvironmentStrippingData stripData = new EnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType);
-			classReader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+		if (strip) {
+			StrippingDataContainer stripData = new StrippingDataContainer();
+
+			EnvironmentStrippingVisitor envStrip = new EnvironmentStrippingVisitor(QuiltLoaderImpl.ASM_VERSION, stripData, envType);
+			classReader.accept(envStrip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+
+			RequiresStrippingVisitor requiresStrip = new RequiresStrippingVisitor(QuiltLoaderImpl.ASM_VERSION, stripData, modList);
+			classReader.accept(requiresStrip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			if (stripData.stripEntireClass()) {
 				cache.hideClass(name);

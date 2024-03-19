@@ -16,9 +16,6 @@
 
 package org.quiltmc.loader.impl.transformer;
 
-import java.util.Collection;
-import java.util.HashSet;
-
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -36,9 +33,11 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.api.EnvironmentInterface;
 import net.fabricmc.api.EnvironmentInterfaces;
 
+import org.quiltmc.loader.impl.util.StrippingDataContainer;
+
 /** Scans a class for Environment and EnvironmentInterface annotations to figure out what needs to be stripped. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class EnvironmentStrippingData extends ClassVisitor {
+public class EnvironmentStrippingVisitor extends ClassVisitor {
 	// Fabric annotations
 	private static final String ENVIRONMENT_DESCRIPTOR = Type.getDescriptor(Environment.class);
 	private static final String ENVIRONMENT_INTERFACE_DESCRIPTOR = Type.getDescriptor(EnvironmentInterface.class);
@@ -51,14 +50,9 @@ public class EnvironmentStrippingData extends ClassVisitor {
 	private final EnvType envType;
 	private final String envTypeString;
 
-	private boolean stripEntireClass = false;
 	private String[] interfaces;
-	private final Collection<String> stripInterfaces = new HashSet<>();
-	private final Collection<String> stripFields = new HashSet<>();
-	private final Collection<String> stripMethods = new HashSet<>();
 
-	/** Every method contained in this will also be contained in {@link #stripMethods}. */
-	private final Collection<String> stripMethodLambdas = new HashSet<>();
+	private final StrippingDataContainer data;
 
 	private class FabricEnvironmentAnnotationVisitor extends AnnotationVisitor {
 		private final Runnable onEnvMismatch;
@@ -82,10 +76,10 @@ public class EnvironmentStrippingData extends ClassVisitor {
 
 		private boolean stripLambdas = true;
 
-		private QuiltEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch, Runnable onEnvMismatchLambda) {
+		private QuiltEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch, Runnable onEnvMismatchLambdas) {
 			super(api);
 			this.onEnvMismatch = onEnvMismatch;
-			this.onEnvMismatchLambdas = onEnvMismatchLambda;
+			this.onEnvMismatchLambdas = onEnvMismatchLambdas;
 		}
 
 		@Override
@@ -129,7 +123,7 @@ public class EnvironmentStrippingData extends ClassVisitor {
 		@Override
 		public void visitEnd() {
 			if (envMismatch) {
-				stripInterfaces.add(itf.getInternalName());
+				data.getStripInterfaces().add(itf.getInternalName());
 			}
 		}
 	}
@@ -151,8 +145,9 @@ public class EnvironmentStrippingData extends ClassVisitor {
 		return null;
 	}
 
-	public EnvironmentStrippingData(int api, EnvType envType) {
+	public EnvironmentStrippingVisitor(int api, StrippingDataContainer data, EnvType envType) {
 		super(api);
+		this.data = data;
 		this.envType = envType;
 		this.envTypeString = envType.name();
 	}
@@ -166,14 +161,14 @@ public class EnvironmentStrippingData extends ClassVisitor {
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (CLIENT_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.SERVER) {
-				stripEntireClass = true;
+				data.enableStripEntireClass();
 			}
 		} else if (SERVER_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.CLIENT) {
-				stripEntireClass = true;
+				data.enableStripEntireClass();
 			}
 		} else if (ENVIRONMENT_DESCRIPTOR.equals(descriptor)) {
-			return new FabricEnvironmentAnnotationVisitor(api, () -> stripEntireClass = true);
+			return new FabricEnvironmentAnnotationVisitor(api, data::enableStripEntireClass);
 		} else if (ENVIRONMENT_INTERFACE_DESCRIPTOR.equals(descriptor)) {
 			return new FabricEnvironmentInterfaceAnnotationVisitor(api);
 		} else if (ENVIRONMENT_INTERFACES_DESCRIPTOR.equals(descriptor)) {
@@ -224,7 +219,7 @@ public class EnvironmentStrippingData extends ClassVisitor {
 		}
 
 		if (annotationEnv != envType) {
-			stripInterfaces.add(interfaces[interfaceIdx]);
+			data.getStripInterfaces().add(interfaces[interfaceIdx]);
 		}
 
 		return null;
@@ -235,7 +230,7 @@ public class EnvironmentStrippingData extends ClassVisitor {
 		return new FieldVisitor(api) {
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-				return visitMemberAnnotation(descriptor, visible, () -> stripFields.add(name + descriptor), null);
+				return visitMemberAnnotation(descriptor, visible, () -> data.getStripFields().add(name + descriptor), null);
 			}
 		};
 	}
@@ -248,33 +243,9 @@ public class EnvironmentStrippingData extends ClassVisitor {
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 				return visitMemberAnnotation(
-					descriptor, visible, () -> stripMethods.add(methodId), () -> stripMethodLambdas.add(methodId)
+					descriptor, visible, () -> data.getStripMethods().add(methodId), () -> data.getStripMethodLambdas().add(methodId)
 				);
 			}
 		};
-	}
-
-	public boolean stripEntireClass() {
-		return stripEntireClass;
-	}
-
-	public Collection<String> getStripInterfaces() {
-		return stripInterfaces;
-	}
-
-	public Collection<String> getStripFields() {
-		return stripFields;
-	}
-
-	public Collection<String> getStripMethods() {
-		return stripMethods;
-	}
-
-	public Collection<String> getStripMethodLambdas() {
-		return stripMethodLambdas;
-	}
-
-	public boolean isEmpty() {
-		return stripInterfaces.isEmpty() && stripFields.isEmpty() && stripMethods.isEmpty();
 	}
 }

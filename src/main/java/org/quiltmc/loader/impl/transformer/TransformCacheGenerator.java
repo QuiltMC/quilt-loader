@@ -64,6 +64,7 @@ final class TransformCacheGenerator {
 					accessWidener,
 					name,
 					mod,
+					modList,
 					classBytes
 			);
 		});

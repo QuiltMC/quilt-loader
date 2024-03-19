@@ -29,10 +29,12 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.transformer.ClassStripper;
-import org.quiltmc.loader.impl.transformer.EnvironmentStrippingData;
+import org.quiltmc.loader.impl.transformer.EnvironmentStrippingVisitor;
 import org.quiltmc.loader.impl.transformer.LambdaStripCalculator;
 
 import net.fabricmc.api.EnvType;
+
+import org.quiltmc.loader.impl.util.StrippingDataContainer;
 
 public class LambdaStripTester {
 
@@ -63,8 +65,10 @@ public class LambdaStripTester {
 					| ClassReader.SKIP_FRAMES
 			);
 
-			EnvironmentStrippingData stripData = new EnvironmentStrippingData(Opcodes.ASM9, EnvType.SERVER);
-			reader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+			StrippingDataContainer stripData = new StrippingDataContainer();
+
+			EnvironmentStrippingVisitor envStrip = new EnvironmentStrippingVisitor(Opcodes.ASM9, stripData, EnvType.SERVER);
+			reader.accept(envStrip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			Collection<String> stripMethods = stripData.getStripMethods();
 
