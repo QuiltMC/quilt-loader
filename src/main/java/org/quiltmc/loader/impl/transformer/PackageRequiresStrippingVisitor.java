@@ -54,7 +54,7 @@ public class PackageRequiresStrippingVisitor extends ClassVisitor {
 						return new AnnotationVisitor(api) {
 							@Override
 							public void visit(String name, Object value) {
-								if (modList.contains(String.valueOf(value))) {
+								if (!modList.contains(String.valueOf(value))) {
 									data.enableStripEntirePackage();
 								}
 							}
