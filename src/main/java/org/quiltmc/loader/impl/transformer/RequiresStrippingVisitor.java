@@ -99,9 +99,8 @@ public class RequiresStrippingVisitor extends ClassVisitor {
 	public RequiresStrippingVisitor(int api, StrippingDataContainer data, List<ModLoadOption> modList) {
 		super(api);
 		this.data = data;
-		List<String> list = new ArrayList<>();
-		modList.stream().map(ModLoadOption::id).forEach(list::add);
-		this.modList = list;
+		this.modList = new ArrayList<>();
+		modList.stream().map(ModLoadOption::id).forEach(this.modList::add);
 	}
 
 	@Override
