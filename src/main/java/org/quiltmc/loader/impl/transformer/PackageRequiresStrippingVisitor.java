@@ -19,7 +19,7 @@ package org.quiltmc.loader.impl.transformer;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
-import org.quiltmc.loader.api.minecraft.Requires;
+import org.quiltmc.loader.api.Requires;
 import org.quiltmc.loader.impl.util.PackageStrippingDataContainer;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

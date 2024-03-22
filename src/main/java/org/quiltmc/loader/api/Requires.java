@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api.minecraft;
+package org.quiltmc.loader.api;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
