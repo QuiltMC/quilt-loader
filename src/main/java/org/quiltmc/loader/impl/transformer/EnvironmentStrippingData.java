@@ -33,57 +33,6 @@ import net.fabricmc.api.EnvType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class EnvironmentStrippingData extends StrippingData {
 
-	private class FabricEnvironmentAnnotationVisitor extends StrippingData.FabricEnvironmentAnnotationVisitor {
-
-		private FabricEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch) {
-			super(api, onEnvMismatch);
-		}
-
-		@Override
-		public void visitEnum(String name, String descriptor, String value) {
-			super.visitEnum(name, descriptor, value);
-		}
-	}
-
-	private class FabricEnvironmentInterfaceAnnotationVisitor extends StrippingData.FabricEnvironmentInterfaceAnnotationVisitor {
-
-		private FabricEnvironmentInterfaceAnnotationVisitor(int api) {
-			super(api);
-		}
-
-		@Override
-		public void visitEnum(String name, String descriptor, String value) {
-			super.visitEnum(name, descriptor, value);
-		}
-
-		@Override
-		public void visit(String name, Object value) {
-			super.visit(name, value);
-		}
-
-		@Override
-		public void visitEnd() {
-			super.visitEnd();
-		}
-	}
-
-	private class QuiltEnvironmentAnnotationVisitor extends StrippingData.QuiltEnvironmentAnnotationVisitor {
-
-		private QuiltEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch, Runnable onEnvMismatchLambdas) {
-			super(api, onEnvMismatch, onEnvMismatchLambdas);
-		}
-
-		@Override
-		public void visit(String name, Object value) {
-			super.visit(name, value);
-		}
-
-		@Override
-		public void visitEnd() {
-			super.visitEnd();
-		}
-	}
-
 	AnnotationVisitor visitMemberAnnotation(String descriptor, boolean visible, Runnable onEnvMismatch, Runnable onEnvMismatchLambdas) {
 		return super.visitMemberAnnotation(descriptor, visible, onEnvMismatch, onEnvMismatchLambdas);
 	}

@@ -68,10 +68,10 @@ public class StrippingData extends ClassVisitor {
 
 	private String[] interfaces;
 
-	class FabricEnvironmentAnnotationVisitor extends AnnotationVisitor {
+	private class FabricEnvironmentAnnotationVisitor extends AnnotationVisitor {
 		private final Runnable onEnvMismatch;
 
-		FabricEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch) {
+		private FabricEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch) {
 			super(api);
 			this.onEnvMismatch = onEnvMismatch;
 		}
@@ -84,11 +84,11 @@ public class StrippingData extends ClassVisitor {
 		}
 	}
 
-	class FabricEnvironmentInterfaceAnnotationVisitor extends AnnotationVisitor {
+	private class FabricEnvironmentInterfaceAnnotationVisitor extends AnnotationVisitor {
 		private boolean envMismatch;
 		private Type itf;
 
-		FabricEnvironmentInterfaceAnnotationVisitor(int api) {
+		private FabricEnvironmentInterfaceAnnotationVisitor(int api) {
 			super(api);
 		}
 
@@ -114,13 +114,13 @@ public class StrippingData extends ClassVisitor {
 		}
 	}
 
-	class QuiltEnvironmentAnnotationVisitor extends AnnotationVisitor {
+	private class QuiltEnvironmentAnnotationVisitor extends AnnotationVisitor {
 		private final Runnable onEnvMismatch;
 		private final Runnable onEnvMismatchLambdas;
 
 		private boolean stripLambdas = true;
 
-		QuiltEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch, Runnable onEnvMismatchLambdas) {
+		private QuiltEnvironmentAnnotationVisitor(int api, Runnable onEnvMismatch, Runnable onEnvMismatchLambdas) {
 			super(api);
 			this.onEnvMismatch = onEnvMismatch;
 			this.onEnvMismatchLambdas = onEnvMismatchLambdas;
