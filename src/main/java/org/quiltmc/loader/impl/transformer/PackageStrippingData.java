@@ -16,44 +16,73 @@
 
 package org.quiltmc.loader.impl.transformer;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
+import org.quiltmc.loader.api.Requires;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
 import org.quiltmc.loader.api.minecraft.DedicatedServerOnly;
-import org.quiltmc.loader.impl.util.PackageStrippingDataContainer;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.api.EnvType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class PackageEnvironmentStrippingVisitor extends ClassVisitor {
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+public class PackageStrippingData extends ClassVisitor {
 
-	private static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
-	private static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
+	static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
+	static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
+	private static final String REQUIRES_DESCRIPTOR = Type.getDescriptor(Requires.class);
 
 	private final EnvType envType;
+	private final List<String> mods;
 
-	private final PackageStrippingDataContainer data;
+	private boolean stripEntirePackage = false;
 
-	public PackageEnvironmentStrippingVisitor(int api, PackageStrippingDataContainer data, EnvType envType) {
+	public PackageStrippingData(int api, EnvType envType, Map<String, String> modCodeSourceMap) {
 		super(api);
-		this.data = data;
 		this.envType = envType;
+		this.mods = new ArrayList<>(modCodeSourceMap.keySet());
 	}
 
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (CLIENT_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.SERVER) {
-				data.enableStripEntirePackage();
+				stripEntirePackage = true;
 			}
 		} else if (SERVER_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.CLIENT) {
-				data.enableStripEntirePackage();
+				stripEntirePackage = true;
 			}
+		} else if (REQUIRES_DESCRIPTOR.equals(descriptor)) {
+			return new AnnotationVisitor(api) {
+				@Override
+				public AnnotationVisitor visitArray(String name) {
+					if ("value".equals(name)) {
+						return new AnnotationVisitor(api) {
+							@Override
+							public void visit(String name, Object value) {
+								if (!mods.contains(String.valueOf(value))) {
+									stripEntirePackage = true;
+								}
+							}
+						};
+					}
+					else {
+						return null;
+					}
+				}
+			};
 		}
 		return null;
+	}
+
+	public boolean stripEntirePackage() {
+		return this.stripEntirePackage;
 	}
 }

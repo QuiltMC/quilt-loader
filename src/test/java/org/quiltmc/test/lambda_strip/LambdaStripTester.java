@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -29,12 +30,11 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.transformer.ClassStripper;
-import org.quiltmc.loader.impl.transformer.EnvironmentStrippingVisitor;
 import org.quiltmc.loader.impl.transformer.LambdaStripCalculator;
 
 import net.fabricmc.api.EnvType;
 
-import org.quiltmc.loader.impl.util.StrippingDataContainer;
+import org.quiltmc.loader.impl.transformer.StrippingData;
 
 public class LambdaStripTester {
 
@@ -65,14 +65,12 @@ public class LambdaStripTester {
 					| ClassReader.SKIP_FRAMES
 			);
 
-			StrippingDataContainer stripData = new StrippingDataContainer();
+			StrippingData strip = new StrippingData(Opcodes.ASM9, EnvType.SERVER, new ArrayList<>());
+			reader.accept(strip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
-			EnvironmentStrippingVisitor envStrip = new EnvironmentStrippingVisitor(Opcodes.ASM9, stripData, EnvType.SERVER);
-			reader.accept(envStrip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+			Collection<String> stripMethods = strip.getStripMethods();
 
-			Collection<String> stripMethods = stripData.getStripMethods();
-
-			LambdaStripCalculator calc = new LambdaStripCalculator(Opcodes.ASM9, stripData.getStripMethodLambdas());
+			LambdaStripCalculator calc = new LambdaStripCalculator(Opcodes.ASM9, strip.getStripMethodLambdas());
 			reader.accept(calc, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 			Collection<String> additionalStripMethods = calc.computeAdditionalMethodsToStrip();
 
@@ -83,7 +81,7 @@ public class LambdaStripTester {
 
 			ClassWriter classWriter = new ClassWriter(null, 0);
 			ClassStripper visitor = new ClassStripper(
-				QuiltLoaderImpl.ASM_VERSION, classWriter, stripData.getStripInterfaces(), stripData.getStripFields(),
+				QuiltLoaderImpl.ASM_VERSION, classWriter, strip.getStripInterfaces(), strip.getStripFields(),
 				stripMethods
 			);
 			reader.accept(visitor, 0);

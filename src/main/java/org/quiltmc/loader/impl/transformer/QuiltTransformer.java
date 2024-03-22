@@ -18,7 +18,6 @@ package org.quiltmc.loader.impl.transformer;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
@@ -35,11 +34,9 @@ import org.objectweb.asm.ClassWriter;
 
 import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 
-import org.quiltmc.loader.impl.util.StrippingDataContainer;
-
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
-	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, List<ModLoadOption> modList, byte[] bytes) {
+	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
 		boolean isMinecraftClass = mod.id().equals("minecraft");
 		boolean transformAccess = isMinecraftClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
 		boolean strip = !isMinecraftClass || isDevelopment;
@@ -55,25 +52,20 @@ final class QuiltTransformer {
 		int visitorCount = 0;
 
 		if (strip) {
-			StrippingDataContainer stripData = new StrippingDataContainer();
+			StrippingData data = new StrippingData(QuiltLoaderImpl.ASM_VERSION, envType, cache.getMods());
+			classReader.accept(data, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
-			EnvironmentStrippingVisitor envStrip = new EnvironmentStrippingVisitor(QuiltLoaderImpl.ASM_VERSION, stripData, envType);
-			classReader.accept(envStrip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-
-			RequiresStrippingVisitor requiresStrip = new RequiresStrippingVisitor(QuiltLoaderImpl.ASM_VERSION, stripData, modList);
-			classReader.accept(requiresStrip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-
-			if (stripData.stripEntireClass()) {
+			if (data.stripEntireClass()) {
 				cache.hideClass(name);
 				return null;
 			}
 
-			Collection<String> stripMethods = stripData.getStripMethods();
+			Collection<String> stripMethods = data.getStripMethods();
 
 			boolean stripAnyLambdas = false;
 
-			if (!stripData.getStripMethodLambdas().isEmpty()) {
-				LambdaStripCalculator calc = new LambdaStripCalculator(QuiltLoaderImpl.ASM_VERSION, stripData.getStripMethodLambdas());
+			if (!data.getStripMethodLambdas().isEmpty()) {
+				LambdaStripCalculator calc = new LambdaStripCalculator(QuiltLoaderImpl.ASM_VERSION, data.getStripMethodLambdas());
 				classReader.accept(calc, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 				Collection<String> additionalStripMethods = calc.computeAdditionalMethodsToStrip();
 
@@ -85,7 +77,7 @@ final class QuiltTransformer {
 				}
 			}
 
-			if (!stripData.isEmpty()) {
+			if (!data.isEmpty()) {
 
 				if (stripAnyLambdas) {
 					// ClassWriter has a (useful) optimisation that copies over the
@@ -98,7 +90,7 @@ final class QuiltTransformer {
 					classWriter = new ClassWriter(classReader, 0);
 				}
 
-				visitor = new ClassStripper(QuiltLoaderImpl.ASM_VERSION, classWriter, stripData.getStripInterfaces(), stripData.getStripFields(), stripMethods);
+				visitor = new ClassStripper(QuiltLoaderImpl.ASM_VERSION, classWriter, data.getStripInterfaces(), data.getStripFields(), stripMethods);
 				visitorCount++;
 			}
 		}
