@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.quiltmc.json5.JsonReader;
-import org.quiltmc.json5.JsonWriter;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.JsonWriter;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;

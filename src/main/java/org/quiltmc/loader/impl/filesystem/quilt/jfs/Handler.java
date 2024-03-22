@@ -23,8 +23,6 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystemProvider;
@@ -36,7 +34,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class Handler extends URLStreamHandler {
 	@Override
-	protected URLConnection openConnection(URL u) throws IOException {
+	public URLConnection openConnection(URL u) throws IOException {
 		QuiltJoinedPath path;
 		try {
 			path = QuiltJoinedFileSystemProvider.instance().getPath(u.toURI());
@@ -58,7 +56,7 @@ public class Handler extends URLStreamHandler {
 	}
 
 	@Override
-	protected InetAddress getHostAddress(URL u) {
+	public InetAddress getHostAddress(URL u) {
 		return null;
 	}
 }

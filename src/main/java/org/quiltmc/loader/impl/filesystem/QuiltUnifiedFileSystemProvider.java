@@ -40,20 +40,39 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltUnifiedFileSystemProvider extends QuiltMapFileSystemProvider<QuiltUnifiedFileSystem, QuiltUnifiedPath> {
-	public QuiltUnifiedFileSystemProvider() {}
+	public QuiltUnifiedFileSystemProvider() {
+		if (instance == null) {
+			instance = this;
+		}
+	}
 
 	public static final String SCHEME = "quilt.ufs";
 
 	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
 	static final QuiltFSP<QuiltUnifiedFileSystem> PROVIDER = new QuiltFSP<>(SCHEME);
 
+	private static QuiltUnifiedFileSystemProvider instance;
+
 	public static QuiltUnifiedFileSystemProvider instance() {
+		QuiltUnifiedFileSystemProvider found = findInstance();
+		if (found != null) {
+			return found;
+		}
+		throw new IllegalStateException("Unable to load QuiltUnifiedFileSystemProvider via services!");
+	}
+
+	public static QuiltUnifiedFileSystemProvider findInstance() {
+		if (instance != null) {
+			return instance;
+		}
+
 		for (FileSystemProvider provider : FileSystemProvider.installedProviders()) {
 			if (provider instanceof QuiltUnifiedFileSystemProvider) {
 				return (QuiltUnifiedFileSystemProvider) provider;
 			}
 		}
-		throw new IllegalStateException("Unable to load QuiltUnifiedFileSystemProvider via services!");
+
+		return instance;
 	}
 
 	@Override
