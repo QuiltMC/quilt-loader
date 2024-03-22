@@ -34,8 +34,8 @@ import net.fabricmc.api.EnvType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class PackageStrippingData extends ClassVisitor {
 
-	static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
-	static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
+	private static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
+	private static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
 	private static final String REQUIRES_DESCRIPTOR = Type.getDescriptor(Requires.class);
 
 	private final EnvType envType;

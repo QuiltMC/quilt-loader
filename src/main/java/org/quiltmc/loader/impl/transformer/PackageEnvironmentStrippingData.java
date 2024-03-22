@@ -29,9 +29,6 @@ import net.fabricmc.api.EnvType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class PackageEnvironmentStrippingData extends PackageStrippingData {
 
-	private static final String CLIENT_ONLY_DESCRIPTOR = PackageStrippingData.CLIENT_ONLY_DESCRIPTOR;
-	private static final String SERVER_ONLY_DESCRIPTOR = PackageStrippingData.SERVER_ONLY_DESCRIPTOR;
-
 	public PackageEnvironmentStrippingData(int api, EnvType envType) {
 		super(api, envType, new HashMap<>());
 	}

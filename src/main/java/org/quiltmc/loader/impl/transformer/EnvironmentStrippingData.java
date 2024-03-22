@@ -32,14 +32,6 @@ import net.fabricmc.api.EnvType;
 @Deprecated
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class EnvironmentStrippingData extends StrippingData {
-	// Fabric annotations
-	private static final String ENVIRONMENT_DESCRIPTOR = StrippingData.ENVIRONMENT_DESCRIPTOR;
-	private static final String ENVIRONMENT_INTERFACE_DESCRIPTOR = StrippingData.ENVIRONMENT_INTERFACE_DESCRIPTOR;
-	private static final String ENVIRONMENT_INTERFACES_DESCRIPTOR = StrippingData.ENVIRONMENT_INTERFACES_DESCRIPTOR;
-
-	// Quilt annotations
-	private static final String CLIENT_ONLY_DESCRIPTOR = StrippingData.CLIENT_ONLY_DESCRIPTOR;
-	private static final String SERVER_ONLY_DESCRIPTOR = StrippingData.SERVER_ONLY_DESCRIPTOR;
 
 	private class FabricEnvironmentAnnotationVisitor extends StrippingData.FabricEnvironmentAnnotationVisitor {
 

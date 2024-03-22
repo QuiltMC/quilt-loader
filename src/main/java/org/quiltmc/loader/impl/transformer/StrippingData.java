@@ -43,14 +43,15 @@ import java.util.stream.Collectors;
 /** Scans a class for Environment, EnvironmentInterface and Requires annotations to figure out what needs to be stripped. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class StrippingData extends ClassVisitor {
+
 	// Fabric annotations
-	static final String ENVIRONMENT_DESCRIPTOR = Type.getDescriptor(Environment.class);
-	static final String ENVIRONMENT_INTERFACE_DESCRIPTOR = Type.getDescriptor(EnvironmentInterface.class);
-	static final String ENVIRONMENT_INTERFACES_DESCRIPTOR = Type.getDescriptor(EnvironmentInterfaces.class);
+	private static final String ENVIRONMENT_DESCRIPTOR = Type.getDescriptor(Environment.class);
+	private static final String ENVIRONMENT_INTERFACE_DESCRIPTOR = Type.getDescriptor(EnvironmentInterface.class);
+	private static final String ENVIRONMENT_INTERFACES_DESCRIPTOR = Type.getDescriptor(EnvironmentInterfaces.class);
 
 	// Quilt annotations
-	static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
-	static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
+	private static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
+	private static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
 	private static final String REQUIRES_DESCRIPTOR = Type.getDescriptor(Requires.class);
 
 	private final EnvType envType;
