@@ -810,7 +810,7 @@ class SolverErrorHelper {
 			}
 
 			for (ModLoadOption mod : from) {
-				error.appendReportText("- " + manager.describePath(mod.from()), "");
+				error.appendReportText("- " + manager.describePath(mod.from()));
 			}
 		}
 	}
