@@ -50,7 +50,7 @@ import java.lang.annotation.Target;
 public @interface Requires {
 
 	/** @return required mods */
-	String[] mods();
+	String[] value();
 
 	/** @return True if lambda methods referenced by this method should also be stripped. Has no effect when used to
 	 *         annotate classes, implements declarations, or fields. */

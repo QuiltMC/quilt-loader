@@ -65,7 +65,7 @@ public class RequiresStrippingVisitor extends ClassVisitor {
 
 		@Override
 		public AnnotationVisitor visitArray(String name) {
-			if ("mods".equals(name)) {
+			if ("value".equals(name)) {
 				return new AnnotationVisitor(api) {
 
 					@Override

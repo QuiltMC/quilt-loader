@@ -50,7 +50,7 @@ public class PackageRequiresStrippingVisitor extends ClassVisitor {
 			return new AnnotationVisitor(api) {
 				@Override
 				public AnnotationVisitor visitArray(String name) {
-					if ("mods".equals(name)) {
+					if ("value".equals(name)) {
 						return new AnnotationVisitor(api) {
 							@Override
 							public void visit(String name, Object value) {
