@@ -184,7 +184,7 @@ public class StrippingData extends ClassVisitor {
 		}
 	}
 
-	AnnotationVisitor visitMemberAnnotation(String descriptor, boolean visible, Runnable onMismatch, Runnable onMismatchLambdas) {
+	private AnnotationVisitor visitMemberAnnotation(String descriptor, boolean visible, Runnable onMismatch, Runnable onMismatchLambdas) {
 
 		if (ENVIRONMENT_DESCRIPTOR.equals(descriptor)) {
 			return new FabricEnvironmentAnnotationVisitor(api, onMismatch);

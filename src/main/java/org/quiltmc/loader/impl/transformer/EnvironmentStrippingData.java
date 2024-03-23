@@ -33,10 +33,6 @@ import net.fabricmc.api.EnvType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class EnvironmentStrippingData extends StrippingData {
 
-	AnnotationVisitor visitMemberAnnotation(String descriptor, boolean visible, Runnable onEnvMismatch, Runnable onEnvMismatchLambdas) {
-		return super.visitMemberAnnotation(descriptor, visible, onEnvMismatch, onEnvMismatchLambdas);
-	}
-
 	public EnvironmentStrippingData(int api, EnvType envType) {
 		super(api, envType, new ArrayList<>());
 	}

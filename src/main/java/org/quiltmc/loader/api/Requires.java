@@ -23,7 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Applied to declare that the annotated element specific mods to exist.
+/** Applied to declare that the annotated element requires specific mods to exist.
  * <p>
  * When applied to mod code this will result in quilt-loader removing that element when running without the specified mods.
  * <p>
