@@ -17,6 +17,8 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
+
+import org.quiltmc.loader.impl.transformer.PackageStrippingData;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.ModContainer;
@@ -26,7 +28,6 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.patch.PatchLoader;
-import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -51,7 +52,6 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -322,9 +322,13 @@ class KnotClassDelegate {
 				// No package-info class file
 				return true;
 			}
-			PackageEnvironmentStrippingData data = new PackageEnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType);
-			new ClassReader(bytes).accept(data, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-			return !data.stripEntirePackage;
+
+			ClassReader reader = new ClassReader(bytes);
+
+			PackageStrippingData strippingData = new PackageStrippingData(QuiltLoaderImpl.ASM_VERSION, envType, modCodeSourceMap);
+			reader.accept(strippingData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+
+			return !strippingData.stripEntirePackage();
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to load " + fileName, e);
 		}
