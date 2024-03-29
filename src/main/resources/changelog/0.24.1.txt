@@ -1,0 +1,9 @@
+Features:
+
+- [#413] Include the reason in breakage errors (EnnuiL)
+- Also check the game provider jar to see if it contains a mod.
+    - This was added for Cosmic Quilt, it doesn't affect Minecraft, but it may be useful to other game providers.
+
+Bug Fixes:
+
+- Fixed the forked error window throwing errors too early if it cannot create the new process
