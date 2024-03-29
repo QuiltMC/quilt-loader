@@ -55,18 +55,25 @@ public class QuiltFork {
 
 	private static final QuiltForkComms COMMS;
 	private static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
+	private static final IOException FORK_EXCEPTION;
 
 	static {
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
 		if (Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || !provider.canOpenGui()) {
 			COMMS = null;
+			FORK_EXCEPTION = null;
 		} else {
+			QuiltForkComms comms = null;
+			IOException error = null;
 			try {
 				File base = QuiltLoaderImpl.INSTANCE.getQuiltLoaderCacheDir().resolve("comms").toFile();
-				COMMS = QuiltForkComms.connect(base, QuiltFork::handleMessageFromServer);
+				comms = QuiltForkComms.connect(base, QuiltFork::handleMessageFromServer);
 			} catch (IOException e) {
-				throw new Error(e);
+				Log.error(LogCategory.GUI, "Failed to spawn the child process!", e);
+				error = e;
 			}
+			COMMS = comms;
+			FORK_EXCEPTION = error;
 		}
 	}
 
@@ -115,6 +122,10 @@ public class QuiltFork {
 
 	public static void open(QuiltLoaderWindow<?> window, boolean shouldWait) throws LoaderGuiException {
 		if (COMMS == null) {
+			if (FORK_EXCEPTION != null) {
+				// Gui NOT disabled, but it failed to open
+				throw new LoaderGuiException("Failed to spawn the child process previously", FORK_EXCEPTION);
+			}
 			// Gui disabled, act as if the user pressed "ignore" or just closed the window immediately
 			return;
 		}
