@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
@@ -29,10 +30,11 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.util.TraceClassVisitor;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.transformer.ClassStripper;
-import org.quiltmc.loader.impl.transformer.EnvironmentStrippingData;
 import org.quiltmc.loader.impl.transformer.LambdaStripCalculator;
 
 import net.fabricmc.api.EnvType;
+
+import org.quiltmc.loader.impl.transformer.StrippingData;
 
 public class LambdaStripTester {
 
@@ -63,12 +65,12 @@ public class LambdaStripTester {
 					| ClassReader.SKIP_FRAMES
 			);
 
-			EnvironmentStrippingData stripData = new EnvironmentStrippingData(Opcodes.ASM9, EnvType.SERVER);
-			reader.accept(stripData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
+			StrippingData strip = new StrippingData(Opcodes.ASM9, EnvType.SERVER, new ArrayList<>());
+			reader.accept(strip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
-			Collection<String> stripMethods = stripData.getStripMethods();
+			Collection<String> stripMethods = strip.getStripMethods();
 
-			LambdaStripCalculator calc = new LambdaStripCalculator(Opcodes.ASM9, stripData.getStripMethodLambdas());
+			LambdaStripCalculator calc = new LambdaStripCalculator(Opcodes.ASM9, strip.getStripMethodLambdas());
 			reader.accept(calc, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 			Collection<String> additionalStripMethods = calc.computeAdditionalMethodsToStrip();
 
@@ -79,7 +81,7 @@ public class LambdaStripTester {
 
 			ClassWriter classWriter = new ClassWriter(null, 0);
 			ClassStripper visitor = new ClassStripper(
-				QuiltLoaderImpl.ASM_VERSION, classWriter, stripData.getStripInterfaces(), stripData.getStripFields(),
+				QuiltLoaderImpl.ASM_VERSION, classWriter, strip.getStripInterfaces(), strip.getStripFields(),
 				stripMethods
 			);
 			reader.accept(visitor, 0);
