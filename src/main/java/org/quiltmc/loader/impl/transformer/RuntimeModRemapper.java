@@ -64,7 +64,7 @@ final class RuntimeModRemapper {
 	static final boolean COPY_ON_WRITE = true;
 
 	public static void remap(TransformCache cache) {
-		List<ModLoadOption> modsToRemap = cache.getMods().stream()
+		List<ModLoadOption> modsToRemap = cache.getModsInCache().stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 		Set<InputTag> remapMixins = new HashSet<>();

@@ -52,7 +52,7 @@ final class QuiltTransformer {
 		int visitorCount = 0;
 
 		if (strip) {
-			ClassStrippingData data = new ClassStrippingData(QuiltLoaderImpl.ASM_VERSION, envType, cache.getMods());
+			ClassStrippingData data = new ClassStrippingData(QuiltLoaderImpl.ASM_VERSION, envType, cache.getAllMods());
 			classReader.accept(data, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			if (data.stripEntireClass()) {

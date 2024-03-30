@@ -102,7 +102,7 @@ final class TransformCacheGenerator {
 		AccessWidener ret = new AccessWidener();
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(ret);
 
-		for (ModLoadOption mod : cache.getMods()) {
+		for (ModLoadOption mod : cache.getModsInCache()) {
 			for (String accessWidener : mod.metadata().accessWideners()) {
 
 				Path path = cache.getRoot(mod).resolve(accessWidener);
