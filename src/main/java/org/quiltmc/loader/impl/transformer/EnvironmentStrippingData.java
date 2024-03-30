@@ -28,10 +28,10 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 import net.fabricmc.api.EnvType;
 
-/** Deprecated. All stuff were moved to {@link StrippingData}. */
+/** Deprecated. All stuff were moved to {@link ClassStrippingData}. */
 @Deprecated
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class EnvironmentStrippingData extends StrippingData {
+public class EnvironmentStrippingData extends ClassStrippingData {
 
 	public EnvironmentStrippingData(int api, EnvType envType) {
 		super(api, envType, new ArrayList<>());

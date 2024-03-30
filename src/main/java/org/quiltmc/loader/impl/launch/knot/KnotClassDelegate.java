@@ -52,6 +52,8 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -97,7 +99,7 @@ class KnotClassDelegate {
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
 	private boolean transformFinishedLoading = false;
-	private Set<String> hiddenClasses = Collections.emptySet();
+	private Map<String, String> hiddenClasses = Collections.emptyMap();
 	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -106,8 +108,8 @@ class KnotClassDelegate {
 	 * in this loader. */
 	private final Set<String> parentHiddenUrls = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	/** Map of package to whether we can load it in this environment. */
-	private final Map<String, Boolean> packageSideCache = new ConcurrentHashMap<>();
+	/** Map of package to the reason why it cannot be loaded. If the package can be loaded then the value is the empty string. */
+	private final Map<String, String> packageLoadDenyCache = new ConcurrentHashMap<>();
 
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
 		this.isDevelopment = isDevelopment;
@@ -238,6 +240,25 @@ class KnotClassDelegate {
 			}
 		}
 
+		int pkgDelimiterPos = name.lastIndexOf('.');
+		String pkgString = pkgDelimiterPos > 0 ? name.substring(0, pkgDelimiterPos) : null;
+
+		if (pkgString != null) {
+			final boolean allowFromParentFinal = allowFromParent;
+			String denyReason = packageLoadDenyCache.computeIfAbsent(pkgString, pkgName -> {
+				return computePackageDenyLoadReason(pkgName, allowFromParentFinal);
+			});
+
+			if (denyReason != null && !denyReason.isEmpty()) {
+				throw new RuntimeException("Cannot load package " + pkgString + " " + denyReason);
+			}
+		}
+
+		String hideReason = hiddenClasses.get(name);
+		if (hideReason != null) {
+			throw new RuntimeException("Cannot load " + name + " " + hideReason);
+		}
+
 		byte[] input = getPostMixinClassByteArray(url, name);
 		if (input == null) return null;
 
@@ -246,8 +267,6 @@ class KnotClassDelegate {
 		}
 
 		KnotClassDelegate.Metadata metadata = getMetadata(name, url);
-
-		int pkgDelimiterPos = name.lastIndexOf('.');
 
 		final String modId;
 
@@ -268,19 +287,8 @@ class KnotClassDelegate {
 			return c;
 		}
 
-		if (pkgDelimiterPos > 0) {
+		if (pkgString != null) {
 			// TODO: package definition stub
-			String pkgString = name.substring(0, pkgDelimiterPos);
-
-			final boolean allowFromParentFinal = allowFromParent;
-			Boolean permitted = packageSideCache.computeIfAbsent(pkgString, pkgName -> {
-				return computeCanLoadPackage(pkgName, allowFromParentFinal);
-			});
-
-			if (permitted != null && !permitted) {
-				throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
-			}
-
 			Package pkg = itf.getPackage(pkgString);
 
 			if (pkg == null) {
@@ -310,28 +318,15 @@ class KnotClassDelegate {
 		return c;
 	}
 
+
 	private boolean shouldRerouteToParent(String name) {
 		return name.startsWith("org.slf4j.") || name.startsWith("org.apache.logging.log4j.");
 	}
 
-	boolean computeCanLoadPackage(String pkgName, boolean allowFromParent) {
+	private String computePackageDenyLoadReason(String pkgName, boolean allowFromParent) {
 		String fileName = pkgName + ".package-info";
-		try {
-			byte[] bytes = getRawClassByteArray(fileName, allowFromParent);
-			if (bytes == null) {
-				// No package-info class file
-				return true;
-			}
-
-			ClassReader reader = new ClassReader(bytes);
-
-			PackageStrippingData strippingData = new PackageStrippingData(QuiltLoaderImpl.ASM_VERSION, envType, modCodeSourceMap);
-			reader.accept(strippingData, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-
-			return !strippingData.stripEntirePackage();
-		} catch (IOException e) {
-			throw new RuntimeException("Unable to load " + fileName, e);
-		}
+		String hideReason = hiddenClasses.get(fileName);
+		return hideReason != null ? hideReason : "";
 	}
 
 	Metadata getMetadata(String name, URL resourceURL) {
@@ -508,10 +503,6 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(URL url, String name) throws IOException {
-		if (hiddenClasses.contains(name)) {
-			return null;
-		}
-
 		try (InputStream inputStream = (url != null ? url.openStream() : null)) {
 			if (inputStream == null) {
 				return null;
@@ -533,6 +524,14 @@ class KnotClassDelegate {
 	}
 
 	void setHiddenClasses(Set<String> hiddenClasses) {
+		Map<String, String> map = new HashMap<>();
+		for (String cl : hiddenClasses) {
+			map.put(cl, "unknown reason");
+		}
+		setHiddenClasses(map);
+	}
+
+	void setHiddenClasses(Map<String, String> hiddenClasses) {
 		this.hiddenClasses = hiddenClasses;
 	}
 

@@ -58,7 +58,7 @@ class TransformCache {
 	private final Path root;
 	private final Map<ModLoadOption, Path> modRoots = new HashMap<>();
 	private final List<ModLoadOption> orderedMods;
-	private final Set<String> hiddenClasses = new HashSet<>();
+	private final Map<String, String> hiddenClasses = new HashMap<>();
 	private static final boolean COPY_ON_WRITE = true;
 
 	public TransformCache(Path root, List<ModLoadOption> orderedMods) {
@@ -165,8 +165,8 @@ class TransformCache {
 		return Collections.unmodifiableList(orderedMods);
 	}
 
-	public Set<String> getHiddenClasses() {
-		return Collections.unmodifiableSet(hiddenClasses);
+	public Map<String, String> getHiddenClasses() {
+		return Collections.unmodifiableMap(hiddenClasses);
 	}
 
 	public void forEachClassFile(ClassConsumer action)
@@ -176,8 +176,10 @@ class TransformCache {
 		}
 	}
 
-	public void hideClass(String className) {
-		hiddenClasses.add(className);
+	public void hideClass(String className, String denyReason) {
+		hiddenClasses.merge(className, denyReason, (current, nval) -> {
+			return current + "\n" + nval;
+		});
 	}
 
 	private static void copyFile(Path path, Path modSrc, Path modDst, CopyOption... copyOptions) {
@@ -239,7 +241,7 @@ class TransformCache {
 				String fileName = file.getFileName().toString();
 				if (fileName.endsWith(".class") && couldBeJavaElement(fileName, true)) {
 					String name = LoaderUtil.getClassNameFromTransformCache(file.toString());
-					if (!hiddenClasses.contains(name)) {
+					if (!hiddenClasses.containsKey(name)) {
 						byte[] result = action.run(mod, name, file);
 						if (result != null) {
 							Files.write(file, result);

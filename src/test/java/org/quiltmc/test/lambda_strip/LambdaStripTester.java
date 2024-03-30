@@ -34,7 +34,7 @@ import org.quiltmc.loader.impl.transformer.LambdaStripCalculator;
 
 import net.fabricmc.api.EnvType;
 
-import org.quiltmc.loader.impl.transformer.StrippingData;
+import org.quiltmc.loader.impl.transformer.ClassStrippingData;
 
 public class LambdaStripTester {
 
@@ -65,7 +65,7 @@ public class LambdaStripTester {
 					| ClassReader.SKIP_FRAMES
 			);
 
-			StrippingData strip = new StrippingData(Opcodes.ASM9, EnvType.SERVER, new ArrayList<>());
+			ClassStrippingData strip = new ClassStrippingData(Opcodes.ASM9, EnvType.SERVER, new ArrayList<>());
 			reader.accept(strip, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
 
 			Collection<String> stripMethods = strip.getStripMethods();

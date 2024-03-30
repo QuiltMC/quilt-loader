@@ -17,11 +17,11 @@
 package org.quiltmc.loader.impl.transformer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
 import org.objectweb.asm.AnnotationVisitor;
-import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Type;
 import org.quiltmc.loader.api.Requires;
 import org.quiltmc.loader.api.minecraft.ClientOnly;
@@ -32,32 +32,25 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class PackageStrippingData extends ClassVisitor {
+public class PackageStrippingData extends AbstractStripData {
 
 	private static final String CLIENT_ONLY_DESCRIPTOR = Type.getDescriptor(ClientOnly.class);
 	private static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
 	private static final String REQUIRES_DESCRIPTOR = Type.getDescriptor(Requires.class);
 
-	private final EnvType envType;
-	private final List<String> mods;
-
-	private boolean stripEntirePackage = false;
-
 	public PackageStrippingData(int api, EnvType envType, Map<String, String> modCodeSourceMap) {
-		super(api);
-		this.envType = envType;
-		this.mods = new ArrayList<>(modCodeSourceMap.keySet());
+		super(api, envType, new HashSet<>(modCodeSourceMap.keySet()));
 	}
 
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (CLIENT_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.SERVER) {
-				stripEntirePackage = true;
+				denyClientOnlyLoad();
 			}
 		} else if (SERVER_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.CLIENT) {
-				stripEntirePackage = true;
+				denyDediServerOnlyLoad();
 			}
 		} else if (REQUIRES_DESCRIPTOR.equals(descriptor)) {
 			return new AnnotationVisitor(api) {
@@ -65,11 +58,17 @@ public class PackageStrippingData extends ClassVisitor {
 				public AnnotationVisitor visitArray(String name) {
 					if ("value".equals(name)) {
 						return new AnnotationVisitor(api) {
+
+							final List<String> requiredMods = new ArrayList<>();
+
 							@Override
 							public void visit(String name, Object value) {
-								if (!mods.contains(String.valueOf(value))) {
-									stripEntirePackage = true;
-								}
+								requiredMods.add(String.valueOf(value));
+							}
+
+							@Override
+							public void visitEnd() {
+								checkHasAllMods(requiredMods);
 							}
 						};
 					}
@@ -82,7 +81,12 @@ public class PackageStrippingData extends ClassVisitor {
 		return null;
 	}
 
+	@Override
+	protected String type() {
+		return "package";
+	}
+
 	public boolean stripEntirePackage() {
-		return this.stripEntirePackage;
+		return denyLoadReasons.size() > 0;
 	}
 }

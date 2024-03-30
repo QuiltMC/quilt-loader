@@ -170,6 +170,9 @@ final class RuntimeModRemapper {
 
 	private static boolean requiresMixinRemap(Path inputPath) throws IOException {
 		final Manifest manifest = ManifestUtil.readManifest(inputPath);
+		if (manifest == null) {
+			return false;
+		}
 		final Attributes mainAttributes = manifest.getMainAttributes();
 		return REMAP_TYPE_STATIC.equalsIgnoreCase(mainAttributes.getValue(REMAP_TYPE_MANIFEST_KEY));
 	}

@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 
 /** Applied to declare that the annotated element requires specific mods to exist.
  * <p>
- * When applied to mod code this will result in quilt-loader removing that element when running without the specified mods.
+ * When applied to mod code this will result in quilt-loader removing that element when running without all of the specified mods.
  * <p>
  * When the annotated element is removed, bytecode associated with the element will not be removed. For example, if a
  * field is removed, its initializer code will not, and will cause an error on execution.

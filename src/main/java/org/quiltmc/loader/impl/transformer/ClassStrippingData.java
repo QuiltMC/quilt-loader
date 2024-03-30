@@ -20,6 +20,7 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.TypeReference;
@@ -35,14 +36,16 @@ import net.fabricmc.api.Environment;
 import net.fabricmc.api.EnvironmentInterface;
 import net.fabricmc.api.EnvironmentInterfaces;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Scans a class for Environment, EnvironmentInterface and Requires annotations to figure out what needs to be stripped. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class StrippingData extends ClassVisitor {
+public class ClassStrippingData extends AbstractStripData {
 
 	// Fabric annotations
 	private static final String ENVIRONMENT_DESCRIPTOR = Type.getDescriptor(Environment.class);
@@ -54,11 +57,8 @@ public class StrippingData extends ClassVisitor {
 	private static final String SERVER_ONLY_DESCRIPTOR = Type.getDescriptor(DedicatedServerOnly.class);
 	private static final String REQUIRES_DESCRIPTOR = Type.getDescriptor(Requires.class);
 
-	private final EnvType envType;
 	private final String envTypeString;
-	private final List<String> mods;
 
-	private boolean stripEntireClass = false;
 	private final Collection<String> stripInterfaces = new HashSet<>();
 	private final Collection<String> stripFields = new HashSet<>();
 	private final Collection<String> stripMethods = new HashSet<>();
@@ -66,6 +66,7 @@ public class StrippingData extends ClassVisitor {
 	/** Every method contained in this will also be contained in {@link #stripMethods}. */
 	final Collection<String> stripMethodLambdas = new HashSet<>();
 
+	private String type = "class";
 	private String[] interfaces;
 
 	private class FabricEnvironmentAnnotationVisitor extends AnnotationVisitor {
@@ -142,14 +143,28 @@ public class StrippingData extends ClassVisitor {
 		}
 	}
 
+	@FunctionalInterface
+	private interface OnModsMissing {
+		void onModsMissing(List<String> required, List<String> missing);
+	}
+
 	private class QuiltRequiresAnnotationVisitor extends AnnotationVisitor {
+		private final OnModsMissing onModsMissingDetailed;
 		private final Runnable onModsMismatch;
 		private final Runnable onModsMismatchLambdas;
 
 		private boolean stripLambdas = true;
 
+		private QuiltRequiresAnnotationVisitor(int api, OnModsMissing onModsMissing) {
+			super(api);
+			this.onModsMissingDetailed = onModsMissing;
+			this.onModsMismatch = null;
+			this.onModsMismatchLambdas = null;
+		}
+
 		private QuiltRequiresAnnotationVisitor(int api, Runnable onModsMismatch, Runnable onModsMismatchLambdas) {
 			super(api);
+			this.onModsMissingDetailed = null;
 			this.onModsMismatch = onModsMismatch;
 			this.onModsMismatchLambdas = onModsMismatchLambdas;
 		}
@@ -164,19 +179,51 @@ public class StrippingData extends ClassVisitor {
 		@Override
 		public AnnotationVisitor visitArray(String name) {
 			if ("value".equals(name)) {
-				return new AnnotationVisitor(api) {
+				if (onModsMissingDetailed == null) {
+					return new AnnotationVisitor(api) {
 
-					@Override
-					public void visit(String name, Object value) {
-						if (!mods.contains(String.valueOf(value))) {
-							onModsMismatch.run();
+						boolean anyMissing = false;
 
-							if (stripLambdas && onModsMismatchLambdas != null) {
-								onModsMismatchLambdas.run();
+						@Override
+						public void visit(String name, Object value) {
+							if (!mods.contains(String.valueOf(value))) {
+								anyMissing = true;
 							}
 						}
-					}
-				};
+
+						@Override
+						public void visitEnd() {
+							if (anyMissing) {
+								onModsMismatch.run();
+
+								if (stripLambdas && onModsMismatchLambdas != null) {
+									onModsMismatchLambdas.run();
+								}
+							}
+						}
+					};
+				} else {
+					return new AnnotationVisitor(api) {
+						List<String> requiredMods = new ArrayList<>();
+						List<String> missingMods = new ArrayList<>();
+
+						@Override
+						public void visit(String name, Object value) {
+							String mod = String.valueOf(value);
+							requiredMods.add(mod);
+							if (!mods.contains(mod)) {
+								missingMods.add(mod);
+							}
+						}
+
+						@Override
+						public void visitEnd() {
+							if (!missingMods.isEmpty()) {
+								onModsMissingDetailed.onModsMissing(requiredMods, missingMods);
+							}
+						}
+					};
+				}
 			}
 			else {
 				return null;
@@ -205,32 +252,49 @@ public class StrippingData extends ClassVisitor {
 		return null;
 	}
 
-	public StrippingData(int api, EnvType envType, List<ModLoadOption> mods) {
-		super(api);
-		this.envType = envType;
+	public ClassStrippingData(int api, EnvType envType, List<ModLoadOption> mods) {
+		super(api, envType, mods.stream().map(ModLoadOption::id).collect(Collectors.toSet()));
 		this.envTypeString = envType.name();
-		this.mods = mods.stream().map(ModLoadOption::id).collect(Collectors.toList());
 	}
 
 	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 		this.interfaces = interfaces;
+
+		if (name.endsWith("/package-info")) {
+			type = "package";
+		} else if ((access & Opcodes.ACC_ENUM) != 0) {
+			type = "enum";
+		} else if ((access & Opcodes.ACC_RECORD) != 0) {
+			type = "record";
+		} else if ((access & Opcodes.ACC_INTERFACE) != 0) {
+			type = "interface";
+		} else if ((access & Opcodes.ACC_ANNOTATION) != 0) {
+			type = "annotation";
+		} else {
+			type = "class";
+		}
+	}
+
+	@Override
+	protected String type() {
+		return type;
 	}
 
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (CLIENT_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.SERVER) {
-				stripEntireClass = true;
+				denyClientOnlyLoad();
 			}
 		} else if (SERVER_ONLY_DESCRIPTOR.equals(descriptor)) {
 			if (envType == EnvType.CLIENT) {
-				stripEntireClass = true;
+				denyDediServerOnlyLoad();
 			}
 		} else if (REQUIRES_DESCRIPTOR.equals(descriptor)) {
-			return new QuiltRequiresAnnotationVisitor(api, () -> stripEntireClass = true, null);
+			return new QuiltRequiresAnnotationVisitor(api, this::checkHasAllMods);
 		} else if (ENVIRONMENT_DESCRIPTOR.equals(descriptor)) {
-			return new FabricEnvironmentAnnotationVisitor(api, () -> stripEntireClass = true);
+			return new FabricEnvironmentAnnotationVisitor(api, () -> denyLoadReasons.add("Mismatched @Envrionment"));
 		} else if (ENVIRONMENT_INTERFACE_DESCRIPTOR.equals(descriptor)) {
 			return new FabricEnvironmentInterfaceAnnotationVisitor(api);
 		} else if (ENVIRONMENT_INTERFACES_DESCRIPTOR.equals(descriptor)) {
@@ -316,7 +380,7 @@ public class StrippingData extends ClassVisitor {
 	}
 
 	public boolean stripEntireClass() {
-		return this.stripEntireClass;
+		return denyLoadReasons.size() > 0;
 	}
 
 	public Collection<String> getStripInterfaces() {
