@@ -17,6 +17,8 @@ public class MyOptionalTrinketItem extends Item implements @Requires("trinkets")
 - [#413] Include the reason in breakage errors (EnnuiL)
 - Also check the game provider jar to see if it contains a mod.
     - This was added for Cosmic Quilt, it doesn't affect Minecraft, but it may be useful to other game providers.
+- Populate the full package definition from `META-INF/MANIFEST.MF` for mods.
+    - This means `java.lang.Package` will now contain `get(Specification|Implementation)(Title|Version|Vendor)`, if they are defined by mods.
 
 Bug Fixes:
 

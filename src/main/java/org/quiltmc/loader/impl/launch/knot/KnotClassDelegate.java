@@ -58,6 +58,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
@@ -71,6 +72,30 @@ class KnotClassDelegate {
 		Metadata(Manifest manifest, CodeSourceImpl codeSource) {
 			this.manifest = manifest;
 			this.codeSource = codeSource;
+		}
+
+		boolean isPackageSealed(String pkgName) {
+			String value = getPackageValue(pkgName, Attributes.Name.SEALED);
+			return value != null && "true".equalsIgnoreCase(value);
+		}
+
+		String getPackageValue(String pkgName, Attributes.Name name) {
+			if (manifest == null) {
+				return null;
+			}
+
+			String value = null;
+			Attributes attributes = manifest.getAttributes(pkgName);
+
+			if (attributes != null) {
+				value = attributes.getValue(name);
+			}
+
+			if (value == null) {
+				value = manifest.getMainAttributes().getValue(name);
+			}
+
+			return value;
 		}
 	}
 
@@ -288,12 +313,19 @@ class KnotClassDelegate {
 		}
 
 		if (pkgString != null) {
-			// TODO: package definition stub
 			Package pkg = itf.getPackage(pkgString);
 
 			if (pkg == null) {
+				String specTitle = metadata.getPackageValue(pkgString, Attributes.Name.SPECIFICATION_TITLE);
+				String specVersion = metadata.getPackageValue(pkgString, Attributes.Name.SPECIFICATION_VERSION);
+				String specVendor = metadata.getPackageValue(pkgString, Attributes.Name.SPECIFICATION_VENDOR);
+				String implTitle = metadata.getPackageValue(pkgString, Attributes.Name.IMPLEMENTATION_TITLE);
+				String implVersion = metadata.getPackageValue(pkgString, Attributes.Name.IMPLEMENTATION_VERSION);
+				String implVendor = metadata.getPackageValue(pkgString, Attributes.Name.IMPLEMENTATION_VENDOR);
+				URL sealBase = null; // TODO: Implement sealing!
+
 				try {
-					pkg = itf.definePackage(pkgString, null, null, null, null, null, null, null);
+					pkg = itf.definePackage(pkgString, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
 				} catch (IllegalArgumentException e) { // presumably concurrent package definition
 					pkg = itf.getPackage(pkgString);
 					if (pkg == null) throw e; // still not defined?
