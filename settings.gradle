@@ -19,3 +19,4 @@ rootProject.name = "quilt-loader"
 include "minecraft"
 include "minecraft:minecraft-test"
 include 'junit'
+include 'dependencies'
