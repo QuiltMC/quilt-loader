@@ -73,40 +73,22 @@ sourceSets {
 }
 
 configurations {
-	include {
-	   transitive = false
-	}
-
+	include
 	development
 
 	compileClasspath.extendsFrom localImplementation
 	runtimeClasspath.extendsFrom localImplementation
+	testImplementation.extendsFrom localImplementation
 	localImplementation.extendsFrom include
 }
 
 dependencies {
-	include "org.quiltmc:quilt-loader-sat4j:${project.quilt_loader_sat4j}"
-
-	include "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
-	include "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
-
-	include "com.electronwill.night-config:core:${project.night_config}"
-	include "com.electronwill.night-config:toml:${project.night_config}"
-	shadow "com.electronwill.night-config:core:${project.night_config}"
-	shadow "com.electronwill.night-config:toml:${project.night_config}"
-
+	include project(path: ':dependencies', configuration: 'include')
 	development project(path: ':dependencies', configuration: 'development')
 
 	// also must update in minecraft AND minecraft test
 	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-
-	shadow "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
-	shadow "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
-	shadow "org.quiltmc.parsers:json:${project.quilt_parsers}"
-	include "org.quiltmc.parsers:json:${project.quilt_parsers}"
-	include "com.unascribed:flexver-java:${project.flexver}"
-	shadow "com.unascribed:flexver-java:${project.flexver}"
 
 	testCompileOnly "org.jetbrains:annotations:${project.annotations}"
 
@@ -349,15 +331,10 @@ allprojects {
 	}
 }
 
-// Causes more trouble than its worth
-tasks.withType(GenerateModuleMetadata) {
-	//enabled = false
-}
-
-['runtimeElements', 'apiElements'].each { configuration ->
-	configurations[configuration].outgoing.artifacts.clear()
+[configurations.runtimeElements, configurations.apiElements].each { configuration ->
+	configuration.outgoing.artifacts.clear()
 	artifacts {
-		add(configuration, proguardFile) {
+		add(configuration.name, proguardFile) {
 			builtBy proguardJar
 		}
 	}

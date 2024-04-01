@@ -11,16 +11,10 @@ repositories {
 	}
 }
 
-configurations {
-	compileClasspath.extendsFrom localImplementation
-	runtimeClasspath.extendsFrom localImplementation
-}
-
 dependencies {
-	api project(":")
-	localImplementation project(':dependencies')
-
-	implementation project(":").sourceSets.main.output
+	implementation project(':dependencies')
+	implementation project(path: ':dependencies', configuration: 'include')
+	implementation project(":")
 	// log4j wrapper
 	compileOnly 'org.apache.logging.log4j:log4j-api:2.8.1'
 	// slf4j wrapper

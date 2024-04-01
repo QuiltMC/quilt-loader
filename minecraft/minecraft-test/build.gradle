@@ -18,10 +18,9 @@ dependencies {
 	minecraft "com.mojang:minecraft:1.20.2"
 	mappings "org.quiltmc:quilt-mappings:1.20.2+build.1:intermediary-v2"
 
-
 	implementation project(":minecraft")
-	implementation project(":minecraft").sourceSets.main.output
-	implementation project(":")
+	implementation project(":dependencies")
+	implementation project(path: ":dependencies", configuration: "include")
 	implementation project(":").sourceSets.main.output
 	// so that it works on runtime
 	implementation "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"

@@ -22,11 +22,13 @@ repositories {
 configurations {
 	compileClasspath.extendsFrom localImplementation
 	runtimeClasspath.extendsFrom localImplementation
+	testImplementation.extendsFrom localImplementation
 }
 
 dependencies {
 	api project(":")
 	localImplementation project(':dependencies')
+	localImplementation project(path: ':dependencies', configuration: 'include')
 
 	api platform("org.junit:junit-bom:5.9.2")
 	api "org.junit.jupiter:junit-jupiter-engine"
