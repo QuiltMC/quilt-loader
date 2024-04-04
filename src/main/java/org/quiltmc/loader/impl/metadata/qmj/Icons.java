@@ -36,6 +36,7 @@ public interface Icons {
 	/**
 	 * Implementation for a mod.
 	 */
+	@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 	public final class Single implements Icons {
 		@Nullable
 		private final String icon;
@@ -54,6 +55,7 @@ public interface Icons {
 	/**
 	 * Implementation for a mod which has multiple icons of different sizes.
 	 */
+	@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 	public final class Multiple implements Icons {
 		private final SortedMap<Integer, String> icons;
 
