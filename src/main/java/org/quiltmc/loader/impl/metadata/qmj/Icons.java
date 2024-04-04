@@ -40,7 +40,7 @@ public interface Icons {
 		@Nullable
 		private final String icon;
 
-		Single(@Nullable String icon) {
+		public Single(@Nullable String icon) {
 			this.icon = icon;
 		}
 
@@ -57,7 +57,7 @@ public interface Icons {
 	public final class Multiple implements Icons {
 		private final SortedMap<Integer, String> icons;
 
-		Multiple(SortedMap<Integer, String> icons) {
+		public Multiple(SortedMap<Integer, String> icons) {
 			this.icons = icons;
 		}
 
