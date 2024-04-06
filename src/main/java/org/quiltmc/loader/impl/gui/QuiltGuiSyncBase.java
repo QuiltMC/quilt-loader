@@ -163,12 +163,7 @@ abstract class QuiltGuiSyncBase {
 		map.put("syncType", lvf().string(syncType()));
 		map.put("data", data);
 
-		QuiltForkComms comms = QuiltForkComms.getCurrentComms();
-		if (comms == null) {
-			throw new IllegalStateException("Forked communication failure; see logs for details!");
-		} else {
-			comms.send(lvf().object(map));
-		}
+		QuiltFork.sendRaw(lvf().object(map));
 	}
 
 	void handleUpdate(String name, LObject data) throws IOException {
