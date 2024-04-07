@@ -140,12 +140,6 @@ public class QuiltFork {
 		}
 	}
 
-	static void sendRaw(LoaderValue.LObject object) {
-		if (COMMS != null) {
-			COMMS.send(object);
-		}
-	}
-
 	static void uploadIcon(int index, Map<Integer, BufferedImage> images) {
 		if (COMMS == null) {
 			return;

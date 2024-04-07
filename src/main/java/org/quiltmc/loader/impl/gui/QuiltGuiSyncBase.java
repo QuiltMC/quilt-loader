@@ -163,7 +163,10 @@ abstract class QuiltGuiSyncBase {
 		map.put("syncType", lvf().string(syncType()));
 		map.put("data", data);
 
-		QuiltFork.sendRaw(lvf().object(map));
+		QuiltForkComms comms = QuiltForkComms.getCurrentComms();
+		if (comms != null) {
+			comms.send(lvf().object(map));
+		}
 	}
 
 	void handleUpdate(String name, LObject data) throws IOException {
@@ -181,7 +184,10 @@ abstract class QuiltGuiSyncBase {
 		map.put("__TYPE", lvf().string(ForkCommNames.ID_GUI_OBJECT_CREATE));
 		map.put("class", lvf().string(getClass().getName()));
 		map.put("data", write());
-		QuiltFork.sendRaw(lvf().object(map));
+		QuiltForkComms comms = QuiltForkComms.getCurrentComms();
+		if (comms != null) {
+			comms.send(lvf().object(map));
+		}
 	}
 
 	public final LoaderValue.LObject write() {
