@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
@@ -52,7 +53,7 @@ public class BuiltinModOption extends InternalModOptionBase {
 
 	@Override
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
-		if (!transformedResourceRoot.equals(resourceRoot)) {
+		if (!transformedResourceRoot.equals(resourceRoot) && resourceRoot.getFileSystem() != FileSystems.getDefault()) {
 			try {
 				resourceRoot.getFileSystem().close();
 			} catch (IOException e) {

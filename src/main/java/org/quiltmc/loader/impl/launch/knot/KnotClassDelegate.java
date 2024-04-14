@@ -17,6 +17,8 @@
 package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
+
+import org.quiltmc.loader.impl.transformer.PackageStrippingData;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.api.ModContainer;
@@ -26,7 +28,6 @@ import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltCodeSource;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.patch.PatchLoader;
-import org.quiltmc.loader.impl.transformer.PackageEnvironmentStrippingData;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -51,11 +52,13 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
@@ -69,6 +72,30 @@ class KnotClassDelegate {
 		Metadata(Manifest manifest, CodeSourceImpl codeSource) {
 			this.manifest = manifest;
 			this.codeSource = codeSource;
+		}
+
+		boolean isPackageSealed(String pkgName) {
+			String value = getPackageValue(pkgName, Attributes.Name.SEALED);
+			return value != null && "true".equalsIgnoreCase(value);
+		}
+
+		String getPackageValue(String pkgName, Attributes.Name name) {
+			if (manifest == null) {
+				return null;
+			}
+
+			String value = null;
+			Attributes attributes = manifest.getAttributes(pkgName);
+
+			if (attributes != null) {
+				value = attributes.getValue(name);
+			}
+
+			if (value == null) {
+				value = manifest.getMainAttributes().getValue(name);
+			}
+
+			return value;
 		}
 	}
 
@@ -97,7 +124,7 @@ class KnotClassDelegate {
 	private IMixinTransformer mixinTransformer;
 	private boolean transformInitialized = false;
 	private boolean transformFinishedLoading = false;
-	private Set<String> hiddenClasses = Collections.emptySet();
+	private Map<String, String> hiddenClasses = Collections.emptyMap();
 	private String transformCacheUrl;
 	private final Map<String, String[]> allowedPrefixes = new ConcurrentHashMap<>();
 	private final Set<String> parentSourcedClasses = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -106,8 +133,8 @@ class KnotClassDelegate {
 	 * in this loader. */
 	private final Set<String> parentHiddenUrls = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	/** Map of package to whether we can load it in this environment. */
-	private final Map<String, Boolean> packageSideCache = new ConcurrentHashMap<>();
+	/** Map of package to the reason why it cannot be loaded. If the package can be loaded then the value is the empty string. */
+	private final Map<String, String> packageLoadDenyCache = new ConcurrentHashMap<>();
 
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
 		this.isDevelopment = isDevelopment;
@@ -238,6 +265,25 @@ class KnotClassDelegate {
 			}
 		}
 
+		int pkgDelimiterPos = name.lastIndexOf('.');
+		String pkgString = pkgDelimiterPos > 0 ? name.substring(0, pkgDelimiterPos) : null;
+
+		if (pkgString != null) {
+			final boolean allowFromParentFinal = allowFromParent;
+			String denyReason = packageLoadDenyCache.computeIfAbsent(pkgString, pkgName -> {
+				return computePackageDenyLoadReason(pkgName, allowFromParentFinal);
+			});
+
+			if (denyReason != null && !denyReason.isEmpty()) {
+				throw new RuntimeException("Cannot load package " + pkgString + " " + denyReason);
+			}
+		}
+
+		String hideReason = hiddenClasses.get(name);
+		if (hideReason != null) {
+			throw new RuntimeException("Cannot load " + name + " " + hideReason);
+		}
+
 		byte[] input = getPostMixinClassByteArray(url, name);
 		if (input == null) return null;
 
@@ -246,8 +292,6 @@ class KnotClassDelegate {
 		}
 
 		KnotClassDelegate.Metadata metadata = getMetadata(name, url);
-
-		int pkgDelimiterPos = name.lastIndexOf('.');
 
 		final String modId;
 
@@ -268,24 +312,20 @@ class KnotClassDelegate {
 			return c;
 		}
 
-		if (pkgDelimiterPos > 0) {
-			// TODO: package definition stub
-			String pkgString = name.substring(0, pkgDelimiterPos);
-
-			final boolean allowFromParentFinal = allowFromParent;
-			Boolean permitted = packageSideCache.computeIfAbsent(pkgString, pkgName -> {
-				return computeCanLoadPackage(pkgName, allowFromParentFinal);
-			});
-
-			if (permitted != null && !permitted) {
-				throw new RuntimeException("Cannot load package " + pkgString + " in environment type " + envType);
-			}
-
+		if (pkgString != null) {
 			Package pkg = itf.getPackage(pkgString);
 
 			if (pkg == null) {
+				String specTitle = metadata.getPackageValue(pkgString, Attributes.Name.SPECIFICATION_TITLE);
+				String specVersion = metadata.getPackageValue(pkgString, Attributes.Name.SPECIFICATION_VERSION);
+				String specVendor = metadata.getPackageValue(pkgString, Attributes.Name.SPECIFICATION_VENDOR);
+				String implTitle = metadata.getPackageValue(pkgString, Attributes.Name.IMPLEMENTATION_TITLE);
+				String implVersion = metadata.getPackageValue(pkgString, Attributes.Name.IMPLEMENTATION_VERSION);
+				String implVendor = metadata.getPackageValue(pkgString, Attributes.Name.IMPLEMENTATION_VENDOR);
+				URL sealBase = null; // TODO: Implement sealing!
+
 				try {
-					pkg = itf.definePackage(pkgString, null, null, null, null, null, null, null);
+					pkg = itf.definePackage(pkgString, specTitle, specVersion, specVendor, implTitle, implVersion, implVendor, sealBase);
 				} catch (IllegalArgumentException e) { // presumably concurrent package definition
 					pkg = itf.getPackage(pkgString);
 					if (pkg == null) throw e; // still not defined?
@@ -310,24 +350,15 @@ class KnotClassDelegate {
 		return c;
 	}
 
+
 	private boolean shouldRerouteToParent(String name) {
 		return name.startsWith("org.slf4j.") || name.startsWith("org.apache.logging.log4j.");
 	}
 
-	boolean computeCanLoadPackage(String pkgName, boolean allowFromParent) {
+	private String computePackageDenyLoadReason(String pkgName, boolean allowFromParent) {
 		String fileName = pkgName + ".package-info";
-		try {
-			byte[] bytes = getRawClassByteArray(fileName, allowFromParent);
-			if (bytes == null) {
-				// No package-info class file
-				return true;
-			}
-			PackageEnvironmentStrippingData data = new PackageEnvironmentStrippingData(QuiltLoaderImpl.ASM_VERSION, envType);
-			new ClassReader(bytes).accept(data, ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES);
-			return !data.stripEntirePackage;
-		} catch (IOException e) {
-			throw new RuntimeException("Unable to load " + fileName, e);
-		}
+		String hideReason = hiddenClasses.get(fileName);
+		return hideReason != null ? hideReason : "";
 	}
 
 	Metadata getMetadata(String name, URL resourceURL) {
@@ -504,10 +535,6 @@ class KnotClassDelegate {
 	}
 
 	public byte[] getRawClassByteArray(URL url, String name) throws IOException {
-		if (hiddenClasses.contains(name)) {
-			return null;
-		}
-
 		try (InputStream inputStream = (url != null ? url.openStream() : null)) {
 			if (inputStream == null) {
 				return null;
@@ -529,6 +556,14 @@ class KnotClassDelegate {
 	}
 
 	void setHiddenClasses(Set<String> hiddenClasses) {
+		Map<String, String> map = new HashMap<>();
+		for (String cl : hiddenClasses) {
+			map.put(cl, "unknown reason");
+		}
+		setHiddenClasses(map);
+	}
+
+	void setHiddenClasses(Map<String, String> hiddenClasses) {
 		this.hiddenClasses = hiddenClasses;
 	}
 

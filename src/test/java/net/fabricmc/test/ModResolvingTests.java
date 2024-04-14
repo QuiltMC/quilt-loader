@@ -354,7 +354,9 @@ public final class ModResolvingTests {
 			return new ModSolveResultImpl(
 				new HashMap<>(result.directModMap), //
 				new HashMap<>(result.providedModMap), //
-				new HashMap<>(result.extraResults)//
+				new HashMap<>(result.extraResults), //
+				new HashMap<>(result.unknownRegularFiles), //
+				new HashMap<>(result.unknownFiles)//
 			);
 		} catch (QuiltReportedError error) {
 			StringWriter writer = new StringWriter();

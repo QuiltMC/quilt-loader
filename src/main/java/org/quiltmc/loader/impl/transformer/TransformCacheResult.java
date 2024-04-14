@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.transformer;
 
-import java.util.Set;
+import java.util.Map;
 
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -26,9 +26,9 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class TransformCacheResult {
 	public final QuiltZipPath transformCacheRoot;
 	public final boolean isNewlyGenerated;
-	public final Set<String> hiddenClasses;
+	public final Map<String, String> hiddenClasses;
 
-	TransformCacheResult(QuiltZipPath transformCacheRoot, boolean isNewlyGenerated, Set<String> hiddenClasses) {
+	TransformCacheResult(QuiltZipPath transformCacheRoot, boolean isNewlyGenerated, Map<String, String> hiddenClasses) {
 		this.isNewlyGenerated = isNewlyGenerated;
 		this.transformCacheRoot = transformCacheRoot;
 		this.hiddenClasses = hiddenClasses;

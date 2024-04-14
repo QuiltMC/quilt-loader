@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.transformer;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOError;
 import java.io.IOException;
 import java.net.URI;
@@ -28,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +54,9 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.JsonToken;
+import org.quiltmc.parsers.json.JsonWriter;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class TransformCacheManager {
@@ -64,7 +69,7 @@ public class TransformCacheManager {
 	private static final String CACHE_FILE = "files.zip";
 
 	private static final String FILE_TRANSFORM_COMPLETE = "__TRANSFORM_COMPLETE";
-	private static final String HIDDEN_CLASSES_PATH = "hidden_classes.txt";
+	private static final String DENY_LOAD_REASONS_PATH = "deny_load_reasons.json";
 
 	public static TransformCacheResult populateTransformBundle(Path transformCacheFolder, List<ModLoadOption> modList,
 		Map<String, String> modOriginHash, ModSolveResult result) throws ModResolutionException {
@@ -103,7 +108,17 @@ public class TransformCacheManager {
 			FilePreloadHelper.preLoad(transformCacheFolder.resolve(CACHE_FILE));
 		}
 		try {
-			return new TransformCacheResult(existing, isNewlyGenerated, new HashSet<>(Files.readAllLines(existing.resolve(HIDDEN_CLASSES_PATH))));
+			Map<String, String> hiddenClasses = new HashMap<>();
+			try (JsonReader reader = JsonReader.json(existing.resolve(DENY_LOAD_REASONS_PATH))) {
+				reader.beginObject();
+				while (reader.peek() == JsonToken.NAME) {
+					String clName = reader.nextName();
+					String clReason = reader.nextString();
+					hiddenClasses.put(clName, clReason);
+				}
+				reader.endObject();
+			}
+			return new TransformCacheResult(existing, isNewlyGenerated, hiddenClasses);
 		} catch (IOException e) {
 			throw new ModResolutionException("Failed to read hidden classes in the transform cache file!", e);
 		}
@@ -287,7 +302,17 @@ public class TransformCacheManager {
 		TransformCache cache = TransformCacheGenerator.generate(root, modList);
 		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-populate");
 		Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
-		Files.write(root.resolve(HIDDEN_CLASSES_PATH), cache.getHiddenClasses());
+		try (JsonWriter json = JsonWriter.json(Files.newBufferedWriter(root.resolve(DENY_LOAD_REASONS_PATH)))) {
+			if (true) {
+				json.setIndent(" ");
+			}
+			json.beginObject();
+			for (Map.Entry<String,String> entry : cache.getHiddenClasses().entrySet()) {
+				json.name(entry.getKey());
+				json.value(entry.getValue());
+			}
+			json.endObject();
+		}
 		Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
 	}
 

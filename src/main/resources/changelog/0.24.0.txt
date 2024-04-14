@@ -1,0 +1,27 @@
+Features:
+
+- Improved lists of versions in the error gui (Glitch):
+    - For example `Iris requires a version in the range { [0.5.7, 0.5.7] U [0.5.8, 0.5.8] U [0.5.9, 0.5.9] } of sodium`
+      is now described as `Iris requires version 0.5.7, 0.5.8, or 0.5.9 of sodium`
+- Updated to Quilt Config 1.2 (ix0rai)
+- Added a new unknown or unsupported file screen, which shows a warning if neoforge, forge, or modloader mods are found in the mods folder, or any other unknown files.
+    - That screen is also shown in a table in the log.
+- Moved more of loaders GUI abstractions to the api package.
+    - Most mods will have no use for these, as they are primarily intended for early warnings.
+- [#385](https://github.com/QuiltMC/quilt-loader/pull/385) Added "Path Retention" to the plugin management system. This is a major improvement, and brings loader plugins much closer to stabilising.
+    - Plugins can now scan files & folders for mods if the plugin was loaded after the file or folder was originally found.
+- Improved fabric to quilt metadata handling.
+- Added "net.fabricmc.loader.impl.gui.FabricGuiEntry" and "net.fabricmc.loader.impl.gui.FabricStatusTree", as some mods use them. (Although these are *internal* classes in fabric-loader, so mods are discouraged from using them).
+
+Features from Fabric Loader `0.15.4` through `0.15.7`:
+
+- [FabricLoader#876](https://github.com/FabricMC/fabric-loader/pull/876) [commit](https://github.com/QuiltMC/quilt-loader/commit/3389b7c222af1448e2625f593be189ca9c4d573d) Fix inputGameJars ObjectShare mutating after being set (Originally by tildejustin)
+- [FabricLoader#890](https://github.com/FabricMC/fabric-loader/pull/890) [commit](https://github.com/QuiltMC/quilt-loader/commit/e6bdf3b62ae528eb754ec625f7a306790fa4f108) Added support for 1.20.5 in 2024 in McVersionLookup. (Originally by WinPlay02)
+- Use TR's MixinExtension to remap jars built without refmaps in dev. (Originally by Modmuss)
+- [FabricLoader#897](https://github.com/FabricMC/fabric-loader/pull/897) Fix edge case with early snapshot version detection (Originally by Shnupbups)
+- Updated Mixin Extras to 0.3.5
+
+Bug Fixes:
+
+- Fixed loader loading all images with BufferedImage and then storing them back as png files for the forked gui server, rather than just letting the gui server load them.
+    - This fixes a crash on with some JVM distributions that are missing certain natives required for BufferedImage to work properly.

@@ -65,10 +65,10 @@ final class V0ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 	private final ContactInformation links;
 	private final String license;
 
-	private FabricModMetadataWrapper cache2quilt;
+	private final FabricModMetadataWrapper wrapped2quilt;
 
 	V0ModMetadataFabric(String id, Version version, Collection<ModDependency> dependencies, Mixins mixins, ModEnvironment environment, String initializer, Collection<String> initializers,
-						String name, String description, Collection<Person> authors, Collection<Person> contributors, ContactInformation links, String license) {
+						String name, String description, Collection<Person> authors, Collection<Person> contributors, ContactInformation links, String license) throws ParseMetadataException {
 		this.id = id;
 		this.version = version;
 		this.dependencies = Collections.unmodifiableCollection(dependencies);
@@ -94,14 +94,14 @@ final class V0ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 		this.contributors = Collections.unmodifiableCollection(contributors);
 		this.links = links;
 		this.license = license;
+
+		// Must come last
+		this.wrapped2quilt = new FabricModMetadataWrapper(this);
 	}
 
 	@Override
 	public InternalModMetadata asQuiltModMetadata() {
-		if (cache2quilt == null) {
-			cache2quilt = new FabricModMetadataWrapper(this);
-		}
-		return cache2quilt;
+		return wrapped2quilt;
 	}
 
 	@Override

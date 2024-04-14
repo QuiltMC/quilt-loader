@@ -18,7 +18,7 @@ package org.quiltmc.loader.impl.plugin;
 
 import java.nio.file.Path;
 
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.impl.gui.QuiltStatusNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -46,9 +46,9 @@ abstract class MainThreadTask {
 	static final class ScanFolderAsModTask extends MainThreadTask {
 		final Path folder;
 		final ModLocationImpl location;
-		final PluginGuiTreeNode guiNode;
+		final QuiltStatusNode guiNode;
 
-		public ScanFolderAsModTask(Path folder, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+		public ScanFolderAsModTask(Path folder, ModLocationImpl location, QuiltStatusNode guiNode) {
 			this.folder = folder;
 			this.location = location;
 			this.guiNode = guiNode;
@@ -64,9 +64,9 @@ abstract class MainThreadTask {
 		final Path zipFile;
 		final Path zipRoot;
 		final ModLocationImpl location;
-		final PluginGuiTreeNode guiNode;
+		final QuiltStatusNode guiNode;
 
-		public ScanZipTask(Path zipFile, Path zipRoot, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+		public ScanZipTask(Path zipFile, Path zipRoot, ModLocationImpl location, QuiltStatusNode guiNode) {
 			this.zipFile = zipFile;
 			this.zipRoot = zipRoot;
 			this.location = location;
@@ -82,9 +82,9 @@ abstract class MainThreadTask {
 	static final class ScanUnknownFileTask extends MainThreadTask {
 		final Path file;
 		final ModLocationImpl location;
-		final PluginGuiTreeNode guiNode;
+		final QuiltStatusNode guiNode;
 
-		public ScanUnknownFileTask(Path file, ModLocationImpl location, PluginGuiTreeNode guiNode) {
+		public ScanUnknownFileTask(Path file, ModLocationImpl location, QuiltStatusNode guiNode) {
 			this.file = file;
 			this.location = location;
 			this.guiNode = guiNode;

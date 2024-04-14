@@ -57,15 +57,17 @@ import org.quiltmc.parsers.json.ParseException;
 class TransformCache {
 	private final Path root;
 	private final Map<ModLoadOption, Path> modRoots = new HashMap<>();
-	private final List<ModLoadOption> orderedMods;
-	private final Set<String> hiddenClasses = new HashSet<>();
+	private final List<ModLoadOption> allMods;
+	private final List<ModLoadOption> modsInCache;
+	private final Map<String, String> hiddenClasses = new HashMap<>();
 	private static final boolean COPY_ON_WRITE = true;
 
 	public TransformCache(Path root, List<ModLoadOption> orderedMods) {
 		this.root = root;
-		this.orderedMods = orderedMods.stream().filter(mod -> mod.needsTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())).collect(Collectors.toList());
+		this.allMods = orderedMods;
+		this.modsInCache = orderedMods.stream().filter(mod -> mod.needsTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())).collect(Collectors.toList());
 
-		for (ModLoadOption mod : this.orderedMods) {
+		for (ModLoadOption mod : this.modsInCache) {
 			Path modSrc = mod.createTransformRoot();
 			Path modDst = root.resolve(mod.id());
 			modRoots.put(mod, modDst);
@@ -152,7 +154,7 @@ class TransformCache {
 		}
 		// Populate mods that need remapped
 		RuntimeModRemapper.remap(this);
-		for (ModLoadOption orderedMod : this.orderedMods) {
+		for (ModLoadOption orderedMod : this.modsInCache) {
 			modRoots.put(orderedMod, root.resolve(orderedMod.id() + "/"));
 		}
 	}
@@ -161,23 +163,31 @@ class TransformCache {
 		return modRoots.get(mod);
 	}
 
-	public List<ModLoadOption> getMods() {
-		return Collections.unmodifiableList(orderedMods);
+	/** @return Every mod which has a {@link #getRoot(ModLoadOption)} in this cache. */
+	public List<ModLoadOption> getModsInCache() {
+		return Collections.unmodifiableList(modsInCache);
 	}
 
-	public Set<String> getHiddenClasses() {
-		return Collections.unmodifiableSet(hiddenClasses);
+	/** @return The original list of mods, including any which aren't directly in this cache. */
+	public List<ModLoadOption> getAllMods() {
+		return Collections.unmodifiableList(allMods);
+	}
+
+	public Map<String, String> getHiddenClasses() {
+		return Collections.unmodifiableMap(hiddenClasses);
 	}
 
 	public void forEachClassFile(ClassConsumer action)
 			throws IOException {
-		for (ModLoadOption mod : orderedMods) {
+		for (ModLoadOption mod : modsInCache) {
 			visitFolder(mod, getRoot(mod), action);
 		}
 	}
 
-	public void hideClass(String className) {
-		hiddenClasses.add(className);
+	public void hideClass(String className, String denyReason) {
+		hiddenClasses.merge(className, denyReason, (current, nval) -> {
+			return current + "\n" + nval;
+		});
 	}
 
 	private static void copyFile(Path path, Path modSrc, Path modDst, CopyOption... copyOptions) {
@@ -239,7 +249,7 @@ class TransformCache {
 				String fileName = file.getFileName().toString();
 				if (fileName.endsWith(".class") && couldBeJavaElement(fileName, true)) {
 					String name = LoaderUtil.getClassNameFromTransformCache(file.toString());
-					if (!hiddenClasses.contains(name)) {
+					if (!hiddenClasses.containsKey(name)) {
 						byte[] result = action.run(mod, name, file);
 						if (result != null) {
 							Files.write(file, result);

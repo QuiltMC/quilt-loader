@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.jar.Manifest;
 
@@ -40,6 +41,7 @@ public interface QuiltLauncher {
 	void setAllowedPrefixes(Path path, String... prefixes);
 	void setTransformCache(URL insideTransformCache);
 	void setHiddenClasses(Set<String> classes);
+	void setHiddenClasses(Map<String, String> classes);
 	void hideParentUrl(URL hidden);
 	void hideParentPath(Path obf);
 	void validateGameClassLoader(Object gameInstance);

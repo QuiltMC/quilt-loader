@@ -314,6 +314,11 @@ public final class Knot extends QuiltLauncherBase {
 	}
 
 	@Override
+	public void setHiddenClasses(Map<String, String> hiddenClasses) {
+		classLoader.getDelegate().setHiddenClasses(hiddenClasses);
+	}
+
+	@Override
 	public void hideParentUrl(URL parent) {
 		classLoader.getDelegate().hideParentUrl(parent);
 	}

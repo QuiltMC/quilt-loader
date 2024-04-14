@@ -21,11 +21,14 @@ import java.awt.GraphicsEnvironment;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.QuiltLoader;
-import org.quiltmc.loader.api.gui.LoaderGuiClosed;
+import org.quiltmc.loader.api.gui.LoaderGuiException;
+import org.quiltmc.loader.api.gui.QuiltBasicWindow;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
+import org.quiltmc.loader.api.gui.QuiltGuiMessagesTab;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.gui.QuiltJsonGui.QuiltBasicButtonAction;
 import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -37,25 +40,6 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 @Deprecated
 public final class QuiltGuiEntry {
-	/** Opens the given {@link QuiltJsonGui} in a new swing window.
-	 * 
-	 * @throws Exception if something went wrong while opening the window. */
-	public static void open(QuiltJsonGui tree) throws Exception {
-		open(tree, null, true);
-	}
-
-	/** Opens the given {@link QuiltJsonGui} in a new swing window.
-	 * 
-	 * @param forceFork If true then this will create a new process to host the window, false will always use this
-	 *            process, and null will only fork if the current operating system doesn't support LWJGL + swing windows
-	 *            at the same time (such as mac osx).
-	 * @param shouldWait If true then this call will wait until either the user clicks the "continue" button or the
-	 *            window is closed before returning, otherwise this method will return as soon as the window has opened.
-	 * @throws Exception if something went wrong while opening the window. */
-	public static void open(QuiltJsonGui tree, Boolean forceFork, boolean shouldWait) throws Exception {
-		QuiltFork.openErrorGui(tree, shouldWait);
-	}
-
 	/** @param exitAfter If true then this will call {@link System#exit(int)} after showing the gui, otherwise this will
 	 *            return normally. */
 	public static void displayError(String mainText, Throwable exception, boolean warnEarly, boolean exitAfter) {
@@ -87,40 +71,42 @@ public final class QuiltGuiEntry {
 			}
 
 			String title = "Quilt Loader " + QuiltLoaderImpl.VERSION;
-			QuiltJsonGui tree = new QuiltJsonGui(title, mainText);
+			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
+			window.title(QuiltLoaderText.of(title));
+			window.mainText(QuiltLoaderText.of(mainText));
 
-			QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.unhandled"));
+			QuiltGuiMessagesTab messages = window.addMessagesTab(QuiltLoaderText.EMPTY);
+			window.restrictToSingleTab();
+
+			QuiltJsonGuiMessage error = new QuiltJsonGuiMessage(null, "quilt_loader", QuiltLoaderText.translate("error.unhandled"));
 			error.appendDescription(QuiltLoaderText.translate("error.unhandled_launch.desc"));
 			error.setOrdering(-100);
 			error.addOpenQuiltSupportButton();
-			tree.messages.add(error);
+			messages.addMessage(error);
 
 			if (crashReportText != null) {
-				error = new QuiltJsonGuiMessage(tree, "quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
+				error = new QuiltJsonGuiMessage(null, "quilt_loader", QuiltLoaderText.translate("error.failed_to_save_crash_report"));
 				error.setIcon(GuiManagerImpl.ICON_LEVEL_ERROR);
 				error.appendDescription(QuiltLoaderText.translate("error.failed_to_save_crash_report.desc"));
 				error.appendAdditionalInformation(QuiltLoaderText.translate("error.failed_to_save_crash_report.info"));
 				error.addCopyTextToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportText);
-				tree.messages.add(error);
+				messages.addMessage(error);
 			}
 
 			if (crashReportFile != null) {
-				tree.addButton(QuiltLoaderText.translate("button.open_crash_report").toString(), "text_file", QuiltBasicButtonAction.OPEN_FILE)//
-					.arg("file", crashReportFile.toString());
-				tree.addButton(QuiltLoaderText.translate("button.copy_crash_report").toString(), QuiltBasicButtonAction.PASTE_CLIPBOARD_FILE)//
-					.arg("file", crashReportFile.toString());
+				window.addFileOpenButton(QuiltLoaderText.translate("button.open_crash_report"), crashReportFile);
+				window.addCopyFileToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportFile);
 			}
 
-			tree.addButton(QuiltLoaderText.translate("button.open_mods_folder").toString(), "folder", QuiltBasicButtonAction.VIEW_FOLDER)
-				.arg("folder", QuiltLoaderImpl.INSTANCE.getModsDir().toString());
+			window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), QuiltLoaderImpl.INSTANCE.getModsDir());
 
-			tree.addButton(QuiltLoaderText.translate("button.exit").toString(), QuiltJsonGui.QuiltBasicButtonAction.CLOSE);
+			QuiltErrorButton continueBtn = window.addContinueButton();
+			continueBtn.text(QuiltLoaderText.translate("button.exit"));
+			continueBtn.icon(QuiltLoaderGui.iconLevelError());
 
 			try {
-				QuiltFork.openErrorGui(tree, true);
-			} catch (LoaderGuiClosed ignored) {
-				// That's expected as we're crashing anyway
-			} catch (Exception e) {
+				QuiltLoaderGui.open(window);
+			} catch (LoaderGuiException e) {
 				if (exitAfter) {
 					Log.warn(LogCategory.GUI, "Failed to open the error gui!", e);
 				} else {

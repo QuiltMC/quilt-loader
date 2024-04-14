@@ -20,9 +20,11 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
@@ -31,6 +33,7 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -118,6 +121,30 @@ public interface QuiltLoaderPlugin {
 	 *             displayed. */
 	default ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode)
 		throws IOException {
+		return null;
+	}
+
+	/** Called if multiple plugins return mod options for the same file. This is never invoked for quilt mods. Only one
+	 * plugin needs to return a non-null value - however if both plugins return null, or both plugins return the same
+	 * value, then the game will crash since quilt loader doesn't know which to choose. <em>(In the future quilt loader
+	 * might add system properties to handle these cases, however for now plugin authors are intended to discuss this to
+	 * agree on a common ordering).</em>
+	 * 
+	 * @param path The path that the mods were loaded from. This is either the
+	 *            {@link QuiltPluginManager#getParent(Path)} of the path passed to
+	 *            {@link #scanZip(Path, ModLocation, PluginGuiTreeNode)}, or the exact path passed to either
+	 *            {@link #scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)} or
+	 *            {@link #scanFolder(Path, ModLocation, PluginGuiTreeNode)}
+	 * @param thisOptions An unmodifiable list of the options this plugin loaded from the path.
+	 * @param otherPluginId The ID of the other plugin. This is never quilt loader itself
+	 *            ({@link QuiltPluginManager#QUILT_LOADER}), since files recognised as quilt mods are never passed to
+	 *            plugins. All plugins are expected to handle {@link QuiltPluginManager#QUILTED_FABRIC_LOADER} (if they
+	 *            load from zips), since it doesn't handle any other plugin.
+	 * @param otherOptions An unmodifiable list of the options that the other plugin loaded from the path. You are
+	 *            intended to check {@link ModLoadOption#subType}, and nothing else.
+	 * @return True if this plugin has a higher priority than the other plugin, or false if this plugin has a lower
+	 *         priority. If this plugin doesn't know then it should return null. */
+	default @Nullable Boolean isHigherPriorityThan(Path path, List<ModLoadOption> thisOptions, String otherPluginId, List<ModLoadOption> otherOptions) {
 		return null;
 	}
 

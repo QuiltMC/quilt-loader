@@ -46,6 +46,10 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltForkServerMain {
 
+	static {
+		QuiltForkComms.setServer();
+	}
+
 	private static final Map<Integer, NavigableMap<Integer, BufferedImage>> ICONS = new ConcurrentHashMap<>();
 	private static QuiltForkServerMain currentConnection;
 

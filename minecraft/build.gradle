@@ -14,7 +14,7 @@ repositories {
 
 dependencies {
 	api project(":")
-
+	implementation project(":").sourceSets.main.output
 	// log4j wrapper
 	compileOnly 'org.apache.logging.log4j:log4j-api:2.8.1'
 	// slf4j wrapper

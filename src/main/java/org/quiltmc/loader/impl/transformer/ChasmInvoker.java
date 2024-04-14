@@ -69,7 +69,7 @@ class ChasmInvoker {
 		Map<String, byte[]> inputClassCache = new HashMap<>();
 
 		// TODO: Move chasm searching to here!
-		for (ModLoadOption mod : cache.getMods()) {
+		for (ModLoadOption mod : cache.getModsInCache()) {
 			Path path2 = cache.getRoot(mod);
 			if (!FasterFiles.isDirectory(path2)) {
 				continue;
@@ -108,7 +108,7 @@ class ChasmInvoker {
 			}
 		});
 
-		for (ModLoadOption mod : cache.getMods()) {
+		for (ModLoadOption mod : cache.getModsInCache()) {
 			Path modPath = cache.getRoot(mod);
 			if (!FasterFiles.exists(modPath)) {
 				continue;
@@ -213,7 +213,7 @@ class ChasmInvoker {
 				case REMOVED: {
 					QuiltMetadata qm = this_value_is_actually_nullable(result.getMetadata().get(QuiltMetadata.class));
 					if (qm != null) {
-						cache.hideClass(LoaderUtil.getClassNameFromTransformCache(qm.name));
+						cache.hideClass(LoaderUtil.getClassNameFromTransformCache(qm.name), "it was removed by a chasm transformer");
 					} else {
 						throw new UnsupportedOperationException("Cannot remove unknown class");
 					}

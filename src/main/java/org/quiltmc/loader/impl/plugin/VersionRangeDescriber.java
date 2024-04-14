@@ -22,6 +22,8 @@ import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+import java.util.stream.Collectors;
+
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class VersionRangeDescriber {
 	public static QuiltLoaderText describe(String modName, VersionRange range, String depName, boolean transitive) {
@@ -40,7 +42,17 @@ public class VersionRangeDescriber {
 		String titleKey = "error." + (isDep ? "dep." : "break.") + (transitive ? "transitive." : "direct.");
 
 		if (range.size() != 1) {
-			return QuiltLoaderText.translate(getTransKey(titleKey, "ranged"), modFrom, range, depName);
+			for (VersionInterval interval : range) {
+				// Handle the specific case of { [A,A] U [B,B] } (of any length)
+				if (interval.getMin() == null || !interval.getMin().equals(interval.getMax())) {
+					return QuiltLoaderText.translate(getTransKey(titleKey, "ranged"), modFrom, range, depName);
+				}
+			}
+
+			VersionInterval finalV = range.last();
+			//noinspection DataFlowIssue -- we've confirmed that it can never be null above
+			String list = range.headSet(finalV).stream().map(i -> i.getMin().toString()).collect(Collectors.joining(", "));
+			return QuiltLoaderText.translate(getTransKey(titleKey, "exact_list"), modFrom, list, finalV.getMin(), depName);
 		}
 
 		VersionInterval interval = range.first();

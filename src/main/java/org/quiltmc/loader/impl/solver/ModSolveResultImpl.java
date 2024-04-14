@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.solver;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -31,12 +32,18 @@ public final class ModSolveResultImpl implements ModSolveResult {
 	public final Map<String, ModLoadOption> directModMap;
 	public final Map<String, ModLoadOption> providedModMap;
 	public final Map<Class<?>, LoadOptionResult<?>> extraResults;
+	public final Map<Path, String> unknownRegularFiles;
+	public final Map<String, String> unknownFiles;
 
-	public ModSolveResultImpl(Map<String, ModLoadOption> directMap, Map<String, ModLoadOption> provideds, //
-		Map<Class<?>, LoadOptionResult<?>> extraResults) {
-		this.directModMap = directMap;
-		this.providedModMap = provideds;
+	public ModSolveResultImpl(Map<String, ModLoadOption> directModMap, Map<String, ModLoadOption> providedModMap, //
+		Map<Class<?>, LoadOptionResult<?>> extraResults, Map<Path, String> unknownRegularFiles, //
+		Map<String, String> unknownFiles) {
+
+		this.directModMap = directModMap;
+		this.providedModMap = providedModMap;
 		this.extraResults = extraResults;
+		this.unknownRegularFiles = unknownRegularFiles;
+		this.unknownFiles = unknownFiles;
 	}
 
 	@Override
@@ -56,6 +63,16 @@ public final class ModSolveResultImpl implements ModSolveResult {
 			return new LoadOptionResult<>(Collections.emptyMap());
 		}
 		return (LoadOptionResult<O>) result;
+	}
+
+	@Override
+	public Map<Path, String> getUnknownFiles() {
+		return unknownRegularFiles;
+	}
+
+	@Override
+	public Map<String, String> getIrregularUnknownFiles() {
+		return unknownFiles;
 	}
 
 	public static final class LoadOptionResult<O> implements SpecificLoadOptionResult<O> {

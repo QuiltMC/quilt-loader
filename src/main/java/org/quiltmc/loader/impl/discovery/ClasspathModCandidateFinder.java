@@ -63,7 +63,12 @@ public class ClasspathModCandidateFinder {
 			}
 		} else { // production, add loader as a mod
 			try {
-				out.addMod(Collections.singletonList(getLoaderPath()));
+				Path loader = getLoaderPath();
+				Path gameProvider = getGameProviderPath();
+				out.addMod(Collections.singletonList(loader));
+				if (gameProvider != null && (loader == null || !gameProvider.equals(loader))) {
+					out.addMod(Collections.singletonList(gameProvider));
+				}
 			} catch (Throwable t) {
 				Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			}
