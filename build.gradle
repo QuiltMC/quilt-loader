@@ -18,8 +18,13 @@ plugins {
 	id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+	toolchain {
+		languageVersion.set(JavaLanguageVersion.of(8))
+	}
+	withJavadocJar()
+	withSourcesJar()
+}
 
 archivesBaseName = "quilt-loader"
 version = project.quilt_loader
@@ -59,11 +64,6 @@ allprojects {
 			}
 		}
 	}
-	java {
-		toolchain {
-			languageVersion = JavaLanguageVersion.of(17)
-		}
-	}
 }
 
 sourceSets {
@@ -73,69 +73,35 @@ sourceSets {
 }
 
 configurations {
-	include {
-	   transitive = false
-	}
+	include
+	development
 
-	implementation {
-		extendsFrom include
-	}
-
-	development {
-		transitive = false
-	}
-
-	api {
-		extendsFrom development
-	}
+	compileClasspath.extendsFrom localImplementation
+	runtimeClasspath.extendsFrom localImplementation
+	testImplementation.extendsFrom localImplementation
+	localImplementation.extendsFrom include
 }
 
 dependencies {
-	// Non-"include"d dependencies must be added to the LoaderLibrary class as well.
-	api "org.ow2.asm:asm:${project.asm}"
-	api "org.ow2.asm:asm-analysis:${project.asm}"
-	api "org.ow2.asm:asm-commons:${project.asm}"
-	api "org.ow2.asm:asm-tree:${project.asm}"
-	api "org.ow2.asm:asm-util:${project.asm}"
-
-	api("net.fabricmc:sponge-mixin:${project.sponge_mixin}") {
-		exclude module: 'launchwrapper'
-		exclude module: 'guava'
-	}
-	api "net.fabricmc:tiny-mappings-parser:${project.tiny_mappings_parser}"
-	api "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
-	api "net.fabricmc:access-widener:${project.access_widener}"
-
-	/*include*/ api "org.quiltmc:quilt-json5:${project.quilt_json5}"
-	include "org.quiltmc:quilt-loader-sat4j:${project.quilt_loader_sat4j}"
-
-	include "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
-	include "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
-	api "org.quiltmc:quilt-config:${project.quilt_config}"
-
-	include "com.electronwill.night-config:core:${project.night_config}"
-	include "com.electronwill.night-config:toml:${project.night_config}"
-	shadow "com.electronwill.night-config:core:${project.night_config}"
-	shadow "com.electronwill.night-config:toml:${project.night_config}"
-
-	development "io.github.llamalad7:mixinextras-fabric:$mixin_extras"
+	include project(path: ':dependencies', configuration: 'include')
+	development project(path: ':dependencies', configuration: 'development')
 
 	// also must update in minecraft AND minecraft test
 	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-
-	shadow "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
-	shadow "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
-	shadow "org.quiltmc.parsers:json:${project.quilt_parsers}"
-	include "org.quiltmc.parsers:json:${project.quilt_parsers}"
-	include "com.unascribed:flexver-java:${project.flexver}"
-	shadow "com.unascribed:flexver-java:${project.flexver}"
 
 	testCompileOnly "org.jetbrains:annotations:${project.annotations}"
 
 	// Unit testing
 	testImplementation(platform("org.junit:junit-bom:${project.junit_bom}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
+
+	/*api*/ localImplementation project(':dependencies')
+}
+
+def javaComponent = components.java as AdhocComponentWithVariants
+javaComponent.withVariantsFromConfiguration(configurations.shadowRuntimeElements) {
+	skip()
 }
 
 test {
@@ -177,17 +143,6 @@ processResources {
 			"mixin_extras": project.mixin_extras,
 		)
 	}
-}
-
-java {
-	sourceCompatibility = 8
-	targetCompatibility = 8
-	withJavadocJar()
-	withSourcesJar()
-}
-
-compileJava {
-	options.release.set(8)
 }
 
 jar {
@@ -305,8 +260,6 @@ task testJar(type: Jar) {
 	from sourceSets.test.output
 }
 
-
-
 task copyJson() {
 	def inJson = file('build/resources/main/quilt_installer.json')
 	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
@@ -327,14 +280,13 @@ tasks.build.dependsOn "copyJson"
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-
-	// Target JDK 8
-	if (JavaVersion.current().isJava9Compatible()) {
-		it.options.release.set(8)
-	}
 }
 
 javadoc {
+	javadocTool.set javaToolchains.javadocToolFor {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+
 	options {
 		if (file("README.html").exists()) {
 			overview = "README.html"
@@ -379,20 +331,20 @@ allprojects {
 	}
 }
 
-// Causes more trouble than its worth
-tasks.withType(GenerateModuleMetadata) {
-	enabled = false
+[configurations.runtimeElements, configurations.apiElements].each { configuration ->
+	configuration.outgoing.artifacts.clear()
+	artifacts {
+		add(configuration.name, proguardFile) {
+			builtBy proguardJar
+		}
+	}
 }
 
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
 			// add all the jars that should be included when publishing to maven
-			artifact(proguardFile) {
-				builtBy proguardJar
-			}
-			artifact(sourcesJar)
-			artifact javadocJar
+			from components.java
 			artifact(file('build/resources/main/quilt_installer.json')) {
 				builtBy processResources
 				builtBy copyJson
@@ -400,42 +352,6 @@ publishing {
 //			artifact(file('src/main/resources/fabric-installer.launchwrapper.json')) {
 //				builtBy copyJson
 //				classifier = "launchwrapper"
-//			}
-
-			// Manually inject the dependencies into the final POM.
-			// This allows for use without Loom in projects that don't need it.
-			//
-			// This is done this way to avoid including dependencies that are
-			// shaded in, as Gradle seems to provide no clean way of excluding
-			// dependencies from the final POM.
-			//
-			// Note: This only uses the `api` configuration to determine what is
-			// fine to include, and does not respect exclusions. A more advanced
-			// implementation that excludes the `include` configuration from
-			// runtime & compile classpaths would likely prove to be better if
-			// Quilt ever needs to have dependencies that aren't to be shaded nor
-			// passed through to the application.
-			// TODO: disabled until Loom can properly handle this.
-//			pom.withXml {
-//				final def dependenciesNode = asNode().appendNode("dependencies")
-//
-//				for (final def dep : configurations.api.allDependencies) {
-//					// Tests for an external dependency.
-//					// Provides a guarantee that the needed metadata is present.
-//					if (dep instanceof ExternalDependency) {
-//						// Inject the dependency metadata.
-//						final def dependencyNode = dependenciesNode.appendNode("dependency")
-//
-//						dependencyNode.appendNode("groupId", dep.group)
-//						dependencyNode.appendNode("artifactId", dep.name)
-//						dependencyNode.appendNode("version", dep.version)
-//
-//						// Note: If ever retrofitted to include the runtime classpath,
-//						// change this to use the runtime scope if the dependency is not
-//						// present in the compile classpath.
-//						dependencyNode.appendNode("scope", "compile")
-//					}
-//				}
 //			}
 		}
 	}

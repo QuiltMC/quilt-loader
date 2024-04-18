@@ -1,0 +1,113 @@
+plugins {
+	id 'maven-publish'
+	id 'java'
+}
+
+base.archivesName.set 'quilt-loader-dependencies'
+version = rootProject.version
+group = rootProject.group
+
+java {
+	toolchain {
+		languageVersion.set(JavaLanguageVersion.of(8))
+	}
+}
+
+def ENV = System.getenv()
+
+configurations {
+	development {
+		transitive = false
+		canBeConsumed = true
+	}
+
+	published {
+		extendsFrom development
+	}
+
+	runtimeElements {
+		extendsFrom published
+		outgoing.artifacts.clear()
+		outgoing.variants.clear()
+	}
+	apiElements {
+		extendsFrom published
+		outgoing.artifacts.clear()
+		outgoing.variants.clear()
+	}
+
+	include {
+		transitive = false
+	}
+}
+
+[configurations.runtimeElements, configurations.apiElements].each {
+	// included in quilt loader and not relocated
+	it.exclude(group: 'org.quiltmc.quilt-config.serializers', module: 'toml')
+	it.exclude(group: 'org.quiltmc.quilt-config.serializers', module: 'json5')
+}
+
+dependencies {
+	// Non-"include"d dependencies must be added to the LoaderLibrary class as well.
+	published "org.ow2.asm:asm:${project.asm}"
+	published "org.ow2.asm:asm-analysis:${project.asm}"
+	published "org.ow2.asm:asm-commons:${project.asm}"
+	published "org.ow2.asm:asm-tree:${project.asm}"
+	published "org.ow2.asm:asm-util:${project.asm}"
+
+	published("net.fabricmc:sponge-mixin:${project.sponge_mixin}") {
+		exclude module: 'launchwrapper'
+		exclude module: 'guava'
+	}
+	published "net.fabricmc:tiny-mappings-parser:${project.tiny_mappings_parser}"
+	published "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
+	published "net.fabricmc:access-widener:${project.access_widener}"
+
+	/*include*/ published "org.quiltmc:quilt-json5:${project.quilt_json5}"
+	published "org.quiltmc:quilt-config:${project.quilt_config}"
+
+	development "io.github.llamalad7:mixinextras-fabric:$mixin_extras"
+
+	include "org.quiltmc:quilt-loader-sat4j:${project.quilt_loader_sat4j}"
+
+	include "org.quiltmc.quilt-config.serializers:toml:${project.quilt_config}"
+	include "org.quiltmc.quilt-config.serializers:json5:${project.quilt_config}"
+
+	include "com.electronwill.night-config:core:${project.night_config}"
+	include "com.electronwill.night-config:toml:${project.night_config}"
+
+	include "org.quiltmc.parsers:json:${project.quilt_parsers}"
+	include "com.unascribed:flexver-java:${project.flexver}"
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			artifactId project.archivesBaseName
+			from components.java
+		}
+	}
+
+	repositories {
+		if (ENV.MAVEN_URL) {
+			maven {
+				url ENV.MAVEN_URL
+				credentials {
+					username ENV.MAVEN_USERNAME
+					password ENV.MAVEN_PASSWORD
+				}
+			}
+		} else if (ENV.SNAPSHOTS_URL) {
+			maven {
+				url ENV.SNAPSHOTS_URL
+
+				credentials {
+					username ENV.SNAPSHOTS_USERNAME
+					password ENV.SNAPSHOTS_PASSWORD
+				}
+			}
+		} else {
+			mavenLocal()
+		}
+	}
+}

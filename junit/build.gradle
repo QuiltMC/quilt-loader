@@ -2,24 +2,33 @@ plugins {
 	id("maven-publish")
 }
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+	toolchain {
+		languageVersion.set(JavaLanguageVersion.of(8))
+	}
+	withSourcesJar()
+}
 
 archivesBaseName = "quilt-loader-junit"
 version = rootProject.version
 group = rootProject.group
 
 def ENV = System.getenv()
-compileJava {
-	options.release.set(8)
-}
 
 repositories {
 	mavenCentral()
 }
 
+configurations {
+	compileClasspath.extendsFrom localImplementation
+	runtimeClasspath.extendsFrom localImplementation
+	testImplementation.extendsFrom localImplementation
+}
+
 dependencies {
 	api project(":")
+	localImplementation project(':dependencies')
+	localImplementation project(path: ':dependencies', configuration: 'include')
 
 	api platform("org.junit:junit-bom:5.9.2")
 	api "org.junit.jupiter:junit-jupiter-engine"
@@ -30,16 +39,8 @@ dependencies {
 	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 }
 
-java {
-	withSourcesJar()
-}
-
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-
-	if (JavaVersion.current().isJava9Compatible()) {
-		it.options.release = 8
-	}
 }
 
 publishing {
