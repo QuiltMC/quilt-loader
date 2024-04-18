@@ -24,3 +24,5 @@ Bug Fixes:
 
 - Fixed the forked error window throwing errors too early if it cannot create the new process
 - Fixed @DedicatedServerOnly and @ClientOnly not working when applied to packages.
+- Fixed access transformers not asking the game provider for the game's ID.
+    - Access transformers can still only be applied to the current game.
