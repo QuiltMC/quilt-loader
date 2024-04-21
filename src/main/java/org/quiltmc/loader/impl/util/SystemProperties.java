@@ -17,6 +17,9 @@
 
 package org.quiltmc.loader.impl.util;
 
+import java.net.URL;
+import java.net.URLStreamHandlerFactory;
+
 import org.quiltmc.loader.impl.filesystem.QuiltBasePath;
 import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
@@ -95,6 +98,10 @@ public final class SystemProperties {
 	public static final String ALWAYS_DEFER_FILESYSTEM_OPERATIONS = "loader.workaround.defer_all_filesystem_operations";
 	public static final String DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE = "loader.quilt_class_path.disable_custom_table";
 	public static final String DISABLE_BUILTIN_MIXIN_EXTRAS = "loader.disable_builtin_mixin_extras";
+
+	/** Disables loader from registering its {@link URLStreamHandlerFactory} with
+	 * {@link URL#setURLStreamHandlerFactory(URLStreamHandlerFactory)}. This */
+	public static final String DISABLE_URL_STREAM_FACTORY = "loader.disable_url_stream_factory";
 
 	// ##############
 	// # Validation #
