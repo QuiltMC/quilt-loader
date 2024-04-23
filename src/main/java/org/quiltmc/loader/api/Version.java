@@ -100,11 +100,11 @@ public interface Version {
 			StringBuilder raw = new StringBuilder();
 			raw.append(Arrays.stream(components).mapToObj(Integer::toString).collect(Collectors.joining("."))); // 1.0.0
 
-			if (preRelease != null && !preRelease.isEmpty()) {
+			if (preRelease != null) {
 				raw.append('-').append(preRelease);
 			}
 
-			if (buildMetadata != null && !buildMetadata.isEmpty()) {
+			if (buildMetadata != null) {
 				raw.append('+').append(buildMetadata);
 			}
 			// HACK: re-building raw makes sure that everything is verified to be valid

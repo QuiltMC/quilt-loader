@@ -90,7 +90,7 @@ public final class VersionPredicateParser {
 					}
 
 					try {
-						version = Quilt2FabricVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(newComponents, "", semVer.getBuildKey().orElse("")));
+						version = Quilt2FabricVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(newComponents, "", semVer.getBuildKey().orElse(null)));
 					} catch (VersionFormatException e) {
 						throw new IllegalStateException("Failed to reconstruct a version from " + version, e);
 					}

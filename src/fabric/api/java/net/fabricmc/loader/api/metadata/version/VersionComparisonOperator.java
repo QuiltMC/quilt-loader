@@ -102,7 +102,7 @@ public enum VersionComparisonOperator {
 		public SemanticVersion maxVersion(SemanticVersion version) {
 			int[] components = { version.getVersionComponent(0), version.getVersionComponent(1) + 1 };
 			try {
-				return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(components, "", ""));
+				return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(components, "", null));
 			} catch (VersionFormatException e) {
 				throw new IllegalStateException(e);
 			}
@@ -124,7 +124,7 @@ public enum VersionComparisonOperator {
 		public SemanticVersion maxVersion(SemanticVersion version) {
 			int[] components = { version.getVersionComponent(0) + 1 };
 			try {
-				return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(components, "", ""));
+				return Quilt2FabricSemanticVersion.toFabric(org.quiltmc.loader.api.Version.Semantic.of(components, "", null));
 			} catch (VersionFormatException e) {
 				throw new IllegalStateException(e);
 			}
