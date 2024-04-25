@@ -1,0 +1,10 @@
+Features:
+
+- [#418] Publish loader dependencies as a separate module (lukebemish)
+    - Now all of loaders direct dependencies are published in "org.quiltmc:quilt-loader-dependencies"
+    - This doesn't affect minecraft development environments, and is instead useful when depending on loader without using loom.
+- Add a system property ("loader.disable_url_stream_factory") to disable DelegatingUrlStreamHandlerFactory.
+
+Bug Fixes:
+
+- [#425] Fix version predicates like "2.x" not matching versions with a prerelease component, like "2.0.0-beta.1"
