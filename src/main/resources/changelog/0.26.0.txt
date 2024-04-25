@@ -4,7 +4,13 @@ Features:
     - Now all of loaders direct dependencies are published in "org.quiltmc:quilt-loader-dependencies"
     - This doesn't affect minecraft development environments, and is instead useful when depending on loader without using loom.
 - Add a system property ("loader.disable_url_stream_factory") to disable DelegatingUrlStreamHandlerFactory.
+- Updated Quilt Config to 1.3.1
 
 Bug Fixes:
 
 - [#425] Fix version predicates like "2.x" not matching versions with a prerelease component, like "2.0.0-beta.1"
+
+Changes from updating Fabric Loader from 0.15.7 to 0.15.10
+
+- Updated Mixin to 0.13.3
+- Added version parsing support for 24w14potato
