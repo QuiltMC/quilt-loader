@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -226,18 +227,26 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 		return Collections.unmodifiableList(Arrays.asList(out.toArray(new ModDependency[0])));
 	}
 
+	private static void addRoleToContributor(Map<String, List<String>> contributors, String name, String role) {
+		contributors.computeIfAbsent(name, unused -> new ArrayList<>()).add(role);
+	}
+
 	private static Collection<ModContributor> convertContributors(FabricLoaderModMetadata metadata) {
-		List<ModContributor> contributors = new ArrayList<>();
+		Map<String, List<String>> contributorRoles = new LinkedHashMap<>();
+
 		for (Person author : metadata.getAuthors()) {
-			List<String> roles = new ArrayList<>();
-			roles.add("Author");
-			contributors.add(new ModContributorImpl(author.getName(), roles));
+			addRoleToContributor(contributorRoles, author.getName(), "Author");
 		}
 		for (Person contributor : metadata.getContributors()) {
-			List<String> roles = new ArrayList<>();
-			roles.add("Contributor");
-			contributors.add(new ModContributorImpl(contributor.getName(), roles));
+			addRoleToContributor(contributorRoles, contributor.getName(), "Contributor");
 		}
+
+		List<ModContributor> contributors = new ArrayList<>();
+
+		for (Map.Entry<String, List<String>> entry : contributorRoles.entrySet()) {
+			contributors.add(new ModContributorImpl(entry.getKey(), entry.getValue()));
+		}
+
 		return Collections.unmodifiableList(contributors);
 	}
 
