@@ -66,7 +66,7 @@ public class GameTransformer {
 		patchedClasses.put(key, writer.toByteArray());
 	}
 
-	public void locateEntrypoints(QuiltLauncher launcher, List<Path> gameJars) {
+	public void locateEntrypoints(QuiltLauncher launcher, String namespace, List<Path> gameJars) {
 		if (entrypointsLocated) {
 			return;
 		}
@@ -129,7 +129,7 @@ public class GameTransformer {
 			};
 
 			for (GamePatch patch : patches) {
-				patch.process(launcher, context);
+				patch.process(launcher, namespace, context);
 			}
 
 			for (ClassNode node : addedClassNodes.values()) {

@@ -128,12 +128,20 @@ public abstract class GamePatch {
 		return ((access & 0x0F) == (Opcodes.ACC_PUBLIC | 0 /* non-static */));
 	}
 
-	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
+	public void process(QuiltLauncher launcher, String namespace, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
 		throw new AbstractMethodError(getClass() + " must override one of the 'process' methods!");
 	}
+	@Deprecated
+	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
+		process(launcher, "intermediary", classSource, classEmitter);
+	}
 
+	public void process(QuiltLauncher launcher, String namespace, GamePatchContext context) {
+		process(launcher, namespace, context::getClassSourceReader, context::addPatchedClass);
+	}
+	@Deprecated
 	public void process(QuiltLauncher launcher, GamePatchContext context) {
-		process(launcher, context::getClassSourceReader, context::addPatchedClass);
+		process(launcher, "intermediary", context);
 	}
 }
 

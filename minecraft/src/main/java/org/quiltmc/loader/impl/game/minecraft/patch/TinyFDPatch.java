@@ -45,21 +45,14 @@ public final class TinyFDPatch extends GamePatch {
 	private static final String DIALOG_TITLE = "Select settings file (.json)";
 
 	@Override
-	public void process(QuiltLauncher launcher, GamePatchContext context) {
+	public void process(QuiltLauncher launcher, String namespace, GamePatchContext context) {
 		if (launcher.getEnvironmentType() != EnvType.CLIENT) {
 			// Fix should only be applied to clients.
 			return;
 		}
 
-		String className = MORE_OPTIONS_DIALOG_CLASS_NAME;
 
-		// Only remap the classname when needed to prevent loading the mappings when not required in prod.
-		if (!launcher.getMappingConfiguration().getTargetNamespace().equals("intermediary")
-				&& QuiltLoader.getMappingResolver().getNamespaces().contains("intermediary")) {
-			className = QuiltLoader.getMappingResolver().mapClassName("intermediary", MORE_OPTIONS_DIALOG_CLASS_NAME);
-		}
-
-		final ClassNode classNode = context.getClassNode(className);
+		final ClassNode classNode = context.getClassNode(MORE_OPTIONS_DIALOG_CLASS_NAME);
 
 		if (classNode == null) {
 			// Class is not present in this version, nothing to do.

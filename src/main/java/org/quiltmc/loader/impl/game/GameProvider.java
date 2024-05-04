@@ -44,6 +44,9 @@ public interface GameProvider {
 	String getEntrypoint();
 	Path getLaunchDirectory();
 	boolean isObfuscated();
+	default String getNamespace() {
+		return isObfuscated()? "intermediary": "named";
+	};
 	boolean requiresUrlClassLoader();
 
 	boolean isEnabled();
