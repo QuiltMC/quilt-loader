@@ -18,6 +18,7 @@
 package org.quiltmc.loader.impl.entrypoint;
 
 import org.objectweb.asm.ClassReader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -131,17 +132,15 @@ public abstract class GamePatch {
 	public void process(QuiltLauncher launcher, String namespace, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
 		throw new AbstractMethodError(getClass() + " must override one of the 'process' methods!");
 	}
-	@Deprecated
 	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
-		process(launcher, "intermediary", classSource, classEmitter);
+		process(launcher, QuiltLoaderImpl.INSTANCE.tryGetGameProvider().getNamespace(), classSource, classEmitter);
 	}
 
 	public void process(QuiltLauncher launcher, String namespace, GamePatchContext context) {
 		process(launcher, namespace, context::getClassSourceReader, context::addPatchedClass);
 	}
-	@Deprecated
 	public void process(QuiltLauncher launcher, GamePatchContext context) {
-		process(launcher, "intermediary", context);
+		process(launcher, QuiltLoaderImpl.INSTANCE.tryGetGameProvider().getNamespace(), context);
 	}
 }
 
