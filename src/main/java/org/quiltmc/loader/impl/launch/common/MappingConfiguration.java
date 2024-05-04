@@ -79,8 +79,6 @@ public final class MappingConfiguration {
 		return mappings;
 	}
 
-	@Deprecated
-	/** Use {@link GameProvider#getNamespace()} instead */
 	public String getTargetNamespace() {
 		return QuiltLoaderImpl.INSTANCE.tryGetGameProvider().getNamespace();
 	}
