@@ -133,14 +133,14 @@ public abstract class GamePatch {
 		throw new AbstractMethodError(getClass() + " must override one of the 'process' methods!");
 	}
 	public void process(QuiltLauncher launcher, Function<String, ClassReader> classSource, Consumer<ClassNode> classEmitter) {
-		process(launcher, QuiltLoaderImpl.INSTANCE.tryGetGameProvider().getNamespace(), classSource, classEmitter);
+		process(launcher, launcher.getTargetNamespace(), classSource, classEmitter);
 	}
 
 	public void process(QuiltLauncher launcher, String namespace, GamePatchContext context) {
 		process(launcher, namespace, context::getClassSourceReader, context::addPatchedClass);
 	}
 	public void process(QuiltLauncher launcher, GamePatchContext context) {
-		process(launcher, QuiltLoaderImpl.INSTANCE.tryGetGameProvider().getNamespace(), context);
+		process(launcher, launcher.getTargetNamespace(), context);
 	}
 }
 

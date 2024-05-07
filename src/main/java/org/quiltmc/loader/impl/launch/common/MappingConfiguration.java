@@ -80,7 +80,12 @@ public final class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
-		return QuiltLoaderImpl.INSTANCE.tryGetGameProvider().getNamespace();
+		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
+		if (gameProvider != null)
+			return gameProvider.getNamespace();
+		// else
+		// If the game provider doesn't exist yet, use the development flag to set the namespace
+		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
 	}
 
 	public boolean requiresPackageAccessHack() {
