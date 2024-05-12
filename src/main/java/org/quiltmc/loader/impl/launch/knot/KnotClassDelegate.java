@@ -244,11 +244,19 @@ class KnotClassDelegate {
 			}
 		}
 
-		if (!allowedPrefixes.isEmpty()) {
+		if (!allowedPrefixes.isEmpty() && url != null) {
+			String fileName = LoaderUtil.getClassFileName(name);
+			URL codeSource = null;
+
+			try {
+				codeSource = UrlUtil.getSource(fileName, url);
+			} catch (UrlConversionException e) {
+				Log.warn(LogCategory.GENERAL, "Failed to get the code source URL for " + url);
+			}
+
 			String[] prefixes;
 
-			if (url != null
-					&& (prefixes = allowedPrefixes.get(url.toString())) != null) {
+			if (codeSource != null && (prefixes = allowedPrefixes.get(codeSource.toString())) != null) {
 				assert prefixes.length > 0;
 				boolean found = false;
 
@@ -260,7 +268,7 @@ class KnotClassDelegate {
 				}
 
 				if (!found) {
-					throw new ClassNotFoundException("class "+name+" is currently restricted from being loaded");
+					throw new ClassNotFoundException("class " + name + " is currently restricted from being loaded");
 				}
 			}
 		}
@@ -349,7 +357,6 @@ class KnotClassDelegate {
 		}
 		return c;
 	}
-
 
 	private boolean shouldRerouteToParent(String name) {
 		return name.startsWith("org.slf4j.") || name.startsWith("org.apache.logging.log4j.");
