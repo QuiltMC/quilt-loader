@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -330,7 +331,7 @@ public final class V1ModMetadataReader {
 					if (contributorsValue.type() != LType.OBJECT) {
 						throw parseException(contributorsValue, "contributors must be an object");
 					}
-					Map<String, List<String>> intermediate = new HashMap<>();
+					Map<String, List<String>> intermediate = new LinkedHashMap<>();
 					readStringToStringOrListMap(contributorsValue.asObject(), "contributors", intermediate);
 					intermediate.forEach((k, v) -> builder.contributors.add(new ModContributorImpl(k, v)));
 				}
