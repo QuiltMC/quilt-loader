@@ -9,8 +9,12 @@ Features:
 Bug Fixes:
 
 - [#425] Fix version predicates like "2.x" not matching versions with a prerelease component, like "2.0.0-beta.1"
+- [#429] Fix global cache being in the wrong location
+- [#426] Preserve order of contributors in the quilt.mod.json
+- [#427] Fix an edge case where the same person listed as author and contributor to a Fabric mod was listed twice in the Quilt contributors.
 
-Changes from updating Fabric Loader from 0.15.7 to 0.15.10
+
+Changes from updating Fabric Loader from 0.15.7 to 0.15.10:
 
 - Updated Mixin to 0.13.3
 - Added version parsing support for 24w14potato
