@@ -19,11 +19,13 @@ package org.quiltmc.loader.impl.game;
 
 import net.fabricmc.api.EnvType;
 
+import net.fabricmc.mappingio.tree.MappingTreeView;
+
+import net.fabricmc.tinyremapper.TinyUtils;
+
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-
-import net.fabricmc.mapping.tree.TinyTree;
 
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.NonClassCopyMode;
@@ -39,7 +41,6 @@ import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
-import org.quiltmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -186,10 +187,10 @@ public final class GameProviderHelper {
 		}
 
 		String targetNamespace = mappingConfig.getTargetNamespace();
-		TinyTree mappings = mappingConfig.getMappings();
+		MappingTreeView mappings = mappingConfig.getMappings();
 
 		if (mappings == null
-				|| !mappings.getMetadata().getNamespaces().contains(targetNamespace)) {
+				|| !mappingConfig.getNamespaces().contains(targetNamespace)) {
 			Log.debug(LogCategory.GAME_REMAP, "No mappings, using input files");
 			return inputFileMap;
 		}
@@ -275,9 +276,9 @@ public final class GameProviderHelper {
 		return ret.resolve(versionDirName.toString().replaceAll("[^\\w\\-\\. ]+", "_"));
 	}
 
-	private static void deobfuscate0(List<Path> inputFiles, List<Path> outputFiles, List<Path> tmpFiles, TinyTree mappings, String targetNamespace, QuiltLauncher launcher) throws IOException {
+	private static void deobfuscate0(List<Path> inputFiles, List<Path> outputFiles, List<Path> tmpFiles, MappingTreeView mappings, String targetNamespace, QuiltLauncher launcher) throws IOException {
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyRemapperMappingsHelper.create(mappings, "official", targetNamespace))
+				.withMappings(TinyUtils.createMappingProvider(mappings, "official", targetNamespace))
 				.rebuildSourceFilenames(true)
 				.build();
 

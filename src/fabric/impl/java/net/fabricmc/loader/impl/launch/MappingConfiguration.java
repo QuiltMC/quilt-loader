@@ -16,8 +16,6 @@
 
 package net.fabricmc.loader.impl.launch;
 
-import net.fabricmc.mapping.tree.TinyTree;
-
 @Deprecated
 public final class MappingConfiguration {
 	private final org.quiltmc.loader.impl.launch.common.MappingConfiguration delegate;
@@ -38,9 +36,6 @@ public final class MappingConfiguration {
 		return delegate.matches(gameId, gameVersion);
 	}
 
-	public TinyTree getMappings() {
-		return delegate.getMappings();
-	}
 
 	public String getTargetNamespace() {
 		return delegate.getTargetNamespace();

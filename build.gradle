@@ -14,7 +14,7 @@ plugins {
 	id 'eclipse'
 	id 'maven-publish'
 	id 'org.quiltmc.gradle.licenser' version '2.0.1'
-	id 'org.quiltmc.loom' version '1.3.3' apply false
+	id 'org.quiltmc.loom' version '1.6.7' apply false
 	id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
@@ -129,10 +129,7 @@ processResources {
 
 	filesMatching(["quilt_installer.json", "fabric-installer.launchwrapper.json"]) {
 		expand(
-			"tiny_mappings_parser": project.tiny_mappings_parser,
 			"sponge_mixin": project.sponge_mixin,
-			"tiny_remapper": project.tiny_remapper,
-			"access_widener": project.access_widener,
 			"quilt_json5": project.quilt_json5,
 			"asm": project.asm,
 			"asm_analysis": project.asm,
@@ -203,10 +200,14 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	relocate 'org.quiltmc.parsers', 'org.quiltmc.loader.impl.lib.parsers'
 	relocate 'com.electronwill', 'org.quiltmc.loader.impl.lib.electronwill'
 	relocate 'com.unascribed.flexver', 'org.quiltmc.loader.impl.lib.flexver'
+	relocate 'net.fabricmc.mappingio', 'org.quiltmc.loader.impl.lib.mappingio'
+	relocate 'net.fabricmc.tinyremapper', 'org.quiltmc.loader.impl.lib.tinyremapper'
+	relocate 'net.fabricmc.accesswidener', 'org.quiltmc.loader.impl.lib.accesswidener'
 	//relocate 'org.quiltmc.json5', 'org.quiltmc.loader.impl.lib.json5'
 	exclude 'about.html'
 	exclude 'sat4j.version'
 	exclude 'META-INF/maven/org.ow2.sat4j/*/**'
+	exclude 'META-INF/FABRIC1.*'
 
 	doLast {
 		JarNester.nestJars(project.configurations.development.files, archiveFile.get().asFile, LoggerFactory.getLogger("JiJ"))
@@ -218,15 +219,23 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 File proguardFile = file("build/libs/quilt-loader-${version}.jar")
 
 import proguard.gradle.ProGuardTask
-task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
-	def classpath = project(":minecraft").configurations.compileClasspath
 
-	inputs.files(fatJar, classpath)
+// needed so that proguardJar can see the proguard configuration
+evaluationDependsOn(":minecraft")
+
+task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
+	def classpath = project.configurations.compileClasspath
+	def minecraftClasspath = project(":minecraft").configurations.proguard
+
+	inputs.files(fatJar, classpath, minecraftClasspath)
 	outputs.files(proguardFile)
 	outputs.upToDateWhen { false }
 
 	doFirst {
 		classpath.resolve().forEach {
+			libraryjars it
+		}
+		minecraftClasspath.resolve().forEach {
 			libraryjars it
 		}
 	}
@@ -237,6 +246,7 @@ task proguardJar(type: ProGuardTask, dependsOn: fatJar) {
 	outjars proguardFile
 	configuration file("proguard.conf")
 }
+
 build.dependsOn proguardJar
 
 jar {

@@ -43,11 +43,6 @@ public class FabricLauncherBase implements FabricLauncher {
 	}
 
 	@Override
-	public MappingConfiguration getMappingConfiguration() {
-		return mappingConfiguration;
-	}
-
-	@Override
 	public void addToClassPath(Path path, String... allowedPrefixes) {
 		delegate.addToClassPath(path, allowedPrefixes);
 	}

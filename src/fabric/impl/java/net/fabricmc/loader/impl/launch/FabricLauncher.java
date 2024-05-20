@@ -28,8 +28,6 @@ import net.fabricmc.api.EnvType;
 
 @Deprecated
 public interface FabricLauncher {
-	MappingConfiguration getMappingConfiguration();
-
 	void addToClassPath(Path path, String... allowedPrefixes);
 	void setAllowedPrefixes(Path path, String... prefixes);
 //	void setValidParentClassPath(Collection<Path> paths);

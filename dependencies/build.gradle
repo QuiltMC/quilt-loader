@@ -59,9 +59,6 @@ dependencies {
 		exclude module: 'launchwrapper'
 		exclude module: 'guava'
 	}
-	published "net.fabricmc:tiny-mappings-parser:${project.tiny_mappings_parser}"
-	published "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
-	published "net.fabricmc:access-widener:${project.access_widener}"
 
 	/*include*/ published "org.quiltmc:quilt-json5:${project.quilt_json5}"
 	published "org.quiltmc:quilt-config:${project.quilt_config}"
@@ -78,6 +75,10 @@ dependencies {
 
 	include "org.quiltmc.parsers:json:${project.quilt_parsers}"
 	include "com.unascribed:flexver-java:${project.flexver}"
+
+	include "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
+	include "net.fabricmc:access-widener:${project.access_widener}"
+	include "net.fabricmc:mapping-io:${project.mapping_io}"
 }
 
 publishing {

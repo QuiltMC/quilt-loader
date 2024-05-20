@@ -6,19 +6,7 @@
     ],
     "common": [
       {
-        "name": "net.fabricmc:tiny-mappings-parser:${tiny_mappings_parser}",
-        "url": "https://maven.fabricmc.net/"
-      },
-      {
         "name": "net.fabricmc:sponge-mixin:${sponge_mixin}",
-        "url": "https://maven.fabricmc.net/"
-      },
-      {
-        "name": "net.fabricmc:tiny-remapper:${tiny_remapper}",
-        "url": "https://maven.fabricmc.net/"
-      },
-      {
-        "name": "net.fabricmc:access-widener:${access_widener}",
         "url": "https://maven.fabricmc.net/"
       },
       {

@@ -42,7 +42,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -62,7 +61,6 @@ import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
-import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.LoaderGuiException;
 import org.quiltmc.loader.api.gui.QuiltBasicWindow;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
@@ -100,7 +98,6 @@ import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
-import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedType;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
@@ -120,6 +117,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.loader.impl.util.mappings.LazyMappingResolver;
+import org.quiltmc.loader.impl.util.mappings.QuiltMappingResolver;
 import org.spongepowered.asm.mixin.FabricUtil;
 
 import net.fabricmc.loader.api.ObjectShare;
@@ -1079,10 +1078,10 @@ public final class QuiltLoaderImpl {
 
 	public MappingResolver getMappingResolver() {
 		if (mappingResolver == null) {
-			mappingResolver = new QuiltMappingResolver(
-				QuiltLauncherBase.getLauncher().getMappingConfiguration()::getMappings,
+			mappingResolver = new LazyMappingResolver(() -> new QuiltMappingResolver(
+				QuiltLauncherBase.getLauncher().getMappingConfiguration().getMappings(),
 				QuiltLauncherBase.getLauncher().getTargetNamespace()
-			);
+			), QuiltLauncherBase.getLauncher().getTargetNamespace());
 		}
 
 		return mappingResolver;

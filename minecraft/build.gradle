@@ -10,22 +10,22 @@ repositories {
 		url = 'https://libraries.minecraft.net/'
 	}
 }
+configurations {
+	proguard
+	compileClasspath.extendsFrom(proguard)
+}
 
 dependencies {
 	implementation project(':dependencies')
 	implementation project(path: ':dependencies', configuration: 'include')
 	implementation project(":")
 	// log4j wrapper
-	compileOnly 'org.apache.logging.log4j:log4j-api:2.8.1'
+	proguard 'org.apache.logging.log4j:log4j-api:2.8.1'
 	// slf4j wrapper
-	compileOnly 'org.slf4j:slf4j-api:1.8.0-beta4'
-	// HACK: work around proguard only seeing dependencies on the minecraft compile classpath
-	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
-//	compileOnly 'org.quiltmc:quilt-json5:1.0.1'
-//	testCompileOnly 'org.quiltmc:quilt-json5:1.0.1'
+	proguard 'org.slf4j:slf4j-api:1.8.0-beta4'
+
 	// launchwrapper + dependencies
-	compileOnly ('net.minecraft:launchwrapper:1.12') {
+	proguard ('net.minecraft:launchwrapper:1.12') {
 		transitive = false
 	}
 	//implementation 'net.sf.jopt-simple:jopt-simple:5.0.3'

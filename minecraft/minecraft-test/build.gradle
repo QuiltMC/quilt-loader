@@ -15,8 +15,8 @@ repositories {
 
 dependencies {
 	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
-	minecraft "com.mojang:minecraft:1.20.2"
-	mappings "org.quiltmc:quilt-mappings:1.20.2+build.1:intermediary-v2"
+	minecraft "com.mojang:minecraft:1.20.6"
+	mappings "org.quiltmc:quilt-mappings:1.20.6+build.6:intermediary-v2"
 
 	implementation project(":minecraft")
 	implementation project(":dependencies")
