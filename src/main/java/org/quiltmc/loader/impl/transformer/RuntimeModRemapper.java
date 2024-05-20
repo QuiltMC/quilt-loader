@@ -104,7 +104,7 @@ final class RuntimeModRemapper {
 				Files.walk(mod.resourceRoot()).filter(p -> p.getFileName().toString().endsWith(".class")).forEach(p -> {
 					try {
 						Files.createDirectories(in.resolve(p.getParent().toAbsolutePath().toString()));
-						fs.copyOnWrite(p, in.resolve(p.toAbsolutePath().toString()));
+						fs.mount(p, in.resolve(p.toAbsolutePath().toString()));
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
