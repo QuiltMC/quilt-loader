@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.transformer;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +38,7 @@ import net.fabricmc.tinyremapper.TinyUtils;
 
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -57,14 +59,13 @@ final class RuntimeModRemapper {
 	private static final String REMAP_TYPE_MANIFEST_KEY = "Fabric-Loom-Mixin-Remap-Type";
 	private static final String REMAP_TYPE_STATIC = "static";
 
-	static final boolean COPY_ON_WRITE = true;
-
 	public static void remap(TransformCache cache) {
 		List<ModLoadOption> modsToRemap = cache.getModsInCache().stream()
 				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
 				.collect(Collectors.toList());
 		Set<InputTag> remapMixins = new HashSet<>();
 
+		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache-remapping", false);
 		if (modsToRemap.isEmpty()) {
 			return;
 		}
@@ -91,16 +92,35 @@ final class RuntimeModRemapper {
 				infoMap.put(mod, info);
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
-				info.inputPath = mod.resourceRoot().toAbsolutePath();
 
-				if (requiresMixinRemap(info.inputPath)) {
+				if (requiresMixinRemap(mod.resourceRoot())) {
 					remapMixins.add(tag);
 				}
 
-				remapper.readInputsAsync(tag, info.inputPath);
+				Path in = fs.getPath(mod.id());
+				// HACK: Tiny Remapper eagerly opens ZIP files contained in mods (i.e. the JAR files they've attempted to JiJ)
+				// This causes LOTS of problems involving duplicate classes (and potentially the wrong version of the class being selected!!!),
+				// so we ONLY expose the .class files to Tiny Remapper
+				Files.walk(mod.resourceRoot()).filter(p -> p.getFileName().toString().endsWith(".class")).forEach(p -> {
+					try {
+						Files.createDirectories(in.resolve(p.getParent().toAbsolutePath().toString()));
+						fs.copyOnWrite(p, in.resolve(p.toAbsolutePath().toString()));
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+
+				info.inputPath = in;
+			}
+			// Lock the filesystem to prevent any funny business...
+			fs.switchToReadOnly();
+
+			for (ModLoadOption mod : modsToRemap) {
+				RemapInfo info = infoMap.get(mod);
+				remapper.readInputsAsync(info.tag, info.inputPath);
 			}
 
-			//Done in a 2nd loop as we need to make sure all the inputs are present before remapping
+			// Done in its own loop as we need to make sure all the inputs are present before remapping
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 				info.outputPath = cache.getRoot(mod);
@@ -111,24 +131,25 @@ final class RuntimeModRemapper {
 				remapper.apply(outputConsumer, info.tag);
 			}
 
-			//Done in a 3rd loop as this can happen when the remapper is doing its thing.
+			// Run while the remapper is doing its thing.
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 				if (!mod.metadata().accessWideners().isEmpty()) {
 					info.accessWideners = new HashMap<>();
 					for (String accessWidener : mod.metadata().accessWideners()) {
-						info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(info.inputPath.resolve(accessWidener)), remapper.getRemapper()));
+						// use resourceRoot as the info.inputPath only contains class files
+						info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(mod.resourceRoot().resolve(accessWidener)), remapper.getRemapper()));
 					}
 				}
 			}
 
 			remapper.finish();
+			fs.close();
 
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 
 				info.outputConsumerPath.close();
-
 				if (info.accessWideners != null) {
 					for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
 						Files.write(info.outputPath.resolve(entry.getKey()), entry.getValue());
