@@ -10,22 +10,17 @@ repositories {
 		url = 'https://libraries.minecraft.net/'
 	}
 }
-configurations {
-	proguard
-	compileClasspath.extendsFrom(proguard)
-}
 
 dependencies {
 	implementation project(':dependencies')
 	implementation project(path: ':dependencies', configuration: 'include')
 	implementation project(":")
 	// log4j wrapper
-	proguard 'org.apache.logging.log4j:log4j-api:2.8.1'
+	compileOnly 'org.apache.logging.log4j:log4j-api:2.8.1'
 	// slf4j wrapper
-	proguard 'org.slf4j:slf4j-api:1.8.0-beta4'
-
+	compileOnly 'org.slf4j:slf4j-api:1.8.0-beta4'
 	// launchwrapper + dependencies
-	proguard ('net.minecraft:launchwrapper:1.12') {
+	compileOnly ('net.minecraft:launchwrapper:1.12') {
 		transitive = false
 	}
 	//implementation 'net.sf.jopt-simple:jopt-simple:5.0.3'

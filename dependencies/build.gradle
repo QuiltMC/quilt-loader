@@ -78,7 +78,10 @@ dependencies {
 
 	include "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
 	include "net.fabricmc:access-widener:${project.access_widener}"
-	include "net.fabricmc:mapping-io:${project.mapping_io}"
+	include ("net.fabricmc:mapping-io:${project.mapping_io}") {
+		// dont include asm
+		transitive = false
+	}
 }
 
 publishing {
