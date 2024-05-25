@@ -30,7 +30,7 @@ import java.util.ListIterator;
 
 public final class BrandingPatch extends GamePatch {
 	@Override
-	public void process(QuiltLauncher launcher, GamePatchContext context) {
+	public void process(QuiltLauncher launcher, String namespace, GamePatchContext context) {
 		for (String brandClassName : new String[] {
 				"net.minecraft.client.ClientBrandRetriever",
 				"net.minecraft.server.MinecraftServer"

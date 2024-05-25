@@ -31,6 +31,8 @@ import java.util.zip.ZipError;
 import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.mapping.tree.TinyTree;
 
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -78,6 +80,11 @@ public final class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
+		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
+		if (gameProvider != null)
+			return gameProvider.getNamespace();
+		// else
+		// If the game provider doesn't exist yet, use the development flag to set the namespace
 		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
 	}
 
