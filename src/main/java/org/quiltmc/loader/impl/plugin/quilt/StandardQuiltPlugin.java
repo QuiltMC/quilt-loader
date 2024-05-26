@@ -33,7 +33,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-import org.quiltmc.json5.exception.ParseException;
+import org.quiltmc.parsers.json.ParseException;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;

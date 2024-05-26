@@ -34,7 +34,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class Handler extends URLStreamHandler {
 	@Override
-	protected URLConnection openConnection(URL u) throws IOException {
+	public URLConnection openConnection(URL u) throws IOException {
 		QuiltUnifiedPath path;
 		try {
 			path = QuiltUnifiedFileSystemProvider.instance().getPath(u.toURI());
@@ -56,7 +56,7 @@ public class Handler extends URLStreamHandler {
 	}
 
 	@Override
-	protected InetAddress getHostAddress(URL u) {
+	public InetAddress getHostAddress(URL u) {
 		return null;
 	}
 }
