@@ -13,7 +13,8 @@ Bug Fixes:
 - [#429] Fix global cache being in the wrong location
 - [#426] Preserve order of contributors in the quilt.mod.json
 - [#427] Fix an edge case where the same person listed as author and contributor to a Fabric mod was listed twice in the Quilt contributors.
-
+- [#430] Fix the Knot classloader's allowlist
+    - Resolves an issue where Mixins were unable to apply on Minecraft versions between 1.7 and 1.8.9
 
 Changes from updating Fabric Loader from 0.15.7 to 0.15.10:
 
