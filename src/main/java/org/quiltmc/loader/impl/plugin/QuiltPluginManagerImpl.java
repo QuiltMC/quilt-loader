@@ -871,6 +871,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		}
 
+		if (SystemProperties.getBoolean(SystemProperties.IGNORE_UNSUPPORTED_MODS, false)) {
+			/* skip unsupported mod checking */
+			return;
+		}
+
 		Map<UnsupportedType, SortedMap<String, UnsupportedModDetails>> filesList = new HashMap<>();
 
 		for (PathLoadState loadState : modPaths.values()) {
