@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 import org.objectweb.asm.commons.Remapper;
+import org.quiltmc.loader.api.MountOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
@@ -105,7 +106,7 @@ final class RuntimeModRemapper {
 				Files.walk(mod.resourceRoot()).filter(p -> p.getFileName().toString().endsWith(".class")).forEach(p -> {
 					try {
 						Files.createDirectories(in.resolve(p.getParent().toAbsolutePath().toString()));
-						fs.mount(p, in.resolve(p.toAbsolutePath().toString()));
+						fs.mount(p, in.resolve(p.toAbsolutePath().toString()), MountOption.READ_ONLY);
 					} catch (IOException e) {
 						throw new UncheckedIOException(e);
 					}
