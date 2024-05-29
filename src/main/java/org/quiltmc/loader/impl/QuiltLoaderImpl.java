@@ -42,6 +42,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -61,14 +62,15 @@ import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
+import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.LoaderGuiException;
 import org.quiltmc.loader.api.gui.QuiltBasicWindow;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
-import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
 import org.quiltmc.loader.api.gui.QuiltGuiMessagesTab;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.api.gui.QuiltDisplayedError.QuiltErrorButton;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
@@ -98,6 +100,7 @@ import org.quiltmc.loader.impl.metadata.qmj.ProvidedModContainer;
 import org.quiltmc.loader.impl.metadata.qmj.ProvidedModMetadata;
 import org.quiltmc.loader.impl.patch.PatchLoader;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
+import org.quiltmc.loader.impl.plugin.UnsupportedModChecker.UnsupportedType;
 import org.quiltmc.loader.impl.plugin.fabric.FabricModOption;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
@@ -119,8 +122,9 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.spongepowered.asm.mixin.FabricUtil;
 
-import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.ObjectShare;
+
+import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(value = QuiltLoaderInternalType.LEGACY_EXPOSED, replacements = QuiltLoader.class)
 public final class QuiltLoaderImpl {
@@ -728,9 +732,7 @@ public final class QuiltLoaderImpl {
 			return false;
 		}
 
-		/* skips the GUI window, logs the unknown mods table, continues launching minecraft */
-		boolean ignoreUnknownMods = this.provider.getArguments().getExtraArgs().contains("--ignore-unknown-mods");
-		if (!ignoreUnknownMods) {
+		{
 			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
 			window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
 			window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), getModsDir());
@@ -788,7 +790,7 @@ public final class QuiltLoaderImpl {
 			Log.info(LogCategory.DISCOVERY, count + " unknown / unsupported mod files found:\n" + table);
 		}
 
-		return !ignoreUnknownMods;
+		return true;
 	}
 
 	public String createModTable() {
