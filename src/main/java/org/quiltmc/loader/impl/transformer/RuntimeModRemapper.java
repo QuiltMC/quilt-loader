@@ -98,6 +98,7 @@ final class RuntimeModRemapper {
 				}
 
 				Path in = fs.getPath(mod.id());
+				Files.createDirectories(in);
 				// HACK: Tiny Remapper eagerly opens ZIP files contained in mods (i.e. the JAR files they've attempted to JiJ)
 				// This causes LOTS of problems involving duplicate classes (and potentially the wrong version of the class being selected!!!),
 				// so we ONLY expose the .class files to Tiny Remapper
