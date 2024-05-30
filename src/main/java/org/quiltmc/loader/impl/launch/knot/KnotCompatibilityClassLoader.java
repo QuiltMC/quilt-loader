@@ -34,10 +34,10 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
+public class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
 	private final KnotClassDelegate delegate;
 
-	KnotCompatibilityClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
+	public KnotCompatibilityClassLoader(boolean isDevelopment, EnvType envType, GameProvider provider) {
 		super(new URL[0], KnotCompatibilityClassLoader.class.getClassLoader());
 		this.delegate = new KnotClassDelegate(isDevelopment, envType, this, provider);
 	}
