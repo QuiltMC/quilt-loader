@@ -79,6 +79,7 @@ public interface QuiltLauncher {
 	String getEntrypoint();
 
 	String getTargetNamespace();
+	String getFinalNamespace();
 
 	List<Path> getClassPath();
 
