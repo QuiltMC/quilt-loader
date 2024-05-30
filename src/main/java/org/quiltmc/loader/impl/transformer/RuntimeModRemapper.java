@@ -19,7 +19,6 @@ package org.quiltmc.loader.impl.transformer;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,10 +34,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import org.objectweb.asm.commons.Remapper;
-import org.quiltmc.loader.api.ExtendedFiles;
-import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.ManifestUtil;
@@ -51,7 +47,6 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
 import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.tinyremapper.InputTag;
-import net.fabricmc.tinyremapper.NonClassCopyMode;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
 import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
@@ -76,7 +71,7 @@ final class RuntimeModRemapper {
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyRemapperMappingsHelper.create(launcher.getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
+				.withMappings(TinyRemapperMappingsHelper.create(launcher.getMappingConfiguration().getMappings(), launcher.getFinalNamespace(), launcher.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains))
 				.build();
@@ -148,9 +143,9 @@ final class RuntimeModRemapper {
 
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
 		AccessWidenerWriter writer = new AccessWidenerWriter();
-		AccessWidenerRemapper remappingDecorator = new AccessWidenerRemapper(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
+		AccessWidenerRemapper remappingDecorator = new AccessWidenerRemapper(writer, remapper, QuiltLauncherBase.getLauncher().getFinalNamespace(), QuiltLauncherBase.getLauncher().getTargetNamespace());
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(remappingDecorator);
-		accessWidenerReader.read(input, "intermediary");
+		accessWidenerReader.read(input, QuiltLauncherBase.getLauncher().getFinalNamespace());
 		return writer.write();
 	}
 

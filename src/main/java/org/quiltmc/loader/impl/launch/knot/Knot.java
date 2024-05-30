@@ -264,6 +264,10 @@ public final class Knot extends QuiltLauncherBase {
 		// TODO: Won't work outside of Yarn
 		return isDevelopment ? "named" : "intermediary";
 	}
+	@Override
+	public String getFinalNamespace() {
+		return "intermediary";
+	}
 
 	@Override
 	public List<Path> getClassPath() {
