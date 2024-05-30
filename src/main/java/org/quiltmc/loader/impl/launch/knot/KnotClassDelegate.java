@@ -62,11 +62,11 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-class KnotClassDelegate {
-	static class Metadata {
+public class KnotClassDelegate {
+	public static class Metadata {
 		static final Metadata EMPTY = new Metadata(null, null);
 
-		final Manifest manifest;
+		public final Manifest manifest;
 		final CodeSourceImpl codeSource;
 
 		Metadata(Manifest manifest, CodeSourceImpl codeSource) {
@@ -368,7 +368,7 @@ class KnotClassDelegate {
 		return hideReason != null ? hideReason : "";
 	}
 
-	Metadata getMetadata(String name, URL resourceURL) {
+	public Metadata getMetadata(String name, URL resourceURL) {
 		if (resourceURL == null) return Metadata.EMPTY;
 
 		String classFileName = LoaderUtil.getClassFileName(name);
@@ -427,7 +427,7 @@ class KnotClassDelegate {
 		});
 	}
 
-	Metadata getMetadata(URL codeSourceUrl) {
+	public Metadata getMetadata(URL codeSourceUrl) {
 		return metadataCache.computeIfAbsent(codeSourceUrl.toString(), (codeSourceStr) -> {
 			Manifest manifest = null;
 			CodeSourceImpl codeSource = null;
@@ -550,7 +550,7 @@ class KnotClassDelegate {
 		}
 	}
 
-	void setAllowedPrefixes(URL url, String... prefixes) {
+	public void setAllowedPrefixes(URL url, String... prefixes) {
 		if (prefixes.length == 0) {
 			allowedPrefixes.remove(url.toString());
 		} else {
@@ -558,11 +558,11 @@ class KnotClassDelegate {
 		}
 	}
 
-	void setTransformCache(URL insideTransformCache) {
+	public void setTransformCache(URL insideTransformCache) {
 		transformCacheUrl = insideTransformCache.toString();
 	}
 
-	void setHiddenClasses(Set<String> hiddenClasses) {
+	public void setHiddenClasses(Set<String> hiddenClasses) {
 		Map<String, String> map = new HashMap<>();
 		for (String cl : hiddenClasses) {
 			map.put(cl, "unknown reason");
@@ -570,11 +570,11 @@ class KnotClassDelegate {
 		setHiddenClasses(map);
 	}
 
-	void setHiddenClasses(Map<String, String> hiddenClasses) {
+	public void setHiddenClasses(Map<String, String> hiddenClasses) {
 		this.hiddenClasses = hiddenClasses;
 	}
 
-	void hideParentUrl(URL parentPath) {
+	public void hideParentUrl(URL parentPath) {
 		parentHiddenUrls.add(parentPath.toString());
 	}
 }
