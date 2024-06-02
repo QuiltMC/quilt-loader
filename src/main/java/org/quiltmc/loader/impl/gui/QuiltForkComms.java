@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -380,6 +383,14 @@ public class QuiltForkComms {
 			} catch (Throwable t) {
 				Map<String, LoaderValue> map = new HashMap<>();
 				map.put("__TYPE", lvf().string(ForkCommNames.ID_EXCEPTION));
+
+				StringWriter sw = new StringWriter();
+				try (PrintWriter printer = new PrintWriter(sw)) {
+					t.printStackTrace(printer);
+					printer.flush();
+				}
+				map.put("detail", lvf().string(sw.toString()));
+
 				send(lvf().object(map));
 				throw t;
 			}

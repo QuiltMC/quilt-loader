@@ -56,6 +56,7 @@ public class QuiltFork {
 	private static final QuiltForkComms COMMS;
 	private static final LoaderValueHelper<IOException> HELPER = LoaderValueHelper.IO_EXCEPTION;
 	private static final IOException FORK_EXCEPTION;
+	private static Error previousServerError;
 
 	static {
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
@@ -130,13 +131,18 @@ public class QuiltFork {
 			return;
 		}
 
+		if (previousServerError != null) {
+			// Gui NOT disabled, but it previously crashed.
+			throw new LoaderGuiException("The gui server encountered an error!", previousServerError);
+		}
+
 		AbstractWindow<?> realWindow = (AbstractWindow<?>) window;
 
 		realWindow.send();
 		realWindow.open();
 
 		if (shouldWait) {
-			realWindow.waitUntilClosed();
+			realWindow.waitUntilClosed(() -> previousServerError);
 		}
 	}
 
@@ -187,10 +193,15 @@ public class QuiltFork {
 			switch (type) {
 				case ForkCommNames.ID_EXCEPTION: {
 					// The server encountered an exception
-					// We should really store the exception, but for now just exit
+					LoaderValue detail = packet.get("detail");
+					if (detail == null || detail.type() != LType.STRING) {
+						Log.error(LogCategory.COMMS, "The gui-server encountered an unknown error!");
+						previousServerError = new Error("[Unknown error: the gui server didn't send a detail trace]");
+					} else {
+						Log.error(LogCategory.COMMS, "The gui-server encountered an error:\n" + detail.asString());
+						previousServerError = new Error("Previous error stacktrace:\n" + detail.asString());
+					}
 					COMMS.close();
-					Log.error(LogCategory.COMMS, "The gui-server encountered an error!");
-					System.exit(1);
 					return;
 				}
 				case ForkCommNames.ID_GUI_OBJECT_UPDATE: {
