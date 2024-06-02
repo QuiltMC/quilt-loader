@@ -115,12 +115,15 @@ public class QuiltReport {
 	}
 
 	public void writeToLog() {
-		PrintWriter writer = new PrintWriter(System.out);
+		StringWriter sw = new StringWriter();
+		sw.append("Partial Report:\n");
+		PrintWriter writer = new PrintWriter(sw);
 		try {
 			writeInternal(writer, true);
 		} finally {
 			writer.flush();
 		}
+		Log.error(LogCategory.GENERAL, sw.toString());
 	}
 
 	/** Makes a best-effort attempt to write the crash-report somewhere (either to a new crash-report file or System
