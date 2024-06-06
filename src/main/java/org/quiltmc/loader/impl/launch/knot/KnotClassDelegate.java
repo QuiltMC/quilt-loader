@@ -520,7 +520,7 @@ class KnotClassDelegate {
 			Log.info(LogCategory.GENERAL, "Loading " + name + " early", new Throwable());
 		}
 
-		if (name.startsWith("org.quiltmc.loader.impl.patch.")) {
+		if (name.startsWith("org.quiltmc.loader.impl.patch.PATCHED.")) {
 			return PatchLoader.getNewPatchedClass(name);
 		}
 
