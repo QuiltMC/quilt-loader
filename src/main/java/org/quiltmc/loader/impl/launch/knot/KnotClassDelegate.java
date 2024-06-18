@@ -136,6 +136,8 @@ class KnotClassDelegate {
 	/** Map of package to the reason why it cannot be loaded. If the package can be loaded then the value is the empty string. */
 	private final Map<String, String> packageLoadDenyCache = new ConcurrentHashMap<>();
 
+	private Map<String, ClassLoader> pluginPackages = Collections.emptyMap();
+
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
 		this.isDevelopment = isDevelopment;
 		this.envType = envType;
@@ -285,6 +287,11 @@ class KnotClassDelegate {
 			if (denyReason != null && !denyReason.isEmpty()) {
 				throw new RuntimeException("Cannot load package " + pkgString + " " + denyReason);
 			}
+		}
+
+		ClassLoader pluginCl = pluginPackages.get(pkgString);
+		if (pluginCl != null) {
+			return pluginCl.loadClass(name);
 		}
 
 		String hideReason = hiddenClasses.get(name);
@@ -572,6 +579,10 @@ class KnotClassDelegate {
 
 	void setHiddenClasses(Map<String, String> hiddenClasses) {
 		this.hiddenClasses = hiddenClasses;
+	}
+
+	void setPluginPackages(Map<String, ClassLoader> map) {
+		pluginPackages = map;
 	}
 
 	void hideParentUrl(URL parentPath) {
