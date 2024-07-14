@@ -1,0 +1,3 @@
+Bug fixes:
+
+- Fixed an oversight where Loader can try to open a GUI in a headless environment

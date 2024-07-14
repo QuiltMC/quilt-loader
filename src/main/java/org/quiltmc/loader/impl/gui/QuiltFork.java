@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.gui;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -60,7 +61,7 @@ public class QuiltFork {
 
 	static {
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
-		if (Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || !provider.canOpenGui()) {
+		if (Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || !provider.canOpenGui() || GraphicsEnvironment.isHeadless()) {
 			COMMS = null;
 			FORK_EXCEPTION = null;
 		} else {
