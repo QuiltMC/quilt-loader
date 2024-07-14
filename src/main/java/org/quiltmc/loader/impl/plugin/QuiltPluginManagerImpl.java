@@ -736,6 +736,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return Collections.unmodifiableList(errors);
 	}
 
+	public Map<String, ClassLoader> getPluginPackages() {
+		Map<String, ClassLoader> map = new HashMap<>();
+		map.putAll(pluginsByPackage);
+		return map;
+	}
+
 	Class<?> findClass(String name, String pkg) throws ClassNotFoundException {
 		if (pkg == null) {
 			return null;
@@ -869,6 +875,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					modNode.icon(modNode.icon().withDecoration(QuiltLoaderGui.iconTick()));
 				}
 			}
+		}
+
+		if (SystemProperties.getBoolean(SystemProperties.IGNORE_UNSUPPORTED_MODS, false)) {
+			/* skip unsupported mod checking */
+			return;
 		}
 
 		Map<UnsupportedType, SortedMap<String, UnsupportedModDetails>> filesList = new HashMap<>();

@@ -131,7 +131,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.26.0-beta.2";
+	public static final String VERSION = "0.26.4-beta.1";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -602,6 +602,8 @@ public final class QuiltLoaderImpl {
 			for (ModLoadOption mod : result.directMods().values()) {
 				temporarySourcePaths.put(mod.from(), plugins.convertToSourcePaths(mod.from()));
 			}
+
+			QuiltLauncherBase.getLauncher().setPluginPackages(plugins.getPluginPackages());
 
 			if (displayedMessage) {
 				return result;

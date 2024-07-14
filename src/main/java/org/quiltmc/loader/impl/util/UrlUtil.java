@@ -77,7 +77,7 @@ public final class UrlUtil {
 	}
 
 	public static URL asUrl(Path path) throws MalformedURLException {
-		return path.toUri().toURL();
+		return LoaderUtil.normalizePath(path).toUri().toURL();
 	}
 
 	public static Path getCodeSource(URL url, String localPath) throws UrlConversionException {

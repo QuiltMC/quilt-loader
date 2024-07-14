@@ -39,6 +39,8 @@ import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -101,6 +103,11 @@ public final class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
+		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
+		if (gameProvider != null)
+			return gameProvider.getNamespace();
+		// else
+		// If the game provider doesn't exist yet, use the development flag to set the namespace
 		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
 	}
 
@@ -186,7 +193,7 @@ public final class MappingConfiguration {
 		String mojmapPath = System.getProperty(SystemProperties.MOJMAP_PATH);
 		if (mojmapPath != null) {
 			try (BufferedReader reader = Files.newBufferedReader(Paths.get(mojmapPath))) {
-				ProGuardFileReader.read(reader, "mojmap", "official", new MappingSourceNsSwitch(mappings, "official"));
+				ProGuardFileReader.read(reader, "mojang", "official", new MappingSourceNsSwitch(mappings, "official"));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}

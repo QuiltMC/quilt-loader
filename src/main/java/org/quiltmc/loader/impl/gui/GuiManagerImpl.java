@@ -97,9 +97,7 @@ public class GuiManagerImpl implements PluginGuiManager {
 	}
 
 	public static QuiltLoaderIcon allocateIcons(byte[][] imageBytes) {
-		PluginIconImpl icon = new PluginIconImpl(imageBytes);
-		icon.send();
-		return icon;
+		return new PluginIconImpl(imageBytes);
 	}
 
 	public static QuiltLoaderIcon getModIcon(ModContainer mod) {

@@ -136,6 +136,8 @@ class KnotClassDelegate {
 	/** Map of package to the reason why it cannot be loaded. If the package can be loaded then the value is the empty string. */
 	private final Map<String, String> packageLoadDenyCache = new ConcurrentHashMap<>();
 
+	private Map<String, ClassLoader> pluginPackages = Collections.emptyMap();
+
 	KnotClassDelegate(boolean isDevelopment, EnvType envType, KnotClassLoaderInterface itf, GameProvider provider) {
 		this.isDevelopment = isDevelopment;
 		this.envType = envType;
@@ -244,11 +246,19 @@ class KnotClassDelegate {
 			}
 		}
 
-		if (!allowedPrefixes.isEmpty()) {
+		if (!allowedPrefixes.isEmpty() && url != null) {
+			String fileName = LoaderUtil.getClassFileName(name);
+			URL codeSource = null;
+
+			try {
+				codeSource = UrlUtil.getSource(fileName, url);
+			} catch (UrlConversionException e) {
+				Log.warn(LogCategory.GENERAL, "Failed to get the code source URL for " + url);
+			}
+
 			String[] prefixes;
 
-			if (url != null
-					&& (prefixes = allowedPrefixes.get(url.toString())) != null) {
+			if (codeSource != null && (prefixes = allowedPrefixes.get(codeSource.toString())) != null) {
 				assert prefixes.length > 0;
 				boolean found = false;
 
@@ -260,7 +270,7 @@ class KnotClassDelegate {
 				}
 
 				if (!found) {
-					throw new ClassNotFoundException("class "+name+" is currently restricted from being loaded");
+					throw new ClassNotFoundException("class " + name + " is currently restricted from being loaded");
 				}
 			}
 		}
@@ -277,6 +287,11 @@ class KnotClassDelegate {
 			if (denyReason != null && !denyReason.isEmpty()) {
 				throw new RuntimeException("Cannot load package " + pkgString + " " + denyReason);
 			}
+		}
+
+		ClassLoader pluginCl = pluginPackages.get(pkgString);
+		if (pluginCl != null) {
+			return pluginCl.loadClass(name);
 		}
 
 		String hideReason = hiddenClasses.get(name);
@@ -349,7 +364,6 @@ class KnotClassDelegate {
 		}
 		return c;
 	}
-
 
 	private boolean shouldRerouteToParent(String name) {
 		return name.startsWith("org.slf4j.") || name.startsWith("org.apache.logging.log4j.");
@@ -513,7 +527,7 @@ class KnotClassDelegate {
 			Log.info(LogCategory.GENERAL, "Loading " + name + " early", new Throwable());
 		}
 
-		if (name.startsWith("org.quiltmc.loader.impl.patch.")) {
+		if (name.startsWith("org.quiltmc.loader.impl.patch.PATCHED.")) {
 			return PatchLoader.getNewPatchedClass(name);
 		}
 
@@ -565,6 +579,10 @@ class KnotClassDelegate {
 
 	void setHiddenClasses(Map<String, String> hiddenClasses) {
 		this.hiddenClasses = hiddenClasses;
+	}
+
+	void setPluginPackages(Map<String, ClassLoader> map) {
+		pluginPackages = map;
 	}
 
 	void hideParentUrl(URL parentPath) {

@@ -45,7 +45,7 @@ public final class TinyFDPatch extends GamePatch {
 	private static final String DIALOG_TITLE = "Select settings file (.json)";
 
 	@Override
-	public void process(QuiltLauncher launcher, GamePatchContext context) {
+	public void process(QuiltLauncher launcher, String namespace, GamePatchContext context) {
 		if (launcher.getEnvironmentType() != EnvType.CLIENT) {
 			// Fix should only be applied to clients.
 			return;

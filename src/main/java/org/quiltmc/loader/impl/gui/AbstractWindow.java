@@ -24,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LObject;
@@ -126,7 +127,7 @@ abstract class AbstractWindow<R> extends QuiltGuiSyncBase implements QuiltLoader
 		sendSignal("closed");
 	}
 
-	void waitUntilClosed() throws LoaderGuiException {
+	void waitUntilClosed(Supplier<Error> errorChecker) throws LoaderGuiException {
 		try {
 			while (true) {
 				try {
@@ -134,7 +135,14 @@ abstract class AbstractWindow<R> extends QuiltGuiSyncBase implements QuiltLoader
 					break;
 				} catch (TimeoutException e) {
 					if (QuiltForkComms.getCurrentComms() == null) {
-						throw new LoaderGuiException("Forked communication failure; check the log for details!", e);
+						Error error = errorChecker.get();
+						if (error == null) {
+							throw new LoaderGuiException("Forked communication failure; check the log for details!", e);
+						} else {
+							LoaderGuiException ex = new LoaderGuiException("Forked communication failure!", error);
+							ex.addSuppressed(e);
+							throw ex;
+						}
 					}
 				}
 			}
