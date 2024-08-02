@@ -32,7 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
 import org.quiltmc.loader.api.VersionRange;
@@ -46,7 +50,9 @@ import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.plugin.quilt.DisabledModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefintion;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakAll;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepAny;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDepOnly;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -108,11 +114,288 @@ class SolverErrorHelper {
 			}
 		}
 
+		// for (RuleLink link: links) {
+		// 	if (link.to.get(0).option instanceof ModLoadOption) {
+		// 		ModLoadOption option = (ModLoadOption) link.to.get(0).option;
+		// 		System.out.println(option + " " + option.metadata().id());
+		// 	}
+		// }
+
+		System.out.println(links);
+
+		System.out.println();
+		Set<OptionLink> seen = new HashSet<>();
+		
+		System.out.println("digraph G {");
+		for (RuleLink link: links) {
+			for (OptionLink option: link.from)
+				if (!seen.add(option))
+					System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
+			for (OptionLink option: link.to)
+				if (!seen.add(option))
+					System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
+		}
+
+		for (RuleLink link: links) {
+			List<String> text = new ArrayList<>();
+			link.rule.appendRuleDescription(t -> text.add(t.toString()));
+			String rule = String.join("\\n", text);
+
+			for (OptionLink from: link.from) 
+				for (OptionLink to: link.to)
+					System.out.printf("\t%d->%d [label=\"%s\"];\n", from.hashCode(), to.hashCode(), rule);
+		}
+		System.out.println("}");
+		System.out.println();
+
+		Map<Option, Collection<Link>> graph = new HashMap<>();
+		Map<LoadOption, Option> options = new HashMap<>();
+
+		for (RuleLink root : links) {
+			for (OptionLink link: root.to)
+				options.compute(link.option, (loadOption, option) -> {
+					if (option == null) {
+						return new Option(loadOption, root.rule instanceof MandatoryModIdDefinition);
+					}
+					assert option.option == loadOption;
+					return new Option(option.option, option.mandatory | root.rule instanceof MandatoryModIdDefinition);
+				});
+		}
+
+		for (Entry<LoadOption,Option> entry : options.entrySet()) {
+			OptionLink optionLink = option2Link.get(entry.getKey());
+			for (RuleLink to : optionLink.to) {
+				if (to.rule instanceof QuiltRuleBreakAll) {
+					Set<Option> breaks = to.to.stream()
+						.flatMap(link -> link.to.stream())
+						.flatMap(rule -> rule.to.stream())
+						.map(option -> options.get(option.option))
+						.collect(Collectors.toSet());
+						
+					graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>())
+						.add(new BreaksAll(breaks));
+				} else if (to.rule instanceof QuiltRuleBreakOnly) {
+					Option breaks = to.to.stream()
+						.map(option -> options.get(option.option))
+						.findFirst().get();
+						
+					graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>())
+						.add(new Breaks(breaks));
+				} else if (to.rule instanceof QuiltRuleDepAny) {
+					Set<Option> depends = to.to.stream()
+						.flatMap(link -> link.to.stream())
+						.flatMap(rule -> rule.to.stream())
+						.map(option -> options.get(option.option))
+						.collect(Collectors.toSet());
+					
+					Collection<Link> l = graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>());
+					
+					if (!depends.isEmpty())
+						l.add(new DependsAny(depends));
+					else {
+						l.add(new MissingAny(
+							((QuiltRuleDepAny)to.rule).publicDep
+						));
+					}
+				} else if (to.rule instanceof QuiltRuleDepOnly) {
+					Optional<Option> depends = to.to.stream()
+						.map(option -> options.get(option.option))
+						.findFirst();
+					
+					Collection<Link> l = graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>());
+					
+					if (depends.isPresent())
+						l.add(new Depends(depends.get()));
+					else {
+						l.add(new Missing(
+							((QuiltRuleDepOnly)to.rule).publicDep
+						));
+					}
+				} else {
+					System.out.println("Unknown rule: " + to.rule);
+				}
+			}
+		}
+
+		boolean modified = false;
+		do {
+			modified = false;
+			Set<Option> allChildren = graph.values()
+				.stream()
+				.flatMap(Collection::stream)
+				.flatMap(Link::children)
+				.collect(Collectors.toSet());
+
+			Set<Option> noLinks = graph.keySet()
+				.stream()
+				.filter(option -> !option.mandatory)
+				.collect(Collectors.toCollection(HashSet::new));
+
+			noLinks.removeAll(allChildren);
+
+			for (Option o : noLinks) {
+				graph.remove(o);
+				modified = true;
+			}
+		}	while(modified);
+
+		System.out.println(graph);
+		System.out.println();
+
+		Set<Option> seenOpt = new HashSet<>();
+		System.out.println("digraph G {");
+		for (Option option : graph.keySet()) {
+			if (seenOpt.add(option))
+				System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
+			
+			for (Link link: graph.get(option)) {
+				for (Option child: link.children().collect(Collectors.toList())) {
+					if (seenOpt.add(child))
+						System.out.printf("\t%d[label=\"%s\"];\n", child.hashCode(), child);
+					System.out.printf("\t%d->%d [label=\"%s\"];\n", option.hashCode(), child.hashCode(), link.getClass().getSimpleName());
+				}
+			}
+		}
+
+		// for (RuleLink link: links) {
+		// 	List<String> text = new ArrayList<>();
+		// 	link.rule.appendRuleDescription(t -> text.add(t.toString()));
+		// 	String rule = String.join("\\n", text);
+
+		// 	for (OptionLink from: link.from) 
+		// 		for (OptionLink to: link.to)
+		// 			System.out.printf("\t%d->%d [label=\"%s\"];\n", from.hashCode(), to.hashCode(), rule);
+		// }
+		System.out.println("}");
+		System.out.println();
+
+
 		if (reportKnownSolverError(rootRules)) {
 			return;
 		}
 
 		addError(new UnhandledError(rules));
+	}
+
+	static class Option {
+		LoadOption option;
+		boolean mandatory;
+
+		public Option(LoadOption option, boolean mandatory) {
+			this.option = option;
+			this.mandatory = mandatory;
+		}
+
+        @Override
+        public String toString() {
+            return "{option=" + option.describe() + ", mandatory=" + mandatory + "}";
+        }
+	}
+
+	interface Link {
+		Stream<Option> children();
+	};
+
+	static class Breaks implements Link{
+		Option breaks;
+
+		public Breaks(Option breaks) {
+			this.breaks = breaks;
+		}
+
+		public Stream<Option> children() {
+			return Stream.of(breaks);
+		}
+
+		@Override
+        public String toString() {
+            return "Breaks=" + breaks;
+        }
+	}
+
+	static class BreaksAll implements Link {
+		Collection<Option> breaks;
+
+		public BreaksAll(Collection<Option> breaks) {
+			this.breaks = breaks;
+		}
+
+		public Stream<Option> children() {
+			return breaks.stream();
+		}
+
+        @Override
+        public String toString() {
+            return "BreaksAll=" + breaks;
+        }
+	}
+
+	static class Depends implements Link{
+		Option depends;
+
+		public Depends(Option depends) {
+			this.depends = depends;
+		}
+
+		public Stream<Option> children() {
+			return Stream.of(depends);
+		}
+
+		@Override
+        public String toString() {
+            return "Depends=" + depends;
+        }
+	}
+
+	static class DependsAny implements Link {
+		Collection<Option> depends;
+
+		public DependsAny(Collection<Option> depends) {
+			this.depends = depends;
+		}
+
+		public Stream<Option> children() {
+			return depends.stream();
+		}
+
+        @Override
+        public String toString() {
+            return "DependsAny=" + depends;
+        }
+	}
+
+	static class Missing implements Link {
+		ModDependency.Only missing;
+
+		public Missing(ModDependency.Only missing) {
+			this.missing = missing;
+		}
+
+		public Stream<Option> children() {
+			return Stream.empty();
+		}
+
+        @Override
+        public String toString() {
+            return "Missing=" + missing.id();
+        }
+	}
+
+	static class MissingAny implements Link {
+		ModDependency.Any missing;
+
+		public MissingAny(ModDependency.Any missing) {
+			this.missing = missing;
+		}
+
+		public Stream<Option> children() {
+			return Stream.empty();
+		}
+
+        @Override
+        public String toString() {
+            return "MissingAny=[" + missing.stream().map(ModDependency.Only::id).map(ModDependencyIdentifier::toString).collect(Collectors.joining(", ")) + "]";
+        }
 	}
 
 	private static LoadOption getTarget(LoadOption from) {
@@ -144,6 +427,13 @@ class SolverErrorHelper {
 			this.from.add(from);
 			from.to.add(this);
 		}
+
+		@Override
+		public String toString() {
+			List<String> text = new ArrayList<>();
+			rule.appendRuleDescription(t -> text.add(t.toString()));
+			return "RuleLink{\n\trule: " + String.join(" ", text) + "\n\tfrom: " + from + ",\n\tto: " + to + "\n}";
+		}
 	}
 
 	static class OptionLink {
@@ -157,6 +447,11 @@ class SolverErrorHelper {
 			if (LoadOption.isNegated(option)) {
 				throw new IllegalArgumentException("Call 'OptionLinkBase.get' instead of this!!");
 			}
+		}
+
+		@Override
+		public String toString() {
+			return "OptionLink{option: " + option.describe() + "}";
 		}
 	}
 
@@ -550,7 +845,7 @@ class SolverErrorHelper {
 		Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
 		allBreakingOptions.addAll(ruleE.getConflictingOptions());
 		String reason = ruleE.publicDep.reason();
-		this.errors.add(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
+		this.addError(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
 
 		return true;
 	}

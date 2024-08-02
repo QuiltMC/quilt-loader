@@ -308,6 +308,16 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	public void multiDependsError() {
+		resolveErrorSet("multi_depends");
+	}
+
+	@Test
+	public void dependsOnBreaksError() {
+		resolveErrorSet("depends_on_breaks");
+	}
+
+	@Test
 	public void dependsError() {
 		resolveErrorSet("depends");
 	}
@@ -335,6 +345,7 @@ public final class ModResolvingTests {
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
 			// Correct
+			// ignored.printStackTrace();
 		}
 	}
 

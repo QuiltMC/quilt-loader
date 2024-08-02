@@ -35,7 +35,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class QuiltRuleDepAny extends QuiltRuleDep {
 
 	final QuiltRuleDepOnly[] options;
-	final ModDependency.Any publicDep;
+	public final ModDependency.Any publicDep;
 
 	public QuiltRuleDepAny(QuiltPluginManager manager, RuleContext ctx, LoadOption option, ModDependency.Any any) {
 
