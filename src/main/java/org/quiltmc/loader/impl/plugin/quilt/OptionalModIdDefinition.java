@@ -35,7 +35,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 /** A concrete definition that allows the modid to be loaded from any of a set of {@link ModLoadOption}s. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class OptionalModIdDefintion extends ModIdDefinition {
+public final class OptionalModIdDefinition extends ModIdDefinition {
 
 	static final Comparator<ModLoadOption> MOD_COMPARATOR = (a, b) -> {
 
@@ -54,7 +54,7 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 	final String modid;
 	final List<ModLoadOption> sources = new ArrayList<>();
 
-	public OptionalModIdDefintion(QuiltPluginManager manager, RuleContext ctx, String modid) {
+	public OptionalModIdDefinition(QuiltPluginManager manager, RuleContext ctx, String modid) {
 		this.manager = manager;
 		this.ctx = ctx;
 		this.modid = modid;

@@ -84,7 +84,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	public static final boolean DEBUG_OVERRIDE_FILE = Boolean.getBoolean(SystemProperties.DEBUG_OVERRIDE_FILE);
 
 	private QuiltOverrides overrides;
-	private final Map<String, OptionalModIdDefintion> modDefinitions = new HashMap<>();
+	private final Map<String, OptionalModIdDefinition> modDefinitions = new HashMap<>();
 
 	@Override
 	public void load(QuiltPluginContext context, Map<String, LoaderValue> previousData) {
@@ -362,9 +362,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			ModMetadataExt metadata = mod.metadata();
 			RuleContext ctx = context().ruleContext();
 
-			OptionalModIdDefintion def = modDefinitions.get(mod.id());
+			OptionalModIdDefinition def = modDefinitions.get(mod.id());
 			if (def == null) {
-				def = new OptionalModIdDefintion(context().manager(), ctx, mod.id());
+				def = new OptionalModIdDefinition(context().manager(), ctx, mod.id());
 				modDefinitions.put(mod.id(), def);
 				ctx.addRule(def);
 			}
