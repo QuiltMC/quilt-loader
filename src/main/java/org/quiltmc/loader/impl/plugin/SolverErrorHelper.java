@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -126,7 +125,7 @@ class SolverErrorHelper {
 
 		System.out.println();
 		Set<OptionLink> seen = new HashSet<>();
-		
+
 		System.out.println("digraph G {");
 		for (RuleLink link: links) {
 			for (OptionLink option: link.from)
@@ -142,7 +141,7 @@ class SolverErrorHelper {
 			link.rule.appendRuleDescription(t -> text.add(t.toString()));
 			String rule = String.join("\\n", text);
 
-			for (OptionLink from: link.from) 
+			for (OptionLink from: link.from)
 				for (OptionLink to: link.to)
 					System.out.printf("\t%d->%d [label=\"%s\"];\n", from.hashCode(), to.hashCode(), rule);
 		}
@@ -163,60 +162,87 @@ class SolverErrorHelper {
 				});
 		}
 
-		for (Entry<LoadOption,Option> entry : options.entrySet()) {
-			OptionLink optionLink = option2Link.get(entry.getKey());
-			for (RuleLink to : optionLink.to) {
-				if (to.rule instanceof QuiltRuleBreakAll) {
-					Set<Option> breaks = to.to.stream()
-						.flatMap(link -> link.to.stream())
-						.flatMap(rule -> rule.to.stream())
-						.map(option -> options.get(option.option))
-						.collect(Collectors.toSet());
-						
-					graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>())
+		System.out.println(options);
+
+//		for (Entry<LoadOption,Option> entry : options.entrySet()) {
+//			OptionLink optionLink = option2Link.get(entry.getKey());
+		for (RuleLink rule : links) {
+			if (rule.rule instanceof QuiltRuleBreakAll) {
+				Set<Option> breaks = rule.to.stream()
+					.flatMap(link -> link.to.stream())
+					.flatMap(_rule -> _rule.to.stream())
+					.map(option -> options.get(option.option))
+					.collect(Collectors.toSet());
+
+				for (OptionLink link: rule.from)
+					graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>())
 						.add(new BreaksAll(breaks));
-				} else if (to.rule instanceof QuiltRuleBreakOnly) {
-					Option breaks = to.to.stream()
-						.map(option -> options.get(option.option))
-						.findFirst().get();
-						
-					graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>())
+			} else if (rule.rule instanceof QuiltRuleBreakOnly) {
+				Option breaks = rule.to.stream()
+					.map(option -> options.get(option.option))
+					.findFirst().get();
+
+				for (OptionLink link: rule.from)
+					graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>())
 						.add(new Breaks(breaks));
-				} else if (to.rule instanceof QuiltRuleDepAny) {
-					Set<Option> depends = to.to.stream()
-						.flatMap(link -> link.to.stream())
-						.flatMap(rule -> rule.to.stream())
-						.map(option -> options.get(option.option))
-						.collect(Collectors.toSet());
-					
-					Collection<Link> l = graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>());
-					
+			} else if (rule.rule instanceof QuiltRuleDepAny) {
+				Set<Option> depends = rule.to.stream()
+					.flatMap(link -> link.to.stream())
+					.flatMap(_rule -> _rule.to.stream())
+					.map(option -> options.get(option.option))
+					.collect(Collectors.toSet());
+
+				for (OptionLink link: rule.from) {
+					Collection<Link> l = graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>());
+
 					if (!depends.isEmpty())
 						l.add(new DependsAny(depends));
 					else {
 						l.add(new MissingAny(
-							((QuiltRuleDepAny)to.rule).publicDep
+								((QuiltRuleDepAny) rule.rule).publicDep
 						));
 					}
-				} else if (to.rule instanceof QuiltRuleDepOnly) {
-					Optional<Option> depends = to.to.stream()
-						.map(option -> options.get(option.option))
-						.findFirst();
-					
-					Collection<Link> l = graph.computeIfAbsent(entry.getValue(), option -> new ArrayList<>());
-					
+				}
+			} else if (rule.rule instanceof QuiltRuleDepOnly) {
+				Optional<Option> depends = rule.to.stream()
+					.map(option -> options.get(option.option))
+					.findFirst();
+
+				for (OptionLink link: rule.from) {
+					Collection<Link> l = graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>());
+
 					if (depends.isPresent())
 						l.add(new Depends(depends.get()));
 					else {
 						l.add(new Missing(
-							((QuiltRuleDepOnly)to.rule).publicDep
+								((QuiltRuleDepOnly) rule.rule).publicDep
 						));
 					}
-				} else {
-					System.out.println("Unknown rule: " + to.rule);
 				}
+			} else if (rule.rule instanceof MandatoryModIdDefinition) {
+				for (OptionLink link: rule.from)
+					assert options.get(link.option).mandatory;
+			} else if (rule.rule instanceof OptionalModIdDefinition) {
+				OptionalModIdDefinition definition = (OptionalModIdDefinition) rule.rule;
+				Collection<? extends LoadOption> nodesTo = definition.getNodesTo();
+				for (LoadOption loadOption : nodesTo) {
+					if (loadOption instanceof ProvidedModOption) {
+						ProvidedModOption provided = (ProvidedModOption) loadOption;
+						for (LoadOption loadOption1: nodesTo) {
+							if (loadOption1 != loadOption) {
+								graph.computeIfAbsent(options.get(provided.getTarget()), option -> new ArrayList<>())
+										.add(new Provided(options.get(loadOption1)));
+							}
+						}
+					}
+				}
+			} else {
+				System.out.println("Unknown rule: " + rule.rule.getClass().getSimpleName() + " -> " + rule.rule);
 			}
 		}
+		System.out.println(graph);
+
+		graph.remove(null);
 
 		boolean modified = false;
 		do {
@@ -248,7 +274,7 @@ class SolverErrorHelper {
 		for (Option option : graph.keySet()) {
 			if (seenOpt.add(option))
 				System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
-			
+
 			for (Link link: graph.get(option)) {
 				for (Option child: link.children().collect(Collectors.toList())) {
 					if (seenOpt.add(child))
@@ -263,7 +289,7 @@ class SolverErrorHelper {
 		// 	link.rule.appendRuleDescription(t -> text.add(t.toString()));
 		// 	String rule = String.join("\\n", text);
 
-		// 	for (OptionLink from: link.from) 
+		// 	for (OptionLink from: link.from)
 		// 		for (OptionLink to: link.to)
 		// 			System.out.printf("\t%d->%d [label=\"%s\"];\n", from.hashCode(), to.hashCode(), rule);
 		// }
@@ -399,6 +425,23 @@ class SolverErrorHelper {
         }
 	}
 
+	static class Provided implements Link {
+		Option provides;
+
+		public Provided(Option provides) {
+			this.provides = provides;
+		}
+
+		public Stream<Option> children() {
+			return Stream.of(provides);
+		}
+
+		@Override
+		public String toString() {
+			return "Provided=" + provides;
+		}
+	}
+
 	private static LoadOption getTarget(LoadOption from) {
 		if (from instanceof AliasedLoadOption) {
 			LoadOption target = ((AliasedLoadOption) from).getTarget();
@@ -433,7 +476,7 @@ class SolverErrorHelper {
 		public String toString() {
 			List<String> text = new ArrayList<>();
 			rule.appendRuleDescription(t -> text.add(t.toString()));
-			return "RuleLink{\n\trule: " + String.join(" ", text) + "\n\tfrom: " + from + ",\n\tto: " + to + "\n}";
+			return "RuleLink{\n\trule: " + rule.getClass().getSimpleName() + "@" + String.join(" ", text) + "\n\tfrom: " + from + ",\n\tto: " + to + "\n}";
 		}
 	}
 
@@ -673,13 +716,13 @@ class SolverErrorHelper {
 		}
 
 		// Step 1: Find the single OptionalModIdDefinition
-		OptionalModIdDefintion optionalDef = null;
+		OptionalModIdDefinition optionalDef = null;
 		for (RuleLink link : rootRules) {
-			if (link.rule instanceof OptionalModIdDefintion) {
+			if (link.rule instanceof OptionalModIdDefinition) {
 				if (optionalDef != null) {
 					return false;
 				}
-				optionalDef = (OptionalModIdDefintion) link.rule;
+				optionalDef = (OptionalModIdDefinition) link.rule;
 			}
 		}
 

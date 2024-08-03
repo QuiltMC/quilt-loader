@@ -298,8 +298,34 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	public void unless() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "unless");
+
+		assertModPresent(modSet, "mod_a", "1.0.0");
+		assertModPresent(modSet, "mod_b", "1.0.0");
+		assertModPresent(modSet, "mod_c", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void unlessProvided() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "unless_provided");
+
+		assertModPresent(modSet, "mod_a", "1.0.0");
+		assertModPresent(modSet, "mod_b", "1.0.0");
+		assertProvidedPresent(modSet, "mod_c", "1.0.0");
+		assertModPresent(modSet, "mod_d", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void breaksError() {
 		resolveErrorSet("breaks");
+	}
+
+	@Test
+	public void breaksUnlessError() {
+		resolveErrorSet("breaks_unless");
 	}
 
 	@Test
@@ -318,6 +344,21 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	public void dependsOnBrokenError() {
+		resolveErrorSet("depends_on_broken");
+	}
+
+	@Test
+	public void dependsOnProvidedExistingError() {
+		resolveErrorSet("depends_on_provided_existing");
+	}
+
+	@Test
+	public void providesExistingError() {
+		resolveErrorSet("provides_existing");
+	}
+
+	@Test
 	public void dependsError() {
 		resolveErrorSet("depends");
 	}
@@ -325,6 +366,11 @@ public final class ModResolvingTests {
 	@Test
 	public void dependsArrayError() {
 		resolveErrorSet("depends_array");
+	}
+
+	@Test
+	public void complexDependsOnProvidingExistingError() {
+		resolveErrorSet("complex/depends_on_providing_existing");
 	}
 
 	private static void resolveErrorSet(String subpath) {
@@ -345,7 +391,7 @@ public final class ModResolvingTests {
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
 			// Correct
-			// ignored.printStackTrace();
+			ignored.printStackTrace();
 		}
 	}
 
