@@ -114,116 +114,84 @@ class SolverErrorHelper {
 			}
 		}
 
-		// for (RuleLink link: links) {
-		// 	if (link.to.get(0).option instanceof ModLoadOption) {
-		// 		ModLoadOption option = (ModLoadOption) link.to.get(0).option;
-		// 		System.out.println(option + " " + option.metadata().id());
-		// 	}
-		// }
-
-		System.out.println(links);
-
-		System.out.println();
-		Set<OptionLink> seen = new HashSet<>();
-
-		System.out.println("digraph G {");
-		for (RuleLink link: links) {
-			for (OptionLink option: link.from)
-				if (!seen.add(option))
-					System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
-			for (OptionLink option: link.to)
-				if (!seen.add(option))
-					System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
-		}
-
-		for (RuleLink link: links) {
-			List<String> text = new ArrayList<>();
-			link.rule.appendRuleDescription(t -> text.add(t.toString()));
-			String rule = String.join("\\n", text);
-
-			for (OptionLink from: link.from)
-				for (OptionLink to: link.to)
-					System.out.printf("\t%d->%d [label=\"%s\"];\n", from.hashCode(), to.hashCode(), rule);
-		}
-		System.out.println("}");
-		System.out.println();
-
 		Map<Option, Collection<Link>> graph = new HashMap<>();
 		Map<LoadOption, Option> options = new HashMap<>();
 
-		for (RuleLink root : links) {
-			for (OptionLink link: root.to)
-				options.compute(link.option, (loadOption, option) -> {
-					if (option == null) {
-						return new Option(loadOption, root.rule instanceof MandatoryModIdDefinition);
+		for (Rule rule : rules) {
+			for (LoadOption option: rule.getNodesTo()) {
+				options.compute(option, (loadOption, currentOption) -> {
+					if (currentOption == null) {
+						return new Option(loadOption, rule instanceof MandatoryModIdDefinition);
 					}
-					assert option.option == loadOption;
-					return new Option(option.option, option.mandatory | root.rule instanceof MandatoryModIdDefinition);
+					assert currentOption.option == loadOption;
+					return new Option(loadOption, currentOption.mandatory | rule instanceof MandatoryModIdDefinition);
 				});
+			}
 		}
 
-		System.out.println(options);
-
-//		for (Entry<LoadOption,Option> entry : options.entrySet()) {
-//			OptionLink optionLink = option2Link.get(entry.getKey());
-		for (RuleLink rule : links) {
-			if (rule.rule instanceof QuiltRuleBreakAll) {
-				Set<Option> breaks = rule.to.stream()
-					.flatMap(link -> link.to.stream())
-					.flatMap(_rule -> _rule.to.stream())
-					.map(option -> options.get(option.option))
+		for (Rule rule : rules) {
+			if (rule instanceof QuiltRuleBreakAll) {
+				Set<Option> breaks = rule.getNodesTo()
+					.stream()
+					.flatMap(loadOption -> rules.stream().filter(r -> r.getNodesFrom().contains(loadOption)))
+					.flatMap(r -> r.getNodesTo().stream())
+					.map(options::get)
 					.collect(Collectors.toSet());
 
-				for (OptionLink link: rule.from)
-					graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>())
+				for (LoadOption load: rule.getNodesFrom())
+					graph.computeIfAbsent(options.get(load), option -> new ArrayList<>())
 						.add(new BreaksAll(breaks));
-			} else if (rule.rule instanceof QuiltRuleBreakOnly) {
-				Option breaks = rule.to.stream()
-					.map(option -> options.get(option.option))
-					.findFirst().get();
+			} else if (rule instanceof QuiltRuleBreakOnly) {
+				Option breaks = rule.getNodesTo().stream()
+					.map(options::get)
+					.findFirst()
+					.get();
 
-				for (OptionLink link: rule.from)
-					graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>())
+				for (LoadOption load: rule.getNodesFrom())
+					graph.computeIfAbsent(options.get(load), option -> new ArrayList<>())
 						.add(new Breaks(breaks));
-			} else if (rule.rule instanceof QuiltRuleDepAny) {
-				Set<Option> depends = rule.to.stream()
-					.flatMap(link -> link.to.stream())
-					.flatMap(_rule -> _rule.to.stream())
-					.map(option -> options.get(option.option))
+			} else if (rule instanceof QuiltRuleDepAny) {
+				Set<Option> depends = rule.getNodesTo()
+					.stream()
+					.flatMap(loadOption -> rules.stream().filter(r -> r.getNodesFrom().contains(loadOption)))
+					.flatMap(r -> r.getNodesTo().stream())
+					.peek(System.out::println)
+					.map(options::get)
+					.peek(System.out::println)
 					.collect(Collectors.toSet());
 
-				for (OptionLink link: rule.from) {
-					Collection<Link> l = graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>());
+				for (LoadOption load: rule.getNodesFrom()) {
+					Collection<Link> l = graph.computeIfAbsent(options.get(load), option -> new ArrayList<>());
 
 					if (!depends.isEmpty())
 						l.add(new DependsAny(depends));
 					else {
 						l.add(new MissingAny(
-								((QuiltRuleDepAny) rule.rule).publicDep
+								((QuiltRuleDepAny) rule).publicDep
 						));
 					}
 				}
-			} else if (rule.rule instanceof QuiltRuleDepOnly) {
-				Optional<Option> depends = rule.to.stream()
-					.map(option -> options.get(option.option))
+			} else if (rule instanceof QuiltRuleDepOnly) {
+				Optional<Option> depends = rule.getNodesTo().stream()
+					.map(options::get)
 					.findFirst();
 
-				for (OptionLink link: rule.from) {
-					Collection<Link> l = graph.computeIfAbsent(options.get(link.option), option -> new ArrayList<>());
+				for (LoadOption load: rule.getNodesFrom()) {
+					Collection<Link> l = graph.computeIfAbsent(options.get(load), option -> new ArrayList<>());
 
 					if (depends.isPresent())
 						l.add(new Depends(depends.get()));
 					else {
 						l.add(new Missing(
-								((QuiltRuleDepOnly) rule.rule).publicDep
+								((QuiltRuleDepOnly) rule).publicDep
 						));
 					}
 				}
-			} else if (rule.rule instanceof MandatoryModIdDefinition) {
-				for (OptionLink link: rule.from)
-					assert options.get(link.option).mandatory;
-			} else if (rule.rule instanceof OptionalModIdDefinition) {
-				OptionalModIdDefinition definition = (OptionalModIdDefinition) rule.rule;
+			} else if (rule instanceof MandatoryModIdDefinition) {
+				for (LoadOption load: rule.getNodesFrom())
+					assert options.get(load).mandatory;
+			} else if (rule instanceof OptionalModIdDefinition) {
+				OptionalModIdDefinition definition = (OptionalModIdDefinition) rule;
 				Collection<? extends LoadOption> nodesTo = definition.getNodesTo();
 				for (LoadOption loadOption : nodesTo) {
 					if (loadOption instanceof ProvidedModOption) {
@@ -237,12 +205,13 @@ class SolverErrorHelper {
 					}
 				}
 			} else {
-				System.out.println("Unknown rule: " + rule.rule.getClass().getSimpleName() + " -> " + rule.rule);
+				System.out.print("Unknown rule: " + rule.getClass().getSimpleName() + " -> ");
+				rule.appendRuleDescription(System.out::println);
 			}
 		}
-		System.out.println(graph);
 
 		graph.remove(null);
+		printGraph(graph);
 
 		boolean modified = false;
 		do {
@@ -266,36 +235,7 @@ class SolverErrorHelper {
 			}
 		}	while(modified);
 
-		System.out.println(graph);
-		System.out.println();
-
-		Set<Option> seenOpt = new HashSet<>();
-		System.out.println("digraph G {");
-		for (Option option : graph.keySet()) {
-			if (seenOpt.add(option))
-				System.out.printf("\t%d[label=\"%s\"];\n", option.hashCode(), option);
-
-			for (Link link: graph.get(option)) {
-				for (Option child: link.children().collect(Collectors.toList())) {
-					if (seenOpt.add(child))
-						System.out.printf("\t%d[label=\"%s\"];\n", child.hashCode(), child);
-					System.out.printf("\t%d->%d [label=\"%s\"];\n", option.hashCode(), child.hashCode(), link.getClass().getSimpleName());
-				}
-			}
-		}
-
-		// for (RuleLink link: links) {
-		// 	List<String> text = new ArrayList<>();
-		// 	link.rule.appendRuleDescription(t -> text.add(t.toString()));
-		// 	String rule = String.join("\\n", text);
-
-		// 	for (OptionLink from: link.from)
-		// 		for (OptionLink to: link.to)
-		// 			System.out.printf("\t%d->%d [label=\"%s\"];\n", from.hashCode(), to.hashCode(), rule);
-		// }
-		System.out.println("}");
-		System.out.println();
-
+		printGraph(graph);
 
 		if (reportKnownSolverError(rootRules)) {
 			return;
@@ -304,13 +244,55 @@ class SolverErrorHelper {
 		addError(new UnhandledError(rules));
 	}
 
+	static void printGraph(Map<Option, Collection<Link>> graph) {
+		System.out.println("digraph G {");
+		System.out.printf("\troot[style=invis];\n");
+		System.out.printf("\tsubgraph cluster_root {\n");
+		graph.entrySet()
+			.stream()
+			.flatMap(entry -> Stream.concat(Stream.of(entry.getKey()), entry.getValue().stream().flatMap(Link::children)))
+			.distinct()
+			.filter(o -> o.mandatory)
+			.forEach(option -> {
+				System.out.printf("\t\t%s[label=\"%s\", shape=\"Mdiamond\"];\n", option.hashCode(), option.label());
+				// System.out.printf("\t\troot->%s[style=invis];\n", option.hashCode());
+			});
+		System.out.printf("\t\tstyle=invis;\n");
+		System.out.printf("\t}\n");
+		graph.entrySet()
+			.stream()
+			.flatMap(entry -> Stream.concat(Stream.of(entry.getKey()), entry.getValue().stream().flatMap(Link::children)))
+			.distinct()
+			.forEach(option -> {
+				if (option.mandatory)
+					System.out.printf("\troot->%s[style=invis];\n", option.hashCode());
+				else
+					System.out.printf("\t%s[label=\"%s\", shape=\"rectangle\"];\n", option.hashCode(), option.label());
+			});
+
+		graph.entrySet().stream()
+			.forEach(entry -> entry.getValue().forEach(link -> link.dotGraphEdge(entry.getKey())));
+		System.out.println("}");
+		System.out.println();
+	}
+
 	static class Option {
-		LoadOption option;
+		final LoadOption option;
 		boolean mandatory;
 
 		public Option(LoadOption option, boolean mandatory) {
 			this.option = option;
 			this.mandatory = mandatory;
+		}
+
+		public String label() {
+			if (option instanceof ModLoadOption) {
+				return ((ModLoadOption) option).id();
+			} else if (option instanceof ProvidedModOption) {
+				return ((ProvidedModOption) option).id();
+			} 
+
+			return this.toString();
 		}
 
         @Override
@@ -321,9 +303,15 @@ class SolverErrorHelper {
 
 	interface Link {
 		Stream<Option> children();
+
+		default void dotGraphEdge(Option from) {
+			this.children().forEach(child -> {
+				System.out.printf("\t%s->%s [label=\"%s\"];\n", from.hashCode(), child.hashCode(), this.getClass().getSimpleName());
+			});
+		}
 	};
 
-	static class Breaks implements Link{
+	static class Breaks implements Link {
 		Option breaks;
 
 		public Breaks(Option breaks) {
@@ -332,6 +320,11 @@ class SolverErrorHelper {
 
 		public Stream<Option> children() {
 			return Stream.of(breaks);
+		}
+
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s->%s [label=\"Breaks\", dir=both, color=red];\n", from.hashCode(), breaks.hashCode());
 		}
 
 		@Override
@@ -351,13 +344,22 @@ class SolverErrorHelper {
 			return breaks.stream();
 		}
 
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s->%s [label=\"Breaks\", dir=both, color=red];\n", from.hashCode(), breaks.hashCode());
+			System.out.printf("\t%s [label=\"All Of\", shape=\"invtriangle\", color=red];\n", breaks.hashCode());
+			for (Option b: breaks) {
+				System.out.printf("\t%s->%s [label=\"Breaks\", dir=both, color=red];\n", breaks.hashCode(), b.hashCode());
+			}
+		}
+
         @Override
         public String toString() {
             return "BreaksAll=" + breaks;
         }
 	}
 
-	static class Depends implements Link{
+	static class Depends implements Link {
 		Option depends;
 
 		public Depends(Option depends) {
@@ -385,6 +387,15 @@ class SolverErrorHelper {
 			return depends.stream();
 		}
 
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s->%s [label=\"Depends\"];\n", from.hashCode(), depends.hashCode());
+			System.out.printf("\t%s [label=\"Any Of\", shape=\"invtriangle\"];\n", depends.hashCode());
+			for (Option b: depends) {
+				System.out.printf("\t%s->%s [label=\"Depends\"];\n", depends.hashCode(), b.hashCode());
+			}
+		}
+
         @Override
         public String toString() {
             return "DependsAny=" + depends;
@@ -400,6 +411,12 @@ class SolverErrorHelper {
 
 		public Stream<Option> children() {
 			return Stream.empty();
+		}
+
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s->%s [label=\"Depends\"];\n", from.hashCode(), missing.hashCode());
+			System.out.printf("\t%s [label=\"Missing: %s\", shape=\"ellipse\", color=red];\n", missing.hashCode(), missing.id());
 		}
 
         @Override
@@ -419,6 +436,12 @@ class SolverErrorHelper {
 			return Stream.empty();
 		}
 
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s->%s [label=\"Depends\"];\n", from.hashCode(), missing.hashCode());
+			System.out.printf("\t%s [label=\"Missing any of: %s\", shape=\"ellipse\", color=red];\n", missing.hashCode(), missing.stream().map(ModDependency.Only::id).map(ModDependencyIdentifier::toString).collect(Collectors.joining(", ")));
+		}
+
         @Override
         public String toString() {
             return "MissingAny=[" + missing.stream().map(ModDependency.Only::id).map(ModDependencyIdentifier::toString).collect(Collectors.joining(", ")) + "]";
@@ -434,6 +457,11 @@ class SolverErrorHelper {
 
 		public Stream<Option> children() {
 			return Stream.of(provides);
+		}
+
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s->%s [label=\"Provides\", style=\"dashed\"];\n", from.hashCode(), provides.hashCode());
 		}
 
 		@Override
