@@ -140,7 +140,7 @@ class SolverErrorHelper {
 
 				for (LoadOption load: rule.getNodesFrom())
 					graph.computeIfAbsent(options.get(load), option -> new ArrayList<>())
-						.add(new BreaksAll(breaks));
+						.add(new BreaksAll(breaks, (QuiltRuleBreakAll) rule));
 			} else if (rule instanceof QuiltRuleBreakOnly) {
 				Option breaks = rule.getNodesTo().stream()
 					.map(options::get)
@@ -149,7 +149,7 @@ class SolverErrorHelper {
 
 				for (LoadOption load: rule.getNodesFrom())
 					graph.computeIfAbsent(options.get(load), option -> new ArrayList<>())
-						.add(new Breaks(breaks));
+						.add(new Breaks(breaks, ((QuiltRuleBreakOnly) rule)));
 			} else if (rule instanceof QuiltRuleDepAny) {
 				Set<Option> depends = rule.getNodesTo()
 					.stream()
@@ -210,9 +210,9 @@ class SolverErrorHelper {
 			}
 		}
 
-		graph.remove(null);
-		printGraph(graph);
+		// System.out.println(graph);
 
+		graph.remove(null);
 		boolean modified = false;
 		do {
 			modified = false;
@@ -237,11 +237,42 @@ class SolverErrorHelper {
 
 		printGraph(graph);
 
-		if (reportKnownSolverError(rootRules)) {
-			return;
-		}
+		reportNewError(graph);
+
+		// if (reportKnownSolverError(rootRules)) {
+		// 	return;
+		// }
 
 		addError(new UnhandledError(rules));
+	}
+
+	void reportNewError(Map<Option, Collection<Link>> graph) {
+		for (Option option: graph.keySet()) {
+			for (Link link: graph.get(option)) {
+				if (link instanceof Breaks) {
+					Breaks breaks = ((Breaks) link);
+					ModLoadOption from = (ModLoadOption) option.option;
+					Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
+					allBreakingOptions.addAll(breaks.rule.getConflictingOptions());
+					this.addError(new BreakageError(breaks.rule.publicDep, from, allBreakingOptions));
+				} else if (link instanceof BreaksAll) {
+					BreaksAll breaksAll = ((BreaksAll) link);
+					ModLoadOption from = (ModLoadOption) option.option;
+					Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
+					for (QuiltRuleBreakOnly only : breaksAll.rule.options) {
+						allBreakingOptions.addAll(only.getConflictingOptions());
+					}
+
+					for (ModDependency.Only only: breaksAll.rule.publicDep) {
+						ModDependencyIdentifier modOn = only.id();
+						VersionRange versionsOn = only.versionRange();
+						String reason = only.reason();
+						// TODO: BreakageAll?
+						// this.addError(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
+					}
+				}
+			}
+		}
 	}
 
 	static void printGraph(Map<Option, Collection<Link>> graph) {
@@ -312,10 +343,12 @@ class SolverErrorHelper {
 	};
 
 	static class Breaks implements Link {
+		QuiltRuleBreakOnly rule;
 		Option breaks;
 
-		public Breaks(Option breaks) {
+		public Breaks(Option breaks, QuiltRuleBreakOnly rule) {
 			this.breaks = breaks;
+			this.rule = rule;
 		}
 
 		public Stream<Option> children() {
@@ -335,9 +368,11 @@ class SolverErrorHelper {
 
 	static class BreaksAll implements Link {
 		Collection<Option> breaks;
+		QuiltRuleBreakAll rule;
 
-		public BreaksAll(Collection<Option> breaks) {
+		public BreaksAll(Collection<Option> breaks, QuiltRuleBreakAll rule) {
 			this.breaks = breaks;
+			this.rule = rule;
 		}
 
 		public Stream<Option> children() {
@@ -917,7 +952,7 @@ class SolverErrorHelper {
 		Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
 		allBreakingOptions.addAll(ruleE.getConflictingOptions());
 		String reason = ruleE.publicDep.reason();
-		this.addError(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
+		this.addError(new BreakageError(ruleE.publicDep, from, allBreakingOptions));
 
 		return true;
 	}
@@ -1068,26 +1103,27 @@ class SolverErrorHelper {
 	}
 
 	static class BreakageError extends SolverError {
-		final ModDependencyIdentifier modOn;
-		final VersionRange versionsOn;
+		// final ModDependencyIdentifier modOn;
+		// final VersionRange versionsOn;
 		final Set<ModLoadOption> from = new LinkedHashSet<>();
 		final Set<ModLoadOption> allBreakingOptions;
-		final String reason;
+		// final String reason;
+		final ModDependency.Only dep;
 
-		BreakageError(ModDependencyIdentifier modOn, VersionRange versionsOn, ModLoadOption from, Set<
-			ModLoadOption> allBreakingOptions, String reason) {
-			this.modOn = modOn;
-			this.versionsOn = versionsOn;
+		BreakageError(ModDependency.Only dep, ModLoadOption from, Set<
+			ModLoadOption> allBreakingOptions) {
+			this.dep = dep;
+			// this.versionsOn = versionsOn;
 			this.from.add(from);
 			this.allBreakingOptions = allBreakingOptions;
-			this.reason = reason;
+			// this.reason = reason;
 		}
 
 		@Override
 		boolean mergeInto(SolverError into) {
 			if (into instanceof BreakageError) {
 				BreakageError depDst = (BreakageError) into;
-				if (!modOn.equals(depDst.modOn) || !versionsOn.equals(depDst.versionsOn)) {
+				if (!dep.id().equals(depDst.dep.id()) || !dep.versionRange().equals(depDst.dep.versionRange())) {
 					return false;
 				}
 				depDst.from.addAll(from);
@@ -1110,7 +1146,7 @@ class SolverErrorHelper {
 			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
 
 			QuiltLoaderText first = VersionRangeDescriber.describe(
-				rootModName, versionsOn, modOn.id(), false, transitive
+				rootModName, dep.versionRange(), dep.id().id(), false, transitive
 			);
 
 			Object[] secondData = new Object[allBreakingOptions.size() == 1 ? 1 : 0];
@@ -1127,8 +1163,8 @@ class SolverErrorHelper {
 
 			setIconFromMod(manager, mandatoryMod, error);
 
-			if (!reason.isEmpty()) {
-				error.appendDescription(QuiltLoaderText.translate("error.reason", reason));
+			if (!dep.reason().isEmpty()) {
+				error.appendDescription(QuiltLoaderText.translate("error.reason", dep.reason()));
 				// A newline after the reason was desired here, but do you think Swing loves nice things?
 			}
 
@@ -1159,19 +1195,39 @@ class SolverErrorHelper {
 
 			StringBuilder report = new StringBuilder(rootModName);
 			report.append(" breaks");
-			if (VersionRange.ANY.equals(versionsOn)) {
+			if (VersionRange.ANY.equals(dep.versionRange())) {
 				report.append(" all versions of ");
 			} else {
-				report.append(" version ").append(versionsOn).append(" of ");
+				report.append(" version ").append(dep.versionRange()).append(" of ");
 			}
-			report.append(modOn);// TODO
+			report.append(dep.id());// TODO
 			report.append(", which is present!");
 			error.appendReportText(report.toString(), "");
 
-			if (!reason.isEmpty()) {
-				error.appendReportText("Breaking mod's reason: " + reason, "");
+			report = new StringBuilder();
+			if (dep.unless() != null) {
+				report.append("\n");
+				if (dep.unless() instanceof ModDependency.Only) {
+					ModDependency.Only unless = (ModDependency.Only) dep.unless();
+					report.append("However, if");
+
+					if (VersionRange.ANY.equals(unless.versionRange())) {
+						report.append(" any version of ");
+					} else {
+						report.append(" a version ").append(unless.versionRange()).append(" of ");
+					}
+
+					report.append(unless.id()).append(" is present, ").append(rootModName).append(" does not break ").append(dep.id()).append(".");
+				}
 			}
 
+			error.appendReportText(report.toString(), "");
+
+			if (!dep.reason().isEmpty()) {
+				error.appendReportText("Breaking mod's reason: " + dep.reason(), "");
+			}
+
+			error.appendReportText("Breaking mods: ");
 			for (ModLoadOption mod : from) {
 				error.appendReportText("- " + manager.describePath(mod.from()));
 			}

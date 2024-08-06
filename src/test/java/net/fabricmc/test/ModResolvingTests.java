@@ -391,7 +391,7 @@ public final class ModResolvingTests {
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
 			// Correct
-			ignored.printStackTrace();
+			System.err.println(ignored.getMessage());
 		}
 	}
 

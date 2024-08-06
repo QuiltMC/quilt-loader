@@ -959,8 +959,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// - loader plugin
 			// - source path(s)
 			row.put(modColumn, mod.metadata().name());
-			row.put(id, mod.metadata().id());
-			row.put(version, mod.metadata().version());
+			row.put(id, mod.id());
+			row.put(version, mod.version());
 			row.put(plugin, mod.loader().pluginId());
 			StringBuilder flagStr = new StringBuilder();
 			flagStr.append(theQuiltPlugin.hasDepsChanged(mod) ? QuiltLoaderImpl.FLAG_DEPS_CHANGED : '.');
