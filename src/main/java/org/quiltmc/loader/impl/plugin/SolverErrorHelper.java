@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,6 +43,7 @@ import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -1143,7 +1145,7 @@ class SolverErrorHelper {
 			// Description:
 			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
 			ModLoadOption mandatoryMod = from.iterator().next();
-			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
+			String rootModName = from.size() > 1 ? from.size() + " mods [" + from.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name).collect(Collectors.joining(", ")) + "]" : mandatoryMod.metadata().name();
 
 			QuiltLoaderText first = VersionRangeDescriber.describe(
 				rootModName, dep.versionRange(), dep.id().id(), false, transitive
@@ -1194,7 +1196,10 @@ class SolverErrorHelper {
 			}
 
 			StringBuilder report = new StringBuilder(rootModName);
-			report.append(" breaks");
+			report.append(" break");
+			if (from.size() == 1) {
+				report.append("s");
+			}
 			if (VersionRange.ANY.equals(dep.versionRange())) {
 				report.append(" all versions of ");
 			} else {
@@ -1217,7 +1222,11 @@ class SolverErrorHelper {
 						report.append(" a version ").append(unless.versionRange()).append(" of ");
 					}
 
-					report.append(unless.id()).append(" is present, ").append(rootModName).append(" does not break ").append(dep.id()).append(".");
+					report.append(unless.id()).append(" is present, ").append(rootModName).append(" do");
+					if (from.size() == 1) {
+						report.append("es");
+					}
+					report.append(" not break ").append(dep.id()).append(".");
 				}
 			}
 
