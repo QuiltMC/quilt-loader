@@ -227,7 +227,7 @@ public final class V1ModMetadataReader {
 					throw parseException(repositoriesValue, "repositories must be an array");
 				}
 
-				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, QLKeys.LOAD_TYPE, builder.repositories);
+				readStringList((JsonLoaderValue.ArrayImpl) repositoriesValue, QLKeys.REPOSITORIES, builder.repositories);
 			}
 
 			@Nullable
