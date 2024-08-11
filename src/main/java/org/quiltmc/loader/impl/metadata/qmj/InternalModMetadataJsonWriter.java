@@ -18,7 +18,6 @@ package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -41,8 +39,10 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.VersionConstraint;
+import org.quiltmc.loader.api.VersionInterval;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
+import org.quiltmc.loader.impl.fabric.metadata.V1ModMetadataFabric;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -52,8 +52,6 @@ import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class InternalModMetadataJsonWriter {
-	private static final List<String> SPECIFIC_KEY_ORDER = Stream.of("schema_version", "quilt_loader", "mixin", "access_widener", "minecraft").collect(Collectors.toList());
-
 	public static void write(InternalModMetadata mod, Writer writer) throws IOException {
 		JsonWriter json = JsonWriter.json(writer);
 		((JsonLoaderValue) toJson(mod)).write(json);
@@ -65,21 +63,7 @@ public class InternalModMetadataJsonWriter {
 	}
 
 	public static LoaderValue toJson(InternalModMetadata mod) {
-		Map<String, LoaderValue> values = new TreeMap<>((o1, o2) -> {
-			if (o1.equals(o2)) {
-				return 0;
-			}
-
-			for (String key : SPECIFIC_KEY_ORDER) {
-				if (o1.equals(key)) {
-					return -1;
-				} else if (o2.equals(key)) {
-					return 1;
-				}
-			}
-
-			return o1.compareTo(o2);
-		});
+		Map<String, LoaderValue> values = new LinkedHashMap<>();
 
 		values.put("schema_version", new JsonLoaderValue.NumberImpl("", 1));
 		values.put("quilt_loader", createQuiltLoader(mod));
@@ -141,7 +125,7 @@ public class InternalModMetadataJsonWriter {
 		});
 	}
 
-	private static JsonLoaderValue entrypoints(Collection<ModMetadataExt.ModEntrypoint> entrypoints) {
+	private static LoaderValue entrypoints(Collection<ModMetadataExt.ModEntrypoint> entrypoints) {
 		return array(entrypoints.stream().map(entrypoint -> {
 			if (entrypoint instanceof AdapterLoadableClassEntry) {
 				AdapterLoadableClassEntry adapted = (AdapterLoadableClassEntry) entrypoint;
@@ -159,10 +143,10 @@ public class InternalModMetadataJsonWriter {
 		}));
 	}
 
-	private static JsonLoaderValue modDependency(ModDependency dep) {
+	private static LoaderValue modDependency(ModDependency dep) {
 		if (dep instanceof ModDependency.Only) {
 			ModDependency.Only only = (ModDependency.Only) dep;
-			JsonLoaderValue.ObjectImpl obj = object(value -> {
+			JsonLoaderValue.ObjectImpl obj = ((JsonLoaderValue.ObjectImpl) object(value -> {
 				value.put("id", string(only.id().toString()));
 
 				if (only.optional()) {
@@ -177,7 +161,7 @@ public class InternalModMetadataJsonWriter {
 				if (only.unless() != null) {
 					value.put("unless", modDependency(only.unless()));
 				}
-			});
+			}));
 
 			if (obj.size() == 1) {
 				return obj.get("id");
@@ -192,13 +176,40 @@ public class InternalModMetadataJsonWriter {
 		throw new IllegalStateException("Unknown Mod Dependency type! " + dep.getClass().getName());
 	}
 
-	private static JsonLoaderValue version(VersionRange range) {
-		// TODO: test this
-		if (range.equals(VersionRange.ANY)) {
-			return string("*");
+	private static LoaderValue version(VersionRange range) {
+		if (range.size() == 1) {
+			VersionInterval interval = range.iterator().next();
+			if (interval.equals(VersionInterval.ALL)) {
+				return string("*");
+			}
+			return writeInterval(interval);
 		}
 
-		return array(range.convertToConstraints().stream().map(VersionConstraint::toString).map(InternalModMetadataJsonWriter::string));
+		List<LoaderValue> sub = new ArrayList<>();
+		for (VersionInterval interval : range) {
+			sub.add(writeInterval(interval));
+		}
+
+		Map<String, LoaderValue> map = new LinkedHashMap<>();
+		map.put("any", array(sub));
+		return object(map);
+	}
+
+	private static LoaderValue writeInterval(VersionInterval interval) {
+		VersionRange createdRange = VersionRange.ofInterval(interval);
+		// Convert to constraints will be accurate if there's only a single interval
+		List<LoaderValue> out = new ArrayList<>();
+		for (VersionConstraint constraint : createdRange.convertToConstraints()) {
+			out.add(string(constraint.toString()));
+		}
+
+		if (out.size() == 1) {
+			return out.iterator().next();
+		} else {
+			Map<String, LoaderValue> sub = new LinkedHashMap<>();
+			sub.put("all", array(out));
+			return object(sub);
+		}
 	}
 
 	private static <P extends ModMetadata.ProvidedMod> Function<P, LoaderValue> provided(InternalModMetadata mod) {
@@ -219,7 +230,7 @@ public class InternalModMetadataJsonWriter {
 		};
 	}
 
-	private static JsonLoaderValue createMetadata(InternalModMetadata mod) {
+	private static LoaderValue createMetadata(InternalModMetadata mod) {
 		return object(metadata -> {
 			metadata.put("name", string(mod.name()));
 			if (!mod.description().isEmpty()) {
@@ -251,7 +262,7 @@ public class InternalModMetadataJsonWriter {
 		});
 	}
 
-	private static JsonLoaderValue createLicense(ModLicense license) {
+	private static LoaderValue createLicense(ModLicense license) {
 		// Object equality here is fine because it comes from a map
 		if (ModLicense.fromIdentifier(license.id()) == license) {
 			return string(license.id());
@@ -266,49 +277,28 @@ public class InternalModMetadataJsonWriter {
 	}
 
 	private static LoaderValue getIcon(InternalModMetadata mod) {
-		// Cursed time!
 		if (mod instanceof V1ModMetadataImpl) {
-			try {
-				Field iconsField = mod.getClass().getDeclaredField("icons");
-				iconsField.setAccessible(true);
-				Icons icons = (Icons) iconsField.get(mod);
-				if (icons instanceof Icons.Single) {
-					String icon = icons.getIcon(0);
-					if (icon == null) {
-						return null;
-					}
-
-					return string(icon);
-				} else if (icons instanceof Icons.Multiple) {
-					Field mapField = Icons.Multiple.class.getDeclaredField("icons");
-					mapField.setAccessible(true);
-					SortedMap<Integer, String> map = (SortedMap<Integer, String>) mapField.get(icons);
-					return object(obj -> map.forEach((size, icon) -> obj.put(Integer.toString(size), string(icon))));
+			Icons icons = ((V1ModMetadataImpl) mod).icons;
+			if (icons instanceof Icons.Single) {
+				String icon = ((Icons.Single) icons).icon;
+				if (icon == null) {
+					return null;
 				}
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+
+				return string(icon);
+			} else if (icons instanceof Icons.Multiple) {
+				SortedMap<Integer, String> map = ((Icons.Multiple) icons).icons;
+				return object(obj -> map.forEach((size, icon) -> obj.put(Integer.toString(size), string(icon))));
 			}
 		} else if (mod instanceof FabricModMetadataWrapper) {
 			FabricLoaderModMetadata fabric = mod.asFabricModMetadata();
-			if (fabric.getClass().getSimpleName().equals("V1ModMetadataFabric")) {
-				try {
-					// V1ModMetadataFabric.IconEntry
-					Field iconField = fabric.getClass().getDeclaredField("icon");
-					iconField.setAccessible(true);
-					Object icons = iconField.get(fabric);
-
-					if (icons.getClass().getName().contains("Single")) {
-						Field stringField = icons.getClass().getDeclaredField("icon");
-						stringField.setAccessible(true);
-						return string((String) stringField.get(icons));
-					} else if (icons.getClass().getName().contains("MapEntry")) {
-						Field iconsField = icons.getClass().getDeclaredField("icons");
-						iconsField.setAccessible(true);
-						SortedMap<Integer, String> map = (SortedMap<Integer, String>) iconsField.get(icons);
-						return object(obj -> map.forEach((size, icon) -> obj.put(Integer.toString(size), string(icon))));
-					}
-				} catch (Exception e) {
-					throw new RuntimeException(e);
+			if (fabric instanceof V1ModMetadataFabric) {
+				V1ModMetadataFabric.IconEntry icons = ((V1ModMetadataFabric) fabric).icon;
+				if (icons instanceof V1ModMetadataFabric.Single) {
+					return string(((V1ModMetadataFabric.Single) icons).icon);
+				} else if (icons instanceof V1ModMetadataFabric.MapEntry) {
+					SortedMap<Integer, String> map = ((V1ModMetadataFabric.MapEntry) icons).icons;
+					return object(obj -> map.forEach((size, icon) -> obj.put(Integer.toString(size), string(icon))));
 				}
 			}
 		}
@@ -357,7 +347,7 @@ public class InternalModMetadataJsonWriter {
 		return mixin;
 	}
 
-	private static JsonLoaderValue mixinObject(String config, String env) {
+	private static LoaderValue mixinObject(String config, String env) {
 		return object(objectValues -> {
 			objectValues.put("config", string(config));
 			objectValues.put("environment", string(env));
@@ -411,23 +401,23 @@ public class InternalModMetadataJsonWriter {
 		}
 	}
 
-	private static JsonLoaderValue.StringImpl string(String only) {
-		return new JsonLoaderValue.StringImpl("", only);
+	private static LoaderValue string(String string) {
+		return JsonLoaderFactoryImpl.INSTANCE.string(string);
 	}
 
-	private static JsonLoaderValue.ArrayImpl array(List<LoaderValue> values) {
+	private static LoaderValue array(List<LoaderValue> values) {
 		return new JsonLoaderValue.ArrayImpl("", values);
 	}
 
-	private static JsonLoaderValue.ArrayImpl array(Stream<LoaderValue> values) {
+	private static LoaderValue array(Stream<LoaderValue> values) {
 		return array(values.collect(Collectors.toList()));
 	}
 
-	private static JsonLoaderValue.ObjectImpl object(Map<String, LoaderValue> values) {
-		return new JsonLoaderValue.ObjectImpl("", values);
+	private static LoaderValue object(Map<String, LoaderValue> values) {
+		return JsonLoaderFactoryImpl.INSTANCE.object(values);
 	}
 
-	private static JsonLoaderValue.ObjectImpl object(Consumer<Map<String, LoaderValue>> consumer) {
+	private static LoaderValue object(Consumer<Map<String, LoaderValue>> consumer) {
 		Map<String, LoaderValue> values = new LinkedHashMap<>();
 		consumer.accept(values);
 		return object(values);

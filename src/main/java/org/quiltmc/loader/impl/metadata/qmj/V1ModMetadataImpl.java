@@ -59,7 +59,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<ModDependency> depends;
 	private final Collection<ModDependency> breaks;
 	private final String intermediateMappings;
-	private final Icons icons;
+	final Icons icons;
 	/* Internal fields */
 	private final ModLoadType loadType;
 	private final Collection<ProvidedMod> provides;

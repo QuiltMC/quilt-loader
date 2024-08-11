@@ -39,7 +39,7 @@ public interface Icons {
 	@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 	public final class Single implements Icons {
 		@Nullable
-		private final String icon;
+		final String icon;
 
 		public Single(@Nullable String icon) {
 			this.icon = icon;
@@ -57,7 +57,7 @@ public interface Icons {
 	 */
 	@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 	public final class Multiple implements Icons {
-		private final SortedMap<Integer, String> icons;
+		final SortedMap<Integer, String> icons;
 
 		public Multiple(SortedMap<Integer, String> icons) {
 			this.icons = icons;

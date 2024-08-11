@@ -45,7 +45,7 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoaderModMetadata {
+public final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoaderModMetadata {
 	static final IconEntry NO_ICON = size -> Optional.empty();
 
 	// Required values
@@ -76,7 +76,7 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 	private final Collection<Person> contributors;
 	private final ContactInformation contact;
 	private final Collection<String> license;
-	private final IconEntry icon;
+	public final IconEntry icon;
 
 	// Optional (language adapter providers)
 	private final Map<String, String> languageAdapters;
@@ -346,12 +346,12 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 		}
 	}
 
-	interface IconEntry {
+	public interface IconEntry {
 		Optional<String> getIconPath(int size);
 	}
 
-	static final class Single implements IconEntry {
-		private final String icon;
+	public static final class Single implements IconEntry {
+		public final String icon;
 
 		Single(String icon) {
 			this.icon = icon;
@@ -363,8 +363,8 @@ final class V1ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 		}
 	}
 
-	static final class MapEntry implements IconEntry {
-		private final SortedMap<Integer, String> icons;
+	public static final class MapEntry implements IconEntry {
+		public final SortedMap<Integer, String> icons;
 
 		MapEntry(SortedMap<Integer, String> icons) {
 			this.icons = icons;
