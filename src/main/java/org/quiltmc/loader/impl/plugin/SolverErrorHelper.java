@@ -63,6 +63,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class SolverErrorHelper {
 
+	private static final Option.Root ROOT = new Option.Root();
+
 	private final QuiltPluginManagerImpl manager;
 	private final List<SolverError> errors = new ArrayList<>();
 
@@ -190,20 +192,30 @@ class SolverErrorHelper {
 					}
 				}
 			} else if (rule instanceof MandatoryModIdDefinition) {
-				for (LoadOption load: rule.getNodesFrom())
+				for (LoadOption load: rule.getNodesTo()) {
 					assert options.get(load).mandatory;
+					graph.computeIfAbsent(ROOT, option -> new ArrayList<>())
+						.add(new Manditory(options.get(load)));
+				}
 			} else if (rule instanceof OptionalModIdDefinition) {
 				OptionalModIdDefinition definition = (OptionalModIdDefinition) rule;
-				Collection<? extends LoadOption> nodesTo = definition.getNodesTo();
-				for (LoadOption loadOption : nodesTo) {
+
+				graph.computeIfAbsent(ROOT, option -> new ArrayList<>())
+					.add(
+						new Duplicates(
+							rule.getNodesTo()
+								.stream()
+								.map(options::get)
+								.collect(Collectors.toList()),
+							definition.getModId()
+						)
+					);
+
+				for (LoadOption loadOption : rule.getNodesTo()) {
 					if (loadOption instanceof ProvidedModOption) {
 						ProvidedModOption provided = (ProvidedModOption) loadOption;
-						for (LoadOption loadOption1: nodesTo) {
-							if (loadOption1 != loadOption) {
-								graph.computeIfAbsent(options.get(provided.getTarget()), option -> new ArrayList<>())
-										.add(new Provided(options.get(loadOption1)));
-							}
-						}
+						graph.computeIfAbsent(options.get(provided.getTarget()), option -> new ArrayList<>())
+							.add(new Provided(options.get(provided)));
 					}
 				}
 			} else {
@@ -241,11 +253,11 @@ class SolverErrorHelper {
 
 		reportNewError(graph);
 
-		// if (reportKnownSolverError(rootRules)) {
-		// 	return;
-		// }
-
 		addError(new UnhandledError(rules));
+
+		if (reportKnownSolverError(rootRules)) {
+			return;
+		}
 	}
 
 	void reportNewError(Map<Option, Collection<Link>> graph) {
@@ -272,6 +284,9 @@ class SolverErrorHelper {
 						// TODO: BreakageAll?
 						// this.addError(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
 					}
+				} else if (link instanceof Duplicates) {
+					Duplicates duplicates = (Duplicates) link;
+					this.addError(new DuplicatesError(duplicates.id, duplicates.options));
 				}
 			}
 		}
@@ -286,6 +301,7 @@ class SolverErrorHelper {
 			.flatMap(entry -> Stream.concat(Stream.of(entry.getKey()), entry.getValue().stream().flatMap(Link::children)))
 			.distinct()
 			.filter(o -> o.mandatory)
+			.filter(o -> !ROOT.equals(o))
 			.forEach(option -> {
 				System.out.printf("\t\t%s[label=\"%s\", shape=\"Mdiamond\"];\n", option.hashCode(), option.label());
 				// System.out.printf("\t\troot->%s[style=invis];\n", option.hashCode());
@@ -296,6 +312,7 @@ class SolverErrorHelper {
 			.stream()
 			.flatMap(entry -> Stream.concat(Stream.of(entry.getKey()), entry.getValue().stream().flatMap(Link::children)))
 			.distinct()
+			.filter(o -> !ROOT.equals(o))
 			.forEach(option -> {
 				if (option.mandatory)
 					System.out.printf("\troot->%s[style=invis];\n", option.hashCode());
@@ -332,6 +349,22 @@ class SolverErrorHelper {
         public String toString() {
             return "{option=" + option.describe() + ", mandatory=" + mandatory + "}";
         }
+
+		static class Root extends Option {
+			public Root() {
+				super(null, true);
+			}
+
+			@Override
+			public String label() {
+				return "ROOT";
+			}
+			
+			@Override
+			public String toString() {
+				return "ROOT";
+			}
+		}
 	}
 
 	interface Link {
@@ -485,6 +518,55 @@ class SolverErrorHelper {
         }
 	}
 
+	static class Duplicates implements Link {
+		Collection<Option> options;
+		String id;
+
+		public Duplicates(Collection<Option> options, String id) {
+			this.options = options;
+			this.id = id;
+		}
+
+		public Stream<Option> children() {
+			return options.stream();
+		}
+
+		@Override
+		public void dotGraphEdge(Option from) {
+			System.out.printf("\t%s[label=\"%s\"];\n", id, id);
+			for(Option option: options){
+				System.out.printf("\t%s->%s [label=\"Duplicates\", style=\"dashed\"];\n", option.hashCode(), id);
+			}
+		}
+
+		@Override
+		public String toString() {
+			return "Duplicates=" + options;
+		}
+	}
+
+	static class Manditory implements Link {
+		Option option;
+
+		public Manditory(Option option) {
+			this.option = option;
+		}
+
+		public Stream<Option> children() {
+			return Stream.of(option);
+		}
+
+		@Override
+		public void dotGraphEdge(Option from) {
+			// System.out.printf("\t%s->%s [label=\"Provides\", style=\"dashed\"];\n", from.hashCode(), option.hashCode());
+		}
+
+		@Override
+		public String toString() {
+			return "Manditory=" + option;
+		}
+	}
+
 	static class Provided implements Link {
 		Option provides;
 
@@ -577,14 +659,6 @@ class SolverErrorHelper {
 			}
 
 			return false;
-		}
-
-		if (reportDuplicateMandatoryMods(rootRules)) {
-			return true;
-		}
-
-		if (reportBreakingMods(rootRules)) {
-			return true;
 		}
 
 		return false;
@@ -759,204 +833,6 @@ class SolverErrorHelper {
 		if (!images.isEmpty()) {
 			error.setIcon(QuiltLoaderGui.createIcon(images.values().toArray(new byte[0][])));
 		}
-	}
-
-	private static String getDepName(QuiltRuleDepOnly dep) {
-		String id = dep.publicDep.id().id();
-		switch (id) {
-			case "fabric":
-				return "Fabric API";
-			default:
-				return "'" + id + "'";
-		}
-	}
-
-	private boolean reportDuplicateMandatoryMods(List<RuleLink> rootRules) {
-		// N+1 root rules for N duplicated mods:
-		// 0 is the OptionalModIdDefintion
-		// 1..N is either MandatoryModIdDefinition or DisabledModIdDefinition (and the mod is mandatory)
-
-		if (rootRules.size() < 3) {
-			return false;
-		}
-
-		// Step 1: Find the single OptionalModIdDefinition
-		OptionalModIdDefinition optionalDef = null;
-		for (RuleLink link : rootRules) {
-			if (link.rule instanceof OptionalModIdDefinition) {
-				if (optionalDef != null) {
-					return false;
-				}
-				optionalDef = (OptionalModIdDefinition) link.rule;
-			}
-		}
-
-		if (optionalDef == null) {
-			return false;
-		}
-
-		// Step 2: Check to see if the rest of the root rules are MandatoryModIdDefinition
-		// and they share some provided id (or real id)
-		List<ModLoadOption> mandatories = new ArrayList<>();
-		Set<String> commonIds = null;
-		for (RuleLink link : rootRules) {
-			if (link.rule == optionalDef) {
-				continue;
-			}
-
-			if (link.rule instanceof MandatoryModIdDefinition) {
-				MandatoryModIdDefinition mandatory = (MandatoryModIdDefinition) link.rule;
-				if (commonIds == null) {
-					commonIds = new HashSet<>();
-					commonIds.add(mandatory.getModId());
-					for (ProvidedMod provided : mandatory.option.metadata().provides()) {
-						commonIds.add(provided.id());
-					}
-				} else {
-					Set<String> fromThis = new HashSet<>();
-					fromThis.add(mandatory.getModId());
-					for (ProvidedMod provided : mandatory.option.metadata().provides()) {
-						fromThis.add(provided.id());
-					}
-					commonIds.retainAll(fromThis);
-					if (commonIds.isEmpty()) {
-						return false;
-					}
-				}
-				mandatories.add(mandatory.option);
-			} else if (link.rule instanceof DisabledModIdDefinition) {
-				DisabledModIdDefinition disabled = (DisabledModIdDefinition) link.rule;
-				if (!disabled.option.isMandatory()) {
-					return false;
-				}
-				if (!commonIds.contains(disabled.getModId())) {
-					return false;
-				}
-				commonIds.clear();
-				commonIds.add(disabled.getModId());
-			} else {
-				return false;
-			}
-		}
-
-		if (mandatories.isEmpty()) {
-			// So this means there's an OptionalModIdDefintion with only
-			// DisabledModIdDefinitions as roots
-			// that means this isn't a duplicate mandatory mods error!
-			return false;
-		}
-		ModLoadOption firstMandatory = mandatories.get(0);
-		String bestName = null;
-		for (ModLoadOption option : mandatories) {
-			if (commonIds.contains(option.id())) {
-				bestName = option.metadata().name();
-				break;
-			}
-		}
-
-		if (bestName == null) {
-			bestName = "id'" + commonIds.iterator().next() + "'";
-		}
-
-		// Title:
-		// Duplicate mod: "BuildCraft"
-
-		// Description:
-		// - "buildcraft-all-9.0.0.jar"
-		// - "buildcraft-all-9.0.1.jar"
-		// Remove all but one.
-
-		// With buttons to view each mod individually
-
-		QuiltLoaderText title = QuiltLoaderText.translate("error.duplicate_mandatory", bestName);
-		QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
-		error.appendReportText("Duplicate mandatory mod ids " + commonIds);
-		setIconFromMod(manager, firstMandatory, error);
-
-		for (ModLoadOption option : mandatories) {
-			String path = manager.describePath(option.from());
-			// Just in case
-			Optional<Path> container = manager.getRealContainingFile(option.from());
-			error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.mod", path));
-			container.ifPresent(value -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", value.getFileName()), value)
-					.icon(option.modCompleteIcon()));
-
-			error.appendReportText("- " + path);
-		}
-
-		error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.desc"));
-
-		return true;
-	}
-
-	private boolean reportBreakingMods(List<RuleLink> rootRules) {
-		if (rootRules.size() != 2) {
-			return false;
-		}
-
-		// ROOT[0] = A=RuleLink<MandatoryModIdDefinition>
-		// -> B=OptionLink<ModLoadOption> -> nothing
-		// ROOT[1] = C=RuleLink<MandatoryModIdDefinition>
-		// -> D=OptionLink<ModLoadOption>
-		// -> E=RuleLink<QuiltRuleBreakOnly> -> B
-
-		RuleLink ruleA = rootRules.get(0);
-		RuleLink ruleC = rootRules.get(1);
-		MandatoryModIdDefinition modA, modC;
-		OptionLink linkB, linkD;
-
-		if (ruleA.rule instanceof MandatoryModIdDefinition) {
-			modA = (MandatoryModIdDefinition) ruleA.rule;
-			linkB = ruleA.to.get(0);
-		} else {
-			return false;
-		}
-
-		if (ruleC.rule instanceof MandatoryModIdDefinition) {
-			modC = (MandatoryModIdDefinition) ruleC.rule;
-			linkD = ruleC.to.get(0);
-		} else {
-			return false;
-		}
-
-		if (linkB.to.size() > linkD.to.size()) {
-			RuleLink tempRule = ruleA;
-			MandatoryModIdDefinition tempMod = modA;
-			OptionLink tempLink = linkB;
-
-			ruleA = ruleC;
-			modA = modC;
-			linkB = linkD;
-
-			ruleC = tempRule;
-			modC = tempMod;
-			linkD = tempLink;
-		}
-
-		if (!linkB.to.isEmpty() || linkD.to.size() != 1) {
-			return false;
-		}
-
-		RuleLink linkE = linkD.to.get(0);
-
-		if (!(linkE.rule instanceof QuiltRuleBreakOnly)) {
-			return false;
-		}
-
-		QuiltRuleBreakOnly ruleE = (QuiltRuleBreakOnly) linkE.rule;
-		if (linkE.to.size() != 1 || !linkE.to.contains(linkB)) {
-			return false;
-		}
-
-		ModDependencyIdentifier modOn = ruleE.publicDep.id();
-		VersionRange versionsOn = ruleE.publicDep.versionRange();
-		ModLoadOption from = modC.option;
-		Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
-		allBreakingOptions.addAll(ruleE.getConflictingOptions());
-		String reason = ruleE.publicDep.reason();
-		this.addError(new BreakageError(ruleE.publicDep, from, allBreakingOptions));
-
-		return true;
 	}
 
 	/**
@@ -1240,6 +1116,106 @@ class SolverErrorHelper {
 			for (ModLoadOption mod : from) {
 				error.appendReportText("- " + manager.describePath(mod.from()));
 			}
+		}
+	}
+
+	static class DuplicatesError extends SolverError {
+		final String id;
+		final Set<Option> duplicates = new LinkedHashSet<>();
+
+		DuplicatesError(String id, Collection<Option> duplicates) {
+			this.id = id;
+			this.duplicates.addAll(duplicates);
+		}
+
+		@Override
+		boolean mergeInto(SolverError into) {
+			if (into instanceof DuplicatesError) {
+				DuplicatesError depDst = (DuplicatesError) into;
+				if (!this.id.equals(depDst.id)) {
+					return false;
+				}
+				depDst.duplicates.addAll(duplicates);
+				return true;
+			}
+			return false;
+		}
+
+		@Override
+		void report(QuiltPluginManagerImpl manager) {
+			// Step 1: Find the set of shared ids
+			List<ModLoadOption> mandatories = new ArrayList<>();
+			Set<String> commonIds = new LinkedHashSet<>();
+			for (Option option : duplicates) {
+				if (option.mandatory) {
+					mandatories.add((ModLoadOption) option.option);
+				} else if (option.option instanceof ProvidedModOption) {
+					// TODO: Get the graph here
+					// TEMP: assume its manditory
+					mandatories.add(((ProvidedModOption) option.option));
+				}
+				commonIds.add(
+					((ModLoadOption) option.option).id()
+				);
+			}
+
+			if (mandatories.isEmpty()) {
+				// So this means there's an OptionalModIdDefintion with only
+				// DisabledModIdDefinitions as roots
+				// that means this isn't a duplicate mandatory mods error!
+				return;
+			}
+
+			ModLoadOption firstMandatory = mandatories.get(0);
+			String bestName = null;
+			for (ModLoadOption option : mandatories) {
+				if (commonIds.contains(option.id())) {
+					bestName = option.metadata().name();
+					break;
+				}
+			}
+
+			if (bestName == null) {
+				bestName = "id'" + commonIds.iterator().next() + "'";
+			}
+
+			// Title:
+			// Duplicate mod: "BuildCraft"
+
+			// Description:
+			// - "buildcraft-all-9.0.0.jar"
+			// - "buildcraft-all-9.0.1.jar"
+			// Remove all but one.
+
+			// With buttons to view each mod individually
+
+			QuiltLoaderText title = QuiltLoaderText.translate("error.duplicate_mandatory", bestName);
+			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
+			error.appendReportText("Duplicate mandatory mod ids " + commonIds);
+			setIconFromMod(manager, firstMandatory, error);
+
+			for (ModLoadOption option : mandatories) {
+				String path = manager.describePath(option.from());
+				Optional<Path> container = manager.getRealContainingFile(option.from());
+
+				// Just in case
+				if (option instanceof ProvidedModOption) {
+					error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.mod.provided", path));
+				} else {
+					error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.mod", path));
+				}
+				
+				container.ifPresent(value -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", value.getFileName()), value)
+						.icon(option.modCompleteIcon()));
+
+				if (option instanceof ProvidedModOption) {
+					error.appendReportText("- Providing mod " + path);
+				} else {
+					error.appendReportText("- Mandatory mod " + path);
+				}
+			}
+
+			error.appendDescription(QuiltLoaderText.translate("error.duplicate_mandatory.desc"));
 		}
 	}
 }

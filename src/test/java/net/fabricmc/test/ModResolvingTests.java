@@ -369,6 +369,11 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	public void duplicateError() {
+		resolveErrorSet("duplicate");
+	}
+
+	@Test
 	public void complexDependsOnProvidingExistingError() {
 		resolveErrorSet("complex/depends_on_providing_existing");
 	}
