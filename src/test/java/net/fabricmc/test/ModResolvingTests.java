@@ -378,6 +378,11 @@ public final class ModResolvingTests {
 		resolveErrorSet("complex/depends_on_providing_existing");
 	}
 
+	@Test
+	public void complexDependsOnInvalidProvidedExistingError() {
+		resolveErrorSet("complex/depends_on_invalid_provided_existing");
+	}
+
 	private static void resolveErrorSet(String subpath) {
 		try {
 			ModSolveResult result = resolveModSet("error", subpath);

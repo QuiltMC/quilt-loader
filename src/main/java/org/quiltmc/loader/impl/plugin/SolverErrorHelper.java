@@ -36,6 +36,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
@@ -88,36 +89,6 @@ class SolverErrorHelper {
 	}
 
 	void reportSolverError(Collection<Rule> rules) {
-
-		List<RuleLink> links = new ArrayList<>();
-		Map<LoadOption, OptionLink> option2Link = new HashMap<>();
-
-		for (Rule rule : rules) {
-			RuleLink ruleLink = new RuleLink(rule);
-			links.add(ruleLink);
-
-			for (LoadOption from : rule.getNodesFrom()) {
-				from = getTarget(from);
-				OptionLink optionLink = option2Link.computeIfAbsent(from, OptionLink::new);
-				ruleLink.from.add(optionLink);
-				optionLink.to.add(ruleLink);
-			}
-
-			for (LoadOption from : rule.getNodesTo()) {
-				from = getTarget(from);
-				OptionLink optionLink = option2Link.computeIfAbsent(from, OptionLink::new);
-				ruleLink.to.add(optionLink);
-				optionLink.from.add(ruleLink);
-			}
-		}
-
-		List<RuleLink> rootRules = new ArrayList<>();
-		for (RuleLink link : links) {
-			if (link.from.isEmpty()) {
-				rootRules.add(link);
-			}
-		}
-
 		Map<Option, Collection<Link>> graph = new HashMap<>();
 		Map<LoadOption, Option> options = new HashMap<>();
 
@@ -184,10 +155,11 @@ class SolverErrorHelper {
 					Collection<Link> l = graph.computeIfAbsent(options.get(load), option -> new ArrayList<>());
 
 					if (depends.isPresent())
-						l.add(new Depends(depends.get()));
+						l.add(new Depends(depends.get(), (QuiltRuleDepOnly) rule));
 					else {
 						l.add(new Missing(
-								((QuiltRuleDepOnly) rule).publicDep
+								((QuiltRuleDepOnly) rule).publicDep,
+								(QuiltRuleDepOnly) rule
 						));
 					}
 				}
@@ -251,16 +223,13 @@ class SolverErrorHelper {
 
 		printGraph(graph);
 
-		reportNewError(graph);
+		if (!reportNewError(graph))
+			addError(new UnhandledError(rules));
 
-		addError(new UnhandledError(rules));
-
-		if (reportKnownSolverError(rootRules)) {
-			return;
-		}
 	}
 
-	void reportNewError(Map<Option, Collection<Link>> graph) {
+	boolean reportNewError(Map<Option, Collection<Link>> graph) {
+		boolean added = false;
 		for (Option option: graph.keySet()) {
 			for (Link link: graph.get(option)) {
 				if (link instanceof Breaks) {
@@ -269,6 +238,7 @@ class SolverErrorHelper {
 					Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
 					allBreakingOptions.addAll(breaks.rule.getConflictingOptions());
 					this.addError(new BreakageError(breaks.rule.publicDep, from, allBreakingOptions));
+					added = true;
 				} else if (link instanceof BreaksAll) {
 					BreaksAll breaksAll = ((BreaksAll) link);
 					ModLoadOption from = (ModLoadOption) option.option;
@@ -284,12 +254,24 @@ class SolverErrorHelper {
 						// TODO: BreakageAll?
 						// this.addError(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
 					}
+				} else if (link instanceof Missing) {
+					Missing missing = ((Missing) link);
+					ModLoadOption from = (ModLoadOption) option.option;
+					this.addError(new MissingDependencyError(missing.missing, from, new LinkedHashSet<>(missing.rule.getValidOptions()), new LinkedHashSet<>(missing.rule.getWrongOptions())));
+					added = true;
+				} else if (link instanceof Depends) {
+					Depends depends = ((Depends) link);
+					ModLoadOption from = (ModLoadOption) option.option;
+					this.addError(new MissingDependencyError(depends.rule.publicDep, from, new LinkedHashSet<>(depends.rule.getValidOptions()), new LinkedHashSet<>(depends.rule.getWrongOptions())));
+					added = true;
 				} else if (link instanceof Duplicates) {
 					Duplicates duplicates = (Duplicates) link;
 					this.addError(new DuplicatesError(duplicates.id, duplicates.options));
+					added = true;
 				}
 			}
 		}
+		return added;
 	}
 
 	static void printGraph(Map<Option, Collection<Link>> graph) {
@@ -327,6 +309,7 @@ class SolverErrorHelper {
 	}
 
 	static class Option {
+		@NotNull
 		final LoadOption option;
 		boolean mandatory;
 
@@ -346,6 +329,24 @@ class SolverErrorHelper {
 		}
 
         @Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + (option.hashCode());
+			result = prime * result + (mandatory ? 1231 : 1237);
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) return true;
+			if (obj == null) return false;
+			if (getClass() != obj.getClass()) return false;
+			Option other = (Option) obj;
+			return option.equals(other.option) && mandatory == other.mandatory;
+		}
+
+		@Override
         public String toString() {
             return "{option=" + option.describe() + ", mandatory=" + mandatory + "}";
         }
@@ -353,6 +354,16 @@ class SolverErrorHelper {
 		static class Root extends Option {
 			public Root() {
 				super(null, true);
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				return this == obj;
+			}
+
+			@Override
+			public int hashCode() {
+				return 31;
 			}
 
 			@Override
@@ -430,10 +441,12 @@ class SolverErrorHelper {
 	}
 
 	static class Depends implements Link {
+		QuiltRuleDepOnly rule;
 		Option depends;
 
-		public Depends(Option depends) {
+		public Depends(Option depends, QuiltRuleDepOnly rule) {
 			this.depends = depends;
+			this.rule = rule;
 		}
 
 		public Stream<Option> children() {
@@ -473,10 +486,12 @@ class SolverErrorHelper {
 	}
 
 	static class Missing implements Link {
+		QuiltRuleDepOnly rule;
 		ModDependency.Only missing;
 
-		public Missing(ModDependency.Only missing) {
+		public Missing(ModDependency.Only missing, QuiltRuleDepOnly rule) {
 			this.missing = missing;
+			this.rule = rule;
 		}
 
 		public Stream<Option> children() {
@@ -599,220 +614,6 @@ class SolverErrorHelper {
 		return from;
 	}
 
-	static class RuleLink {
-		final Rule rule;
-
-		final List<OptionLink> from = new ArrayList<>();
-		final List<OptionLink> to = new ArrayList<>();
-
-		RuleLink(Rule rule) {
-			this.rule = rule;
-		}
-
-		void addTo(OptionLink to) {
-			this.to.add(to);
-			to.from.add(this);
-		}
-
-		void addFrom(OptionLink from) {
-			this.from.add(from);
-			from.to.add(this);
-		}
-
-		@Override
-		public String toString() {
-			List<String> text = new ArrayList<>();
-			rule.appendRuleDescription(t -> text.add(t.toString()));
-			return "RuleLink{\n\trule: " + rule.getClass().getSimpleName() + "@" + String.join(" ", text) + "\n\tfrom: " + from + ",\n\tto: " + to + "\n}";
-		}
-	}
-
-	static class OptionLink {
-		final LoadOption option;
-
-		final List<RuleLink> from = new ArrayList<>();
-		final List<RuleLink> to = new ArrayList<>();
-
-		OptionLink(LoadOption option) {
-			this.option = option;
-			if (LoadOption.isNegated(option)) {
-				throw new IllegalArgumentException("Call 'OptionLinkBase.get' instead of this!!");
-			}
-		}
-
-		@Override
-		public String toString() {
-			return "OptionLink{option: " + option.describe() + "}";
-		}
-	}
-
-	private boolean reportKnownSolverError(List<RuleLink> rootRules) {
-		if (rootRules.isEmpty()) {
-			return false;
-		}
-
-		if (rootRules.size() == 1) {
-			RuleLink rootRule = rootRules.get(0);
-
-			if (rootRule.rule instanceof MandatoryModIdDefinition) {
-				return reportSingleMandatoryError(rootRule);
-			}
-
-			return false;
-		}
-
-		return false;
-	}
-
-	/** Reports an error where there is only one root rule, of a {@link MandatoryModIdDefinition}. */
-	private boolean reportSingleMandatoryError(RuleLink rootRule) {
-		MandatoryModIdDefinition def = (MandatoryModIdDefinition) rootRule.rule;
-		ModLoadOption mandatoryMod = def.option;
-
-		if (rootRule.to.size() != 1) {//
-			// This should always be the case, since a mandatory definition
-			// always defines to a single source
-			return false;
-		}
-
-		// TODO: Put this whole thing in a loop
-		// and then check for transitive (and fully valid) dependency paths!
-
-		OptionLink modLink = rootRule.to.get(0);
-		List<OptionLink> modLinks = Collections.singletonList(modLink);
-		Set<OptionLink> nextModLinks = new LinkedHashSet<>();
-		List<List<OptionLink>> fullChain = new ArrayList<>();
-
-		String groupOn = null;
-		String modOn = null;
-		ModDependencyIdentifier modIdOn = null;
-
-		while (true) {
-			groupOn = null;
-			modOn = null;
-			Boolean areAllInvalid = null;
-			nextModLinks = new LinkedHashSet<>();
-
-			for (OptionLink link : modLinks) {
-				if (link.to.isEmpty()) {
-					// Apparently nothing is stopping this mod from loading
-					// (so there's a bug here somewhere)
-					return false;
-				}
-
-				if (link.to.size() > 1) {
-					// FOR NOW
-					// just handle a single dependency / problem at a time
-					return false;
-				}
-
-				RuleLink rule = link.to.get(0);
-				if (rule.rule instanceof QuiltRuleDepOnly) {
-					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) rule.rule;
-
-					ModDependencyIdentifier id = dep.publicDep.id();
-					if (groupOn == null) {
-						if (!id.mavenGroup().isEmpty()) {
-							groupOn = id.mavenGroup();
-						}
-					} else if (!id.mavenGroup().isEmpty() && !groupOn.equals(id.mavenGroup())) {
-						// A previous dep targets a different group of the same mod, so this is a branching condition
-						return false;
-					}
-
-					if (modOn == null) {
-						modOn = id.id();
-					} else if (!modOn.equals(id.id())) {
-						// A previous dep targets a different mod, so this is a branching condition
-						return false;
-					}
-
-					modIdOn = id;
-
-					if (dep.publicDep.unless() != null) {
-						// TODO: handle 'unless' clauses!
-						return false;
-					}
-
-					if (dep.getValidOptions().isEmpty()) {
-						// Loop exit condition!
-						if (areAllInvalid != null && areAllInvalid) {
-							continue;
-						} else if (nextModLinks.isEmpty()) {
-							areAllInvalid = true;
-							continue;
-						} else {
-							// Some deps are mismatched, others aren't
-							// so this isn't necessarily a flat dep chain
-							// (However it could be if the chain ends with a mandatory mod
-							// like minecraft, which doesn't have anything else at the end of the chain
-							return false;
-						}
-					}
-
-					if (dep.getAllOptions().size() != rule.to.size()) {
-						return false;
-					}
-
-					// Now check that they all match up
-					for (LoadOption option : dep.getAllOptions()) {
-						option = getTarget(option);
-						boolean found = false;
-						for (OptionLink link2 : rule.to) {
-							if (option == link2.option) {
-								found = true;
-								nextModLinks.add(link2);
-							}
-						}
-						if (!found) {
-							return false;
-						}
-					}
-
-				} else {
-					// TODO: Handle other conditions!
-					return false;
-				}
-			}
-
-			fullChain.add(modLinks);
-
-			if (areAllInvalid != null && areAllInvalid) {
-				// Now we have validated that every mod in the previous list all depend on the same mod
-
-				// Technically we should think about how to handle multiple *conflicting* version deps.
-				// For example:
-				// buildcraft requires abstract_base *
-				// abstract_base 18 requires minecraft 1.18.x
-				// abstract_base 19 requires minecraft 1.19.x
-
-				// Technically we are just showing deps as "transitive" so
-				// we just say that buildcraft requires minecraft 1.18.x or 1.19.x
-				// so we need to make the required version list "bigger" rather than smaller
-
-				// This breaks down if "abstract_base" requires an additional library though.
-				// (Although we aren't handling that here)
-
-				VersionRange fullRange = VersionRange.NONE;
-				Set<ModLoadOption> allInvalidOptions = new HashSet<>();
-				for (OptionLink link : fullChain.get(fullChain.size() - 1)) {
-					// We validate all this earlier
-					QuiltRuleDepOnly dep = (QuiltRuleDepOnly) link.to.get(0).rule;
-					fullRange = VersionRange.ofRanges(Arrays.asList(fullRange, dep.publicDep.versionRange()));
-					allInvalidOptions.addAll(dep.getWrongOptions());
-				}
-
-				for (OptionLink from : modLinks) {
-					addError(new DependencyError(modIdOn, fullRange, (ModLoadOption) from.option, allInvalidOptions));
-				}
-
-				return true;
-			}
-
-			modLinks = new ArrayList<>(nextModLinks);
-		}
-	}
-
 	private static void setIconFromMod(QuiltPluginManagerImpl manager, ModLoadOption mandatoryMod,
 		QuiltDisplayedError error) {
 		// TODO: Only upload a ModLoadOption's icon once!
@@ -887,24 +688,24 @@ class SolverErrorHelper {
 		}
 	}
 
-	static class DependencyError extends SolverError {
-		final ModDependencyIdentifier modOn;
-		final VersionRange versionsOn;
+	static class MissingDependencyError extends SolverError {
+		final ModDependency.Only dep;
 		final Set<ModLoadOption> from = new LinkedHashSet<>();
 		final Set<ModLoadOption> allInvalidOptions;
+		final Set<ModLoadOption> allValidOptions;
 
-		DependencyError(ModDependencyIdentifier modOn, VersionRange versionsOn, ModLoadOption from, Set<ModLoadOption> allInvalidOptions) {
-			this.modOn = modOn;
-			this.versionsOn = versionsOn;
+		MissingDependencyError(ModDependency.Only dep, ModLoadOption from, Set<ModLoadOption> allValidOptions, Set<ModLoadOption> allInvalidOptions) {
+			this.dep = dep;
 			this.from.add(from);
 			this.allInvalidOptions = allInvalidOptions;
+			this.allValidOptions = allValidOptions;
 		}
 
 		@Override
 		boolean mergeInto(SolverError into) {
-			if (into instanceof DependencyError) {
-				DependencyError depDst = (DependencyError) into;
-				if (!modOn.equals(depDst.modOn) || !versionsOn.equals(depDst.versionsOn)) {
+			if (into instanceof MissingDependencyError) {
+				MissingDependencyError depDst = (MissingDependencyError) into;
+				if (!dep.id().equals(depDst.dep.id()) || !dep.versionRange().equals(depDst.dep.versionRange())) {
 					return false;
 				}
 				depDst.from.addAll(from);
@@ -928,7 +729,7 @@ class SolverErrorHelper {
 			ModLoadOption mandatoryMod = from.iterator().next();
 			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
 
-			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, versionsOn, modOn.id(), transitive);
+			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, dep.versionRange(), dep.id().id(), transitive);
 
 			Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
 			String secondKey = "error.dep.";
@@ -965,17 +766,73 @@ class SolverErrorHelper {
 
 			StringBuilder report = new StringBuilder(rootModName);
 			report.append(" requires");
-			if (VersionRange.ANY.equals(versionsOn)) {
+			if (VersionRange.ANY.equals(dep.versionRange())) {
 				report.append(" any version of ");
 			} else {
-				report.append(" version ").append(versionsOn).append(" of ");
+				report.append(" version ").append(dep.versionRange()).append(" of ");
 			}
-			report.append(modOn);// TODO
-			report.append(", which is missing!");
+			report.append(dep.id());// TODO
+			if (!allValidOptions.isEmpty()) {
+				report.append(", which is unable to load due to another error!");
+			} else if (missing) {
+				report.append(", which is missing!");
+			} else {
+				// Log an error here?
+				report.append(".");
+			}
+
 			error.appendReportText(report.toString(), "");
 
+			if (dep.unless() != null) {
+				report = new StringBuilder();
+				report.append("\n");
+				if (dep.unless() instanceof ModDependency.Only) {
+					ModDependency.Only unless = (ModDependency.Only) dep.unless();
+					report.append("However, if");
+
+					if (VersionRange.ANY.equals(unless.versionRange())) {
+						report.append(" any version of ");
+					} else {
+						report.append(" a version ").append(unless.versionRange()).append(" of ");
+					}
+
+					report.append(unless.id()).append(" is present, ").append(rootModName).append(" do");
+					if (from.size() == 1) {
+						report.append("es");
+					}
+					report.append(" not break ").append(dep.id()).append(".");
+				}
+				error.appendReportText(report.toString(), "");
+			}
+
+			error.appendReportText("Requiring mods: ");
 			for (ModLoadOption mod : from) {
 				error.appendReportText("- " + manager.describePath(mod.from()));
+			}
+			error.appendReportText("");
+
+			if (!allValidOptions.isEmpty()) {
+				error.appendReportText("Satisfying mods: ");
+				for (ModLoadOption mod : allValidOptions) {
+					String path = manager.describePath(mod.from());
+					if (mod instanceof ProvidedModOption) {
+						error.appendReportText("- Providing mod " + path);
+					} else {
+						error.appendReportText("- Mandatory mod " + path);
+					}
+				}
+			}
+
+			if (!allInvalidOptions.isEmpty()) {
+				error.appendReportText("Invalid mods: ");
+				for (ModLoadOption mod : allInvalidOptions) {
+					String path = manager.describePath(mod.from());
+					if (mod instanceof ProvidedModOption) {
+						error.appendReportText("- Providing mod " + path);
+					} else {
+						error.appendReportText("- Mandatory mod " + path);
+					}
+				}
 			}
 		}
 	}
@@ -1085,7 +942,7 @@ class SolverErrorHelper {
 			report.append(", which is present!");
 			error.appendReportText(report.toString(), "");
 
-			report = new StringBuilder();
+		
 			if (dep.unless() != null) {
 				report.append("\n");
 				if (dep.unless() instanceof ModDependency.Only) {
@@ -1104,9 +961,8 @@ class SolverErrorHelper {
 					}
 					report.append(" not break ").append(dep.id()).append(".");
 				}
+				error.appendReportText(report.toString(), "");
 			}
-
-			error.appendReportText(report.toString(), "");
 
 			if (!dep.reason().isEmpty()) {
 				error.appendReportText("Breaking mod's reason: " + dep.reason(), "");
@@ -1114,7 +970,12 @@ class SolverErrorHelper {
 
 			error.appendReportText("Breaking mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText("- " + manager.describePath(mod.from()));
+				String path = manager.describePath(mod.from());
+				if (mod instanceof ProvidedModOption) {
+					error.appendReportText("- Providing mod " + path);
+				} else {
+					error.appendReportText("- Mandatory mod " + path);
+				}
 			}
 		}
 	}
@@ -1147,13 +1008,13 @@ class SolverErrorHelper {
 			List<ModLoadOption> mandatories = new ArrayList<>();
 			Set<String> commonIds = new LinkedHashSet<>();
 			for (Option option : duplicates) {
-				if (option.mandatory) {
+				// if (option.mandatory) {
 					mandatories.add((ModLoadOption) option.option);
-				} else if (option.option instanceof ProvidedModOption) {
-					// TODO: Get the graph here
-					// TEMP: assume its manditory
-					mandatories.add(((ProvidedModOption) option.option));
-				}
+				// } else if (option.option instanceof ProvidedModOption) {
+				// 	// TODO: Get the graph here
+				// 	// TEMP: assume its manditory
+				// 	mandatories.add(((ProvidedModOption) option.option));
+				// }
 				commonIds.add(
 					((ModLoadOption) option.option).id()
 				);

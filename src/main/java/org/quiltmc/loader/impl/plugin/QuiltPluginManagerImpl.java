@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -1380,6 +1381,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private void handleSolverFailure() throws TimeoutException, ModSolvingError {
 
 		SolverErrorHelper helper = new SolverErrorHelper(this);
+		Stack<Rule> removedRules = new Stack<>();
+		Map<Integer, Set<Rule>> seen = new HashMap<>();
+		seen.put(0, new HashSet<>());
 		boolean failed = false;
 
 		solver_error_iteration: do {
@@ -1438,23 +1442,36 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			failed = true;
 			helper.reportSolverError(rules);
 
-			Rule pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleBreak).findAny().orElse(null);
-
-			if (pickedRule == null) {
-				pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleDep).findAny().orElse(null);
+			Rule pickedRule = null;
+			Iterator<Rule> iter = rules.iterator();
+			while (iter.hasNext()) {
+				Rule next = iter.next();
+				if (seen.get(removedRules.size()).add(next)) {
+					pickedRule = next;
+					break;
+				}
 			}
 
 			if (pickedRule == null) {
-				pickedRule = rules.stream().filter(r -> !(r instanceof ModIdDefinition)).findAny().orElse(null);
-			}
-
-			if (pickedRule == null) {
-				pickedRule = rules.iterator().next();
+				if (removedRules.isEmpty()) { // We have checked every rule from the initial error
+					break;
+				} else { // There are no more rules to remove on this branch
+					Rule reAdd = removedRules.pop();
+					solver.redefine(reAdd);
+					solver.hasSolution(); // We know this is false, don't care about the result
+					continue;
+				}
 			}
 
 			solver.removeRule(pickedRule);
-
-		} while (!solver.hasSolution());
+			removedRules.push(pickedRule);
+			seen.put(removedRules.size(), new HashSet<>());
+			if (solver.hasSolution()) { // Removing this rule fixes everything so we can skip the branch, but there might be more errors
+				Rule reAdd = removedRules.pop();
+				solver.redefine(reAdd);
+				solver.hasSolution(); // We know this is false, don't care about the result
+			}
+		} while (true);
 
 		helper.reportErrors();
 
