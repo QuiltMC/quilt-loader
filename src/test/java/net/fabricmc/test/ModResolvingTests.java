@@ -383,6 +383,11 @@ public final class ModResolvingTests {
 		resolveErrorSet("complex/depends_on_invalid_provided_existing");
 	}
 
+	@Test
+	public void complexBreaksOnBrokenOptionalUnlessError() {
+		resolveErrorSet("complex/breaks_on_broken_optional_unless");
+	}
+
 	private static void resolveErrorSet(String subpath) {
 		try {
 			ModSolveResult result = resolveModSet("error", subpath);

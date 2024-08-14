@@ -42,7 +42,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
 
-	final QuiltRuleDep unless;
+	public final QuiltRuleDep unless;
 
 	public QuiltRuleBreakOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
