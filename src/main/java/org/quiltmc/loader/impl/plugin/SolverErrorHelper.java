@@ -49,6 +49,7 @@ import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.ProvidedModOption;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakAll;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
@@ -208,26 +209,16 @@ class SolverErrorHelper {
 					if (link instanceof Breaks) {
 						Breaks breaks = ((Breaks) link);
 						ModLoadOption from = (ModLoadOption) option;
-						Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
-						allBreakingOptions.addAll(breaks.rule.getConflictingOptions());
-						this.addError(new BreakageError(graph, breaks.rule.publicDep, from, allBreakingOptions, breaks.rule.unless));
+						this.addError(new BreakageError(graph, from, breaks.rule));
 						added = true;
-					} else if (link instanceof BreaksAll) {
+					} 
+					else if (link instanceof BreaksAll) {
 						BreaksAll breaksAll = ((BreaksAll) link);
 						ModLoadOption from = (ModLoadOption) option;
-						Set<ModLoadOption> allBreakingOptions = new LinkedHashSet<>();
-						for (QuiltRuleBreakOnly only : breaksAll.rule.options) {
-							allBreakingOptions.addAll(only.getConflictingOptions());
-						}
-
-						for (ModDependency.Only only : breaksAll.rule.publicDep) {
-							ModDependencyIdentifier modOn = only.id();
-							VersionRange versionsOn = only.versionRange();
-							String reason = only.reason();
-							// TODO: BreakageAll?
-							// this.addError(new BreakageError(modOn, versionsOn, from, allBreakingOptions, reason));
-						}
-					} else if (link instanceof Missing) {
+						this.addError(new BreaksAllError(graph, from, breaksAll.rule));
+						added = true;
+					} 
+					else if (link instanceof Missing) {
 						Missing missing = ((Missing) link);
 						ModLoadOption from = (ModLoadOption) option;
 						this.addError(new MissingDependencyError(graph, missing.missing, from, new LinkedHashSet<>(missing.rule.getValidOptions()), new LinkedHashSet<>(missing.rule.getWrongOptions()), missing.rule.unless));
@@ -345,11 +336,9 @@ class SolverErrorHelper {
 			boolean modified = false;
 			do {
 				modified = false;
-//				Set<LoadOption> allChildren = new HashSet<>(parents.values());
 
 				Set<LoadOption> noLinks = this.parents.values()
 						.stream()
-//						.filter(option -> !isMandatory(this, option)) // Redundant?
 						.filter(option -> this.edgesTo(option).isEmpty())
 						.collect(Collectors.toCollection(HashSet::new));
 
@@ -845,15 +834,27 @@ class SolverErrorHelper {
 			return line.append(" mod '").append(option.id()).append("' version '").append(option.version()).append("': ").append(path).toString();
 		}
 
-		protected void addVersionString(ModDependency.Only unless, StringBuilder report, boolean breaks) {
-			if (VersionRange.ANY.equals(unless.versionRange())) {
-				if (breaks) {
-					report.append(" all versions of ");
+		protected void addVersionString(ModDependency.Only only, StringBuilder report, boolean breaks, boolean start) {
+			if (start) {
+				if (VersionRange.ANY.equals(only.versionRange())) {
+					if (breaks) {
+						report.append("All versions of ");
+					} else {
+						report.append("Any version of ");
+					}
 				} else {
-					report.append(" any version of ");
+					report.append("A version ").append(only.versionRange()).append(" of ");
 				}
 			} else {
-				report.append(" a version ").append(unless.versionRange()).append(" of ");
+				if (VersionRange.ANY.equals(only.versionRange())) {
+					if (breaks) {
+						report.append(" all versions of ");
+					} else {
+						report.append(" any version of ");
+					}
+				} else {
+					report.append(" a version ").append(only.versionRange()).append(" of ");
+				}
 			}
 		}
 
@@ -866,7 +867,7 @@ class SolverErrorHelper {
 				if (unlessRule.getNodesTo().isEmpty()) {
 					report.append("However, if");
 
-					addVersionString(unless, report, false);
+					addVersionString(unless, report, false, false);
 
 					report.append(unless.id()).append(" is present, ").append(rootModName).append(" do");
 					if (from.size() == 1) {
@@ -880,10 +881,10 @@ class SolverErrorHelper {
 					}
 
 					report.append(dep.id()).append(".");
-				}else {
+				} else {
 					report.append("Normally,");
 
-					addVersionString(unless, report, false);
+					addVersionString(unless, report, false, false);
 
 					report.append("of mod ").append(unless.id()).append(" overrides this ");
 					if (breaks) {
@@ -929,11 +930,20 @@ class SolverErrorHelper {
 
 		public UnhandledError(Graph graph, Collection<Rule> rules) {
 			super(graph);
-			this.rules = rules;
+			this.rules = new LinkedHashSet<>(rules);
 		}
 
 		@Override
 		boolean mergeInto(SolverError into) {
+			if (into instanceof UnhandledError) {
+				UnhandledError depDst = (UnhandledError) into;
+				if (depDst.rules.containsAll(rules)) { // If the other error has all the same rules as us, we are just a subset
+					return true;
+				} else if (rules.containsAll(depDst.rules)) { // We have the same but more rules than the current error, add ours to it
+					depDst.rules.addAll(rules);
+					return true;
+				}
+			}
 			return false;
 		}
 
@@ -1030,7 +1040,7 @@ class SolverErrorHelper {
 
 			StringBuilder report = new StringBuilder(rootModName);
 			report.append(" requires");
-			addVersionString(dep, report, false);
+			addVersionString(dep, report, false, false);
 			report.append(dep.id());// TODO
 			if (!allValidOptions.isEmpty()) {
 				report.append(", which is unable to load due to another error!");
@@ -1072,28 +1082,20 @@ class SolverErrorHelper {
 	}
 
 	static class BreakageError extends SolverError {
-		// final ModDependencyIdentifier modOn;
-		// final VersionRange versionsOn;
 		final Set<ModLoadOption> from = new LinkedHashSet<>();
-		final Set<ModLoadOption> allBreakingOptions;
-		// final String reason;
-		final ModDependency.Only dep;
-		final QuiltRuleDep unlessDep;
+		final QuiltRuleBreakOnly breakage;
 
-		BreakageError(Graph graph, ModDependency.Only dep, ModLoadOption from, Set<ModLoadOption> allBreakingOptions, QuiltRuleDep unlessDep) {
+		BreakageError(Graph graph, ModLoadOption from, QuiltRuleBreakOnly breakage) {
 			super(graph);
-			this.dep = dep;
-			// this.versionsOn = versionsOn;
 			this.from.add(from);
-			this.allBreakingOptions = allBreakingOptions;
-			this.unlessDep = unlessDep;
+			this.breakage = breakage;
 		}
 
 		@Override
 		boolean mergeInto(SolverError into) {
 			if (into instanceof BreakageError) {
 				BreakageError depDst = (BreakageError) into;
-				if (!dep.id().equals(depDst.dep.id()) || !dep.versionRange().equals(depDst.dep.versionRange())) {
+				if (!breakage.publicDep.id().equals(depDst.breakage.publicDep.id()) || !breakage.publicDep.versionRange().equals(depDst.breakage.publicDep.versionRange())) {
 					return false;
 				}
 				depDst.from.addAll(from);
@@ -1116,16 +1118,16 @@ class SolverErrorHelper {
 			String rootModName = from.size() > 1 ? from.size() + " mods [" + from.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name).collect(Collectors.joining(", ")) + "]" : mandatoryMod.metadata().name();
 
 			QuiltLoaderText first = VersionRangeDescriber.describe(
-					rootModName, dep.versionRange(), dep.id().id(), false, transitive
+					rootModName, breakage.publicDep.versionRange(), breakage.publicDep.id().id(), false, transitive
 			);
 
-			Object[] secondData = new Object[allBreakingOptions.size() == 1 ? 1 : 0];
+			Object[] secondData = new Object[breakage.getConflictingOptions().size() == 1 ? 1 : 0];
 			String secondKey = "error.break.";
-			if (allBreakingOptions.size() > 1) {
+			if (breakage.getConflictingOptions().size() > 1) {
 				secondKey += "multi_conflict";
 			} else {
 				secondKey += "single_conflict";
-				secondData[0] = allBreakingOptions.iterator().next().version().toString();
+				secondData[0] = breakage.getConflictingOptions().iterator().next().version().toString();
 			}
 			QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
 			QuiltLoaderText title = QuiltLoaderText.translate("error.break.join.title", first, second);
@@ -1133,12 +1135,12 @@ class SolverErrorHelper {
 
 			setIconFromMod(manager, mandatoryMod, error);
 
-			if (!dep.reason().isEmpty()) {
-				error.appendDescription(QuiltLoaderText.translate("error.reason", dep.reason()));
+			if (!breakage.publicDep.reason().isEmpty()) {
+				error.appendDescription(QuiltLoaderText.translate("error.reason", breakage.publicDep.reason()));
 				// A newline after the reason was desired here, but do you think Swing loves nice things?
 			}
 
-			addFiles(manager, error, from, allBreakingOptions);
+			addFiles(manager, error, from, breakage.getConflictingOptions());
 			addIssueLink(mandatoryMod, error);
 
 			StringBuilder report = new StringBuilder(rootModName);
@@ -1146,15 +1148,15 @@ class SolverErrorHelper {
 			if (from.size() == 1) {
 				report.append("s");
 			}
-			addVersionString(dep, report, true);
-			report.append(dep.id());// TODO
+			addVersionString(breakage.publicDep, report, true, false);
+			report.append(breakage.publicDep.id());// TODO
 			report.append(", which is present!");
 			error.appendReportText(report.toString());
-			if (dep.unless() != null) {
-				error.appendReportText(addUnlessClause(dep, rootModName, from, unlessDep, true));
+			if (breakage.publicDep.unless() != null) {
+				error.appendReportText(addUnlessClause(breakage.publicDep, rootModName, from, breakage.unless, true));
 			}
-			if (!dep.reason().isEmpty()) {
-				error.appendReportText("Breaking mod's reason: " + dep.reason(), "");
+			if (!breakage.publicDep.reason().isEmpty()) {
+				error.appendReportText("Breaking mod's reason: " + breakage.publicDep.reason(), "");
 			}
 			error.appendReportText("");
 
@@ -1164,19 +1166,127 @@ class SolverErrorHelper {
 			}
 
 			error.appendReportText("", "Broken mods: ");
-			for (ModLoadOption mod : allBreakingOptions) {
+			for (ModLoadOption mod : breakage.getConflictingOptions()) {
 				error.appendReportText(getModReportLine(manager, mod));
 			}
 
-			if (unlessDep != null && !unlessDep.getNodesTo().isEmpty()) {
+			if (breakage.unless != null && !breakage.unless.getNodesTo().isEmpty()) {
 				error.appendReportText("", "Overriding mods: ");
-				for (LoadOption option : unlessDep.getNodesTo()) {
+				for (LoadOption option : breakage.unless.getNodesTo()) {
 					if (option instanceof ModLoadOption) {
 						error.appendReportText(getModReportLine(manager, ((ModLoadOption) option)));
 					} else {
 						error.appendReportText("- " + option.describe().toString());
 					}
 				}
+			}
+		}
+	}
+
+	static class BreaksAllError extends SolverError {
+		final Set<ModLoadOption> from = new LinkedHashSet<>();
+		final QuiltRuleBreakAll breakage;
+
+		BreaksAllError(Graph graph, ModLoadOption from, QuiltRuleBreakAll breakage) {
+			super(graph);
+			this.from.add(from);
+			this.breakage = breakage;
+		}
+
+		@Override
+		boolean mergeInto(SolverError into) {
+			// BreaksAll are rare and there probably wont be duplicates.
+			// Plus collection equals are difficult
+			// We will just make sure we dont have multiple errors for the same rule
+
+			if (into instanceof BreaksAllError) {
+				BreaksAllError depDst = (BreaksAllError) into;
+				return breakage == depDst.breakage;
+			}
+			return false;
+		}
+
+		@Override
+		void report(QuiltPluginManagerImpl manager) {
+
+			boolean transitive = false;
+
+			// Title:
+			// "BuildCraft" breaks with [version 1.5.1] of "Quilt Standard Libraries", but it's present!
+
+			// Description:
+			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
+			ModLoadOption mandatoryMod = from.iterator().next();
+			String rootModName = from.size() > 1 ? from.size() + " mods [" + from.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name).collect(Collectors.joining(", ")) + "]" : mandatoryMod.metadata().name();
+
+			// TODO: add UI stuff
+			// QuiltLoaderText first = VersionRangeDescriber.describe(
+			// 		rootModName, breakage.publicDep, breakage.publicDep, false, transitive
+			// );
+
+			// Object[] secondData = new Object[breakage.getConflictingOptions().size() == 1 ? 1 : 0];
+			// String secondKey = "error.break.";
+			// if (breakage.getConflictingOptions().size() > 1) {
+			// 	secondKey += "multi_conflict";
+			// } else {
+			// 	secondKey += "single_conflict";
+			// 	secondData[0] = breakage.getConflictingOptions().iterator().next().version().toString();
+			// }
+			// QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
+			// QuiltLoaderText title = QuiltLoaderText.translate("error.break.join.title", first, second);
+			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(QuiltLoaderText.of("BREAKS ALL TEMP"));
+
+			// setIconFromMod(manager, mandatoryMod, error);
+
+			// if (!breakage.publicDep.reason().isEmpty()) {
+			// 	error.appendDescription(QuiltLoaderText.translate("error.reason", breakage.publicDep.reason()));
+			// 	// A newline after the reason was desired here, but do you think Swing loves nice things?
+			// }
+
+			// addFiles(manager, error, from, breakage.getConflictingOptions());
+			// addIssueLink(mandatoryMod, error);
+
+			StringBuilder report = new StringBuilder(rootModName);
+			report.append(" break");
+			if (from.size() == 1) {
+				report.append("s");
+			}
+			report.append(" because all of the following are present:");
+			error.appendReportText(report.toString());
+			for (QuiltRuleBreakOnly breakOnly: breakage.options) {
+				report = new StringBuilder("- ");
+				addVersionString(breakOnly.publicDep, report, false, true);
+				report.append(breakOnly.publicDep.id()); // TODO
+				report.append(":");
+				error.appendReportText(report.toString());
+				if (breakOnly.publicDep.unless() != null) {
+					error.appendReportText("  " + addUnlessClause(breakOnly.publicDep, rootModName, from, breakOnly.unless, true));
+				}
+				if (!breakOnly.publicDep.reason().isEmpty()) {
+					error.appendReportText("  Breaking reason: " + breakOnly.publicDep.reason());
+				}
+	
+				error.appendReportText("  Matching mods: ");
+				for (ModLoadOption mod : breakOnly.getConflictingOptions()) {
+					error.appendReportText("  " + getModReportLine(manager, mod));
+				}
+	
+				if (breakOnly.unless != null && !breakOnly.unless.getNodesTo().isEmpty()) {
+					error.appendReportText("  Overriding mods: ");
+					for (LoadOption option : breakOnly.unless.getNodesTo()) {
+						if (option instanceof ModLoadOption) {
+							error.appendReportText("  " + getModReportLine(manager, ((ModLoadOption) option)));
+						} else {
+							error.appendReportText("  - " + option.describe().toString());
+						}
+					}
+				}
+				error.appendReportText("");
+			}
+
+			error.appendReportText("Breaking mods: ");
+			for (ModLoadOption mod : from) {
+				error.appendReportText(getModReportLine(manager, mod));
 			}
 		}
 	}
