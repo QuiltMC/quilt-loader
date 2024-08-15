@@ -38,4 +38,9 @@ public final class EntrypointContainerImpl<T> implements EntrypointContainer<T> 
 	public ModContainer getProvider() {
 		return new ModContainerImpl(quilt.getProvider());
 	}
+
+	@Override
+	public String getDefinition() {
+		return quilt.getDefinition();
+	}
 }
