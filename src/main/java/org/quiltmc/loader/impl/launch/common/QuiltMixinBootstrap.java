@@ -171,9 +171,11 @@ public final class QuiltMixinBootstrap {
 			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
 
 			if (!isFabric) {
-				// quilt or builtin mod, we can assume it uses latest compat
-				Log.debug(LogCategory.MIXIN, "Assuming Quilt mod %s uses latest mixin compatibility", metadata.id());
-				return FabricUtil.COMPATIBILITY_LATEST;
+				// quilt or builtin mod, we can assume it uses latest (0.10.0 at the time) compat
+				// Except since <insert update that introduces mixin 0.14.0 compat>, we can't assume that anymore!
+				// TODO - Handle Quilt mods like Fabric mods but with our own version ranges
+				Log.debug(LogCategory.MIXIN, "Assuming Quilt mod %s uses 0.10.0 mixin compatibility", metadata.id());
+				return FabricUtil.COMPATIBILITY_0_10_0;
 			}
 
 			FabricLoaderModMetadata fabricMeta = ((InternalModMetadata) metadata).asFabricModMetadata();
