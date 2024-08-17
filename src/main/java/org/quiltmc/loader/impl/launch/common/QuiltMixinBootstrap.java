@@ -200,11 +200,10 @@ public final class QuiltMixinBootstrap {
 					if (minLoaderVersion.compareTo(version.loaderVersion) >= 0) { // lower bound is >= current version
 						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using mixin compatibility %s", metadata.id(), minLoaderVersion, version.mixinVersion);
 						return version.mixinVersion;
-					} else {
-						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using 0.9.2 mixin compatability", metadata.id(), minLoaderVersion);
-						return FabricUtil.COMPATIBILITY_0_9_2;
 					}
 				}
+				Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using 0.9.2 mixin compatability", metadata.id(), minLoaderVersion);
+				return FabricUtil.COMPATIBILITY_0_9_2;
 			}
 
 			// Mod doesn't declare a dependency on a loader version; use oldest mixin compat version

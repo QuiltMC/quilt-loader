@@ -92,7 +92,6 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	public ClassNode getClassNode(String name, boolean runTransformers, int readerFlags) throws ClassNotFoundException, IOException {
 		ClassReader reader = new ClassReader(getClassBytes(name, runTransformers));
 		ClassNode node = new ClassNode();
-		reader.accept(node, 0);
 		reader.accept(node, readerFlags);
 		return node;
 	}
