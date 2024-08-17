@@ -42,6 +42,7 @@ public interface QuiltLauncher {
 	void setTransformCache(URL insideTransformCache);
 	void setHiddenClasses(Set<String> classes);
 	void setHiddenClasses(Map<String, String> classes);
+	void setPluginPackages(Map<String, ClassLoader> hiddenClasses);
 	void hideParentUrl(URL hidden);
 	void hideParentPath(Path obf);
 	void validateGameClassLoader(Object gameInstance);

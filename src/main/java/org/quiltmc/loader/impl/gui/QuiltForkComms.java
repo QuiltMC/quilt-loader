@@ -23,6 +23,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.ProcessBuilder.Redirect;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -47,11 +50,15 @@ import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltForkComms {
 
 	private static final String SYS_PROP = "quiltmc.loader.fork.comms_port";
+	private static final boolean PRINT_NET_PACKETS = Boolean.getBoolean(SystemProperties.DEBUG_GUI_PACKETS);
 
 	private static ForkSide side;
 	private static final AtomicReference<QuiltForkComms> currentComms = new AtomicReference<>();
@@ -323,6 +330,12 @@ public class QuiltForkComms {
 					try {
 						BlockingQueue<LoaderValue> queue = writerQueue;
 						LoaderValue value = queue == null ? lvf().nul() : queue.take();
+						if (PRINT_NET_PACKETS) {
+							ByteArrayOutputStream baos = new ByteArrayOutputStream();
+							LoaderValueFactory.getFactory().write(value, baos);
+							String json = new String(baos.toByteArray(), StandardCharsets.UTF_8);
+							Log.info(LogCategory.GUI, "Sending packet: " + json);
+						}
 						ByteArrayOutputStream baos = new ByteArrayOutputStream();
 						lvf().write(value, baos);
 						byte[] written = baos.toByteArray();
@@ -380,6 +393,14 @@ public class QuiltForkComms {
 			} catch (Throwable t) {
 				Map<String, LoaderValue> map = new HashMap<>();
 				map.put("__TYPE", lvf().string(ForkCommNames.ID_EXCEPTION));
+
+				StringWriter sw = new StringWriter();
+				try (PrintWriter printer = new PrintWriter(sw)) {
+					t.printStackTrace(printer);
+					printer.flush();
+				}
+				map.put("detail", lvf().string(sw.toString()));
+
 				send(lvf().object(map));
 				throw t;
 			}

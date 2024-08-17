@@ -736,6 +736,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		return Collections.unmodifiableList(errors);
 	}
 
+	public Map<String, ClassLoader> getPluginPackages() {
+		Map<String, ClassLoader> map = new HashMap<>();
+		map.putAll(pluginsByPackage);
+		return map;
+	}
+
 	Class<?> findClass(String name, String pkg) throws ClassNotFoundException {
 		if (pkg == null) {
 			return null;

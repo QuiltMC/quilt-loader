@@ -1,0 +1,4 @@
+Changes from updating Fabric Loader from 0.15.11 to 0.16.0:
+
+- Updated Mixin to 0.15.0
+- Updated MixinExtras to 0.4.0

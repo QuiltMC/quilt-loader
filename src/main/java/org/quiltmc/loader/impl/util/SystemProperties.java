@@ -105,6 +105,12 @@ public final class SystemProperties {
 	 * {@link URL#setURLStreamHandlerFactory(URLStreamHandlerFactory)}. This */
 	public static final String DISABLE_URL_STREAM_FACTORY = "loader.disable_url_stream_factory";
 
+	/** Enables printing all gui packets that are sent and received. */
+	public static final String DEBUG_GUI_PACKETS = "loader.debug.gui_packets";
+
+	/** Enables saving of all patched classes for debug purposes. */
+	public static final String DEBUG_DUMP_PATCHED_CLASSES = "loader.debug.dump_patched_classes";
+
 	// ##############
 	// # Validation #
 	// ##############

@@ -1,0 +1,4 @@
+Bug Fixes:
+
+- Fixed crash reports being printed to system out, rather than the log. (This is a problem for launchers which don't replay sysout, like Modrinth)
+- Fixed the gui system closing the whole game if the forked gui process encountered an error, rather than returning the error to the original process.

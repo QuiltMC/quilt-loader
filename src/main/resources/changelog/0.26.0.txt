@@ -6,6 +6,12 @@ Features:
 - [#423] Updated Quilt Config to 1.3.1
 - Add a system property ("loader.disable_url_stream_factory") to disable DelegatingUrlStreamHandlerFactory.
 - [#428] Allow the GameProvider to provide the runtime mapping namespace
+- [#434] Added a system property to disable unsupported mod warnings
+    - Add `-Dloader.ignore_unsupported_mods=true` to your JVM arguments to disable them.
+- Tweaks to generated reports (usually crash reports):
+    - Include the zone offset (raw time number like +0100) in the actual crash report file.
+        This should help when assisting people in other timezones - as we can figure out if a crash report was generated just now, or is an older one.
+    - Change from CLOCK_HOUR_OF_DAY to HOUR_OF_DAY. This means we'll get digital time at 15 minutes past midnight (00:15) rather than analog time (24:15)
 
 Bug Fixes:
 
@@ -16,7 +22,7 @@ Bug Fixes:
 - [#430] Fix the Knot classloader's allowlist
     - Resolves an issue where Mixins were unable to apply on Minecraft versions between 1.7 and 1.8.9
 
-Changes from updating Fabric Loader from 0.15.7 to 0.15.10:
+Changes from updating Fabric Loader from 0.15.7 to 0.15.11:
 
 - Updated Mixin to 0.13.3
-- Added version parsing support for 24w14potato
+- Added version parsing support for 24w14potato and 1.21

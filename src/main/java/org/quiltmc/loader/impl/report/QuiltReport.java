@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,8 +86,8 @@ public class QuiltReport {
 	private void writeInternal(PrintWriter to, boolean toLog) {
 		to.println("---- " + header + " ----");
 
-		LocalDateTime now = LocalDateTime.now();
-		to.println("Date/Time: " + now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd kk:mm:ss.SSSS")));
+		ZonedDateTime now = ZonedDateTime.now();
+		to.println("Date/Time: " + now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSSS '['Z']'")));
 
 		for (String line : overview) {
 			to.println(line);
@@ -114,12 +115,15 @@ public class QuiltReport {
 	}
 
 	public void writeToLog() {
-		PrintWriter writer = new PrintWriter(System.out);
+		StringWriter sw = new StringWriter();
+		sw.append("Partial Report:\n");
+		PrintWriter writer = new PrintWriter(sw);
 		try {
 			writeInternal(writer, true);
 		} finally {
 			writer.flush();
 		}
+		Log.error(LogCategory.GENERAL, sw.toString());
 	}
 
 	/** Makes a best-effort attempt to write the crash-report somewhere (either to a new crash-report file or System
@@ -136,7 +140,7 @@ public class QuiltReport {
 
 		try {
 			StringBuilder sb = new StringBuilder("crash-");
-			sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_kk.mm.ss.SSSS")));
+			sb.append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSSS")));
 			sb.append("-quilt_loader.txt");
 			Path crashReportFile = crashReportDir.resolve(sb.toString());
 			write(crashReportFile);
