@@ -581,7 +581,7 @@ public class KnotClassDelegate {
 		this.hiddenClasses = hiddenClasses;
 	}
 
-	void setPluginPackages(Map<String, ClassLoader> map) {
+	public void setPluginPackages(Map<String, ClassLoader> map) {
 		pluginPackages = map;
 	}
 
