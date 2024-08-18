@@ -67,7 +67,7 @@ public class Knot extends QuiltLauncherBase {
 	private boolean isDevelopment;
 	private EnvType envType;
 	private final List<Path> classPath = new ArrayList<>();
-	private GameProvider provider;
+	protected GameProvider provider;
 	private boolean unlocked;
 
 	public static void launch(String[] args, EnvType type) {
