@@ -1,3 +1,14 @@
 Bug fixes:
 
 - Fixed an oversight where Loader can try to open a GUI in a headless environment
+
+Changes:
+
+- Mixin compatibility level for quilt mods is currently set to 0.10.0. We'll add a way to change this in the future.
+
+Changes from updating Fabric Loader from 0.15.11 to 0.16.2:
+
+- Updated mixin extras to 0.4.1
+- Updated mixin to 0.15.2+mixin.0.8.7
+- Added version parsing support for 1.21.2
+- Include full entrypoint definition in entrypoint crashes.
