@@ -82,6 +82,50 @@ public class VersionRangeDescriber {
 		return QuiltLoaderText.translate(getTransKey(titleKey, extra), modFrom, interval.getMin(), interval.getMax(), depName);
 	}
 
+	public static QuiltLoaderText describe(VersionRange range, String depName, boolean transitive) {
+		String titleKey = "error." + (transitive ? "transitive." : "direct.");
+
+		if (range.size() != 1) {
+			for (VersionInterval interval : range) {
+				// Handle the specific case of { [A,A] U [B,B] } (of any length)
+				if (interval.getMin() == null || !interval.getMin().equals(interval.getMax())) {
+					return QuiltLoaderText.translate(getTransKey(titleKey, "ranged"), range, depName);
+				}
+			}
+
+			VersionInterval finalV = range.last();
+			//noinspection DataFlowIssue -- we've confirmed that it can never be null above
+			String list = range.headSet(finalV).stream().map(i -> i.getMin().toString()).collect(Collectors.joining(", "));
+			return QuiltLoaderText.translate(getTransKey(titleKey, "exact_list"), list, finalV.getMin(), depName);
+		}
+
+		VersionInterval interval = range.first();
+
+		// Negative infinity
+		if (interval.getMin() == null) {
+			// Positive infinity
+			if (interval.getMax() == null) {
+				return QuiltLoaderText.translate(getTransKey(titleKey, "any"), depName);
+			} else {
+				return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMaxInclusive() ? "lesser_equal" : "lesser"), interval.getMax(), depName);
+			}
+		}
+
+		// positive infinity
+		if (interval.getMax() == null) {
+			return QuiltLoaderText.translate(getTransKey(titleKey, interval.isMinInclusive() ? "greater_equal" : "greater"), interval.getMin(), depName);
+		}
+
+		if (interval.getMax().equals(interval.getMin())) {
+			return QuiltLoaderText.translate(getTransKey(titleKey, "exact"), interval.getMax(), depName);
+		}
+
+		// ranged
+		String extra = "range_" + (interval.isMinInclusive() ? "inc_" : "exc_") + (interval.isMaxInclusive() ? "inc" : "exc");
+
+		return QuiltLoaderText.translate(getTransKey(titleKey, extra), interval.getMin(), interval.getMax(), depName);
+	}
+
 	private static String getTransKey(String titleKey, String extra) {
 		return titleKey + extra + ".title";
 	}

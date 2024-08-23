@@ -6,7 +6,17 @@
     "version": "1.0.0",
     "intermediate_mappings": "net.fabricmc:intermediary",
     "breaks": [
-        [ "part_1", "part_2" ]
+        [
+          {
+            "id": "part_1",
+            "version": "*",
+            "unless": {
+              "id": "part_3",
+              "version": "*"
+            }
+          },
+          "part_2"
+        ]
     ]
   }
 }
