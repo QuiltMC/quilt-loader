@@ -395,6 +395,11 @@ public final class ModResolvingTests {
 		resolveErrorSet("complex/breaks_unless_any");
 	}
 
+	@Test
+	public void complexDependsAnyInvalid() {
+		resolveErrorSet("complex/depends_any_on_invalid");
+	}
+
 	private static void resolveErrorSet(String subpath) {
 		try {
 			ModSolveResult result = resolveModSet("error", subpath);
@@ -412,6 +417,7 @@ public final class ModResolvingTests {
 
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
+			// Correct
 			try {
 				Path result = new File(System.getProperty("user.dir")).toPath().resolve("results").resolve("error").resolve(subpath + ".txt");
 				Files.createDirectories(result.getParent());
@@ -423,8 +429,6 @@ public final class ModResolvingTests {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-			// Correct
-			System.err.println(ignored.getMessage());
 		}
 	}
 

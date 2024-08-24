@@ -1381,11 +1381,16 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private void handleSolverFailure() throws TimeoutException, ModSolvingError {
 
 		SolverErrorHelper helper = new SolverErrorHelper(this);
+
+		// Storage for a complete traversal of the rule graph
+		// In order to make sure we detect all errors, we need to test removing each rule individually
+		// This gives an O(n!) time complexity for the do while, but this code only runs once and the set of breaking rules
+		// isn't that large.
 		Stack<Rule> removedRules = new Stack<>();
 		Map<Integer, Set<Rule>> seen = new HashMap<>();
 		seen.put(0, new HashSet<>());
-		boolean failed = false;
 
+		boolean failed = false;
 		solver_error_iteration: do {
 			Collection<Rule> rules = solver.getError();
 
@@ -1437,15 +1442,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			// No plugin blamed any rules
-			// So we'll just pick one of them randomly and remove it.
-
 			failed = true;
+
+			// Report the current error
 			helper.reportSolverError(rules);
 
+			// Pick a rule that we haven't removed yet and remove it.
 			Rule pickedRule = null;
-			Iterator<Rule> iter = rules.iterator();
-			while (iter.hasNext()) {
-				Rule next = iter.next();
+			for (Rule next : rules) {
 				if (seen.get(removedRules.size()).add(next)) {
 					pickedRule = next;
 					break;
@@ -1463,10 +1467,13 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				}
 			}
 
+			// Remove the rule from the solver and go down to the next level.
 			solver.removeRule(pickedRule);
 			removedRules.push(pickedRule);
 			seen.put(removedRules.size(), new HashSet<>());
-			if (solver.hasSolution()) { // Removing this rule fixes everything so we can skip the branch, but there might be more errors
+
+			// Removing this rule fixes everything, so we can skip the branch, but there might be more errors
+			if (solver.hasSolution()) {
 				Rule reAdd = removedRules.pop();
 				solver.redefine(reAdd);
 				solver.hasSolution(); // We know this is false, don't care about the result

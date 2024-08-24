@@ -26,18 +26,36 @@ import java.util.stream.Collectors;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class VersionRangeDescriber {
-	public static QuiltLoaderText describe(String modName, VersionRange range, String depName, boolean transitive) {
-		return describe(QuiltLoaderText.of(modName), range, depName, transitive);
-	}
-
-	public static QuiltLoaderText describe(QuiltLoaderText modFrom, VersionRange range, String depName, boolean transitive) {
-		return describe(modFrom, range, depName, true, transitive);
-	}
-
+	/**
+	 * Describes the relationship between {@code modFrom} to the specified dependency information.
+	 *
+	 * @param modFrom    the mod that has the relationship
+	 * @param range      the version range
+	 * @param depName    the name of the dependency
+	 * @param isDep      {@code true} if the dependency is required dependency, and {@code false} is it is a breaking dependency
+	 * @param transitive {@code true} if the relationship is transitive
+	 * @return the translation for the dependency relationship
+	 *
+	 * @see VersionRangeDescriber#describe(QuiltLoaderText, VersionRange, String, boolean, boolean)
+	 * @see VersionRangeDescriber#describe(VersionRange, String)
+	 */
 	public static QuiltLoaderText describe(String modFrom, VersionRange range, String depName, boolean isDep, boolean transitive) {
 		return describe(QuiltLoaderText.of(modFrom), range, depName, isDep, transitive);
 	}
 
+	/**
+	 * Describes the relationship between {@code modFrom} to the specified dependency information.
+	 *
+	 * @param modFrom    the mod that has the relationship
+	 * @param range      the version range
+	 * @param depName    the name of the dependency
+	 * @param isDep      {@code true} if the dependency is required dependency, and {@code false} is it is a breaking dependency
+	 * @param transitive {@code true} if the relationship is transitive
+	 * @return the translation for the dependency relationship
+	 *
+	 * @see VersionRangeDescriber#describe(String, VersionRange, String, boolean, boolean)
+	 * @see VersionRangeDescriber#describe(VersionRange, String)
+	 */
 	public static QuiltLoaderText describe(QuiltLoaderText modFrom, VersionRange range, String depName, boolean isDep, boolean transitive) {
 		String titleKey = "error." + (isDep ? "dep." : "break.") + (transitive ? "transitive." : "direct.");
 
@@ -82,8 +100,18 @@ public class VersionRangeDescriber {
 		return QuiltLoaderText.translate(getTransKey(titleKey, extra), modFrom, interval.getMin(), interval.getMax(), depName);
 	}
 
-	public static QuiltLoaderText describe(VersionRange range, String depName, boolean transitive) {
-		String titleKey = "error." + (transitive ? "transitive." : "direct.");
+	/**
+	 * Describes just the version range for a dependency.
+	 *
+	 * @param range   the range
+	 * @param depName the dependency name
+	 * @return the description text
+	 *
+	 * @see VersionRangeDescriber#describe(String, VersionRange, String, boolean, boolean)
+	 * @see VersionRangeDescriber#describe(QuiltLoaderText, VersionRange, String, boolean, boolean)
+	 */
+	public static QuiltLoaderText describe(VersionRange range, String depName) {
+		String titleKey = "error.";
 
 		if (range.size() != 1) {
 			for (VersionInterval interval : range) {
