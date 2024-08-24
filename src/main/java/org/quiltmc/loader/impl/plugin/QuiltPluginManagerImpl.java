@@ -1590,24 +1590,37 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		Map<Class<?>, LoadOptionResult<?>> extraResults;
 		final Map<Class<?>, Map<Object, Boolean>> optionMap = new HashMap<>();
 
-		for (LoadOption option : solution) {
+		try {
+			for (LoadOption option : solution) {
 
-			boolean load = true;
-			if (LoadOption.isNegated(option)) {
-				option = option.negate();
-				load = false;
-			}
-
-			if (load && option instanceof ModLoadOption) {
-				ModLoadOption mod = (ModLoadOption) option;
-				putMod(directModsMap, mod.id(), mod);
-
-				for (ProvidedMod provided : mod.metadata().provides()) {
-					putMod(providedModsMap, provided.id(), mod);
+				boolean load = true;
+				if (LoadOption.isNegated(option)) {
+					option = option.negate();
+					load = false;
 				}
-			}
 
-			putHierarchy(option, load, optionMap);
+				if (load && option instanceof ModLoadOption) {
+					ModLoadOption mod = (ModLoadOption) option;
+					putMod(directModsMap, mod.id(), mod);
+
+					for (ProvidedMod provided : mod.metadata().provides()) {
+						putMod(providedModsMap, provided.id(), mod);
+					}
+				}
+
+				putHierarchy(option, load, optionMap);
+			}
+		} catch (ModSolvingError cause) {
+			// Something went wrong during solving
+			StringBuilder errorDesc = new StringBuilder("The solver returned a solution with duplicate mods!\n");
+			errorDesc.append(cause.getMessage());
+			errorDesc.append("\n\nCurrent Solution:");
+			for (LoadOption option : solution) {
+				errorDesc.append("\n\t-" + option);
+			}
+			errorDesc.append("\n\n");
+			solver.appendRules(errorDesc);
+			throw new ModSolvingError(errorDesc.toString(), cause);
 		}
 
 		extraResults = new HashMap<>();

@@ -241,6 +241,16 @@ public class Sat4jWrapper implements RuleContext {
 		cancelled = true;
 	}
 
+	// #############
+	// # Debugging #
+	// #############
+
+	/** Appends all current rules and options using the {@link SolverPreProcessor} format. */
+	public void appendRules(StringBuilder sb) {
+		InputRuleSet ruleSet = new InputRuleSet(optionToWeight, ruleToDefinitions);
+		SolverPreProcessor.appendRuleSet(ruleSet, ruleSet, str -> sb.append("\n" + str));
+	}
+
 	// ############
 	// # Internal #
 	// ############
