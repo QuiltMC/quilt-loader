@@ -21,7 +21,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -51,7 +53,6 @@ import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.plugin.quilt.MandatoryModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.OptionalModIdDefinition;
 import org.quiltmc.loader.impl.plugin.quilt.ProvidedModOption;
-import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreak;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakAll;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleBreakOnly;
 import org.quiltmc.loader.impl.plugin.quilt.QuiltRuleDep;
@@ -117,10 +118,11 @@ class SolverErrorHelper {
 
 				for (LoadOption load : rule.getNodesFrom()) {
 					if (!depends.isEmpty()) {
-						graph.addLink(load, new DependsAny(depends));
+						graph.addLink(load, new DependsAny(depends, (QuiltRuleDepAny) rule));
 					} else {
 						graph.addLink(load, new MissingAny(
-								((QuiltRuleDepAny) rule).publicDep
+								((QuiltRuleDepAny) rule).publicDep,
+								(QuiltRuleDepAny) rule
 						));
 					}
 				}
@@ -172,35 +174,9 @@ class SolverErrorHelper {
 
 		graph.clean();
 
-		// System.out.println(graph);
-
-//		graph.remove(null);
-//		boolean modified = false;
-//		do {
-//			modified = false;
-//			Set<LoadOption> allChildren = graph.values()
-//					.stream()
-//					.flatMap(Collection::stream)
-//					.flatMap(Link::children)
-//					.collect(Collectors.toSet());
-//
-//			Set<Option> noLinks = graph.keySet()
-//					.stream()
-//					.filter(option -> !option.mandatory)
-//					.collect(Collectors.toCollection(HashSet::new));
-//
-//			noLinks.removeAll(allChildren);
-//
-//			for (Option o : noLinks) {
-//				graph.remove(o);
-//				modified = true;
-//			}
-//		} while (modified);
-
-//		printGraph(graph);
-
-		if (!reportNewError(graph))
+		if (!reportNewError(graph)) {
 			addError(new UnhandledError(graph, rules));
+		}
 	}
 
 	boolean reportNewError(Graph graph) {
@@ -211,14 +187,14 @@ class SolverErrorHelper {
 					if (link instanceof Breaks) {
 						Breaks breaks = ((Breaks) link);
 						ModLoadOption from = (ModLoadOption) option;
-						this.addError(new BreakageError(graph, from, breaks.rule));
+						this.addError(new BreaksError(graph, from, breaks.rule));
 						added = true;
 					} 
 					else if (link instanceof BreaksAll) {
 						BreaksAll breaksAll = ((BreaksAll) link);
 						ModLoadOption from = (ModLoadOption) option;
 						if (breaksAll.breaks.size() == 1) {
-							this.addError(new BreakageError(graph, from, breaksAll.rule.options[0]));
+							this.addError(new BreaksError(graph, from, breaksAll.rule.options[0]));
 						} else {
 							this.addError(new BreaksAllError(graph, from, breaksAll.rule));
 						}
@@ -227,16 +203,38 @@ class SolverErrorHelper {
 					else if (link instanceof Missing) {
 						Missing missing = ((Missing) link);
 						ModLoadOption from = (ModLoadOption) option;
-						this.addError(new MissingDependencyError(graph, missing.missing, from, new LinkedHashSet<>(missing.rule.getValidOptions()), new LinkedHashSet<>(missing.rule.getWrongOptions()), missing.rule.unless));
+
+						Set<QuiltRuleDepOnly> rules = flattenUnless(missing.rule);
+						if (rules.size() > 1) {
+							this.addError(new DependsAnyError(graph, from, rules));
+						} else {
+							this.addError(new DependsError(graph, from, missing.rule));
+						}
+
 						added = true;
 					} else if (link instanceof Depends) {
 						Depends depends = ((Depends) link);
 						ModLoadOption from = (ModLoadOption) option;
-						this.addError(new MissingDependencyError(graph, depends.rule.publicDep, from, new LinkedHashSet<>(depends.rule.getValidOptions()), new LinkedHashSet<>(depends.rule.getWrongOptions()), depends.rule.unless));
+
+						Set<QuiltRuleDepOnly> rules = flattenUnless(depends.rule);
+						if (rules.size() > 1) {
+							this.addError(new DependsAnyError(graph, from, rules));
+						} else {
+							this.addError(new DependsError(graph, from, depends.rule));
+						}
+
+						added = true;
+					} else if (link instanceof DependsAny) {
+						DependsAny dependsAny = ((DependsAny) link);
+						ModLoadOption from = (ModLoadOption) option;
+						this.addError(new DependsAnyError(graph, from, flattenUnless(dependsAny.rule)));
+						added = true;
+					} else if (link instanceof MissingAny) {
+						MissingAny missingAny = ((MissingAny) link);
+						ModLoadOption from = (ModLoadOption) option;
+						this.addError(new DependsAnyError(graph, from, flattenUnless(missingAny.rule)));
 						added = true;
 					}
-					// TODO: Add [Missing|Depends]Any
-					// TODO: Flatten unless clauses into an any clause
 				}
 
 				for (Link link : graph.edgesTo(option)) {
@@ -254,6 +252,23 @@ class SolverErrorHelper {
 		}
 	}
 
+	private static Set<QuiltRuleDepOnly> flattenUnless(QuiltRuleDep rule) {
+		Set<QuiltRuleDepOnly> rules = new HashSet<>();
+
+		if (rule instanceof QuiltRuleDepOnly) {
+			rules.add((QuiltRuleDepOnly) rule);
+			if (((QuiltRuleDepOnly) rule).unless != null) {
+				rules.addAll(flattenUnless(((QuiltRuleDepOnly) rule).unless));
+			}
+		} else if (rule instanceof QuiltRuleDepAny) {
+			for (QuiltRuleDepOnly only : ((QuiltRuleDepAny) rule).options) {
+				rules.addAll(flattenUnless(only));
+			}
+		}
+
+		return rules;
+	}
+
 	static void printGraph(Graph graph) {
 		System.out.println("digraph G {");
 		System.out.printf("\troot[style=invis];\n");
@@ -263,16 +278,16 @@ class SolverErrorHelper {
 				.filter(o -> isMandatory(graph, o))
 				.forEach(option -> {
 					System.out.printf("\t\t%s[label=\"%s\", shape=\"Mdiamond\"];\n", option.hashCode(), label(option));
-					// System.out.printf("\t\troot->%s[style=invis];\n", option.hashCode());
 				});
 		System.out.printf("\t\tstyle=invis;\n");
 		System.out.printf("\t}\n");
 		graph.nodes
 				.forEach(option -> {
-					if (isMandatory(graph, option))
+					if (isMandatory(graph, option)) {
 						System.out.printf("\troot->%s[style=invis];\n", option.hashCode());
-					else
+					} else {
 						System.out.printf("\t%s[label=\"%s\", shape=\"rectangle\"];\n", option.hashCode(), label(option));
+					}
 				});
 
 		graph.nodes.forEach(node -> graph.edges(node).forEach(link -> link.dotGraphEdge(node)));
@@ -341,8 +356,8 @@ class SolverErrorHelper {
 		}
 
 		public void clean() {
-			boolean modified = false;
-			do {
+			boolean modified = true;
+			while (modified) {
 				modified = false;
 
 				Set<LoadOption> noLinks = this.parents.values()
@@ -353,12 +368,12 @@ class SolverErrorHelper {
 				for (LoadOption o : noLinks) {
 					nodes.remove(o);
 					Set<Link> removedLinks = this.edges.remove(o);
-					for (Link link: removedLinks) {
+					for (Link link : removedLinks) {
 						this.parents.remove(link);
 					}
 					modified = true;
 				}
-			} while (modified);
+			}
 		}
 	}
 
@@ -515,8 +530,11 @@ class SolverErrorHelper {
 		@NotNull
 		final Collection<LoadOption> depends;
 
-		public DependsAny(@NotNull Collection<LoadOption> depends) {
+		final QuiltRuleDepAny rule;
+
+		public DependsAny(@NotNull Collection<LoadOption> depends, QuiltRuleDepAny rule) {
 			this.depends = depends;
+			this.rule = rule;
 		}
 
 		public Stream<LoadOption> children() {
@@ -602,8 +620,11 @@ class SolverErrorHelper {
 		@NotNull
 		final ModDependency.Any missing;
 
-		public MissingAny(@NotNull ModDependency.Any missing) {
+		final QuiltRuleDepAny rule;
+
+		public MissingAny(@NotNull ModDependency.Any missing, QuiltRuleDepAny rule) {
 			this.missing = missing;
+			this.rule = rule;
 		}
 
 		public Stream<LoadOption> children() {
@@ -802,8 +823,6 @@ class SolverErrorHelper {
 
 		protected String getModReportLine(QuiltPluginManagerImpl manager, ModLoadOption option) {
 			String path = manager.describePath(option.from());
-			// TODO: Depended or Required
-			// [Provided] [Depended] <Mandatory|Optional>
 
 			boolean provided = graph.edgesTo(option).stream().anyMatch(Provided.class::isInstance);
 			boolean depended = graph.edgesTo(option).stream().anyMatch(Depends.class::isInstance);
@@ -811,11 +830,12 @@ class SolverErrorHelper {
 
 			StringBuilder line = new StringBuilder("- ");
 
+			// [Provided] [Required] <Mandatory|Optional> mod '<mod_id>' version '<version>' [by mod '<providing_mod_id>']: <path>
 			if (provided) {
 				line.append("Provided");
 
 				if (depended) {
-					line.append(" and depended");
+					line.append(" and required");
 				}
 
 				if (mandatory) {
@@ -824,7 +844,7 @@ class SolverErrorHelper {
 					line.append(" optional");
 				}
 			} else if (depended) {
-				line.append("Depended");
+				line.append("Required");
 
 				if (mandatory) {
 					line.append(" mandatory");
@@ -839,7 +859,15 @@ class SolverErrorHelper {
 				}
 			}
 
-			return line.append(" mod '").append(option.id()).append("' version '").append(option.version()).append("': ").append(path).toString();
+			line.append(" mod '").append(option.id()).append("' version '").append(option.version()).append("'");
+
+			if (provided) {
+				// This cast is fine because only mod load options can be provided
+				ModLoadOption loadOption = ((ModLoadOption) graph.parents.get(graph.edgesTo(option).stream().filter(Provided.class::isInstance).findFirst().get()));
+				line.append(" by mod '").append(loadOption.id()).append("'");
+			}
+
+			return line.append(": ").append(path).toString();
 		}
 
 		protected void addVersionString(ModDependency.Only only, StringBuilder report, boolean breaks, boolean start) {
@@ -866,7 +894,7 @@ class SolverErrorHelper {
 			}
 		}
 
-		protected String addUnlessClause(ModDependency.Only dep, String rootModName, Set<ModLoadOption> from, QuiltRuleDep unlessDep, boolean breaks) {
+		protected List<String> addUnlessClause(Only dep, String rootModName, Set<ModLoadOption> from, QuiltRuleDep unlessDep) {
 			StringBuilder report = new StringBuilder();
 			if (dep.unless() instanceof ModDependency.Only) {
 				ModDependency.Only unless = (ModDependency.Only) dep.unless();
@@ -881,12 +909,7 @@ class SolverErrorHelper {
 					if (from.size() == 1) {
 						report.append("es");
 					}
-					report.append(" not ");
-					if (breaks) {
-						report.append("break ");
-					} else {
-						report.append("require ");
-					}
+					report.append(" not break ");
 
 					report.append(dep.id()).append(".");
 				} else {
@@ -894,20 +917,42 @@ class SolverErrorHelper {
 
 					addVersionString(unless, report, false, false);
 
-					report.append("of mod ").append(unless.id()).append(" overrides this ");
-					if (breaks) {
-						report.append("break");
-					} else {
-						report.append("requirement");
-					}
-					report.append(", but it is unable to load due to another error.");
+					report.append(" mod ").append(unless.id()).append(" overrides this break, but it is unable to load due to another error.");
 				}
+
+				return Collections.singletonList(report.toString());
+			} else if (dep.unless() instanceof ModDependency.Any) {
+				ModDependency.Any unless = (ModDependency.Any) dep.unless();
+				assert unless != null;
+				QuiltRuleDepAny unlessRule = ((QuiltRuleDepAny) unlessDep);
+				List<String> lines = new ArrayList<>();
+//				if (unlessRule.getNodesTo().isEmpty()) {
+				report.append("However, if any of the following are present, ");
+				report.append(rootModName).append(" do");
+				if (from.size() == 1) {
+					report.append("es");
+				}
+				report.append(" not break.");
+				lines.add(report.toString());
+
+				for (QuiltRuleDepOnly only : unlessRule.options) {
+					report = new StringBuilder("- ");
+					addVersionString(only.publicDep, report, false, true);
+					report.append(only.publicDep.id());
+
+					if (only.getAllOptions().isEmpty()) {
+						report.append(" which is missing.");
+					} else {
+						report.append(" which is unable to load due to another error.");
+					}
+					lines.add(report.toString());
+				}
+				return lines;
 			}
-			// TODO support Any option
-			return report.toString();
+			return Collections.emptyList();
 		}
 
-		protected void addUnless(QuiltDisplayedError error, ModDependency.Only dep, QuiltRuleDep unlessDep, boolean breaks) {
+		protected void addUnless(QuiltDisplayedError error, ModDependency.Only dep, QuiltRuleDep unlessDep) {
 			if (dep.unless() instanceof ModDependency.Only) {
 				ModDependency.Only unless = (ModDependency.Only) dep.unless();
 				assert unless != null;
@@ -998,27 +1043,21 @@ class SolverErrorHelper {
 		}
 	}
 
-	static class MissingDependencyError extends SolverError {
-		final ModDependency.Only dep;
+	static class DependsError extends SolverError {
 		final Set<ModLoadOption> from = new LinkedHashSet<>();
-		final Set<ModLoadOption> allInvalidOptions;
-		final Set<ModLoadOption> allValidOptions;
-		final QuiltRuleDep unlessDep;
+		final QuiltRuleDepOnly depends;
 
-		MissingDependencyError(Graph graph, ModDependency.Only dep, ModLoadOption from, Set<ModLoadOption> allValidOptions, Set<ModLoadOption> allInvalidOptions, QuiltRuleDep unlessDep) {
+		DependsError(Graph graph, ModLoadOption from, QuiltRuleDepOnly depends) {
 			super(graph);
-			this.dep = dep;
 			this.from.add(from);
-			this.allInvalidOptions = allInvalidOptions;
-			this.allValidOptions = allValidOptions;
-			this.unlessDep = unlessDep;
+			this.depends = depends;
 		}
 
 		@Override
 		boolean mergeInto(SolverError into) {
-			if (into instanceof MissingDependencyError) {
-				MissingDependencyError depDst = (MissingDependencyError) into;
-				if (!dep.id().equals(depDst.dep.id()) || !dep.versionRange().equals(depDst.dep.versionRange())) {
+			if (into instanceof DependsError) {
+				DependsError depDst = (DependsError) into;
+				if (!depends.publicDep.id().equals(depDst.depends.publicDep.id()) || !depends.publicDep.versionRange().equals(depDst.depends.publicDep.versionRange())) {
 					return false;
 				}
 				depDst.from.addAll(from);
@@ -1031,7 +1070,7 @@ class SolverErrorHelper {
 		void report(QuiltPluginManagerImpl manager) {
 
 			boolean transitive = false;
-			boolean missing = allInvalidOptions.isEmpty();
+			boolean missing = depends.getWrongOptions().isEmpty();
 
 			// Title:
 			// "BuildCraft" requires [version 1.5.1] of "Quilt Standard Libraries", which is
@@ -1042,31 +1081,31 @@ class SolverErrorHelper {
 			ModLoadOption mandatoryMod = from.iterator().next();
 			String rootModName = from.size() > 1 ? from.size() + " mods" : mandatoryMod.metadata().name();
 
-			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, dep.versionRange(), dep.id().id(), transitive);
+			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, depends.publicDep.versionRange(), depends.publicDep.id().id(), transitive);
 
-			Object[] secondData = new Object[allInvalidOptions.size() == 1 ? 1 : 0];
+			Object[] secondData = new Object[depends.getWrongOptions().size() == 1 ? 1 : 0];
 			String secondKey = "error.dep.";
 			if (missing) {
 				secondKey += "missing";
-			} else if (allInvalidOptions.size() > 1) {
+			} else if (depends.getWrongOptions().size() > 1) {
 				secondKey += "multi_mismatch";
 			} else {
 				secondKey += "single_mismatch";
-				secondData[0] = allInvalidOptions.iterator().next().version().toString();
+				secondData[0] = depends.getWrongOptions().iterator().next().version().toString();
 			}
 			QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
 			QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
 			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 
 			setIconFromMod(manager, mandatoryMod, error);
-			addFiles(manager, error, from, allValidOptions);
+			addFiles(manager, error, from, depends.getValidOptions(), depends.getWrongOptions());
 			addIssueLink(mandatoryMod, error);
 
 			StringBuilder report = new StringBuilder(rootModName);
 			report.append(" requires");
-			addVersionString(dep, report, false, false);
-			report.append(dep.id());// TODO
-			if (!allValidOptions.isEmpty()) {
+			addVersionString(depends.publicDep, report, false, false);
+			report.append(depends.publicDep.id());// TODO
+			if (!depends.getValidOptions().isEmpty()) {
 				report.append(", which is unable to load due to another error!");
 			} else if (missing) {
 				report.append(", which is missing!");
@@ -1077,39 +1116,166 @@ class SolverErrorHelper {
 
 			error.appendReportText(report.toString(), "");
 
-			if (dep.unless() != null) {
-				error.appendReportText(addUnlessClause(dep, rootModName, from, unlessDep, false), "");
+			if (!depends.publicDep.reason().isEmpty()) {
+				error.appendReportText("Dependency reason: " + depends.publicDep.reason());
 			}
 
 			error.appendReportText("Requiring mods: ");
 			for (ModLoadOption mod : from) {
 				error.appendReportText(getModReportLine(manager, mod));
-//				error.appendReportText("- " + manager.describePath(mod.from()));
 			}
 
-			if (!allValidOptions.isEmpty()) {
+			if (!depends.getValidOptions().isEmpty()) {
 				error.appendReportText("");
 				error.appendReportText("Satisfying mods: ");
-				for (ModLoadOption mod : allValidOptions) {
+				for (ModLoadOption mod : depends.getValidOptions()) {
 					error.appendReportText(getModReportLine(manager, mod));
 				}
 			}
 
-			if (!allInvalidOptions.isEmpty()) {
+			if (!depends.getWrongOptions().isEmpty()) {
 				error.appendReportText("");
 				error.appendReportText("Invalid mods: ");
-				for (ModLoadOption mod : allInvalidOptions) {
+				for (ModLoadOption mod : depends.getWrongOptions()) {
 					error.appendReportText(getModReportLine(manager, mod));
 				}
 			}
 		}
 	}
 
-	static class BreakageError extends SolverError {
+	static class DependsAnyError extends SolverError {
+		final Set<ModLoadOption> from = new LinkedHashSet<>();
+		final Set<QuiltRuleDepOnly> depends;
+
+		DependsAnyError(Graph graph, ModLoadOption from, Set<QuiltRuleDepOnly> dependsAll) {
+			super(graph);
+			this.from.add(from);
+			this.depends = dependsAll;
+		}
+
+		@Override
+		boolean mergeInto(SolverError into) {
+			if (into instanceof DependsAnyError) {
+				DependsAnyError depDst = (DependsAnyError) into;
+				Set<ModDependency.Only> ours = this.depends.stream().map(rule -> rule.publicDep).collect(Collectors.toSet());
+				Set<ModDependency.Only> theirs = depDst.depends.stream().map(rule -> rule.publicDep).collect(Collectors.toSet());
+
+				if (ours.equals(theirs)) {
+					depDst.from.addAll(from);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		@Override
+		void report(QuiltPluginManagerImpl manager) {
+
+			// Title:
+			// "BuildCraft" depends on any of Quilt Standard Libraries and Minecraft!
+			// "BuildCraft" depends on any of Quilt Standard Libraries, Minecraft, and Third Mod!
+
+			// Description:
+			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
+			ModLoadOption mandatoryMod = from.iterator().next();
+			String rootModName = from.size() > 1 ? from.size() + " mods [" + from.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name).collect(Collectors.joining(", ")) + "]" : mandatoryMod.metadata().name();
+
+			Iterator<Only> breaks = depends.stream().map(rule -> rule.publicDep).iterator();
+			QuiltLoaderText allMods = QuiltLoaderText.of(breaks.next().id().id());
+			while (breaks.hasNext()) {
+				Only next = breaks.next();
+
+				if (breaks.hasNext()) {
+					allMods = QuiltLoaderText.translate("error.dep.join.title", allMods, next.id().id());
+				} else {
+					allMods = QuiltLoaderText.translate("error.dep.join.last.title", allMods, next.id().id());
+				}
+			}
+
+			QuiltLoaderText title = QuiltLoaderText.translate("error.dep_any.title", rootModName, allMods);
+			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
+
+			setIconFromMod(manager, mandatoryMod, error);
+
+			for (QuiltRuleDepOnly depOnly: depends) {
+				error.appendDescription(VersionRangeDescriber.describe(depOnly.publicDep.versionRange(), depOnly.publicDep.id().id(), false));
+				if (!depOnly.publicDep.reason().isEmpty()) {
+					error.appendDescription(QuiltLoaderText.translate("error.reason.specific", depOnly.publicDep.id().id(), depOnly.publicDep.reason()));
+				}
+
+				addFiles(manager, error, depOnly.getValidOptions(), depOnly.getWrongOptions());
+				error.appendDescription(QuiltLoaderText.of(""));
+			}
+
+			addFiles(manager, error, from);
+
+			addIssueLink(mandatoryMod, error);
+
+			StringBuilder report = new StringBuilder(rootModName);
+			report.append(" depend");
+			if (from.size() == 1) {
+				report.append("s");
+			}
+			report.append(" on any of the following mods:");
+
+			boolean skippedBreak = false;
+
+			error.appendReportText(report.toString());
+			for (QuiltRuleDepOnly breakOnly: depends) {
+				skippedBreak = false;
+
+				report = new StringBuilder("- ");
+				addVersionString(breakOnly.publicDep, report, false, true);
+				report.append(breakOnly.publicDep.id()); // TODO
+
+				if (breakOnly.getAllOptions().isEmpty()) {
+					report.append(", which is missing!");
+					if (breakOnly.publicDep.reason().isEmpty()) {
+						error.appendReportText(report.toString());
+						skippedBreak = true;
+						continue;
+					}
+				} else {
+					report.append(":");
+				}
+
+				error.appendReportText(report.toString());
+				if (!breakOnly.publicDep.reason().isEmpty()) {
+					error.appendReportText("  Depend reason: " + breakOnly.publicDep.reason());
+				}
+
+				if (!breakOnly.getValidOptions().isEmpty()) {
+					error.appendReportText("  Satisfying mods which cannot load: ");
+					for (ModLoadOption mod : breakOnly.getValidOptions()) {
+						error.appendReportText("  " + getModReportLine(manager, mod));
+					}
+				}
+
+				if (!breakOnly.getWrongOptions().isEmpty()) {
+					error.appendReportText("  Invalid mods: ");
+					for (ModLoadOption mod : breakOnly.getWrongOptions()) {
+						error.appendReportText("  " + getModReportLine(manager, mod));
+					}
+				}
+				error.appendReportText("");
+			}
+
+			if (skippedBreak) {
+				error.appendReportText("");
+			}
+
+			error.appendReportText("Requiring mods: ");
+			for (ModLoadOption mod : from) {
+				error.appendReportText(getModReportLine(manager, mod));
+			}
+		}
+	}
+
+	static class BreaksError extends SolverError {
 		final Set<ModLoadOption> from = new LinkedHashSet<>();
 		final QuiltRuleBreakOnly breakage;
 
-		BreakageError(Graph graph, ModLoadOption from, QuiltRuleBreakOnly breakage) {
+		BreaksError(Graph graph, ModLoadOption from, QuiltRuleBreakOnly breakage) {
 			super(graph);
 			this.from.add(from);
 			this.breakage = breakage;
@@ -1117,8 +1283,8 @@ class SolverErrorHelper {
 
 		@Override
 		boolean mergeInto(SolverError into) {
-			if (into instanceof BreakageError) {
-				BreakageError depDst = (BreakageError) into;
+			if (into instanceof BreaksError) {
+				BreaksError depDst = (BreaksError) into;
 				if (!breakage.publicDep.id().equals(depDst.breakage.publicDep.id()) || !breakage.publicDep.versionRange().equals(depDst.breakage.publicDep.versionRange())) {
 					return false;
 				}
@@ -1164,7 +1330,7 @@ class SolverErrorHelper {
 			}
 
 			if (breakage.publicDep.unless() != null) {
-				addUnless(error, breakage.publicDep, breakage.unless, true);
+				addUnless(error, breakage.publicDep, breakage.unless);
 				// A newline after the reason was desired here, but do you think Swing loves nice things?
 			}
 
@@ -1181,7 +1347,7 @@ class SolverErrorHelper {
 			report.append(", which is present!");
 			error.appendReportText(report.toString());
 			if (breakage.publicDep.unless() != null) {
-				error.appendReportText(addUnlessClause(breakage.publicDep, rootModName, from, breakage.unless, true));
+				addUnlessClause(breakage.publicDep, rootModName, from, breakage.unless).forEach(error::appendReportText);
 			}
 			if (!breakage.publicDep.reason().isEmpty()) {
 				error.appendReportText("Breaking mod's reason: " + breakage.publicDep.reason(), "");
@@ -1198,13 +1364,30 @@ class SolverErrorHelper {
 				error.appendReportText(getModReportLine(manager, mod));
 			}
 
-			if (breakage.unless != null && !breakage.unless.getNodesTo().isEmpty()) {
-				error.appendReportText("", "Overriding mods: ");
-				for (LoadOption option : breakage.unless.getNodesTo()) {
-					if (option instanceof ModLoadOption) {
-						error.appendReportText(getModReportLine(manager, ((ModLoadOption) option)));
-					} else {
-						error.appendReportText("- " + option.describe().toString());
+			if (breakage.unless != null) {
+				if (breakage.unless instanceof QuiltRuleDepOnly && !breakage.unless.getNodesTo().isEmpty()) {
+					error.appendReportText("", "Overriding mods: ");
+					for (LoadOption option : breakage.unless.getNodesTo()) {
+						if (option instanceof ModLoadOption) {
+							error.appendReportText(getModReportLine(manager, ((ModLoadOption) option)));
+						} else {
+							error.appendReportText("- " + option.describe().toString());
+						}
+					}
+				} else if (breakage.unless instanceof QuiltRuleDepAny) {
+					boolean added = false;
+					for (QuiltRuleDepOnly only: ((QuiltRuleDepAny) breakage.unless).options) {
+						for (LoadOption option : only.getNodesTo()) {
+							if (!added) {
+								error.appendReportText("", "Overriding mods: ");
+								added = true;
+							}
+							if (option instanceof ModLoadOption) {
+								error.appendReportText(getModReportLine(manager, ((ModLoadOption) option)));
+							} else {
+								error.appendReportText("- " + option.describe().toString());
+							}
+						}
 					}
 				}
 			}
@@ -1272,7 +1455,7 @@ class SolverErrorHelper {
 				if (breakOnly.publicDep.unless() != null) {
 					// [VERSION of MOD] can override this break if present.
 					// [VERSION of MOD] overrides this break, but is unable to load due to another error.
-					addUnless(error, breakOnly.publicDep, breakOnly.unless, true);
+					addUnless(error, breakOnly.publicDep, breakOnly.unless);
 				}
 
 				addFiles(manager, error, breakOnly.getConflictingOptions());
@@ -1298,7 +1481,7 @@ class SolverErrorHelper {
 				report.append(":");
 				error.appendReportText(report.toString());
 				if (breakOnly.publicDep.unless() != null) {
-					error.appendReportText("  " + addUnlessClause(breakOnly.publicDep, rootModName, from, breakOnly.unless, true));
+					addUnlessClause(breakOnly.publicDep, rootModName, from, breakOnly.unless).forEach(line -> error.appendReportText("  " + line));
 				}
 				if (!breakOnly.publicDep.reason().isEmpty()) {
 					error.appendReportText("  Breaking reason: " + breakOnly.publicDep.reason());
@@ -1309,13 +1492,30 @@ class SolverErrorHelper {
 					error.appendReportText("  " + getModReportLine(manager, mod));
 				}
 	
-				if (breakOnly.unless != null && !breakOnly.unless.getNodesTo().isEmpty()) {
-					error.appendReportText("  Overriding mods: ");
-					for (LoadOption option : breakOnly.unless.getNodesTo()) {
-						if (option instanceof ModLoadOption) {
-							error.appendReportText("  " + getModReportLine(manager, ((ModLoadOption) option)));
-						} else {
-							error.appendReportText("  - " + option.describe().toString());
+				if (breakOnly.unless != null) {
+					if (breakOnly.unless instanceof QuiltRuleDepOnly && !breakOnly.unless.getNodesTo().isEmpty()) {
+						error.appendReportText("  Overriding mods: ");
+						for (LoadOption option : breakOnly.unless.getNodesTo()) {
+							if (option instanceof ModLoadOption) {
+								error.appendReportText("  " + getModReportLine(manager, ((ModLoadOption) option)));
+							} else {
+								error.appendReportText("  - " + option.describe().toString());
+							}
+						}
+					} else if (breakOnly.unless instanceof QuiltRuleDepAny) {
+						boolean added = false;
+						for (QuiltRuleDepOnly only: ((QuiltRuleDepAny) breakOnly.unless).options) {
+							for (LoadOption option : only.getNodesTo()) {
+								if (!added) {
+									error.appendReportText("  Overriding mods: ");
+									added = true;
+								}
+								if (option instanceof ModLoadOption) {
+									error.appendReportText("  " + getModReportLine(manager, ((ModLoadOption) option)));
+								} else {
+									error.appendReportText("  - " + option.describe().toString());
+								}
+							}
 						}
 					}
 				}

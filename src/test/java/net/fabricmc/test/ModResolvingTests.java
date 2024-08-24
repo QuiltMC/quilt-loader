@@ -390,6 +390,11 @@ public final class ModResolvingTests {
 		resolveErrorSet("complex/breaks_on_broken_optional_unless");
 	}
 
+	@Test
+	public void complexUnlessAny() {
+		resolveErrorSet("complex/breaks_unless_any");
+	}
+
 	private static void resolveErrorSet(String subpath) {
 		try {
 			ModSolveResult result = resolveModSet("error", subpath);
