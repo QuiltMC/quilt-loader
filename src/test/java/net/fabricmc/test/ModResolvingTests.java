@@ -17,9 +17,12 @@
 package net.fabricmc.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -30,7 +33,6 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
@@ -405,6 +407,17 @@ public final class ModResolvingTests {
 
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
+			try {
+				Path result = new File(System.getProperty("user.dir")).toPath().resolve("results").resolve("error").resolve(subpath + ".txt");
+				Files.createDirectories(result.getParent());
+				Files.write(
+						result,
+						ignored.getMessage().getBytes(),
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE
+				);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 			// Correct
 			System.err.println(ignored.getMessage());
 		}
