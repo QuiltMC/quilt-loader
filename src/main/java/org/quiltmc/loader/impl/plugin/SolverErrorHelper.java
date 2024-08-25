@@ -488,9 +488,17 @@ class SolverErrorHelper {
 		@Override
 		public void dotGraphEdge(LoadOption from, PrintWriter dotGraph) {
 			dotGraph.printf("\t%s->%s [label=\"Breaks\", dir=both, color=red];\n", from.hashCode(), breaks.hashCode());
-			if(rule.unless != null) {
-				for (LoadOption option : rule.unless.getNodesTo()) {
-					dotGraph.printf("\t%s->%s [label=\"Unless\", color=blue];\n", from.hashCode(), option.hashCode());
+			if (rule.unless != null) {
+				if (rule.unless instanceof QuiltRuleDepOnly) {
+					for (LoadOption option : rule.unless.getNodesTo()) {
+						dotGraph.printf("\t%s->%s [label=\"Unless\", color=blue];\n", from.hashCode(), option.hashCode());
+					}
+				} else if (rule.unless instanceof QuiltRuleDepAny) {
+					for (QuiltRuleDepOnly only : ((QuiltRuleDepAny) rule.unless).options) {
+						for (LoadOption option : only.getNodesTo()) {
+							dotGraph.printf("\t%s->%s [label=\"Unless\", color=blue];\n", from.hashCode(), option.hashCode());
+						}
+					}
 				}
 			}
 		}
@@ -654,10 +662,10 @@ class SolverErrorHelper {
 
 		@Override
 		public void dotGraphEdge(LoadOption from, PrintWriter dotGraph) {
-			dotGraph.printf("\t%s->%s [label=\"Depends\"];\n", from.hashCode(), depends.hashCode());
-			dotGraph.printf("\t%s [label=\"Any Of\", shape=\"invtriangle\"];\n", depends.hashCode());
+			dotGraph.printf("\t%s->%s [label=\"Depends\"];\n", from.hashCode(), depends.hashCode() + 31);
+			dotGraph.printf("\t%s [label=\"Any Of\", shape=\"invtriangle\"];\n", depends.hashCode() + 31);
 			for (LoadOption b : depends) {
-				dotGraph.printf("\t%s->%s [label=\"Depends\"];\n", depends.hashCode(), b.hashCode());
+				dotGraph.printf("\t%s->%s [label=\"Depends\"];\n", depends.hashCode() + 31, b.hashCode());
 			}
 		}
 
