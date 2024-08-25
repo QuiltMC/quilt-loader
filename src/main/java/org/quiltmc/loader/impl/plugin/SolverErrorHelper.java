@@ -1472,16 +1472,16 @@ class SolverErrorHelper {
 			boolean skippedBreak = false;
 
 			error.appendReportText(report.toString());
-			for (QuiltRuleDepOnly breakOnly: this.depends) {
+			for (QuiltRuleDepOnly depOnly: this.depends) {
 				skippedBreak = false;
 
 				report = new StringBuilder("- ");
-				addVersionString(report, breakOnly.publicDep, false, true);
-				report.append(breakOnly.publicDep.id()); // TODO
+				addVersionString(report, depOnly.publicDep, false, true);
+				report.append(depOnly.publicDep.id()); // TODO
 
-				if (breakOnly.getAllOptions().isEmpty()) {
+				if (depOnly.getAllOptions().isEmpty()) {
 					report.append(", which is missing!");
-					if (breakOnly.publicDep.reason().isEmpty()) {
+					if (depOnly.publicDep.reason().isEmpty()) {
 						error.appendReportText(report.toString());
 						skippedBreak = true;
 						continue;
@@ -1491,20 +1491,20 @@ class SolverErrorHelper {
 				}
 
 				error.appendReportText(report.toString());
-				if (!breakOnly.publicDep.reason().isEmpty()) {
-					error.appendReportText("  Depend reason: " + breakOnly.publicDep.reason());
+				if (!depOnly.publicDep.reason().isEmpty()) {
+					error.appendReportText("  Depend reason: " + depOnly.publicDep.reason());
 				}
 
-				if (!breakOnly.getValidOptions().isEmpty()) {
+				if (!depOnly.getValidOptions().isEmpty()) {
 					error.appendReportText("  Satisfying mods which cannot load: ");
-					for (ModLoadOption mod : breakOnly.getValidOptions()) {
+					for (ModLoadOption mod : depOnly.getValidOptions()) {
 						error.appendReportText("  " + getModReportLine(mod, manager));
 					}
 				}
 
-				if (!breakOnly.getWrongOptions().isEmpty()) {
+				if (!depOnly.getWrongOptions().isEmpty()) {
 					error.appendReportText("  Invalid mods: ");
-					for (ModLoadOption mod : breakOnly.getWrongOptions()) {
+					for (ModLoadOption mod : depOnly.getWrongOptions()) {
 						error.appendReportText("  " + getModReportLine(mod, manager));
 					}
 				}
@@ -1570,6 +1570,11 @@ class SolverErrorHelper {
 			}
 			QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
 			QuiltLoaderText title = QuiltLoaderText.translate("error.break.join.title", first, second);
+
+			if (breakage.publicDep.versionRange().equals(VersionRange.ANY)) {
+				title = QuiltLoaderText.translate(secondKey + ".all.title", rootModName, breakage.publicDep.id().id());
+			}
+
 			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 
 			setIconFromMod(error, mandatoryMod);
