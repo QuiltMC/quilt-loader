@@ -1308,7 +1308,7 @@ class SolverErrorHelper {
 
 			Object[] secondData = new Object[depends.getWrongOptions().size() == 1 ? 1 : 0];
 			String secondKey = "error.dep.";
-			if (missing) {
+			if (depends.getAllOptions().isEmpty()) {
 				secondKey += "missing";
 			} else if (depends.getWrongOptions().size() > 1) {
 				secondKey += "multi_mismatch";
@@ -1330,7 +1330,7 @@ class SolverErrorHelper {
 			report.append(depends.publicDep.id());// TODO
 			if (!depends.getValidOptions().isEmpty()) {
 				report.append(", which is unable to load due to another error!");
-			} else if (missing) {
+			} else if (depends.getWrongOptions().isEmpty()) {
 				report.append(", which is missing!");
 			} else {
 				// Log an error here?
@@ -1798,13 +1798,18 @@ class SolverErrorHelper {
 			}
 
 			if (mandatoryMods.isEmpty()) {
-				// So this means there's an OptionalModIdDefintion with only
+				// So this means there's an OptionalModIdDefinition with only
 				// DisabledModIdDefinitions as roots
 				// that means this isn't a duplicate mandatory mods error!
 				return;
 			}
 
-			ModLoadOption firstMandatory = mandatoryMods.get(0);
+			// Try not to use a providing mod name
+			Iterator<ModLoadOption> iterator = mandatoryMods.iterator();
+			ModLoadOption firstMandatory = iterator.next();
+			while (graph.edgesTo(firstMandatory).stream().anyMatch(Provided.class::isInstance) && iterator.hasNext()) {
+				firstMandatory = iterator.next();
+			}
 			String bestName = firstMandatory.metadata().name();
 
 			// Title:
