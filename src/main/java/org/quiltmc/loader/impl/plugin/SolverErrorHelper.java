@@ -1000,7 +1000,9 @@ class SolverErrorHelper {
 		protected final void addFiles(QuiltDisplayedError error, QuiltPluginManagerImpl manager, String optionsReason, Collection<ModLoadOption> mods) {
 			Map<Path, ModLoadOption> realPaths = new LinkedHashMap<>();
 
-			error.appendDescription(QuiltLoaderText.translate(optionsReason));
+			if (!mods.isEmpty()) {
+				error.appendDescription(QuiltLoaderText.translate(optionsReason));
+			}
 			for (ModLoadOption mod : mods) {
 				boolean provided = graph.edgesTo(mod).stream().anyMatch(Provided.class::isInstance);
 				boolean depended = graph.edgesTo(mod).stream().anyMatch(Depends.class::isInstance);
@@ -1306,8 +1308,6 @@ class SolverErrorHelper {
 		@Override
 		void report(QuiltPluginManagerImpl manager) {
 
-			boolean missing = depends.getWrongOptions().isEmpty();
-
 			// Title:
 			// "BuildCraft" requires [version 1.5.1] of "Quilt Standard Libraries", which is
 			// missing!
@@ -1327,9 +1327,14 @@ class SolverErrorHelper {
 				secondKey += "missing";
 			} else if (depends.getWrongOptions().size() > 1) {
 				secondKey += "multi_mismatch";
-			} else {
+			} else if (depends.getWrongOptions().size() == 1) {
 				secondKey += "single_mismatch";
 				secondData[0] = depends.getWrongOptions().iterator().next().version().toString();
+			} else if (depends.getValidOptions().size() > 1) {
+				secondKey += "multi_valid";
+			} else {
+				secondKey += "single_valid";
+				secondData[0] = depends.getValidOptions().iterator().next().version().toString();
 			}
 			QuiltLoaderText second = QuiltLoaderText.translate(secondKey + ".title", secondData);
 			QuiltLoaderText title = QuiltLoaderText.translate("error.dep.join.title", first, second);
