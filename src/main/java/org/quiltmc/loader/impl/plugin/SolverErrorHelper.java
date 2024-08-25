@@ -1321,7 +1321,7 @@ class SolverErrorHelper {
 			String depName = depends.publicDep.id().id();
 			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, range, depName, true, false);
 
-			Object[] secondData = new Object[depends.getWrongOptions().size() == 1 ? 1 : 0];
+			Object[] secondData = new Object[depends.getAllOptions().size() == 1 ? 1 : 0];
 			String secondKey = "error.dep.";
 			if (depends.getAllOptions().isEmpty()) {
 				secondKey += "missing";
