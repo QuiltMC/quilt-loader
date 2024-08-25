@@ -994,18 +994,33 @@ class SolverErrorHelper {
 		 *
 		 * @param error the error
 		 * @param manager the plugin manager to get the paths to the mods
-		 * @param mods an array of a collection of mods
+		 * @param optionsReason the key to the reason for these mods to be mentioned
+		 * @param mods a collection of mods to list
 		 */
-		@SafeVarargs
-		protected final void addFiles(QuiltDisplayedError error, QuiltPluginManagerImpl manager, Collection<ModLoadOption>... mods) {
+		protected final void addFiles(QuiltDisplayedError error, QuiltPluginManagerImpl manager, String optionsReason, Collection<ModLoadOption> mods) {
 			Map<Path, ModLoadOption> realPaths = new LinkedHashMap<>();
 
-			for (Collection<ModLoadOption> modList: mods) {
-				for (ModLoadOption mod : modList) {
-					Object[] modDescArgs = {mod.metadata().name(), manager.describePath(mod.from())};
-					error.appendDescription(QuiltLoaderText.translate("info.root_mod_loaded_from", modDescArgs));
-					manager.getRealContainingFile(mod.from()).ifPresent(p -> realPaths.putIfAbsent(p, mod));
+			error.appendDescription(QuiltLoaderText.translate(optionsReason));
+			for (ModLoadOption mod : mods) {
+				boolean provided = graph.edgesTo(mod).stream().anyMatch(Provided.class::isInstance);
+				boolean depended = graph.edgesTo(mod).stream().anyMatch(Depends.class::isInstance);
+				boolean mandatory = graph.isMandatory(mod);
+				// TODO: describe the version?
+				Object[] modDescArgs = {mod.id(), manager.describePath(mod.from())};
+				String key = "info.";
+				if (provided) {
+					key += "provided_";
 				}
+				if (depended) {
+					key += "depended_";
+				}
+				if (!mandatory) {
+					key += "optional_";
+				}
+				key += "mod_loaded_from";
+
+				error.appendDescription(QuiltLoaderText.translate(key, modDescArgs));
+				manager.getRealContainingFile(mod.from()).ifPresent(p -> realPaths.putIfAbsent(p, mod));
 			}
 
 			for (Map.Entry<Path, ModLoadOption> entry : realPaths.entrySet()) {
@@ -1054,7 +1069,7 @@ class SolverErrorHelper {
 
 		/**
 		 * Gets a description for the specified load option, including some relations and the path. It follows the format:
-		 * {@code [Provided] [Required] <Mandatory|Optional> mod '<mod_id>' version '<version>' [from mod '<providing_mod_id>' (<providing_path>)]: <path>}.
+		 * {@code [Provided] [Required] <Mandatory|Optional> mod '<mod_id>' version '<version>' [from mod '<providing_mod_id>']: <path>}.
 		 *
 		 * @param option the mod load option
 		 * @param manager the plugin manager
@@ -1101,7 +1116,7 @@ class SolverErrorHelper {
 			if (provided) {
 				// This cast is fine because only mod load options can be provided
 				ModLoadOption providingMod = ((ModLoadOption) graph.parents.get(graph.edgesTo(option).stream().filter(Provided.class::isInstance).findFirst().get()));
-				line.append(" from mod '").append(providingMod.id()).append("' (").append(manager.describePath(providingMod.from())).append(")");
+				line.append(" from mod '").append(providingMod.id()).append("'");
 			}
 
 			return line.append(": ").append(manager.describePath(option.from())).toString();
@@ -1321,7 +1336,10 @@ class SolverErrorHelper {
 			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
 
 			setIconFromMod(error, mandatoryMod);
-			addFiles(error, manager, from, depends.getValidOptions(), depends.getWrongOptions());
+			addFiles(error, manager, "error.dep.requiring", from);
+			addFiles(error, manager, "error.dep.valid", depends.getValidOptions());
+			addFiles(error, manager, "error.dep.invalid", depends.getWrongOptions());
+
 			addIssueLink(error, mandatoryMod);
 
 			StringBuilder report = new StringBuilder(rootModName);
@@ -1430,11 +1448,12 @@ class SolverErrorHelper {
 					error.appendDescription(QuiltLoaderText.translate("error.reason.specific", depOnly.publicDep.id().id(), depOnly.publicDep.reason()));
 				}
 
-				addFiles(error, manager, depOnly.getValidOptions(), depOnly.getWrongOptions());
+				addFiles(error, manager, "error.dep.valid", depOnly.getValidOptions());
+				addFiles(error, manager, "error.dep.invalid", depOnly.getWrongOptions());
 				error.appendDescription(QuiltLoaderText.of(""));
 			}
 
-			addFiles(error, manager, from);
+			addFiles(error, manager, "error.dep.requiring", from);
 
 			addIssueLink(error, mandatoryMod);
 
@@ -1559,7 +1578,8 @@ class SolverErrorHelper {
 				// A newline after the reason was desired here, but do you think Swing loves nice things?
 			}
 
-			addFiles(error, manager, from, breakage.getConflictingOptions());
+			addFiles(error, manager, "error.break.breaking", from);
+			addFiles(error, manager, "error.break.broken", breakage.getConflictingOptions());
 			addIssueLink(error, mandatoryMod);
 
 			StringBuilder report = new StringBuilder(rootModName);
@@ -1686,12 +1706,12 @@ class SolverErrorHelper {
 					addUnless(error, breakOnly.publicDep, breakOnly.unless);
 				}
 
-				addFiles(error, manager, breakOnly.getConflictingOptions());
+				addFiles(error, manager, "error.break.broken", breakOnly.getConflictingOptions());
 				error.appendDescription(QuiltLoaderText.of(""));
 			}
 
 			
-			addFiles(error, manager, from);
+			addFiles(error, manager, "error.break.breaking", from);
 			
 			addIssueLink(error, mandatoryMod);
 
