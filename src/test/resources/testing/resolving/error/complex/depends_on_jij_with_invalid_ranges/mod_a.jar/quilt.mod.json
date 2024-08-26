@@ -8,9 +8,14 @@
     },
     "version": "1.0.0",
     "intermediate_mappings": "net.fabricmc:intermediary",
-    "depends": [ "mod_b" ],
+    "depends": [{
+      "id": "mod_c",
+      "versions": {
+        "all": [">=1.0.0","<2.0.0"]
+      }
+    }],
     "jars": [
-      "mod_b.jar"
+      "mod_c.jar"
     ]
   }
 }

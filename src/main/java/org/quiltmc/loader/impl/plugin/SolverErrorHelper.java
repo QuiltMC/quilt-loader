@@ -310,7 +310,11 @@ class SolverErrorHelper {
 			return option.toString();
 		}
 
+
 		/**
+		 * Figures out if a specific load option is mandatory.
+		 * This also returns true for mods provided by mandatory mods.
+		 *
 		 * @param option the load option
 		 * @return {@code true} if the option is a mandatory mod, {@code false} otherwise
 		 */
@@ -322,11 +326,38 @@ class SolverErrorHelper {
 					.filter(Provided.class::isInstance)
 					.map(parents::get)
 					.filter(Objects::nonNull)
-					.map(this::edgesTo)
-					.flatMap(Collection::stream)
-					.anyMatch(Mandatory.class::isInstance);
+					.anyMatch(this::isMandatory);
 
 			return mandatory;
+		}
+
+		/**
+		 * @param option the load option
+ 		 * @return {@code true} if the load option is provided by another option, {@code false} otherwise
+		 */
+		boolean isProvided(LoadOption option) {
+			return this.edgesTo(option).stream().anyMatch(Provided.class::isInstance);
+		}
+
+		/**
+		 * Figures out if a specific load option is required.
+		 * If the option is provided, it will also check if the providing option is required.
+		 *
+		 * @param option the load option
+		 * @return {@code true} if the load option is depended on by another option, {@code false} otherwise
+		 */
+		boolean isDepended(LoadOption option) {
+			boolean depended = edgesTo(option).stream().anyMatch(Depends.class::isInstance);
+
+			if (this.isProvided(option)) {
+				depended |= this.edgesTo(option).stream()
+						.filter(Provided.class::isInstance)
+						.map(parents::get)
+						.filter(Objects::nonNull)
+						.anyMatch(this::isDepended);
+			}
+
+			return depended;
 		}
 
 		/**
@@ -1004,8 +1035,8 @@ class SolverErrorHelper {
 				error.appendDescription(QuiltLoaderText.translate(optionsReason));
 			}
 			for (ModLoadOption mod : mods) {
-				boolean provided = graph.edgesTo(mod).stream().anyMatch(Provided.class::isInstance);
-				boolean depended = graph.edgesTo(mod).stream().anyMatch(Depends.class::isInstance);
+				boolean provided = graph.isProvided(mod);
+				boolean depended = graph.isDepended(mod);
 				boolean mandatory = graph.isMandatory(mod);
 				// TODO: describe the version?
 				Object[] modDescArgs = {mod.id(), manager.describePath(mod.from())};
@@ -1071,57 +1102,63 @@ class SolverErrorHelper {
 
 		/**
 		 * Gets a description for the specified load option, including some relations and the path. It follows the format:
-		 * {@code [Provided] [Required] <Mandatory|Optional> mod '<mod_id>' version '<version>' [from mod '<providing_mod_id>']: <path>}.
+		 * {@code [[Needed] <Mandatory|Optional> '<mod_name>'] [version '<version>'] [Provided by '<providing_mod_name>'] [, which is contained within '<containing_mod_name>']: <path>}.
 		 *
-		 * @param option the mod load option
-		 * @param manager the plugin manager
-		 *
+		 * @param option     the mod load option
+		 * @param manager    the plugin manager
+		 * @param addName    {@code true} if the name should be added to the mod line. Ignored if the mod is provided
+		 * @param addVersion {@code true} if the version string should be added to the mod line
 		 * @return the mod load option description
 		 */
-		protected String getModReportLine(ModLoadOption option, QuiltPluginManagerImpl manager) {
-			boolean provided = graph.edgesTo(option).stream().anyMatch(Provided.class::isInstance);
-			boolean depended = graph.edgesTo(option).stream().anyMatch(Depends.class::isInstance);
-			boolean mandatory = graph.isMandatory(option);
+		protected String getModReportLine(ModLoadOption option, QuiltPluginManagerImpl manager, boolean addName, boolean addVersion) {
+			boolean provided = graph.isProvided(option);
+			boolean depended = graph.isDepended(option);
+			boolean optional = !graph.isMandatory(option);
 
 			StringBuilder line = new StringBuilder("- ");
 
 			if (provided) {
-				line.append("Provided");
-
-				if (depended) {
-					line.append(" and required");
-				}
-
-				if (mandatory) {
-					line.append(" mandatory");
-				} else {
-					line.append(" optional");
-				}
-			} else if (depended) {
-				line.append("Required");
-
-				if (mandatory) {
-					line.append(" mandatory");
-				} else {
-					line.append(" optional");
-				}
-			} else {
-				if (mandatory) {
-					line.append("Mandatory");
-				} else {
-					line.append("Optional");
-				}
-			}
-
-			line.append(" mod '").append(option.id()).append("' version '").append(option.version()).append("'");
-
-			if (provided) {
 				// This cast is fine because only mod load options can be provided
 				ModLoadOption providingMod = ((ModLoadOption) graph.parents.get(graph.edgesTo(option).stream().filter(Provided.class::isInstance).findFirst().get()));
-				line.append(" from mod '").append(providingMod.id()).append("'");
+				line.append("Provided by '").append(providingMod.metadata().name()).append("'");
+			} else {
+				if (depended) {
+					line.append("Needed");
+				} else if (optional) {
+					line.append("Optional");
+				}
+
+				if (addName) {
+					if (depended || optional) {
+						line.append(" ");
+					}
+					line.append("'").append(option.metadata().name()).append("'");
+				}
+
+				if (addVersion) {
+					if (depended || optional || addName) {
+						line.append(" v");
+					} else {
+						line.append("V");
+					}
+					line.append("ersion '").append(option.version()).append("'");
+				}
 			}
 
-			return line.append(": ").append(manager.describePath(option.from())).toString();
+			if (option.getContainingMod() != null) {
+				ModLoadOption containingMod = option.getContainingMod();
+				while (containingMod.getContainingMod() != null) {
+					containingMod = containingMod.getContainingMod();
+				}
+
+				line.append(", which is contained within '").append(containingMod.metadata().name()).append("'");
+			}
+
+			if (provided || option.getContainingMod() != null || addName || addVersion) {
+				line.append(" ");
+			}
+
+			return line.append("@ ").append(manager.describePath(option.from())).toString();
 		}
 
 		/**
@@ -1315,13 +1352,13 @@ class SolverErrorHelper {
 			// Description:
 			// BuildCraft is loaded from '<mods>/buildcraft-9.0.0.jar'
 			ModLoadOption mandatoryMod = from.iterator().next();
-			String rootModName = from.size() > 1 ? from.size() + " mods [" + from.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name).collect(Collectors.joining(", ")) + "]" : mandatoryMod.metadata().name();
+			String rootModName = from.size() > 1 ? from.size() + " mods [" + from.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name).map(name -> "'" + name + "'").collect(Collectors.joining(", ")) + "]" : ("'" + mandatoryMod.metadata().name() + "'");
 
 			VersionRange range = depends.publicDep.versionRange();
 			String depName = depends.publicDep.id().id();
 			QuiltLoaderText first = VersionRangeDescriber.describe(rootModName, range, depName, true, false);
 
-			Object[] secondData = new Object[depends.getAllOptions().size() == 1 ? 1 : 0];
+			Object[] secondData = new Object[(depends.getWrongOptions().size() == 1 || depends.getValidOptions().size() == 1) ? 1 : 0];
 			String secondKey = "error.dep.";
 			if (depends.getAllOptions().isEmpty()) {
 				secondKey += "missing";
@@ -1347,10 +1384,25 @@ class SolverErrorHelper {
 
 			addIssueLink(error, mandatoryMod);
 
-			StringBuilder report = new StringBuilder(rootModName);
-			report.append(" requires");
-			addVersionString(report, depends.publicDep, false, false);
-			report.append(depends.publicDep.id());// TODO
+			StringBuilder report = new StringBuilder("Failed to load ")
+				.append(rootModName)
+				.append(" because ")
+				.append(from.size() > 1 ? "they" : "it")
+				.append(" needs");
+			if (!depends.publicDep.versionRange().equals(VersionRange.ANY)) {
+				addVersionString(report, depends.publicDep, false, false);
+			} else {
+				report.append(" ");
+			}
+			report.append("'");
+			report.append(
+					depends.getAllOptions()
+							.stream()
+							.map(ModLoadOption::metadata)
+							.map(ModMetadataExt::name)
+							.findAny()
+							.orElseGet(depends.publicDep.id()::toString)
+			).append("'");
 			if (!depends.getValidOptions().isEmpty()) {
 				report.append(", which is unable to load due to another error!");
 			} else if (depends.getWrongOptions().isEmpty()) {
@@ -1368,14 +1420,14 @@ class SolverErrorHelper {
 
 			error.appendReportText("Requiring mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager));
+				error.appendReportText(getModReportLine(mod, manager, true, false));
 			}
 
 			if (!depends.getValidOptions().isEmpty()) {
 				error.appendReportText("");
-				error.appendReportText("Satisfying mods: ");
+				error.appendReportText("Valid mods: ");
 				for (ModLoadOption mod : depends.getValidOptions()) {
-					error.appendReportText(getModReportLine(mod, manager));
+					error.appendReportText(getModReportLine(mod, manager, true, !depends.publicDep.versionRange().equals(VersionRange.ANY)));
 				}
 			}
 
@@ -1383,7 +1435,7 @@ class SolverErrorHelper {
 				error.appendReportText("");
 				error.appendReportText("Invalid mods: ");
 				for (ModLoadOption mod : depends.getWrongOptions()) {
-					error.appendReportText(getModReportLine(mod, manager));
+					error.appendReportText(getModReportLine(mod, manager, true, !depends.publicDep.versionRange().equals(VersionRange.ANY)));
 				}
 			}
 		}
@@ -1498,14 +1550,14 @@ class SolverErrorHelper {
 				if (!depOnly.getValidOptions().isEmpty()) {
 					error.appendReportText("  Satisfying mods which cannot load: ");
 					for (ModLoadOption mod : depOnly.getValidOptions()) {
-						error.appendReportText("  " + getModReportLine(mod, manager));
+						error.appendReportText("  " + getModReportLine(mod, manager, true, !depOnly.publicDep.versionRange().equals(VersionRange.ANY)));
 					}
 				}
 
 				if (!depOnly.getWrongOptions().isEmpty()) {
 					error.appendReportText("  Invalid mods: ");
 					for (ModLoadOption mod : depOnly.getWrongOptions()) {
-						error.appendReportText("  " + getModReportLine(mod, manager));
+						error.appendReportText("  " + getModReportLine(mod, manager, true, !depOnly.publicDep.versionRange().equals(VersionRange.ANY)));
 					}
 				}
 				error.appendReportText("");
@@ -1517,7 +1569,7 @@ class SolverErrorHelper {
 
 			error.appendReportText("Requiring mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager));
+				error.appendReportText(getModReportLine(mod, manager, true, false));
 			}
 		}
 	}
@@ -1611,12 +1663,12 @@ class SolverErrorHelper {
 
 			error.appendReportText("Breaking mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager));
+				error.appendReportText(getModReportLine(mod, manager, true, false));
 			}
 
 			error.appendReportText("", "Broken mods: ");
 			for (ModLoadOption mod : breakage.getConflictingOptions()) {
-				error.appendReportText(getModReportLine(mod, manager));
+				error.appendReportText(getModReportLine(mod, manager, true, !breakage.publicDep.versionRange().equals(VersionRange.ANY)));
 			}
 
 			if (breakage.unless != null) {
@@ -1624,7 +1676,7 @@ class SolverErrorHelper {
 					error.appendReportText("", "Overriding mods: ");
 					for (LoadOption option : breakage.unless.getNodesTo()) {
 						if (option instanceof ModLoadOption) {
-							error.appendReportText(getModReportLine(((ModLoadOption) option), manager));
+							error.appendReportText(getModReportLine(((ModLoadOption) option), manager, true, true));
 						} else {
 							error.appendReportText("- " + option.describe().toString());
 						}
@@ -1638,7 +1690,7 @@ class SolverErrorHelper {
 								added = true;
 							}
 							if (option instanceof ModLoadOption) {
-								error.appendReportText(getModReportLine(((ModLoadOption) option), manager));
+								error.appendReportText(getModReportLine(((ModLoadOption) option), manager, true, true));
 							} else {
 								error.appendReportText("- " + option.describe().toString());
 							}
@@ -1747,7 +1799,7 @@ class SolverErrorHelper {
 	
 				error.appendReportText("  Matching mods: ");
 				for (ModLoadOption mod : breakOnly.getConflictingOptions()) {
-					error.appendReportText("  " + getModReportLine(mod, manager));
+					error.appendReportText("  " + getModReportLine(mod, manager, true, !breakOnly.publicDep.versionRange().equals(VersionRange.ANY)));
 				}
 	
 				if (breakOnly.unless != null) {
@@ -1755,7 +1807,7 @@ class SolverErrorHelper {
 						error.appendReportText("  Overriding mods: ");
 						for (LoadOption option : breakOnly.unless.getNodesTo()) {
 							if (option instanceof ModLoadOption) {
-								error.appendReportText("  " + getModReportLine(((ModLoadOption) option), manager));
+								error.appendReportText("  " + getModReportLine(((ModLoadOption) option), manager, true, !((QuiltRuleDepOnly) breakOnly.unless).publicDep.versionRange().equals(VersionRange.ANY)));
 							} else {
 								error.appendReportText("  - " + option.describe().toString());
 							}
@@ -1769,7 +1821,7 @@ class SolverErrorHelper {
 									added = true;
 								}
 								if (option instanceof ModLoadOption) {
-									error.appendReportText("  " + getModReportLine(((ModLoadOption) option), manager));
+									error.appendReportText("  " + getModReportLine(((ModLoadOption) option), manager, true, !only.publicDep.versionRange().equals(VersionRange.ANY)));
 								} else {
 									error.appendReportText("  - " + option.describe().toString());
 								}
@@ -1782,7 +1834,7 @@ class SolverErrorHelper {
 
 			error.appendReportText("Breaking mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager));
+				error.appendReportText(getModReportLine(mod, manager, true, false));
 			}
 		}
 	}
@@ -1817,14 +1869,10 @@ class SolverErrorHelper {
 		void report(QuiltPluginManagerImpl manager) {
 			// Step 1: Find the set of shared ids
 			List<ModLoadOption> mandatoryMods = new ArrayList<>();
-			Set<String> commonIds = new LinkedHashSet<>();
 			for (LoadOption option : duplicates) {
-				if (graph.isMandatory(option)) {
+				if (graph.isMandatory(option) || graph.isDepended(option)) {
 					mandatoryMods.add((ModLoadOption) option);
 				}
-				commonIds.add(
-						((ModLoadOption) option).id()
-				);
 			}
 
 			if (mandatoryMods.isEmpty()) {
@@ -1837,10 +1885,17 @@ class SolverErrorHelper {
 			// Try not to use a providing mod name
 			Iterator<ModLoadOption> iterator = mandatoryMods.iterator();
 			ModLoadOption firstMandatory = iterator.next();
-			while (graph.edgesTo(firstMandatory).stream().anyMatch(Provided.class::isInstance) && iterator.hasNext()) {
+			while (new Graph().isProvided(firstMandatory) && iterator.hasNext()) {
 				firstMandatory = iterator.next();
 			}
 			String bestName = firstMandatory.metadata().name();
+
+			boolean sameVersion = duplicates.stream()
+					.filter(ModLoadOption.class::isInstance)
+					.map(ModLoadOption.class::cast)
+					.map(ModLoadOption::version)
+					.distinct()
+					.count() == 1;
 
 			// Title:
 			// Duplicate mod: "BuildCraft"
@@ -1854,7 +1909,7 @@ class SolverErrorHelper {
 
 			QuiltLoaderText title = QuiltLoaderText.translate("error.duplicate_mandatory", bestName);
 			QuiltDisplayedError error = manager.theQuiltPluginContext.reportError(title);
-			error.appendReportText("Duplicate mandatory mod ids " + commonIds);
+			error.appendReportText("'" + bestName + "'" + (!bestName.equals(id) ? (" ('" + id + "')") : "") + " is provided by multiple files:");
 			setIconFromMod(error, firstMandatory);
 
 			for (LoadOption loadOption : duplicates) {
@@ -1873,7 +1928,7 @@ class SolverErrorHelper {
 					container.ifPresent(value -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", value.getFileName()), value)
 							.icon(option.modCompleteIcon()));
 
-					error.appendReportText(getModReportLine(option, manager));
+					error.appendReportText(getModReportLine(option, manager, !option.metadata().name().equals(bestName), !sameVersion));
 				} else {
 					error.appendDescription(QuiltLoaderText.translate("error.unhandled_mod_file.title", loadOption.describe()));
 					error.appendReportText("- Unknown load option: " + loadOption.describe());

@@ -292,6 +292,13 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				from = context().manager().getParent(root);
 			}
 
+			// a mod needs to be remapped if we are in a development environment, and the mod
+			// did not come from the classpath
+			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
+			QuiltModOption quiltMod = new QuiltModOption(
+					context(), meta, from, fileIcon, root, location.isDirect(), requiresRemap, location.containingOption()
+			);
+
 			jars: for (String jar : meta.jars()) {
 				Path inner = root;
 				for (String part : jar.split("/")) {
@@ -316,15 +323,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 						}
 					}
 				}
-				context().addFileToScan(inner, jarNode, false);
+				context().addFileToScan(inner, jarNode.getNew(), quiltMod);
 			}
 
-			// a mod needs to be remapped if we are in a development environment, and the mod
-			// did not come from the classpath
-			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
-			return new ModLoadOption[] { new QuiltModOption(
-				context(), meta, from, fileIcon, root, location.isDirect(), requiresRemap
-			) };
+			return new ModLoadOption[] { quiltMod };
 		} catch (ParseException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate(
 				"gui.text.invalid_metadata.title", "quilt.mod.json", parse.getMessage()

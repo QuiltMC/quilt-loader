@@ -17,9 +17,12 @@
 package net.fabricmc.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -397,6 +400,11 @@ public final class ModResolvingTests {
 		resolveErrorSet("complex/depends_any_on_invalid");
 	}
 
+	@Test
+	public void complexDependsOnJijWithInvalidRanges() {
+		resolveErrorSet("complex/depends_on_jij_with_invalid_ranges");
+	}
+
 	private static void resolveErrorSet(String subpath) {
 		try {
 			ModSolveResult result = resolveModSet("error", subpath);
@@ -415,6 +423,18 @@ public final class ModResolvingTests {
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
 			// Correct
+			try {
+				Path result = new File(System.getProperty("user.dir")).toPath().resolve("results").resolve("error").resolve(subpath + ".txt");
+				Files.createDirectories(result.getParent());
+				Files.deleteIfExists(result);
+				Files.write(
+						result,
+						ignored.getMessage().getBytes(),
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW
+				);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 

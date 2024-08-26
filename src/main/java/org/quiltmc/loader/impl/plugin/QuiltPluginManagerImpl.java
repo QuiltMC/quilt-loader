@@ -1289,7 +1289,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				if (FasterFiles.isDirectory(path)) {
 					clNode.icon(QuiltLoaderGui.iconFolder());
 				}
-				scanModFile(path, new ModLocationImpl(true, true), clNode);
+				scanModFile(path, new ModLocationImpl(true, true, null), clNode);
 			}
 		});
 	}
@@ -1852,7 +1852,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					Path relative = path.relativize(dir);
 					int count = relative.getNameCount();
 					if (isTest() && dir.getFileName().toString().endsWith(".jar")) {
-						ModLocationImpl location = new ModLocationImpl(false, true);
+						ModLocationImpl location = new ModLocationImpl(false, true, null);
 						// Tests use mods-as-folders to allow them to be entered into the git history properly
 						scanModFile(dir, location, guiNode.addChild(QuiltLoaderText.of(dir.getFileName().toString())));
 						return FileVisitResult.SKIP_SUBTREE;
@@ -1967,7 +1967,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						node = guiNode.addChild(QuiltLoaderText.translate("gui.prefix.no_parent_file"), SortOrder.ALPHABETICAL_ORDER);
 					}
 
-					scanModFile(file, new ModLocationImpl(false, true), node);
+					scanModFile(file, new ModLocationImpl(false, true, null), node);
 					return FileVisitResult.CONTINUE;
 				}
 			});

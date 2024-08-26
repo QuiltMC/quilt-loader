@@ -72,13 +72,19 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	@Deprecated
 	public void addFileToScan(Path file, PluginGuiTreeNode guiNode, boolean direct) {
 		// TODO: Log / store / do something to store the plugin
-		manager.scanModFile(file, new ModLocationImpl(false, direct), (QuiltStatusNode) guiNode);
+		manager.scanModFile(file, new ModLocationImpl(false, direct, null), (QuiltStatusNode) guiNode);
 	}
 
 	@Override
 	public void addFileToScan(Path file, QuiltTreeNode guiNode, boolean direct) {
 		// TODO: Log / store / do something to store the plugin
-		manager.scanModFile(file, new ModLocationImpl(false, direct), (QuiltStatusNode) guiNode);
+		manager.scanModFile(file, new ModLocationImpl(false, direct, null), (QuiltStatusNode) guiNode);
+	}
+
+	@Override
+	public void addFileToScan(Path file, QuiltTreeNode guiNode, ModLoadOption containingOption) {
+		// TODO: Log / store / do something to store the plugin
+		manager.scanModFile(file, new ModLocationImpl(false, containingOption == null, containingOption), (QuiltStatusNode) guiNode);
 	}
 
 	@Override
