@@ -18,7 +18,7 @@ body:
   - type: textarea
     id: where-in-loader
     attributes:
-      label: How did QSL break?
+      label: How did Quilt Loader break?
       description: "What parts of Quilt Loader were in the stack trace? Is it possible to provide a GitHub link to the section of Quilt Loader that is broken?"
     validations:
       required: true
