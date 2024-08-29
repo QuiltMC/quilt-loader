@@ -21,26 +21,34 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
+import org.quiltmc.loader.api.plugin.solver.Rule;
+import org.quiltmc.loader.api.plugin.solver.RuleDefiner;
 import org.quiltmc.loader.impl.discovery.ModSolvingError;
 import org.quiltmc.loader.impl.solver.RuleSet.ProcessedRuleSet;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.util.sat4j.specs.TimeoutException;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class SolverTester {
 
-	public static void main(String[] args) throws ModSolvingError, IOException {
+	static final boolean JUST_PRE_PROCESS = true;
+	static final boolean PRINT_COMPACT_OPTIONS = true;
+
+	public static void main(String[] args) throws ModSolvingError, IOException, TimeoutException {
 		Log.configureBuiltin(false, true);
 		Log.disableBuiltinFormatting();
 
@@ -88,7 +96,13 @@ public class SolverTester {
 			} else if (line.startsWith("Exactly")) {
 				list.add(read1(line, option2def, (array, count) -> new RuleDefinition.Exactly(null, count, array)));
 			} else if (line.startsWith("Between")) {
-				list.add(read2(line, option2def, (array, count1, count2) -> new RuleDefinition.Between(null, count1, count2, array)));
+				list.add(
+					read2(
+						line, option2def, (array, count1, count2) -> new RuleDefinition.Between(
+							null, count1, count2, array
+						)
+					)
+				);
 			} else {
 				int colon1 = line.indexOf(':');
 				if (colon1 < 0) {
@@ -133,18 +147,65 @@ public class SolverTester {
 			System.out.println(line);
 		}
 
-		RuleSet ruleSet = new RuleSet.ProcessedRuleSet(constants, aliases, options, list);
-		ProcessedRuleSet processed = SolverPreProcessor.preProcess(false, ruleSet);
-		System.out.println("Pre Process Success!");
-		System.out.println("Constants:");
-		Comparator<Entry<LoadOption, Boolean>> cmp = Comparator.comparing(entry -> optionKey(entry.getKey()));
-		for (Entry<LoadOption, Boolean> entry : processed.constants.entrySet().stream().sorted(cmp).collect(Collectors.toList())) {
-			LoadOption option = entry.getKey();
-			String key = optionKey(option);
-			System.out.println(key + " = " + (entry.getValue() ? "true " : "false" ) + "   " + ((ReadOption) option).text);
+		if (JUST_PRE_PROCESS) {
+			RuleSet ruleSet = new RuleSet.ProcessedRuleSet(constants, aliases, options, list);
+			ProcessedRuleSet processed = SolverPreProcessor.preProcess(true, ruleSet);
+			System.out.println("Pre Process Success!");
+			System.out.println("Constants:");
+			Comparator<Entry<LoadOption, Boolean>> cmp = Comparator.comparing(entry -> optionKey(entry.getKey()));
+			for (Entry<LoadOption, Boolean> entry : processed.constants.entrySet().stream().sorted(cmp).collect(
+				Collectors.toList()
+			)) {
+				LoadOption option = entry.getKey();
+				String key = optionKey(option);
+				System.out.println(
+					key + " = " + (entry.getValue() ? "true " : "false") + "   " + ((ReadOption) option).text
+				);
+			}
+			System.out.println("Output Solution:");
+			List<String> soln = new ArrayList<>();
+			for (LoadOption option : processed.getConstantSolution()) {
+				soln.add(" - " + option.describe());
+			}
+			soln.sort(null);
+			soln.forEach(System.out::println);
+			System.out.println("Remaining problem:");
+			SolverPreProcessor.appendRuleSet(processed, ruleSet, System.out::println);
+		} else {
+			Sat4jWrapper wrapper = new Sat4jWrapper();
+
+			for (Map.Entry<LoadOption, Integer> option : options.entrySet()) {
+				wrapper.addOption(option.getKey());
+				wrapper.setWeight(option.getKey(), null, option.getValue());
+			}
+
+			for (RuleDefinition def : list) {
+				wrapper.addRule(new PreDefinedRule(def));
+			}
+
+			if (wrapper.hasSolution()) {
+				System.out.println("Has Solution!");
+				Collection<LoadOption> solution = wrapper.getSolution();
+				List<String> out = new ArrayList<>();
+				solution.forEach(option -> {
+					final boolean load;
+					if (LoadOption.isNegated(option)) {
+						option = option.negate();
+						load = false;
+					} else {
+						load = true;
+					}
+					String key = optionKey(option);
+					out.add(key + " = " + (load ? "true " : "false") + "   " + ((ReadOption) option).text);
+				});
+				out.sort(null);
+				out.forEach(System.out::println);
+			} else {
+				System.out.println("No solution!");
+				// TODO: Add debugging here?
+				// (Not sure its necessary, as we don't normally test that here)
+			}
 		}
-		System.out.println("Remaining problem:");
-		SolverPreProcessor.appendRuleSet(processed, ruleSet, System.out::println);
 	}
 
 	private static String optionKey(LoadOption option) {
@@ -243,12 +304,79 @@ public class SolverTester {
 
 		@Override
 		public String toString() {
-			return key;
+			return PRINT_COMPACT_OPTIONS ? key : text;
 		}
 
 		@Override
 		public QuiltLoaderText describe() {
 			return QuiltLoaderText.of(text);
+		}
+	}
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	static class PreDefinedRule extends Rule {
+
+		final RuleDefinition definition;
+
+		public PreDefinedRule(RuleDefinition definition) {
+			this.definition = definition;
+		}
+
+		@Override
+		public boolean onLoadOptionAdded(LoadOption option) {
+			return false;
+		}
+
+		@Override
+		public boolean onLoadOptionRemoved(LoadOption option) {
+			return false;
+		}
+
+		@Override
+		public void define(RuleDefiner definer) {
+			if (definition instanceof RuleDefinition.AtLeastOneOf) {
+				definer.atLeast(1, ((RuleDefinition.AtLeastOneOf) definition).options);
+			} else if (definition instanceof RuleDefinition.AtLeast) {
+				RuleDefinition.AtLeast atLeast = (RuleDefinition.AtLeast) definition;
+				definer.atLeast(atLeast.count, atLeast.options);
+			} else if (definition instanceof RuleDefinition.AtMost) {
+				RuleDefinition.AtMost atMost = (RuleDefinition.AtMost) definition;
+				definer.atMost(atMost.count, atMost.options);
+			} else if (definition instanceof RuleDefinition.Exactly) {
+				RuleDefinition.Exactly exactly = (RuleDefinition.Exactly) definition;
+				definer.exactly(exactly.count, exactly.options);
+			} else {
+				RuleDefinition.Between between = (RuleDefinition.Between) definition;
+				definer.between(between.min, between.max, between.options);
+			}
+		}
+
+		@Override
+		public String toString() {
+			return definition.toString();
+		}
+
+		@Override
+		public Collection<? extends LoadOption> getNodesFrom() {
+			// TODO Auto-generated method stub
+			throw new AbstractMethodError("// TODO: Implement this!");
+		}
+
+		@Override
+		public Collection<? extends LoadOption> getNodesTo() {
+			// TODO Auto-generated method stub
+			throw new AbstractMethodError("// TODO: Implement this!");
+		}
+
+		@Override
+		public void fallbackErrorDescription(StringBuilder errors) {
+			errors.append(toString());
+		}
+
+		@Override
+		public void appendRuleDescription(Consumer<QuiltLoaderText> to) {
+			// TODO Auto-generated method stub
+			throw new AbstractMethodError("// TODO: Implement this!");
 		}
 	}
 }

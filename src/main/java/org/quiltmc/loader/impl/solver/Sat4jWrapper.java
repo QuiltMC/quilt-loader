@@ -535,7 +535,7 @@ public class Sat4jWrapper implements RuleContext {
 							}
 						}
 						Log.info(CATEGORY, "Constant values:");
-						for (LoadOption option : processed.getConstantSolution()) {
+						for (String option : processed.getConstantSolution().stream().map(LoadOption::toString).sorted().toArray(String[]::new)) {
 							Log.info(CATEGORY, option.toString());
 						}
 						Log.info(CATEGORY, "Unknown values:");
