@@ -1,0 +1,43 @@
+name: Quilt Loader-specific Bug Report
+description: Create a bug report to help us fix issues with the Quilt Loader.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking your time to report this bug! If you need real-time help, join us on [Discord](https://discord.quiltmc.org).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: "Describe the bug as clearly as possible. The more detail you provide means the sooner the bug can be fixed! This includes: steps to reproduce or situation you encountered the bug in, recent changes you made to your mods list, or any additional context that could be helpful."
+    validations:
+      required: true
+
+  - type: textarea
+    id: where-in-loader
+    attributes:
+      label: How did QSL break?
+      description: "What parts of Quilt Loader were in the stack trace? Is it possible to provide a GitHub link to the section of Quilt Loader that is broken?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Which environment did you encounter this bug in?
+      options:
+        - Client
+        - Server
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        If applicable, please provide your crash report or latest.log
+        To upload logs, use [MCLogs](https://mclo.gs/) to upload your latest.log. If you are unsure of how to obtain a log, read [here](https://minecraft.wiki/w/Tutorials/Obtaining_a_crash_report).
