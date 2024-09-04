@@ -1112,58 +1112,76 @@ class SolverErrorHelper {
 		 * @param isDependency {@code true} if the mod is already part of a dependency error
 		 * @return the mod load option description
 		 */
-		protected String getModReportLine(ModLoadOption option, QuiltPluginManagerImpl manager, boolean addName, boolean addVersion, boolean isDependency) {
+		protected List<String> getModReportLine(ModLoadOption option, QuiltPluginManagerImpl manager, boolean addName, boolean addVersion, boolean isDependency) {
 			boolean provided = graph.isProvided(option);
 			boolean depended = graph.isDepended(option);
 			boolean optional = !graph.isMandatory(option);
 
-			StringBuilder line = new StringBuilder("- ");
+			StringBuilder lineBuilder = new StringBuilder("- ");
+			List<String> lines = new ArrayList<>();
 
 			if (provided) {
 				// This cast is fine because only mod load options can be provided
 				ModLoadOption providingMod = ((ModLoadOption) graph.parents.get(graph.edgesTo(option).stream().filter(Provided.class::isInstance).findFirst().get()));
-				line.append("Provided by '").append(providingMod.metadata().name()).append("'");
+				lineBuilder.append("Provided by '").append(providingMod.metadata().name()).append("'");
 			} else {
 				if (!isDependency){
 					if (depended) {
-						line.append("Needed");
+						lineBuilder.append("Needed");
 					} else if (optional) {
-						line.append("Optional");
+						lineBuilder.append("Optional");
 					}
 				}
 
 				if (addName) {
 					if ((depended || optional) && !isDependency) {
-						line.append(" ");
+						lineBuilder.append(" ");
 					}
-					line.append("'").append(option.metadata().name()).append("'");
+					lineBuilder.append("'").append(option.metadata().name()).append("'");
 				}
 
 				if (addVersion) {
 					if ((depended || optional) && !isDependency || addName) {
-						line.append(" v");
+						lineBuilder.append(" v");
 					} else {
-						line.append("V");
+						lineBuilder.append("V");
 					}
-					line.append("ersion '").append(option.version()).append("'");
+					lineBuilder.append("ersion '").append(option.version()).append("'");
 				}
 			}
 
 			if (option.getContainingMod() != null) {
-				ModLoadOption containingMod = option.getContainingMod();
+				ModLoadOption containingMod = option;
+				List<ModLoadOption> containers = new ArrayList<>();
 				while (containingMod.getContainingMod() != null) {
+					containers.add(containingMod);
 					containingMod = containingMod.getContainingMod();
 				}
+				containers.add(containingMod);
 
-				return line.append(", which is contained within '").append(containingMod.metadata().name()).append("' ")
+				lineBuilder.append(", which is contained within '").append(containingMod.metadata().name()).append("' ")
 					.append("@ ").append(manager.describePath(containingMod.from())).toString();
-			}
+				lines.add(lineBuilder.toString());
+				lineBuilder = new StringBuilder();
 
-			if (provided || addName || addVersion) {
-				line.append(" ");
-			}
+				if (containers.size() > 2) {
+					lineBuilder.append("  - Note: '").append(option.metadata().name()).append("' is contained within '").append(containingMod.metadata().name()).append("' through the chain ");
+					Collections.reverse(containers);
+					
+					lineBuilder.append(containers.stream().map(ModLoadOption::metadata).map(ModMetadataExt::name)
+						.map(name -> "'" + name + "'")
+						.collect(Collectors.joining(" -> ")));
+					lines.add(lineBuilder.toString());
+				}
+			} else {
+				if (provided || addName || addVersion) {
+					lineBuilder.append(" ");
+				}
 
-			return line.append("@ ").append(manager.describePath(option.from())).toString();
+				String line = lineBuilder.append("@ ").append(manager.describePath(option.from())).toString();
+				lines.add(line);
+			}
+			return lines;
 		}
 
 		/**
@@ -1475,14 +1493,14 @@ class SolverErrorHelper {
 
 			error.appendReportText("Mod files that need '" + depModName + "': ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager, true, false, false));
+				getModReportLine(mod, manager, true, false, false).forEach(error::appendReportText);
 			}
 
 			if (!depends.getValidOptions().isEmpty()) {
 				error.appendReportText("");
 				error.appendReportText("Valid mods: ");
 				for (ModLoadOption mod : depends.getValidOptions()) {
-					error.appendReportText(getModReportLine(mod, manager, true, !depends.publicDep.versionRange().equals(VersionRange.ANY), true));
+					getModReportLine(mod, manager, true, !depends.publicDep.versionRange().equals(VersionRange.ANY), true).forEach(error::appendReportText);
 					// TODO: link other errors here.
 				}
 			}
@@ -1491,7 +1509,7 @@ class SolverErrorHelper {
 				error.appendReportText("");
 				error.appendReportText("Mods with incorrect versions: ");
 				for (ModLoadOption mod : depends.getWrongOptions()) {
-					error.appendReportText(getModReportLine(mod, manager, true, !depends.publicDep.versionRange().equals(VersionRange.ANY), false));
+					getModReportLine(mod, manager, true, !depends.publicDep.versionRange().equals(VersionRange.ANY), false).forEach(error::appendReportText);
 				}
 			}
 		}
@@ -1625,7 +1643,7 @@ class SolverErrorHelper {
 
 			error.appendReportText("Requiring mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager, true, false, false));
+				getModReportLine(mod, manager, true, false, false).forEach(error::appendReportText);
 			}
 		}
 	}
@@ -1719,12 +1737,12 @@ class SolverErrorHelper {
 
 			error.appendReportText("Breaking mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager, true, false, false));
+				getModReportLine(mod, manager, true, false, false).forEach(error::appendReportText);
 			}
 
 			error.appendReportText("", "Broken mods: ");
 			for (ModLoadOption mod : breakage.getConflictingOptions()) {
-				error.appendReportText(getModReportLine(mod, manager, true, !breakage.publicDep.versionRange().equals(VersionRange.ANY), false));
+				getModReportLine(mod, manager, true, !breakage.publicDep.versionRange().equals(VersionRange.ANY), false).forEach(error::appendReportText);
 			}
 
 			if (breakage.unless != null) {
@@ -1732,7 +1750,7 @@ class SolverErrorHelper {
 					error.appendReportText("", "Overriding mods: ");
 					for (LoadOption option : breakage.unless.getNodesTo()) {
 						if (option instanceof ModLoadOption) {
-							error.appendReportText(getModReportLine(((ModLoadOption) option), manager, true, true, false));
+							getModReportLine(((ModLoadOption) option), manager, true, true, false).forEach(error::appendReportText);
 						} else {
 							error.appendReportText("- " + option.describe().toString());
 						}
@@ -1746,7 +1764,7 @@ class SolverErrorHelper {
 								added = true;
 							}
 							if (option instanceof ModLoadOption) {
-								error.appendReportText(getModReportLine(((ModLoadOption) option), manager, true, true, false));
+								getModReportLine(((ModLoadOption) option), manager, true, true, false).forEach(error::appendReportText);
 							} else {
 								error.appendReportText("- " + option.describe().toString());
 							}
@@ -1890,7 +1908,7 @@ class SolverErrorHelper {
 
 			error.appendReportText("Breaking mods: ");
 			for (ModLoadOption mod : from) {
-				error.appendReportText(getModReportLine(mod, manager, true, false, false));
+				getModReportLine(mod, manager, true, false, false).forEach(error::appendReportText);
 			}
 		}
 	}
@@ -2007,7 +2025,7 @@ class SolverErrorHelper {
 					container.ifPresent(value -> error.addFileViewButton(QuiltLoaderText.translate("button.view_file", value.getFileName()), value)
 							.icon(option.modCompleteIcon()));
 
-					error.appendReportText(getModReportLine(option, manager, !option.metadata().name().equals(bestName), !sameVersion, true));
+					getModReportLine(option, manager, !option.metadata().name().equals(bestName), !sameVersion, true).forEach(error::appendReportText);
 					if (!graph.isMandatory(option)) {
 						if (graph.isDepended(option)) {
 							error.appendReportText("  - '" + option.metadata().name() + "' is needed by another mod, see Error <placeholder>");
