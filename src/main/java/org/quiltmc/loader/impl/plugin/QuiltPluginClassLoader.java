@@ -48,7 +48,11 @@ class QuiltPluginClassLoader extends ClassLoader {
 
 	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-		Class<?> c = loadClassInner(name);
+		Class<?> c = findLoadedClass(name);
+		if (c != null) {
+			return c;
+		}
+		c = loadClassInner(name);
 		if (c == null) {
 			return super.loadClass(name, resolve);
 		}
