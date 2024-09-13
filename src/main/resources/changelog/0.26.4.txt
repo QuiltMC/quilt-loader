@@ -1,14 +1,17 @@
 Bug fixes:
 
 - Fixed an oversight where Loader can try to open a GUI in a headless environment
+- Fixed the solver pre-processor sometimes removing a rule it's optimising when merging rules together.
 
 Changes:
 
 - Mixin compatibility level for quilt mods is currently set to 0.10.0. We'll add a way to change this in the future.
+- Include the full solver pre-processor input and output state when it crashes.
 
-Changes from updating Fabric Loader from 0.15.11 to 0.16.2:
+Changes from updating Fabric Loader from 0.15.11 to 0.16.4:
 
 - Updated mixin extras to 0.4.1
-- Updated mixin to 0.15.2+mixin.0.8.7
+- Updated mixin to 0.15.3+mixin.0.8.7
 - Added version parsing support for 1.21.2
 - Include full entrypoint definition in entrypoint crashes.
+- Added support for ignoring newer ASM versions on dedicated servers for 24w33a and later.
