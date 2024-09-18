@@ -63,8 +63,8 @@ public final class EntrypointUtils {
 			} catch (Throwable t) {
 				exception = ExceptionUtil.gatherExceptions(t,
 						exception,
-						exc -> new RuntimeException(String.format("Could not execute entrypoint stage '%s' due to errors, provided by '%s'!",
-								name, container.getProvider().metadata().id()),
+						exc -> new RuntimeException(String.format("Could not execute entrypoint stage '%s' due to errors, provided by '%s' at '%s'!",
+								name, container.getProvider().metadata().id(), container.getDefinition()),
 								exc));
 			}
 		}

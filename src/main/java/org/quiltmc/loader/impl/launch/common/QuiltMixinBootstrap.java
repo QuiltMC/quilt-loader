@@ -147,7 +147,7 @@ public final class QuiltMixinBootstrap {
 			// maximum loader version and bundled fabric mixin version, DESCENDING ORDER, LATEST FIRST
 			// loader versions with new mixin versions need to be added here
 
-			// addVersion("0.13", FabricUtil.COMPATIBILITY_0_11_0); // example for next entry (latest first!)
+			addVersion("0.16.0", FabricUtil.COMPATIBILITY_0_14_0);
 			addVersion("0.12.0-", FabricUtil.COMPATIBILITY_0_10_0);
 		}
 
@@ -173,9 +173,11 @@ public final class QuiltMixinBootstrap {
 			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
 
 			if (!isFabric) {
-				// quilt or builtin mod, we can assume it uses latest compat
-				Log.debug(LogCategory.MIXIN, "Assuming Quilt mod %s uses latest mixin compatibility", metadata.id());
-				return FabricUtil.COMPATIBILITY_LATEST;
+				// quilt or builtin mod, we can assume it uses latest (0.10.0 at the time) compat
+				// Except since <insert update that introduces mixin 0.14.0 compat>, we can't assume that anymore!
+				// TODO - Handle Quilt mods like Fabric mods but with our own version ranges
+				Log.debug(LogCategory.MIXIN, "Assuming Quilt mod %s uses 0.10.0 mixin compatibility", metadata.id());
+				return FabricUtil.COMPATIBILITY_0_10_0;
 			}
 
 			FabricLoaderModMetadata fabricMeta = ((InternalModMetadata) metadata).asFabricModMetadata();
@@ -202,11 +204,10 @@ public final class QuiltMixinBootstrap {
 					if (minLoaderVersion.compareTo(version.loaderVersion) >= 0) { // lower bound is >= current version
 						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using mixin compatibility %s", metadata.id(), minLoaderVersion, version.mixinVersion);
 						return version.mixinVersion;
-					} else {
-						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using 0.9.2 mixin compatability", metadata.id(), minLoaderVersion);
-						return FabricUtil.COMPATIBILITY_0_9_2;
 					}
 				}
+				Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using 0.9.2 mixin compatability", metadata.id(), minLoaderVersion);
+				return FabricUtil.COMPATIBILITY_0_9_2;
 			}
 
 			// Mod doesn't declare a dependency on a loader version; use oldest mixin compat version

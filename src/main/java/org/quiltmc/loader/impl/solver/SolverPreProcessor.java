@@ -462,13 +462,13 @@ class SolverPreProcessor {
 				remaining.add(currentMin);
 				remaining.add(currentMax);
 				remaining.remove(null);
-				final Set<RuleDefinition> removing;
 				if (remaining.size() == 1) {
-					removing = new HashSet<>();
+					Set<RuleDefinition> removing = new HashSet<>();
 					removing.addAll(rules);
 					removing.removeAll(remaining);
+					removing.forEach(this::removeRule);
 				} else {
-					removing = rules;
+					rules.forEach(this::removeRule);
 					final Rule rule = remaining.iterator().next().rule;
 					final LoadOption[] array = optionSet.toArray(new LoadOption[0]);
 					if (max < optionSet.size()) {
@@ -487,7 +487,6 @@ class SolverPreProcessor {
 						// None of the rules affect the options
 					}
 				}
-				removing.forEach(this::removeRule);
 				changed = true;
 			}
 
