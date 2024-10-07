@@ -56,6 +56,7 @@ public class ClasspathModCandidateFinder {
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			Map<Path, List<Path>> pathGroups = getPathGroups();
 			try {
+				findCandidates("quilt.mod.json5", pathGroups, out);
 				findCandidates("quilt.mod.json", pathGroups, out);
 				findCandidates("fabric.mod.json", pathGroups, out);
 			} catch (IOException e) {
@@ -84,21 +85,27 @@ public class ClasspathModCandidateFinder {
 				Path path = LoaderUtil.normalizeExistingPath(UrlUtil.getCodeSource(url, metadataName));
 				List<Path> paths = pathGroups.get(path);
 
-				if (paths == null) {
-                    if (!url.getProtocol().equals("jar")) {
-						if (!pathGroups.isEmpty()) {
-							// path groups are enabled, warn for misconfiguration
-							Log.error(LogCategory.DISCOVERY,"Mod at path " + url + " lacks a class path group! Make sure the loom 'mods' block " +
-									"is configured correctly!");
+				// If this is specifically reading for quilt.mod.json files, we check against QMJ5s as well
+				// This is so we can ignore QMJs from mods that already have a QMJ5
+				if (metadataName.equals("quilt.mod.json") && Files.isRegularFile(path.resolve("quilt.mod.json5"))) {
+					Log.debug(LogCategory.DISCOVERY, "Ignoring quilt.mod.json from mod at path %s that already has a quilt.mod.json5", path);
+				} else {
+					if (paths == null) {
+						if (!url.getProtocol().equals("jar")) {
+							if (!pathGroups.isEmpty()) {
+								// path groups are enabled, warn for misconfiguration
+								Log.error(LogCategory.DISCOVERY,"Mod at path " + url + " lacks a class path group! Make sure the loom 'mods' block " +
+										"is configured correctly!");
+							}
+
+							Log.error(LogCategory.DISCOVERY, "Mod at path %s is not included in the loom 'mods' block! " +
+									"This will be an error in a future version of Loader!", path);
 						}
 
-						Log.error(LogCategory.DISCOVERY, "Mod at path %s is not included in the loom 'mods' block! " +
-								"This will be an error in a future version of Loader!", path);
-                    }
-
-                    out.addMod(Collections.singletonList(path));
-				} else {
-					out.addMod(paths);
+						out.addMod(Collections.singletonList(path));
+					} else {
+						out.addMod(paths);
+					}
 				}
 			} catch (UrlConversionException e) {
 				Log.debug(LogCategory.DISCOVERY, "Error determining location for %s from %s", metadataName, url, e);

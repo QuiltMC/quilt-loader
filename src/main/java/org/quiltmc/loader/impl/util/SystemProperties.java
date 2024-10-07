@@ -93,7 +93,7 @@ public final class SystemProperties {
 	public static final String LOG_CACHE_KEY_CHANGES = "loader.transform_cache.log_changed_keys";
 	// enable useTempFile in ZipFileSystem, reduces memory usage when writing transform cache at the cost of speed
 	public static final String USE_ZIPFS_TEMP_FILE = "loader.zipfs.use_temp_file";
-	public static final String DISABLE_BEACON = "loader.disable_beacon";
+	public static final String ENABLE_QUILT_MOD_JSON5_IN_DEV_ENV = "loader.enable_quilt_mod_json5_in_dev_env";
 	public static final String DEBUG_DUMP_FILESYSTEM_CONTENTS = "loader.debug.filesystem.dump_contents";
 	public static final String ALWAYS_DEFER_FILESYSTEM_OPERATIONS = "loader.workaround.defer_all_filesystem_operations";
 	public static final String DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE = "loader.quilt_class_path.disable_custom_table";
