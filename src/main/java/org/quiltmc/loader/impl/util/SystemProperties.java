@@ -38,6 +38,7 @@ public final class SystemProperties {
 	public static final String GAME_JAR_PATH_CLIENT = "loader.gameJarPath.client";
 	public static final String GAME_JAR_PATH_SERVER = "loader.gameJarPath.server";
 
+	public static final String MOJMAP_PATH = "loader.minecraft.mojmapPath"; // EXPERIMENTAL: you probably don't need to provide this just yet
 	public static final String GAME_VERSION = "loader.gameVersion";
 	public static final String REMAP_CLASSPATH_FILE = "loader.remapClasspathFile";
 	public static final String UNIT_TEST = "loader.unitTest";

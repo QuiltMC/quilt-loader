@@ -26,6 +26,8 @@ import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.version.VersionInterval;
 
+import net.fabricmc.mappingio.tree.MappingTreeView;
+
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
@@ -38,7 +40,6 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.mappings.MixinIntermediaryDevRemapper;
-import net.fabricmc.mapping.tree.TinyTree;
 
 import org.spongepowered.asm.launch.MixinBootstrap;
 import org.spongepowered.asm.mixin.FabricUtil;
@@ -81,10 +82,11 @@ public final class QuiltMixinBootstrap {
 
 		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
 			MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
-			TinyTree mappings = mappingConfiguration.getMappings();
+			MappingTreeView mappings = mappingConfiguration.getMappings();
 
 			if (mappings != null) {
-				List<String> namespaces = mappings.getMetadata().getNamespaces();
+				List<String> namespaces = new ArrayList<>(mappings.getDstNamespaces());
+				namespaces.add(mappings.getSrcNamespace());
 
 				if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace())) {
 					System.setProperty("mixin.env.remapRefMap", "true");

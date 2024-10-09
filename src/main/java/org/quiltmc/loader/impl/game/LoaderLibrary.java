@@ -19,6 +19,8 @@ package org.quiltmc.loader.impl.game;
 import java.net.URL;
 import java.nio.file.Path;
 
+import net.fabricmc.mappingio.tree.MappingTreeView;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.tree.ClassNode;
@@ -26,14 +28,12 @@ import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.quiltmc.config.api.Config;
 import org.quiltmc.json5.JsonReader;
-import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
-import net.fabricmc.mapping.tree.TinyMappingFactory;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
 enum LoaderLibrary {
@@ -44,8 +44,8 @@ enum LoaderLibrary {
 	ASM_TREE(ClassNode.class),
 	ASM_UTIL(CheckClassAdapter.class),
 	SPONGE_MIXIN(MixinBootstrap.class),
-	TINY_MAPPINGS_PARSER(TinyMappingFactory.class),
 	TINY_REMAPPER(TinyRemapper.class),
+	MAPPING_IO(MappingTreeView.class),
 	ACCESS_WIDENER(AccessWidener.class),
 	QUILT_JSON5(JsonReader.class),
 	QUILT_CONFIG(Config.class),

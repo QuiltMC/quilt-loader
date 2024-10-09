@@ -29,7 +29,6 @@ import java.util.Collection;
  */
 @Deprecated
 public interface FabricLauncher {
-	MappingConfiguration getMappingConfiguration();
 	void propose(URL url);
 	EnvType getEnvironmentType();
 	boolean isClassLoaded(String name);
