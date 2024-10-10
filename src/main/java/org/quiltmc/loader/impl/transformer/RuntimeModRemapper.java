@@ -74,7 +74,7 @@ final class RuntimeModRemapper {
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyUtils.createMappingProvider(launcher.getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
+				.withMappings(TinyUtils.createMappingProvider(launcher.getMappingConfiguration().getMappings(), launcher.getFinalNamespace(), launcher.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains))
 				.build();
@@ -167,9 +167,9 @@ final class RuntimeModRemapper {
 
 	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
 		AccessWidenerWriter writer = new AccessWidenerWriter();
-		AccessWidenerRemapper remappingDecorator = new AccessWidenerRemapper(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
+		AccessWidenerRemapper remappingDecorator = new AccessWidenerRemapper(writer, remapper, QuiltLauncherBase.getLauncher().getFinalNamespace(), QuiltLauncherBase.getLauncher().getTargetNamespace());
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(remappingDecorator);
-		accessWidenerReader.read(input, "intermediary");
+		accessWidenerReader.read(input, QuiltLauncherBase.getLauncher().getFinalNamespace());
 		return writer.write();
 	}
 

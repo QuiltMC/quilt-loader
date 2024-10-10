@@ -191,11 +191,6 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public String getNamespace() {
-		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
-	}
-
-	@Override
 	public boolean requiresUrlClassLoader() {
 		return hasModLoader;
 	}
@@ -437,7 +432,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 		setupLogHandler(launcher, true);
 
-		transformer.locateEntrypoints(launcher, getNamespace(), gameJars);
+		transformer.locateEntrypoints(launcher, QuiltLauncherBase.getLauncher().getTargetNamespace(), gameJars);
 	}
 
 	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {

@@ -60,14 +60,14 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class Knot extends QuiltLauncherBase {
+public class Knot extends QuiltLauncherBase {
 	protected Map<String, Object> properties = new HashMap<>();
 
 	private KnotClassLoaderInterface classLoader;
 	private boolean isDevelopment;
 	private EnvType envType;
 	private final List<Path> classPath = new ArrayList<>();
-	private GameProvider provider;
+	protected GameProvider provider;
 	private boolean unlocked;
 
 	public static void launch(String[] args, EnvType type) {
@@ -263,6 +263,10 @@ public final class Knot extends QuiltLauncherBase {
 	public String getTargetNamespace() {
 		// TODO: Won't work outside of Yarn
 		return isDevelopment ? "named" : "intermediary";
+	}
+	@Override
+	public String getFinalNamespace() {
+		return "intermediary";
 	}
 
 	@Override

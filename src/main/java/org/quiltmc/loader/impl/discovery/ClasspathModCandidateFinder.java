@@ -166,7 +166,7 @@ public class ClasspathModCandidateFinder {
 
 	public static Path getGameProviderPath() {
 		try {
-			return UrlUtil.asPath(QuiltLoaderImpl.INSTANCE.getGameProvider().getClass().getProtectionDomain().getCodeSource().getLocation());
+			return UrlUtil.asPath(QuiltLoaderImpl.class.getProtectionDomain().getCodeSource().getLocation());
 		} catch (Throwable t) {
 			Log.debug(LogCategory.DISCOVERY, "Could not retrieve launcher code source!", t);
 			return null;
