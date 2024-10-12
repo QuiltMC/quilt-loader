@@ -485,7 +485,7 @@ public final class QuiltLoaderImpl {
 				// Versions before 1.17.1 don't work very well if they aren't at the root of their zip file
 				return true;
 			}
-			if (modIds.contains("fabric-resource-loader-v0")) {
+			if (modIds.contains("fabric-resource-loader-v0") && !modIds.contains("quilted_fabric_resource_loader_v0")) {
 				if (Version.of("1.19.3").compareTo(mod.version()) > 0) {
 					// Fabric API turns minecraft into a resource pack to load from instead of using the classpath,
 					// so it also doesn't work very well
