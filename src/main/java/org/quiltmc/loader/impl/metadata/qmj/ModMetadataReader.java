@@ -71,7 +71,12 @@ public final class ModMetadataReader {
 	public static InternalModMetadata read(InputStream json, Path path, QuiltPluginManager manager, PluginGuiTreeNode warningNode) throws IOException, ParseException {
 		JsonLoaderValue value;
 
-		try (JsonReader reader = JsonReader.json(new InputStreamReader(json, StandardCharsets.UTF_8))) {
+		try (JsonReader reader = JsonReader.json5(new InputStreamReader(json, StandardCharsets.UTF_8))) {
+			// Only use the reader as a JSON5 one if we're dealing with a JSON5 file
+			if (!path.toString().endsWith(".json5")) {
+				reader.setStrictJson();
+			}
+
 			// Root must be an object
 			if (reader.peek() != JsonToken.BEGIN_OBJECT) {
 				throw new ParseException(reader, "A quilt.mod.json must have an object at the root");
