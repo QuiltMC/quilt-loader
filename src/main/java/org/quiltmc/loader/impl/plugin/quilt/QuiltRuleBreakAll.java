@@ -34,8 +34,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltRuleBreakAll extends QuiltRuleBreak {
 
-	final QuiltRuleBreakOnly[] options;
-	final ModDependency.All publicDep;
+	public final QuiltRuleBreakOnly[] options;
+	public final ModDependency.All publicDep;
 
 	public QuiltRuleBreakAll(QuiltPluginManager manager, RuleContext ctx, LoadOption option, ModDependency.All all) {
 

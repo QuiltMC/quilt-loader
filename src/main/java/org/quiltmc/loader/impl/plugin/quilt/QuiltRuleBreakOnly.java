@@ -42,7 +42,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
 
-	final QuiltRuleDep unless;
+	public final QuiltRuleDep unless;
 
 	public QuiltRuleBreakOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
@@ -122,7 +122,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		options[1] = definer.negate(source);
 
 		if (unless != null) {
-			options[2] = definer.negate(unless.source);
+			options[2] = unless.source;
 		}
 
 		for (ModLoadOption conflict : conficts) {
@@ -195,7 +195,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 			id.append(":");
 		}
 		id.append(publicDep.id().id());
-		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false);
+		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false, false);
 		to.accept(QuiltLoaderText.translate("solver.rule.break.only", on));
 		to.accept(QuiltLoaderText.translate("solver.rule.break.only.conflicting", conflictingOptions.size()));
 		for (ModLoadOption option : conflictingOptions) {

@@ -17,9 +17,12 @@
 package net.fabricmc.test;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
@@ -30,7 +33,6 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
@@ -298,13 +300,64 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	public void unless() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "unless");
+
+		assertModPresent(modSet, "mod_a", "1.0.0");
+		assertModPresent(modSet, "mod_b", "1.0.0");
+		assertModPresent(modSet, "mod_c", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
+	public void unlessProvided() throws Exception {
+		ModSolveResult modSet = resolveModSet("valid", "unless_provided");
+
+		assertModPresent(modSet, "mod_a", "1.0.0");
+		assertModPresent(modSet, "mod_b", "1.0.0");
+		assertProvidedPresent(modSet, "mod_c", "1.0.0");
+		assertModPresent(modSet, "mod_d", "1.0.0");
+		assertNoMoreMods(modSet);
+	}
+
+	@Test
 	public void breaksError() {
 		resolveErrorSet("breaks");
 	}
 
 	@Test
+	public void breaksUnlessError() {
+		resolveErrorSet("breaks_unless");
+	}
+
+	@Test
 	public void multiBreaksError() {
 		resolveErrorSet("multi_breaks");
+	}
+
+	@Test
+	public void multiDependsError() {
+		resolveErrorSet("multi_depends");
+	}
+
+	@Test
+	public void dependsOnBreaksError() {
+		resolveErrorSet("depends_on_breaks");
+	}
+
+	@Test
+	public void dependsOnBrokenError() {
+		resolveErrorSet("depends_on_broken");
+	}
+
+	@Test
+	public void dependsOnProvidedExistingError() {
+		resolveErrorSet("depends_on_provided_existing");
+	}
+
+	@Test
+	public void providesExistingError() {
+		resolveErrorSet("provides_existing");
 	}
 
 	@Test
@@ -315,6 +368,41 @@ public final class ModResolvingTests {
 	@Test
 	public void dependsArrayError() {
 		resolveErrorSet("depends_array");
+	}
+
+	@Test
+	public void duplicateError() {
+		resolveErrorSet("duplicate");
+	}
+
+	@Test
+	public void complexDependsOnProvidingExistingError() {
+		resolveErrorSet("complex/depends_on_providing_existing");
+	}
+
+	@Test
+	public void complexDependsOnInvalidProvidedExistingError() {
+		resolveErrorSet("complex/depends_on_invalid_provided_existing");
+	}
+
+	@Test
+	public void complexBreaksOnBrokenOptionalUnlessError() {
+		resolveErrorSet("complex/breaks_on_broken_optional_unless");
+	}
+
+	@Test
+	public void complexUnlessAny() {
+		resolveErrorSet("complex/breaks_unless_any");
+	}
+
+	@Test
+	public void complexDependsAnyInvalid() {
+		resolveErrorSet("complex/depends_any_on_invalid");
+	}
+
+	@Test
+	public void complexDependsOnJijWithInvalidRanges() {
+		resolveErrorSet("complex/depends_on_jij_with_invalid_ranges");
 	}
 
 	private static void resolveErrorSet(String subpath) {
@@ -335,6 +423,18 @@ public final class ModResolvingTests {
 			fail(sb.toString());
 		} catch (ModResolutionException ignored) {
 			// Correct
+			try {
+				Path result = new File(System.getProperty("user.dir")).toPath().resolve("results").resolve("error").resolve(subpath + ".txt");
+				Files.createDirectories(result.getParent());
+				Files.deleteIfExists(result);
+				Files.write(
+						result,
+						ignored.getMessage().getBytes(),
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW
+				);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 

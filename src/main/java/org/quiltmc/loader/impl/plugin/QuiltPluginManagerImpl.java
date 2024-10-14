@@ -44,6 +44,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -959,8 +960,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			// - loader plugin
 			// - source path(s)
 			row.put(modColumn, mod.metadata().name());
-			row.put(id, mod.metadata().id());
-			row.put(version, mod.metadata().version());
+			row.put(id, mod.id());
+			row.put(version, mod.version());
 			row.put(plugin, mod.loader().pluginId());
 			StringBuilder flagStr = new StringBuilder();
 			flagStr.append(theQuiltPlugin.hasDepsChanged(mod) ? QuiltLoaderImpl.FLAG_DEPS_CHANGED : '.');
@@ -1288,7 +1289,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				if (FasterFiles.isDirectory(path)) {
 					clNode.icon(QuiltLoaderGui.iconFolder());
 				}
-				scanModFile(path, new ModLocationImpl(true, true), clNode);
+				scanModFile(path, new ModLocationImpl(true, true, null), clNode);
 			}
 		});
 	}
@@ -1380,8 +1381,16 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private void handleSolverFailure() throws TimeoutException, ModSolvingError {
 
 		SolverErrorHelper helper = new SolverErrorHelper(this);
-		boolean failed = false;
 
+		// Storage for a complete traversal of the rule graph
+		// In order to make sure we detect all errors, we need to test removing each rule individually
+		// This gives an O(n!) time complexity for the do while, but this code only runs once and the set of breaking rules
+		// isn't that large.
+		Stack<Rule> removedRules = new Stack<>();
+		Map<Integer, Set<Rule>> seen = new HashMap<>();
+		seen.put(0, new HashSet<>());
+
+		boolean failed = false;
 		solver_error_iteration: do {
 			Collection<Rule> rules = solver.getError();
 
@@ -1433,28 +1442,43 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 
 			// No plugin blamed any rules
-			// So we'll just pick one of them randomly and remove it.
-
 			failed = true;
+
+			// Report the current error
 			helper.reportSolverError(rules);
 
-			Rule pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleBreak).findAny().orElse(null);
-
-			if (pickedRule == null) {
-				pickedRule = rules.stream().filter(r -> r instanceof QuiltRuleDep).findAny().orElse(null);
+			// Pick a rule that we haven't removed yet and remove it.
+			Rule pickedRule = null;
+			for (Rule next : rules) {
+				if (seen.get(removedRules.size()).add(next)) {
+					pickedRule = next;
+					break;
+				}
 			}
 
 			if (pickedRule == null) {
-				pickedRule = rules.stream().filter(r -> !(r instanceof ModIdDefinition)).findAny().orElse(null);
+				if (removedRules.isEmpty()) { // We have checked every rule from the initial error
+					break;
+				} else { // There are no more rules to remove on this branch
+					Rule reAdd = removedRules.pop();
+					solver.redefine(reAdd);
+					solver.hasSolution(); // We know this is false, don't care about the result
+					continue;
+				}
 			}
 
-			if (pickedRule == null) {
-				pickedRule = rules.iterator().next();
-			}
-
+			// Remove the rule from the solver and go down to the next level.
 			solver.removeRule(pickedRule);
+			removedRules.push(pickedRule);
+			seen.put(removedRules.size(), new HashSet<>());
 
-		} while (!solver.hasSolution());
+			// Removing this rule fixes everything, so we can skip the branch, but there might be more errors
+			if (solver.hasSolution()) {
+				Rule reAdd = removedRules.pop();
+				solver.redefine(reAdd);
+				solver.hasSolution(); // We know this is false, don't care about the result
+			}
+		} while (true);
 
 		helper.reportErrors();
 
@@ -1841,7 +1865,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					Path relative = path.relativize(dir);
 					int count = relative.getNameCount();
 					if (isTest() && dir.getFileName().toString().endsWith(".jar")) {
-						ModLocationImpl location = new ModLocationImpl(false, true);
+						ModLocationImpl location = new ModLocationImpl(false, true, null);
 						// Tests use mods-as-folders to allow them to be entered into the git history properly
 						scanModFile(dir, location, guiNode.addChild(QuiltLoaderText.of(dir.getFileName().toString())));
 						return FileVisitResult.SKIP_SUBTREE;
@@ -1956,7 +1980,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 						node = guiNode.addChild(QuiltLoaderText.translate("gui.prefix.no_parent_file"), SortOrder.ALPHABETICAL_ORDER);
 					}
 
-					scanModFile(file, new ModLocationImpl(false, true), node);
+					scanModFile(file, new ModLocationImpl(false, true, null), node);
 					return FileVisitResult.CONTINUE;
 				}
 			});

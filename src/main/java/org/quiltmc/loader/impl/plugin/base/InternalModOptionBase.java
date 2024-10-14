@@ -28,7 +28,6 @@ import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.QuiltFileHasher;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
-import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -41,9 +40,11 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	protected final boolean mandatory;
 	protected final boolean requiresRemap;
 	protected final QuiltLoaderIcon fileIcon;
+	@Nullable
+	protected final ModLoadOption containingMod;
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, ModMetadataExt meta, Path from,
-		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+								 QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap, @Nullable ModLoadOption containingMod) {
 
 		this.pluginContext = pluginContext;
 		this.metadata = Objects.requireNonNull(meta, "meta");
@@ -52,6 +53,7 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 		this.resourceRoot = Objects.requireNonNull(resourceRoot, "resourceRoot");
 		this.mandatory = mandatory;
 		this.requiresRemap = requiresRemap;
+		this.containingMod = containingMod;
 	}
 
 	@Override
@@ -77,6 +79,11 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	@Override
 	public boolean isMandatory() {
 		return mandatory;
+	}
+
+	@Override
+	public @Nullable ModLoadOption getContainingMod() {
+		return containingMod;
 	}
 
 	@Override
