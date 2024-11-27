@@ -113,6 +113,9 @@ public final class SystemProperties {
 	/** Enables saving of all patched classes for debug purposes. */
 	public static final String DEBUG_DUMP_PATCHED_CLASSES = "loader.debug.dump_patched_classes";
 
+	/** Prevents loader from transforming classes with ReflectiveFixer */
+	public static final String DISABLE_REFLECTIVE_FIXES = "loader.transform.reflective_fixes.disable";
+
 	// ##############
 	// # Validation #
 	// ##############

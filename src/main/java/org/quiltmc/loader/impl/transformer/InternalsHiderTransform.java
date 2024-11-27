@@ -172,18 +172,14 @@ public class InternalsHiderTransform {
 
 				return new MethodVisitor(api, sup) {
 
+					boolean hasIllegal = false;
+
 					@Override
 					public void visitCode() {
 						super.visitCode();
 						if (isClassInit && !illegalSupers.isEmpty()) {
 							prefixClassInitErrors(sup);
 						}
-					}
-
-					@Override
-					public void visitMaxs(int maxStack, int maxLocals) {
-						// Sadly nothing we can do about this, since errors might occur anywhere :/
-						super.visitMaxs(maxStack + 1, maxLocals);
 					}
 
 					@Override
@@ -201,6 +197,7 @@ public class InternalsHiderTransform {
 						}
 
 						if (set != null && !set.isPermitted(mod)) {
+							hasIllegal = true;
 							super.visitLdcInsn(set.generateError(mod, "the field " + owner + "." + name, className + "." + mthName + mthDescriptor));
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(), "(Ljava/lang/String;)V",
@@ -228,6 +225,7 @@ public class InternalsHiderTransform {
 						}
 
 						if (set != null && !set.isPermitted(mod)) {
+							hasIllegal = true;
 							super.visitLdcInsn(
 								set.generateError(mod, "the method " + owner + "." + name + descriptor, className + "." + mthName + mthDescriptor)
 							);
@@ -238,6 +236,13 @@ public class InternalsHiderTransform {
 						}
 
 						super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+					}
+
+					@Override
+					public void visitMaxs(int maxStack, int maxLocals) {
+						// Ideally we'd track the actual stack value to figure out if we truly need to increase it
+						// But this is *much* easier
+						super.visitMaxs(maxStack + (hasIllegal ? 1 : 0), maxLocals);
 					}
 				};
 			}

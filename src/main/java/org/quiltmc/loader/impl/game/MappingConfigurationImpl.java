@@ -65,7 +65,7 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 	private String gameId;
 	private String gameVersion;
 	private String mappingsSource;
-	private VisitableMappingTree mappings = new MemoryMappingTree();
+	private VisitableMappingTree mappings = new MemoryMappingTree(true);
 	private List<String> namespaces;
 	private String targetNamespace;
 

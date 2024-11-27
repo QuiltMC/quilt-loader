@@ -20,9 +20,13 @@ package org.quiltmc.loader.impl.util.mappings;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 
 import net.fabricmc.mappingio.tree.MappingTreeView;
+import net.fabricmc.mappingio.tree.MappingTreeView.ClassMappingView;
 
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 

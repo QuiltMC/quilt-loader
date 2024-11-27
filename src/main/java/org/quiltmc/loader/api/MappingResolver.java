@@ -20,7 +20,7 @@ package org.quiltmc.loader.api;
 import java.util.Collection;
 
 /**
- * Helper class for performing mapping resolution.
+ * Helper class for performing mapping resolution. This can be obtained through {@link QuiltLoader#getMappingResolver()}.
  *
  * <p><strong>Note</strong>: The target namespace (the one being mapped to) for mapping (or the
  * source one for unmapping) is always implied to be the one Loader is

@@ -29,6 +29,7 @@ import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
@@ -42,6 +43,7 @@ final class QuiltTransformer {
 		boolean transformAccess = isGameClass && ((MappingConfigurationImpl) QuiltLauncherBase.getLauncher().getMappingConfiguration()).requiresPackageAccessHack();
 		boolean strip = !isGameClass || isDevelopment;
 		boolean applyAccessWidener = isGameClass && accessWidener.getTargets().contains(name);
+		boolean reflectiveFixes = !isGameClass;
 
 		if (!transformAccess && !strip && !applyAccessWidener) {
 			return bytes;
@@ -108,6 +110,11 @@ final class QuiltTransformer {
 
 		if (transformAccess) {
 			visitor = new PackageAccessFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
+			visitorCount++;
+		}
+
+		if (reflectiveFixes && !Boolean.getBoolean(SystemProperties.DISABLE_REFLECTIVE_FIXES)) {
+			visitor = new ReflectiveFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
 			visitorCount++;
 		}
 

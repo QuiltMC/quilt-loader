@@ -18,8 +18,9 @@
 package org.quiltmc.loader.impl.util.mappings;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.function.Supplier;
-
+import java.util.stream.Stream;
 
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
