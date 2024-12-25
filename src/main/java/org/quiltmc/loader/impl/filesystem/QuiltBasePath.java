@@ -554,9 +554,17 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			return toAbsolutePath().toUri();
 		}
 		try {
-			// Passing as one string ensures that Java goes ahead and normalizes everything for us
+			// Constructing as components ensures proper quoting on most
 			// Adding the port stores the important info in both the authority and host
-			return new URI(fs.provider().getScheme() + "://" + fs.name + ":0" + this);
+			return new URI(
+				fs.provider().getScheme(),
+				null,
+				fs.name,
+				0,
+				this.toString(),
+				null,
+				null
+			).normalize();
 		} catch (URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
