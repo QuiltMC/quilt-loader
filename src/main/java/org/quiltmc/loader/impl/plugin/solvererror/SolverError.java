@@ -267,61 +267,13 @@ public abstract class SolverError {
 		}
 
 		if (only.versionRange().size() == 1) {
-			VersionInterval interval = only.versionRange().first();
-
-			if (interval.getMin() == null) { // neg infinity
-				if (interval.getMax() == null) {
-					// any
-					version.append(" of ");
-				} else {
-					if (interval.isMaxInclusive()) {
-						version.append(" lesser than or equal to ")
-								.append(interval.getMax())
-								.append(" of ");
-					} else {
-						version.append(" lesser than ")
-								.append(interval.getMax())
-								.append(" of ");
-					}
-				}
-			} else {
-				if (interval.getMax() == null) { // pos infinity
-					if (interval.isMinInclusive()) {
-						version.append(" greater than or equal to ")
-								.append(interval.getMin())
-								.append(" of ");
-					} else {
-						version.append(" greater than ")
-								.append(interval.getMin())
-								.append(" of ");
-					}
-				} else {
-					if (interval.getMin().equals(interval.getMax())) {
-						version = new StringBuilder(" exactly version ")
-								.append(interval.getMin())
-								.append(" of ");
-					} else {
-						if (interval.isMinInclusive()) {
-							version.append(" >=");
-						} else {
-							version.append(" >");
-						}
-
-						version.append(interval.getMin()).append(" and ");
-
-						if (interval.isMaxInclusive()) {
-							version.append("<=");
-						} else {
-							version.append("<");
-						}
-
-						version.append(interval.getMax()).append(" of ");
-					}
-				}
-			}
+			addVersionRangeString(version, only.versionRange().first());
 		} else {
-			version = new StringBuilder(" a version ").append(only.versionRange()).append(" of ");
+			version.setLength(0);
+			version.append(" a version ").append(only.versionRange());
 		}
+
+		version.append(" of ");
 
 		String versionString = version.toString();
 		if (start) {
@@ -330,6 +282,54 @@ public abstract class SolverError {
 		}
 
 		report.append(versionString);
+	}
+
+	protected void addVersionRangeString(StringBuilder version, VersionInterval interval) {
+		if (interval.getMin() == null) { // neg infinity
+			if (interval.getMax() == null) {
+				// any
+			} else {
+				if (interval.isMaxInclusive()) {
+					version.append(" lesser than or equal to ")
+							.append(interval.getMax());
+				} else {
+					version.append(" lesser than ")
+							.append(interval.getMax());
+				}
+			}
+		} else {
+			if (interval.getMax() == null) { // pos infinity
+				if (interval.isMinInclusive()) {
+					version.append(" greater than or equal to ")
+							.append(interval.getMin());
+				} else {
+					version.append(" greater than ")
+							.append(interval.getMin());
+				}
+			} else {
+				if (interval.getMin().equals(interval.getMax())) {
+					version.setLength(0);
+					version.append(" exactly version ")
+							.append(interval.getMin());
+				} else {
+					if (interval.isMinInclusive()) {
+						version.append(" >=");
+					} else {
+						version.append(" >");
+					}
+
+					version.append(interval.getMin()).append(" and ");
+
+					if (interval.isMaxInclusive()) {
+						version.append("<=");
+					} else {
+						version.append("<");
+					}
+
+					version.append(interval.getMax());
+				}
+			}
+		}
 	}
 
 	/**

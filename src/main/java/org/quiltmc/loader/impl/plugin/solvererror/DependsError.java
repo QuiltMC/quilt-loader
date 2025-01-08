@@ -151,7 +151,12 @@ public class DependsError extends SolverError {
 			error.appendReportText("");
 			error.appendReportText("Mods with incorrect versions: ");
 			for (ModLoadOption mod : depends.getWrongOptions()) {
-				getModReportLine(mod, context, true, !depends.publicDep.versionRange().equals(VersionRange.ANY), false).forEach(error::appendReportText);
+				getModReportLine(mod, context, true, false, false).forEach(error::appendReportText);
+				if (!depends.publicDep.versionRange().isSatisfiedBy(mod.metadata().version())) {
+					StringBuilder version = new StringBuilder();
+					this.addVersionRangeString(version, depends.publicDep.versionRange().first());
+					error.appendReportText("  - '" + mod.metadata().name() + "' version '" + mod.metadata().version() + "' is not a version" + version);
+				}
 			}
 		}
 	}

@@ -36,6 +36,8 @@ import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
+import org.quiltmc.loader.impl.util.log.ConsoleLogHandler;
+import org.quiltmc.loader.impl.util.log.Log;
 
 public final class ModResolvingTests {
 
@@ -49,6 +51,8 @@ public final class ModResolvingTests {
 			.resolve("resources")//
 			.resolve("testing")//
 			.resolve("resolving");
+
+		Log.init(new ConsoleLogHandler(), false);
 	}
 
 	@Test
