@@ -1,0 +1,38 @@
+name: Crash Report
+description: Create a crash report to receive support for a breaking issue.
+labels: [support, crash]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking your time to report this crash! If you need real-time help, join us on [Discord](https://discord.quiltmc.org).
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the crash
+      description: "Describe the crash as clearly as possible. The more detail you provide means the sooner you can get back to your game! This includes: steps to reproduce or situation right before the crash, recent changes you made to your mods list, or any additional context that could be helpful."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Which environment crashed?
+      options:
+        - Client
+        - Server
+        - Both
+    validations:
+      required: true
+
+  - type: input
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        If applicable (crash, error output in console), please provide your crash report or latest.log
+        To upload logs, use [MCLogs](https://mclo.gs/) to upload your crashlog or latest.log. If you are unsure of how to obtain a crash report, read [here](https://minecraft.wiki/w/Tutorials/Obtaining_a_crash_report).
+        Crash reports without a crashlog or a latest.log file will be marked as invalid. Crashes are hard to fix without the crashlogs or latest.log file(s).
+    validations:
+      required: true

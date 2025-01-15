@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+@MultiReleaseJarCandidate
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class FileUtil {
 

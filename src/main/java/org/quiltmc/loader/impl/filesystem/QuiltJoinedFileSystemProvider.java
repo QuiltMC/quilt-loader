@@ -37,6 +37,7 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
@@ -453,15 +454,25 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 
+		V firstView = null;
+		V firstExistingView = null;
+
 		QuiltJoinedPath quiltPath = toAbsQuiltPath(path);
 		for (int i = 0; i < quiltPath.fs.getBackingPathCount(); i++) {
 			Path real = quiltPath.fs.getBackingPath(i, quiltPath);
 			V view = Files.getFileAttributeView(real, type, options);
-			if (view != null) {
-				return view;
+			if (view == null) {
+				// Only return view types that are supported by all providers
+				return null;
+			}
+			if (firstExistingView == null && FasterFiles.exists(real, options)) {
+				firstExistingView = view;
+			}
+			if (firstView == null) {
+				firstView = view;
 			}
 		}
-		return null;
+		return firstExistingView != null ? firstExistingView : firstView;
 	}
 
 	@Override

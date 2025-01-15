@@ -94,6 +94,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltMemoryFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.ZipHandling;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.filesystem.ZeroByteFileException;
 import org.quiltmc.loader.impl.game.GameProvider;
@@ -245,9 +246,18 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	@Override
 	public Path loadZipNow(Path zip) throws IOException, NonZipException {
+		return loadZipLikeNow(zip, ZipHandling.PLAIN);
+	}
+
+	@Override
+	public Path loadJarNow(Path zip) throws IOException, NonZipException {
+		return loadZipLikeNow(zip, ZipHandling.JAR);
+	}
+
+	private Path loadZipLikeNow(Path zip, ZipHandling handling) throws IOException, NonZipException {
 		String name = zip.getFileName().toString();
 		try {
-			QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "").getRoot();
+			QuiltZipPath qRoot = new QuiltZipFileSystem(name, zip, "", handling).getRoot();
 			pathParents.put(qRoot, zip);
 			return qRoot;
 		} catch (IOException e) {
@@ -256,7 +266,14 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					throw e;
 				}
 				// Something probably went wrong while trying to load them as zips
-				throw new IOException("Failed to read " + zip + " as a zip file: " + e.getMessage(), e);
+				StringBuilder msg = new StringBuilder();
+				msg.append("Failed to read ");
+				msg.append(zip);
+				msg.append(" as a ");
+				msg.append(handling == ZipHandling.JAR ? "jar": "zip");
+				msg.append(" file: ");
+				msg.append(e.getMessage());
+				throw new IOException(msg.toString(), e);
 			} else {
 				throw new NonZipException(e);
 			}

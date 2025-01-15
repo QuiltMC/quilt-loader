@@ -131,7 +131,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.28.0-beta.1";
+	public static final String VERSION = "0.28.0-beta.5";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -579,6 +579,8 @@ public final class QuiltLoaderImpl {
 		} else if (!Boolean.getBoolean(SystemProperties.DISABLE_PRELOAD_TRANSFORM_CACHE)) {
 			FilePreloadHelper.preLoad(modJarFile);
 		}
+
+		copiedToJarMods.put(modOption.id(), modJarFile.toFile());
 
 		try {
 			FileSystem fs = FileSystems.newFileSystem(modJarFile, (ClassLoader) null);

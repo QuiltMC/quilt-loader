@@ -21,6 +21,7 @@ import java.util.Collection;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.metadata.qmj.QmjMetadataInternalFactory;
 
 /**
  * Representation of a mod's dependency.
@@ -37,6 +38,27 @@ public interface ModDependency {
 	 * A mod dependency where there is only one condition that must be satisfied.
 	 */
 	interface Only extends ModDependency {
+
+		static Only of(ModDependencyIdentifier id, VersionRange versionRange, String reason, ModDependency unless, boolean optional) {
+			return QmjMetadataInternalFactory.createDepOnly(id, versionRange, reason, unless, optional);
+		}
+
+		static Only of(String id) {
+			return of(ModDependencyIdentifier.of("", id));
+		}
+
+		static Only of(String id, VersionRange versionRange) {
+			return of(ModDependencyIdentifier.of("", id), versionRange);
+		}
+
+		static Only of(ModDependencyIdentifier id) {
+			return of(id, VersionRange.ANY);
+		}
+
+		static Only of(ModDependencyIdentifier id, VersionRange versionRange) {
+			return of(id, versionRange, "", null, false);
+		}
+
 		/**
 		 * @return the mod identifier that the dependency tries to check for
 		 */
@@ -89,6 +111,10 @@ public interface ModDependency {
 	 */
 	interface Any extends Collection<ModDependency.Only>, ModDependency {
 
+		static Any of(Collection<ModDependency.Only> deps) {
+			return QmjMetadataInternalFactory.createDepAny(deps);
+		}
+
 		/**
 		 * Checks to see if all of the conditions are ignored.
 		 */
@@ -107,6 +133,11 @@ public interface ModDependency {
 	 * A mod breakage where at all conditions must be satisfied in order to conflict.
 	 */
 	interface All extends Collection<ModDependency.Only>, ModDependency {
+
+		static All of(Collection<ModDependency.Only> deps) {
+			return QmjMetadataInternalFactory.createDepAll(deps);
+		}
+
 		/**
 		 * Checks to see if all of the conditions are ignored.
 		 */

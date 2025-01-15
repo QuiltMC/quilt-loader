@@ -27,7 +27,6 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.analysis.Analyzer;
 import org.objectweb.asm.util.CheckClassAdapter;
 import org.quiltmc.config.api.Config;
-import org.quiltmc.json5.JsonReader;
 import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.spongepowered.asm.launch.MixinBootstrap;
@@ -47,7 +46,11 @@ enum LoaderLibrary {
 	TINY_REMAPPER(TinyRemapper.class),
 	MAPPING_IO(MappingTreeView.class),
 	ACCESS_WIDENER(AccessWidener.class),
-	QUILT_JSON5(JsonReader.class),
+	// This is an older library, so there's nothing we can do about this deprecation warning
+	// However it shouldn't be replaced with the newer version, since we want to target this
+	// library exactly
+	@SuppressWarnings("deprecation")
+	QUILT_JSON5(org.quiltmc.json5.JsonReader.class),
 	QUILT_CONFIG(Config.class),
 
 

@@ -163,7 +163,7 @@ public class MinecraftGameProvider implements GameProvider {
 			});
 		}
 		List<Path> paths = new ArrayList<>(gameJars);
-		paths.addAll(miscGameLibraries);
+//		paths.addAll(miscGameLibraries);
 		return Collections.singletonList(new BuiltinMod(paths, metadata.build()));
 	}
 

@@ -81,7 +81,15 @@ final class TransformCacheGenerator {
 		cache.forEachClassFile((mod, name, file) -> {
 			byte[] classBytes = Files.readAllBytes(file);
 			classes.put(file, mod);
-			internalsHider.scanClass(mod, file, classBytes);
+			try {
+				internalsHider.scanClass(mod, file, classBytes);
+			} catch (RuntimeException e) {
+				StringBuilder sb = new StringBuilder();
+				sb.append("For class file '").append(file).append("' in mod " + mod.id());
+				Error info = new Error(sb.toString());
+				e.addSuppressed(info);
+				throw e;
+			}
 			return null;
 		});
 

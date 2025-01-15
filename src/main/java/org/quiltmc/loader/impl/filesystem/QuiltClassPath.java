@@ -50,9 +50,11 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 /** Essentially a {@link QuiltJoinedFileSystem} but which caches all paths in advance. Not exposed as a filesystem since
- * this is a bit more dynamic than that. */
+ * this is a bit more dynamic than that.
+ * 
+ * @param <D> Optional extra data that may be stored alongside paths. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class QuiltClassPath {
+public class QuiltClassPath<D> {
 
 	private static final boolean VALIDATE = SystemProperties.getBoolean(
 		SystemProperties.VALIDATE_QUILT_CLASS_PATH, SystemProperties.VALIDATION_LEVEL > 0
@@ -66,37 +68,114 @@ public class QuiltClassPath {
 	 * by int hash) */
 	private static final boolean USE_CUSTOM_TABLE = !Boolean.getBoolean(SystemProperties.DISABLE_QUILT_CLASS_PATH_CUSTOM_TABLE);
 
-	private final List<Path> allRoots = VALIDATE ? new CopyOnWriteArrayList<>() : null;
-	private final AtomicReference<Path[]> roots = new AtomicReference<>(new Path[0]);
+	private final Class<D> dataClass;
+	private final List<PathData> allRoots = VALIDATE ? new CopyOnWriteArrayList<>() : null;
+	private final AtomicReference<PathData[]> roots = new AtomicReference<>(new PathData[0]);
 	private final FileMap files = USE_CUSTOM_TABLE ? new HashTableFileMap() : new StandardFileMap();
 
 	/** Set if {@link #VALIDATE} finds a problem. */
 	private static boolean printFullDetail = false;
 
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static final class PathResult<D> {
+		public final Path path;
+
+		/** The root which the data was associated with. May be null if the path was added with no data. */
+		public final Path root;
+
+		/** The data associated with the root path. May be null if no data was added for the root path. */
+		public final D data;
+
+		PathResult(Path path, Path root, D data) {
+			this.path = path;
+			this.root = root;
+			this.data = data;
+		}
+
+		@Override
+		public String toString() {
+			return "PathResult{path=\"" + path + "\", root=\"" + root + "\", data=" + data + "}";
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(path, System.identityHashCode(root), System.identityHashCode(data));
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj) {
+				return true;
+			}
+			if (!(obj instanceof PathResult)) {
+				return false;
+			}
+			PathResult<?> other = (PathResult<?>) obj;
+			return Objects.equals(path, other.path) //
+				&& root == other.root && data == other.data;
+		}
+	}
+
+	private static final class PathData {
+		final Path path;
+		final Object data;
+
+		PathData(Path path, Object data) {
+			this.path = path;
+			this.data = data;
+		}
+	}
+
+	public QuiltClassPath() {
+		this(null);
+	}
+
+	public QuiltClassPath(Class<D> dataClass) {
+		this.dataClass = dataClass;
+	}
+
 	public void addRoot(Path root) {
-		if (VALIDATE) {
-			allRoots.add(root);
+		addRoot(root, null);
+	}
+
+	public void addRoot(Path root, D data) {
+		if (dataClass == null) {
+			if (data != null) {
+				throw new IllegalArgumentException("Cannot add extra data if this doesn't have a data class!");
+			}
+		} else if (data != null) {
+			// We might as well validate this
+			dataClass.cast(data);
 		}
 
 		if (root instanceof QuiltJoinedPath) {
 			QuiltJoinedFileSystem fs = ((QuiltJoinedPath) root).fs;
 
 			for (Path from : fs.from) {
-				addRoot(from);
+				addRoot(from, data);
 			}
 
-		} else if (root instanceof QuiltMemoryPath) {
+			return;
+		}
+
+		if (VALIDATE) {
+			allRoots.add(new PathData(root, data));
+		}
+
+		if (root instanceof QuiltMemoryPath) {
 			QuiltMemoryFileSystem fs = ((QuiltMemoryPath) root).fs;
 
 			if (fs instanceof QuiltMemoryFileSystem.ReadWrite) {
 				Log.warn(LogCategory.GENERAL, "Adding read/write FS root to the classpath, this may slow down class loading: " + fs.name);
-				addRootToInternalArray(root);
+				addRootToInternalArray(root, data);
 			} else {
 
 				files.ensureCapacityFor(fs.getEntryCount());
 
+				ExtraData extraData = data == null ? null : new ExtraData(root, data);
+
 				for (Path key : fs.getEntryPathIterator()) {
-					putQuickFile(key.toString(), key);
+					putQuickFile(key.toString(), key, extraData);
 				}
 			}
 
@@ -105,8 +184,10 @@ public class QuiltClassPath {
 
 			files.ensureCapacityFor(fs.getEntryCount());
 
+			ExtraData extraData = data == null ? null : new ExtraData(root, data);
+
 			for (Path key : fs.getEntryPathIterator()) {
-				putQuickFile(key.toString(), key);
+				putQuickFile(key.toString(), key, extraData);
 			}
 
 		} else {
@@ -115,8 +196,9 @@ public class QuiltClassPath {
 
 			if ("jar".equals(fs.provider().getScheme())) {
 				// Assume it's read-only for speed
-				addRootToInternalArray(root);
-				beginScanning(root);
+				addRootToInternalArray(root, data);
+				ExtraData extraData = data == null ? null : new ExtraData(root, data);
+				beginScanning(root, extraData);
 				return;
 			}
 
@@ -124,25 +206,25 @@ public class QuiltClassPath {
 				Log.warn(LogCategory.GENERAL, "Adding unknown root to the classpath, this may slow down class loading: " + root.getFileSystem() + " " + root);
 			}
 
-			addRootToInternalArray(root);
+			addRootToInternalArray(root, data);
 		}
 	}
 
-	private void addRootToInternalArray(Path root) {
+	private void addRootToInternalArray(Path root, D data) {
 		roots.updateAndGet(array -> {
-			Path[] array2 = Arrays.copyOf(array, array.length + 1);
-			array2[array.length] = root;
+			PathData[] array2 = Arrays.copyOf(array, array.length + 1);
+			array2[array.length] = new PathData(root, data);
 			return array2;
 		});
 	}
 
-	private void putQuickFile(String fileName, Path file) {
-		files.put(file);
+	private void putQuickFile(String fileName, Path file, ExtraData extraData) {
+		files.put(file, extraData);
 	}
 
-	private void beginScanning(Path zipRoot) {
+	private void beginScanning(Path zipRoot, ExtraData extraData) {
 		synchronized (QuiltClassPath.class) {
-			SCAN_TASKS.add(() -> scanZip(zipRoot));
+			SCAN_TASKS.add(() -> scanZip(zipRoot, extraData));
 			int scannerCount = ACTIVE_SCANNERS.size();
 			if (scannerCount < 4 && scannerCount < SCAN_TASKS.size()) {
 				Thread scanner = new Thread("QuiltClassPath ZipScanner#" + ZIP_SCANNER_COUNT.incrementAndGet()) {
@@ -168,7 +250,7 @@ public class QuiltClassPath {
 		}
 	}
 
-	private void scanZip(Path zipRoot) {
+	private void scanZip(Path zipRoot, ExtraData extraData) {
 		try {
 			long start = System.nanoTime();
 			Files.walkFileTree(zipRoot, new SimpleFileVisitor<Path>() {
@@ -200,7 +282,7 @@ public class QuiltClassPath {
 						stack.addLast("/");
 					}
 					foldersRead++;
-					putQuickFile(dir.toString(), dir);
+					putQuickFile(dir.toString(), dir, extraData);
 					return FileVisitResult.CONTINUE;
 				}
 
@@ -223,16 +305,16 @@ public class QuiltClassPath {
 					}
 					filesRead++;
 					relativeString.append(file.getFileName().toString());
-					putQuickFile(relativeString.toString(), file);
+					putQuickFile(relativeString.toString(), file, extraData);
 					return FileVisitResult.CONTINUE;
 				}
 			});
 			roots.updateAndGet(array -> {
-				Path[] array2 = new Path[array.length - 1];
+				PathData[] array2 = new PathData[array.length - 1];
 				int output = 0;
 				for (int i = 0; i < array.length; i++) {
-					Path old = array[i];
-					if (old != zipRoot) {
+					PathData old = array[i];
+					if (old.path != zipRoot) {
 						array2[output++] = old;
 					}
 				}
@@ -246,21 +328,26 @@ public class QuiltClassPath {
 	}
 
 	public Path findResource(String path) {
-		Path[] rootsCopy0 = roots.get();
-		Path quick = quickFindResource(path);
+		PathResult<D> result = findResourceData(path);
+		return result != null ? result.path : null;
+	}
+
+	public PathResult<D> findResourceData(String path) {
+		PathData[] rootsCopy0 = roots.get();
+		PathResult<D> quick = quickFindResource(path);
 		if (VALIDATE) {
-			Path slow = findResourceIn(allRoots.toArray(new Path[0]), path);
+			PathResult<D> slow = findResourceIn(allRoots.toArray(new PathData[0]), path);
 			if (!Objects.equals(slow, quick)) {
-				Path quick2 = quickFindResource(path);
-				Path[] rootsCopy1 = roots.get();
+				PathResult<D> quick2 = quickFindResource(path);
+				PathData[] rootsCopy1 = roots.get();
 				IllegalStateException ex = new IllegalStateException(
 					"quickFindResource( " + path + " ) returned a different path to the slow find resource!"
 						+ "\nquick 1 = " + describePath(quick)
 						+ "\nslow = " + describePath(slow)
 						+ "\nquick 2 = " + describePath(quick2)
-						+ "\nroots 1 = " + describePaths(Arrays.asList(rootsCopy0))
-						+ "\nroots 2 = " + describePaths(Arrays.asList(rootsCopy1))
-						+ "\nall_roots = " + describePaths(allRoots)
+						+ "\nroots 1 = " + describePathDatas(Arrays.asList(rootsCopy0))
+						+ "\nroots 2 = " + describePathDatas(Arrays.asList(rootsCopy1))
+						+ "\nall_roots = " + describePathDatas(allRoots)
 				);
 				ex.printStackTrace();
 				printFullDetail = true;
@@ -269,6 +356,31 @@ public class QuiltClassPath {
 			}
 		}
 		return quick;
+	}
+
+	private D castData(Object data) {
+		if (dataClass == null) {
+			if (data != null) {
+				throw new IllegalStateException("Expected no data, but got " + data.getClass());
+			}
+			return null;
+		} else {
+			return dataClass.cast(data);
+		}
+	}
+
+	private static String describePath(PathData path) {
+		if (path == null) {
+			return "null";
+		}
+		return describePath(path.path);
+	}
+
+	private static String describePath(PathResult<?> path) {
+		if (path == null) {
+			return "null";
+		}
+		return describePath(path.path);
 	}
 
 	private static String describePath(Path path) {
@@ -281,10 +393,13 @@ public class QuiltClassPath {
 		if (path instanceof OverlappingPath) {
 			return ((OverlappingPath) path).describe();
 		}
+		if (path instanceof ExtraDataPath) {
+			return ((ExtraDataPath) path).describe();
+		}
 		return "'" + path + "'.fs:" + path.getFileSystem();
 	}
 
-	private Path quickFindResource(String path) {
+	private PathResult<D> quickFindResource(String path) {
 		String absolutePath = path;
 		if (!path.startsWith("/")) {
 			absolutePath = "/" + path;
@@ -304,7 +419,7 @@ public class QuiltClassPath {
 		 */
 		// Grabbing a copy of the roots array before we check in files ensures we never miss a path
 		// This fix is also applied to quickGetResources
-		Path[] fullArray = roots.get();
+		PathData[] fullArray = roots.get();
 		Path quick = files.get(absolutePath);
 
 		if (printFullDetail) {
@@ -320,36 +435,55 @@ public class QuiltClassPath {
 
 		if (quick != null) {
 			if (quick instanceof OverlappingPath) {
-				return ((OverlappingPath) quick).getFirst();
+				quick = ((OverlappingPath) quick).getFirst();
 			}
-			return quick;
+
+			if (quick instanceof ExtraDataPath) {
+				ExtraDataPath dataPath = (ExtraDataPath) quick;
+				return new PathResult<>(dataPath.path, dataPath.data.root, castData(dataPath.data.data));
+			} else {
+				return new PathResult<>(quick, null, null);
+			}
 		}
 
 		return findResourceIn(fullArray, path);
 	}
 
-	private static Path findResourceIn(Path[] array, String path) {
-		for (Path root : array) {
-			Path ext = root.resolve(path);
+	private PathResult<D> findResourceIn(PathData[] array, String path) {
+		for (PathData root : array) {
+			Path ext = root.path.resolve(path);
 			if (FasterFiles.exists(ext)) {
-				return ext;
+				if (root.data == null) {
+					return new PathResult<>(ext, null, null);
+				} else {
+					return new PathResult<>(ext, root.path, castData(root.data));
+				}
 			}
 		}
 		return null;
 	}
 
 	public List<Path> getResources(String path) {
-		List<Path> quick = quickGetResources(path);
+		List<PathResult<D>> fullResult = getAllResourceData(path);
+		List<Path> list = new ArrayList<>(fullResult.size());
+		for (PathResult<D> result : fullResult) {
+			list.add(result.path);
+		}
+		return list;
+	}
+
+	public List<PathResult<D>> getAllResourceData(String path) {
+		List<PathResult<D>> quick = quickGetResources(path);
 		if (VALIDATE) {
-			List<Path> slow = new ArrayList<>();
-			getResourcesIn(allRoots.toArray(new Path[0]), path, slow);
+			List<PathResult<D>> slow = new ArrayList<>();
+			getResourcesIn(allRoots.toArray(new PathData[0]), path, slow);
 			if (!quick.equals(slow)) {
-				List<Path> quick2 = quickGetResources(path);
+				List<PathResult<D>> quick2 = quickGetResources(path);
 				IllegalStateException ex = new IllegalStateException(
 					"quickGetResources( " + path + " ) returned a different list of paths to the slow get resources!"
-						+ "\nquick 1 = " + describePaths(quick)
-						+ "\nslow    = " + describePaths(slow)
-						+ "\nquick 2 = " + describePaths(quick2)
+						+ "\nquick 1 = " + describePathResults(quick)
+						+ "\nslow    = " + describePathResults(slow)
+						+ "\nquick 2 = " + describePathResults(quick2)
 				);
 				ex.printStackTrace();
 				printFullDetail = true;
@@ -358,6 +492,30 @@ public class QuiltClassPath {
 			}
 		}
 		return quick;
+	}
+
+	private static String describePathDatas(List<PathData> paths) {
+		StringBuilder sb = new StringBuilder("[");
+		for (PathData p : paths) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+			sb.append(describePath(p));
+		}
+		sb.append(" ]");
+		return sb.toString();
+	}
+
+	private static <D> String describePathResults(List<PathResult<D>> paths) {
+		StringBuilder sb = new StringBuilder("[");
+		for (PathResult<D> p : paths) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+			sb.append(describePath(p));
+		}
+		sb.append(" ]");
+		return sb.toString();
 	}
 
 	private static String describePaths(List<Path> paths) {
@@ -372,7 +530,7 @@ public class QuiltClassPath {
 		return sb.toString();
 	}
 
-	private List<Path> quickGetResources(String path) {
+	private List<PathResult<D>> quickGetResources(String path) {
 		String absolutePath = path;
 		if (!path.startsWith("/")) {
 			absolutePath = "/" + path;
@@ -380,19 +538,29 @@ public class QuiltClassPath {
 
 		// Thread race condition fix
 		// see "quickFindResource" for details
-		Path[] rootsArray = roots.get();
+		PathData[] rootsArray = roots.get();
 		Path quick = files.get(absolutePath);
 
 		if (quick instanceof HashCollisionPath) {
 			quick = ((HashCollisionPath) quick).get(absolutePath);
 		}
 
-		List<Path> paths = new ArrayList<>();
+		List<PathResult<D>> paths = new ArrayList<>();
 		if (quick != null) {
 			if (quick instanceof OverlappingPath) {
-				Collections.addAll(paths, ((OverlappingPath) quick).paths);
+				for (Path real : ((OverlappingPath) quick).paths) {
+					if (real instanceof ExtraDataPath) {
+						ExtraDataPath dataPath = (ExtraDataPath) real;
+						paths.add(new PathResult<>(dataPath.path, dataPath.data.root, castData(dataPath.data.data)));
+					} else {
+						paths.add(new PathResult<>(real, null, null));
+					}
+				}
+			} else if (quick instanceof ExtraDataPath) {
+				ExtraDataPath dataPath = (ExtraDataPath) quick;
+				paths.add(new PathResult<>(dataPath.path, dataPath.data.root, castData(dataPath.data.data)));
 			} else {
-				paths.add(quick);
+				paths.add(new PathResult<>(quick, null, null));
 			}
 		}
 
@@ -400,11 +568,15 @@ public class QuiltClassPath {
 		return Collections.unmodifiableList(paths);
 	}
 
-	private static void getResourcesIn(Path[] src, String path, List<Path> dst) {
-		for (Path root : src) {
-			Path ext = root.resolve(path);
+	private void getResourcesIn(PathData[] src, String path, List<PathResult<D>> dst) {
+		for (PathData root : src) {
+			Path ext = root.path.resolve(path);
 			if (FasterFiles.exists(ext)) {
-				dst.add(ext);
+				if (root.data == null) {
+					dst.add(new PathResult<>(ext, null, null));
+				} else {
+					dst.add(new PathResult<>(ext, root.path, castData(root.data)));
+				}
 			}
 		}
 	}
@@ -413,8 +585,14 @@ public class QuiltClassPath {
 		if (in instanceof OverlappingPath) {
 			in = ((OverlappingPath) in).paths[0];
 		}
+		if (in instanceof ExtraDataPath) {
+			in = ((ExtraDataPath) in).path;
+		}
 		if (value instanceof OverlappingPath) {
 			value = ((OverlappingPath) value).paths[0];
+		}
+		if (value instanceof ExtraDataPath) {
+			value = ((ExtraDataPath) value).path;
 		}
 		if (in instanceof QuiltBasePath) {
 			return ((QuiltBasePath<?, ?>) in).isToStringEqual(value);
@@ -435,6 +613,10 @@ public class QuiltClassPath {
 	}
 
 	private static boolean isEqual(String key, Path value) {
+
+		if (value instanceof ExtraDataPath) {
+			value = ((ExtraDataPath) value).path;
+		}
 
 		boolean should = VALIDATE && key.equals(value.toString());
 
@@ -501,28 +683,28 @@ public class QuiltClassPath {
 
 		abstract void ensureCapacityFor(int newPathCount);
 
-		abstract void put(Path newPath);
+		abstract void put(Path newPath, ExtraData extraData);
 
-		protected static Path computeNewPath(Path current, Path file) {
+		protected static Path computeNewPath(Path current, Path file, ExtraData extraData) {
 			if (current == null) {
-				return file;
+				return ExtraDataPath.wrap(file, extraData);
 			} else if (current instanceof HashCollisionPath) {
 				HashCollisionPath collision = (HashCollisionPath) current;
 				int equalIndex = collision.getEqualPathIndex(file);
 				if (equalIndex < 0) {
 					Path[] newArray = new Path[collision.values.length + 1];
 					System.arraycopy(collision.values, 0, newArray, 0, collision.values.length);
-					newArray[collision.values.length] = file;
+					newArray[collision.values.length] = ExtraDataPath.wrap(file, extraData);
 					collision.values = newArray;
 				} else {
 					Path equal = collision.values[equalIndex];
 					if (equal instanceof OverlappingPath) {
 						OverlappingPath multi = (OverlappingPath) equal;
-						multi.addPath(file);
+						multi.addPath(file, extraData);
 						multi.data &= ~OverlappingPath.FLAG_HAS_WARNED;
 					} else {
 						OverlappingPath multi = new OverlappingPath();
-						multi.paths = new Path[] { equal, file };
+						multi.paths = new Path[] { equal, ExtraDataPath.wrap(file, extraData) };
 						collision.values[equalIndex] = multi;
 					}
 				}
@@ -530,19 +712,19 @@ public class QuiltClassPath {
 			} else if (current instanceof OverlappingPath) {
 				if (isEqualPath(file, ((OverlappingPath) current).paths[0])) {
 					OverlappingPath multi = (OverlappingPath) current;
-					multi.addPath(file);
+					multi.addPath(file, extraData);
 					multi.data &= ~OverlappingPath.FLAG_HAS_WARNED;
 					return multi;
 				} else {
-					return new HashCollisionPath(current, file);
+					return new HashCollisionPath(current, ExtraDataPath.wrap(file, extraData));
 				}
 			} else {
 				if (isEqualPath(file, current)) {
 					OverlappingPath multi = new OverlappingPath();
-					multi.paths = new Path[] { current, file };
+					multi.paths = new Path[] { current, ExtraDataPath.wrap(file, extraData) };
 					return multi;
 				} else {
-					return new HashCollisionPath(current, file);
+					return new HashCollisionPath(current, ExtraDataPath.wrap(file, extraData));
 				}
 			}
 		}
@@ -560,8 +742,8 @@ public class QuiltClassPath {
 		}
 
 		@Override
-		void put(Path path) {
-			files.compute(path.toString().hashCode(), (a, current) -> computeNewPath(current, path));
+		void put(Path path, ExtraData extraData) {
+			files.compute(path.toString().hashCode(), (a, current) -> computeNewPath(current, path, extraData));
 		}
 
 		@Override
@@ -605,13 +787,13 @@ public class QuiltClassPath {
 		}
 
 		@Override
-		synchronized void put(Path newPath) {
+		synchronized void put(Path newPath, ExtraData extraData) {
 			entryCount++;
 			if (table.length * FILL_PERCENT < entryCount) {
 				rehash(table.length * 2);
 			}
 			int index = hashCode(newPath) & table.length - 1;
-			table[index] = computeNewPath(table[index], newPath);
+			table[index] = computeNewPath(table[index], newPath, extraData);
 		}
 
 		private static int hashCode(Path path) {
@@ -640,14 +822,36 @@ public class QuiltClassPath {
 				}
 
 				for (Path sub2 : subIter) {
-					final Path hashPath;
+
+					Path hashPath;
 					if (sub2 instanceof OverlappingPath) {
 						hashPath = ((OverlappingPath) sub2).paths[0];
 					} else {
 						hashPath = sub2;
 					}
+
+					final ExtraData extraData;
+					final Path toAdd;
+					if (hashPath instanceof ExtraDataPath) {
+						ExtraDataPath dataPath = (ExtraDataPath) hashPath;
+						if (hashPath == sub2) {
+							// Originally an ExtraDataPath, so re-wrap it
+							toAdd = dataPath.path;
+							extraData = dataPath.data;
+						} else {
+							// Originally an OverlappingPath, so only modify the hash path
+							// and put the original OverlappingPath
+							toAdd = sub2;
+							extraData = null;
+						}
+						hashPath = dataPath.path;
+					} else {
+						extraData = null;
+						toAdd = sub2;
+					}
+
 					int index = hashCode(hashPath) & newTable.length - 1;
-					newTable[index] = computeNewPath(newTable[index], sub2);
+					newTable[index] = computeNewPath(newTable[index], toAdd, extraData);
 				}
 			}
 			table = newTable;
@@ -730,9 +934,9 @@ public class QuiltClassPath {
 
 		public OverlappingPath() {}
 
-		public void addPath(Path file) {
+		public void addPath(Path file, ExtraData extraData) {
 			paths = Arrays.copyOf(paths, paths.length + 1);
-			paths[paths.length - 1] = file;
+			paths[paths.length - 1] = ExtraDataPath.wrap(file, extraData);
 			file.getNameCount();
 		}
 
@@ -780,6 +984,57 @@ public class QuiltClassPath {
 				Log.warn(LogCategory.GENERAL, sb.toString());
 			}
 			return paths[0];
+		}
+	}
+
+	/** Optional extra information about how a path should be handled. */
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	private static final class ExtraData {
+
+		final Path root;
+		/** Corresponds to the "D" parameter of {@link QuiltClassPath} */
+		final Object data;
+
+		ExtraData(Path root, Object data) {
+			this.root = root;
+			this.data = data;
+		}
+	}
+
+	/** Used to store {@link ExtraData} about a real Path.*/
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	private static final class ExtraDataPath extends NullPath {
+		final Path path;
+		final ExtraData data;
+
+		ExtraDataPath(Path path, ExtraData data) {
+			// Make sure the given path:
+			// 1: Is not null
+			// 2: Is not a NullPath
+			path.getNameCount();
+			this.path = path;
+			this.data = data;
+		}
+
+		public static Path wrap(Path file, ExtraData extraData) {
+			if (extraData != null) {
+				return new ExtraDataPath(file, extraData);
+			} else {
+				return file;
+			}
+		}
+
+		@Override
+		protected IllegalStateException illegal() {
+			IllegalStateException ex = new IllegalStateException(
+				"QuiltClassPath must NEVER return an ExtraDataPath - something has gone very wrong!"
+			);
+			ex.printStackTrace();
+			throw ex;
+		}
+
+		private String describe() {
+			return "ExtraDataPath " + describePath(path);
 		}
 	}
 }

@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report Quilt Standard Libs issues here
+    url: https://github.com/QuiltMC/quilt-standard-libraries/issues/new/choose
+    about: Instead of Reporting QSL issues in the Quilt Loader issue tracker, do so in the QSL issue tracker.
+
+  - name: Join the Discord for support.
+    url: https://discord.quiltmc.org
+    about: Discuss the Quilt Loader on our Discord server.

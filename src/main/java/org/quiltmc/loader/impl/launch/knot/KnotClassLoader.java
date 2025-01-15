@@ -19,14 +19,17 @@ package org.quiltmc.loader.impl.launch.knot;
 
 import net.fabricmc.api.EnvType;
 
+import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
+import org.quiltmc.loader.impl.filesystem.QuiltClassPath.PathResult;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.ZipHandling;
+import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.DeferredInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
@@ -44,7 +47,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterface {
@@ -63,7 +65,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		}
 	}
 
-	private final QuiltClassPath paths = new QuiltClassPath();
+	private final QuiltClassPath<PathCustomUrl> paths = new QuiltClassPath<>(PathCustomUrl.class);
 	private final DynamicURLClassLoader fakeLoader;
 	private final DynamicURLClassLoader minimalLoader;
 	private final ClassLoader originalLoader;
@@ -118,16 +120,23 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public URL findResource(String name) {
 		Objects.requireNonNull(name);
 
-		Path path = paths.findResource(name);
+		PathResult<PathCustomUrl> path = paths.findResourceData(name);
 		if (path != null) {
-			try {
-				return UrlUtil.asUrl(path);
-			} catch (MalformedURLException e) {
-				throw new Error(e);
-			}
+			return toUrl(path);
 		}
 
 		return minimalLoader.getResource(name);
+	}
+
+	private static URL toUrl(PathResult<PathCustomUrl> path) {
+		try {
+			if (path.data != null) {
+				return path.data.constructUrl(path.path, path.root);
+			}
+			return UrlUtil.asUrl(path.path);
+		} catch (MalformedURLException e) {
+			throw new Error("Failed to turn the path " + path.path.getClass() + " " + path + " into a url!", e);
+		}
 	}
 
 	@Override
@@ -167,11 +176,11 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 	public Enumeration<URL> getResources(String name) throws IOException {
 		Objects.requireNonNull(name);
 
-		List<Path> fromPaths = paths.getResources(name);
+		List<PathResult<PathCustomUrl>> fromPaths = paths.getAllResourceData(name);
 		Enumeration<URL> first = minimalLoader.getResources(name);
 		Enumeration<URL> second = originalLoader.getResources(name);
 		return new Enumeration<URL>() {
-			Iterator<Path> iterator = fromPaths.iterator();
+			Iterator<PathResult<PathCustomUrl>> iterator = fromPaths.iterator();
 			Enumeration<URL> current = first;
 
 			@Override
@@ -198,12 +207,7 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 			@Override
 			public URL nextElement() {
 				if (iterator.hasNext()) {
-					Path path = iterator.next();
-					try {
-						return UrlUtil.asUrl(path);
-					} catch (MalformedURLException e) {
-						throw new IllegalStateException("Failed to turn the path " + path.getClass() + " " + path + " into a url!", e);
-					}
+					return toUrl(iterator.next());
 				}
 				if (current == null) {
 					return null;
@@ -283,8 +287,19 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 		delegate.setMod(root, asUrl, mod);
 		fakeLoader.addURL(asUrl);
 		if (root.getFileName() != null && root.getFileName().toString().endsWith(".jar")) {
-			// TODO: Perhaps open it in a more efficient manor?
-			minimalLoader.addURL(asUrl);
+			Path zipRoot = null;
+			try {
+				String fsName = "classpath-" + root.getFileName().toString();
+				zipRoot = new QuiltZipFileSystem(fsName, root, "", ZipHandling.JAR).getRoot();
+			} catch (IOException io) {
+				Log.warn(LogCategory.GENERAL, "Failed to open the file " + root + ", adding it via the slow method instead!", io);
+			}
+			if (zipRoot != null) {
+				String urlBase = "jar:" + asUrl + "!/";
+				paths.addRoot(zipRoot, new PathCustomUrl(urlBase));
+			} else {
+				minimalLoader.addURL(asUrl);
+			}
 		} else {
 			paths.addRoot(root);
 		}
@@ -328,5 +343,34 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	static {
 		registerAsParallelCapable();
+	}
+
+	private static final class PathCustomUrl {
+		final String urlBase;
+
+		PathCustomUrl(String urlBase) {
+			this.urlBase = urlBase;
+		}
+
+		URL constructUrl(Path path, Path root) throws MalformedURLException {
+			Path realPath = null;
+			if (ExtendedFiles.isMountedFile(path)) {
+				// Used for multi-release jars
+				// We 'mount' multi-versioned classes, so they will really be somewhere else
+				try {
+					realPath = ExtendedFiles.readMountTarget(path);
+					if (realPath.getFileSystem() == root.getFileSystem()) {
+						path = realPath;
+					}
+				} catch (IOException e) {
+					// In theory this should never happen?
+					// At least for quilt-loader's own filesystems
+					// Which this must be (as we constructed a QuiltZipFileSystem)
+					throw new Error("Failed to read mount target? ", e);
+				}
+			}
+
+			return new URL(urlBase + root.relativize(path));
+		}
 	}
 }
