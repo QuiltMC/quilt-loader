@@ -80,25 +80,23 @@ public final class QuiltMixinBootstrap {
 			throw new IllegalStateException("QuiltMixinBootstrap has already been initialized!");
 		}
 
-		if (QuiltLauncherBase.getLauncher().isDevelopment()) {
-			MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
-			MappingTreeView mappings = mappingConfiguration.getMappings();
+		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
+		MappingTreeView mappings = mappingConfiguration.getMappings();
 
-			if (mappings != null) {
-				List<String> namespaces = new ArrayList<>(mappings.getDstNamespaces());
-				namespaces.add(mappings.getSrcNamespace());
+		if (mappings != null) {
+			List<String> namespaces = new ArrayList<>(mappings.getDstNamespaces());
+			namespaces.add(mappings.getSrcNamespace());
 
-				if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace())) {
-					System.setProperty("mixin.env.remapRefMap", "true");
+			if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace())) {
+				System.setProperty("mixin.env.remapRefMap", "true");
 
-					try {
-						MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, "intermediary", mappingConfiguration.getTargetNamespace());
-						MixinEnvironment.getDefaultEnvironment().getRemappers().add(remapper);
-						Log.info(LogCategory.MIXIN, "Loaded Quilt development mappings for mixin remapper!");
-					} catch (Exception e) {
-						Log.error(LogCategory.MIXIN, "Quilt development environment setup error - the game will probably crash soon!");
-						e.printStackTrace();
-					}
+				try {
+					MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, "intermediary", mappingConfiguration.getTargetNamespace());
+					MixinEnvironment.getDefaultEnvironment().getRemappers().add(remapper);
+					Log.info(LogCategory.MIXIN, "Loaded Quilt development mappings for mixin remapper!");
+				} catch (Exception e) {
+					Log.error(LogCategory.MIXIN, "Quilt development environment setup error - the game will probably crash soon!");
+					e.printStackTrace();
 				}
 			}
 		}

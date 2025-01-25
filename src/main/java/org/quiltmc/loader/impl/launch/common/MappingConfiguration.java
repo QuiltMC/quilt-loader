@@ -50,7 +50,6 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import net.fabricmc.mappingio.adapter.MappingSourceNsSwitch;
 import net.fabricmc.mappingio.format.proguard.ProGuardFileReader;
-import net.fabricmc.mappingio.format.tiny.Tiny1FileReader;
 import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.mappingio.tree.VisitableMappingTree;
@@ -108,7 +107,7 @@ public final class MappingConfiguration {
 			return gameProvider.getNamespace();
 		// else
 		// If the game provider doesn't exist yet, use the development flag to set the namespace
-		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
+		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "mojang";
 	}
 
 	public boolean requiresPackageAccessHack() {
@@ -151,19 +150,13 @@ public final class MappingConfiguration {
 					reader.mark(8192*2); // seems to read 2x the buffer size
 					FilteringMappingVisitor filter = new FilteringMappingVisitor(mappings);
 					switch (format) {
-						case TINY_FILE:
-							if (!Tiny1FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
-								Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
-								continue;
-							}
-							reader.reset();
-							Tiny1FileReader.read(reader, filter);
-							break;
 						case TINY_2_FILE:
+							/*
 							if (!Tiny2FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
 								Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
 								continue;
 							}
+							 */
 							reader.reset();
 							Tiny2FileReader.read(reader, filter);
 							break;

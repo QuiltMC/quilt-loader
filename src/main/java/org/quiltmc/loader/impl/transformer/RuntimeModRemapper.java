@@ -79,16 +79,20 @@ final class RuntimeModRemapper {
 				.extension(new MixinExtension(remapMixins::contains))
 				.build();
 
-		try {
-			remapper.readClassPathAsync(getRemapClasspath().toArray(new Path[0]));
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to populate remap classpath", e);
+		if (launcher.isDevelopment()) {
+			try {
+				remapper.readClassPathAsync(getRemapClasspath().toArray(new Path[0]));
+			} catch (IOException e) {
+				throw new RuntimeException("Failed to populate remap classpath", e);
+			}
 		}
 
 		try {
 			Map<ModLoadOption, RemapInfo> infoMap = new HashMap<>();
 
 			for (ModLoadOption mod : modsToRemap) {
+				System.out.println(mod.id());
+				System.out.println(mod.namespaceMappingFrom() + " " + mod.needsTransforming());
 				RemapInfo info = new RemapInfo();
 				infoMap.put(mod, info);
 				InputTag tag = remapper.createInputTag();

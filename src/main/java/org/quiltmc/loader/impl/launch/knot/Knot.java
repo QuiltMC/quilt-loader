@@ -262,7 +262,7 @@ public final class Knot extends QuiltLauncherBase {
 	@Override
 	public String getTargetNamespace() {
 		// TODO: Won't work outside of Yarn
-		return isDevelopment ? "named" : "intermediary";
+		return isDevelopment ? "named" : "mojang";
 	}
 
 	@Override

@@ -45,7 +45,7 @@ public interface GameProvider {
 	Path getLaunchDirectory();
 	boolean isObfuscated();
 	default String getNamespace() {
-		return isObfuscated()? "intermediary": "named";
+		return isObfuscated()? "intermediary": "mojang";
 	};
 	boolean requiresUrlClassLoader();
 

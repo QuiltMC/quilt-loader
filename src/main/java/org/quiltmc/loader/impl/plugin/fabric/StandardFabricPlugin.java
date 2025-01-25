@@ -104,7 +104,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			boolean mandatory = location.isDirect();
 			// a mod needs to be remapped if we are in a development environment, and the mod
 			// did not come from the classpath
-			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
+			boolean requiresRemap = !location.onClasspath();
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());

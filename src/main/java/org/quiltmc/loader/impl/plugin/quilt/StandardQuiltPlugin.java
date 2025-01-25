@@ -396,7 +396,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 
 			// a mod needs to be remapped if we are in a development environment, and the mod
 			// did not come from the classpath
-			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
+			boolean requiresRemap = !location.onClasspath();
 			return new ModLoadOption[] { new QuiltModOption(
 				context(), meta, from, fileIcon, root, location.isDirect(), requiresRemap
 			) };
