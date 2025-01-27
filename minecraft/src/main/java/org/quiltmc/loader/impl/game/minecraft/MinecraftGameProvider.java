@@ -91,7 +91,6 @@ public class MinecraftGameProvider implements GameProvider {
 	private McVersion versionData;
 	private boolean useGameJarForLogging;
 	private boolean hasModLoader = false;
-
 	private final GameTransformer transformer = new GameTransformer(
 			new EntrypointPatch(this),
 			new BrandingPatch(),
@@ -190,10 +189,6 @@ public class MinecraftGameProvider implements GameProvider {
 		return true; // generally yes...
 	}
 
-	@Override
-	public String getNamespace() {
-		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
-	}
 
 	@Override
 	public boolean requiresUrlClassLoader() {
@@ -433,7 +428,7 @@ public class MinecraftGameProvider implements GameProvider {
 
 		setupLogHandler(launcher, true);
 
-		transformer.locateEntrypoints(launcher, getNamespace(), gameJars);
+		transformer.locateEntrypoints(launcher, QuiltLauncherBase.getLauncher().getTargetNamespace(), gameJars);
 	}
 
 	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {

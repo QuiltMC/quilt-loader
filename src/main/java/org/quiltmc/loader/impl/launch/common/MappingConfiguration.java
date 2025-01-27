@@ -65,6 +65,7 @@ public final class MappingConfiguration {
 	private String mappingsSource;
 	private final VisitableMappingTree mappings = new MemoryMappingTree();
 	private List<String> namespaces;
+	private String targetNamespace;
 
 	public String getGameId() {
 		initialize();
@@ -102,12 +103,7 @@ public final class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
-		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
-		if (gameProvider != null)
-			return gameProvider.getNamespace();
-		// else
-		// If the game provider doesn't exist yet, use the development flag to set the namespace
-		return QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "mojang";
+		return targetNamespace;
 	}
 
 	public boolean requiresPackageAccessHack() {
@@ -115,9 +111,10 @@ public final class MappingConfiguration {
 		return getTargetNamespace().equals("named");
 	}
 
-
 	private void initialize() {
 		if (initialized) return;
+
+		targetNamespace = System.getProperty(SystemProperties.TARGET_NAMESPACE, QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary");
 
 		// Load named/intermediary
 		Enumeration<URL> urls;
@@ -196,6 +193,11 @@ public final class MappingConfiguration {
 		namespaces.add(mappings.getSrcNamespace());
 		namespaces.addAll(mappings.getDstNamespaces());
 		this.namespaces = Collections.unmodifiableList(namespaces);
+
+		if (!namespaces.contains(targetNamespace)) {
+			throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
+		}
+
 		initialized = true;
 	}
 
