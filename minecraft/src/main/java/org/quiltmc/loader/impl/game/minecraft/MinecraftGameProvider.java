@@ -166,8 +166,8 @@ public class MinecraftGameProvider implements GameProvider {
 		return Collections.singletonList(new BuiltinMod(paths, metadata.build()));
 	}
 
-	public Path getGameJar() {
-		return gameJars.get(0);
+	public List<Path> getGameJars() {
+		return gameJars;
 	}
 
 	@Override

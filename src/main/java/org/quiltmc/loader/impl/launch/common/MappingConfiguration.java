@@ -36,6 +36,7 @@ import java.util.zip.ZipError;
 import net.fabricmc.mappingio.MappingReader;
 import net.fabricmc.mappingio.format.MappingFormat;
 
+import net.fabricmc.mappingio.format.tiny.Tiny1FileReader;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 
 import org.quiltmc.loader.api.QuiltLoader;
@@ -54,6 +55,7 @@ import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
+import org.quiltmc.loader.impl.util.mappings.DoubleNsCompleterVisitor;
 import org.quiltmc.loader.impl.util.mappings.FilteringMappingVisitor;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
@@ -147,6 +149,10 @@ public final class MappingConfiguration {
 					reader.mark(8192*2); // seems to read 2x the buffer size
 					FilteringMappingVisitor filter = new FilteringMappingVisitor(mappings);
 					switch (format) {
+						case TINY_FILE:
+							reader.reset();
+							Tiny1FileReader.read(reader, filter);
+							break;
 						case TINY_2_FILE:
 							/*
 							if (!Tiny2FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
@@ -182,8 +188,14 @@ public final class MappingConfiguration {
 		// Load mojmap
 		String mojmapPath = System.getProperty(SystemProperties.MOJMAP_PATH);
 		if (mojmapPath != null) {
+			Log.info(LogCategory.MAPPINGS, "Loading mappings: %s", mojmapPath);
 			try (BufferedReader reader = Files.newBufferedReader(Paths.get(mojmapPath))) {
-				ProGuardFileReader.read(reader, "mojang", "official", new MappingSourceNsSwitch(mappings, "official"));
+				DoubleNsCompleterVisitor fixer = new DoubleNsCompleterVisitor(new MappingSourceNsSwitch(mappings, "official"),
+						"mojang",
+						"mojang",
+						"official");
+
+				ProGuardFileReader.read(reader, "mojang", "official", new MappingSourceNsSwitch(fixer, "official"));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -193,11 +205,11 @@ public final class MappingConfiguration {
 		namespaces.add(mappings.getSrcNamespace());
 		namespaces.addAll(mappings.getDstNamespaces());
 		this.namespaces = Collections.unmodifiableList(namespaces);
-
+		Log.info(LogCategory.MAPPINGS, "Loaded mapping namespaces: %s", namespaces);
+		Log.info(LogCategory.MAPPINGS, "Target namespace: %s", targetNamespace);
 		if (!namespaces.contains(targetNamespace)) {
 			throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
 		}
-
 		initialized = true;
 	}
 

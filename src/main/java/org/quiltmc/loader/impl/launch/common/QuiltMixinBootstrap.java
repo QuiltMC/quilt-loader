@@ -80,6 +80,8 @@ public final class QuiltMixinBootstrap {
 			throw new IllegalStateException("QuiltMixinBootstrap has already been initialized!");
 		}
 
+		MixinBootstrap.init();
+
 		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 		MappingTreeView mappings = mappingConfiguration.getMappings();
 
@@ -87,21 +89,21 @@ public final class QuiltMixinBootstrap {
 			List<String> namespaces = new ArrayList<>(mappings.getDstNamespaces());
 			namespaces.add(mappings.getSrcNamespace());
 
-			if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace())) {
+			// TODO: This needs special support for when there's a mod compiled to mojmap
+			if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace()) && !mappingConfiguration.getTargetNamespace().equals("intermediary")) {
 				System.setProperty("mixin.env.remapRefMap", "true");
 
 				try {
 					MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, "intermediary", mappingConfiguration.getTargetNamespace());
 					MixinEnvironment.getDefaultEnvironment().getRemappers().add(remapper);
-					Log.info(LogCategory.MIXIN, "Loaded Quilt development mappings for mixin remapper!");
+					Log.info(LogCategory.MIXIN, "Loaded Quilt mappings for mixin remapper!");
 				} catch (Exception e) {
-					Log.error(LogCategory.MIXIN, "Quilt development environment setup error - the game will probably crash soon!");
+					Log.error(LogCategory.MIXIN, "Quilt remap environment setup error - the game will probably crash soon!");
 					e.printStackTrace();
 				}
 			}
 		}
 
-		MixinBootstrap.init();
 		getMixinConfigs(loader, side).forEach(QuiltMixinBootstrap::addConfiguration);
 
 		Map<String, ModContainerExt> configToModMap = new HashMap<>();

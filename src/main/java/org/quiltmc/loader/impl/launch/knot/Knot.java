@@ -149,7 +149,6 @@ public final class Knot extends QuiltLauncherBase {
 		loader.load();
 		loader.freeze();
 
-		MixinBootstrap.init();
 		QuiltMixinBootstrap.init(getEnvironmentType(), loader);
 		QuiltLauncherBase.finishMixinBootstrapping();
 
