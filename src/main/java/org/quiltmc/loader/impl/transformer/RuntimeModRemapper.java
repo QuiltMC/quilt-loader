@@ -28,10 +28,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import net.fabricmc.mappingio.MappingReader;
@@ -81,14 +84,8 @@ final class RuntimeModRemapper {
 
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 
-		MemoryMappingTree memoryMappingTree = new MemoryMappingTree();
-		try {
-			launcher.getMappingConfiguration().getMappings().accept(memoryMappingTree);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(create(memoryMappingTree, "intermediary", launcher.getTargetNamespace(), false))
+				.withMappings(TinyUtils.createMappingProvider(QuiltLauncherBase.getLauncher().getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains))
 				.build();
@@ -100,8 +97,48 @@ final class RuntimeModRemapper {
 				throw new RuntimeException("Failed to populate remap classpath", e);
 			}
 		} else {
+			// TODO: should the game provider prepare this instead?
+			// TODO: duplicates code with MinecraftGameProvider for simplicity
+			List<Path> gameJars = (List<Path>) QuiltLoader.getObjectShare().get("fabric-loader:inputGameJars");
+			Path realmsJar = (Path) QuiltLoader.getObjectShare().get("fabric-loader:inputRealmsJar");
+
+			Map<String, Path> obfJars = new HashMap<>(3);
+			String[] names = new String[gameJars.size()];
+
+			for (int i = 0; i < gameJars.size(); i++) {
+				String name;
+
+				if (i == 0) {
+					name = QuiltLoaderImpl.INSTANCE.getEnvironmentType().name().toLowerCase(Locale.ENGLISH);
+				} else if (i == 1) {
+					name = "common";
+				} else {
+					name = String.format(Locale.ENGLISH, "extra-%d", i - 2);
+				}
+
+				obfJars.put(name, gameJars.get(i));
+				names[i] = name;
+			}
+
+			if (realmsJar != null) {
+				obfJars.put("realms", realmsJar);
+			}
+
+			for (Path obf : obfJars.values()) {
+				launcher.hideParentPath(obf);
+			}
+
+			try {
+				obfJars = GameProviderHelper.deobfuscate(obfJars,
+						"minecraft", QuiltLoaderImpl.INSTANCE.getGameProvider().getNormalizedGameVersion(),
+						QuiltLoaderImpl.INSTANCE.getGameProvider().getLaunchDirectory(),
+						launcher, "intermediary");
+			} catch (RuntimeException e) {
+				// this should never happen
+				throw e;
+			}
 			remapper.readClassPathAsync(launcher.getClassPath().toArray(new Path[0]));
-			remapper.readClassPathAsync((QuiltLoaderImpl.INSTANCE.getGameProvider().getGameJars().toArray(new Path[0])));
+			remapper.readClassPathAsync(obfJars.values().toArray(new Path[0]));
 		}
 
 		try {
@@ -223,84 +260,5 @@ final class RuntimeModRemapper {
 		Path outputPath;
 		OutputConsumerPath outputConsumerPath;
 		Map<String, byte[]> accessWideners;
-	}
-
-	// lifted from loom, same license as above copyright FabricMC
-	public static IMappingProvider create(MappingTree mappings, String from, String to, boolean remapLocalVariables) {
-		return (acceptor) -> {
-			final int fromId = mappings.getNamespaceId(from);
-			final int toId = mappings.getNamespaceId(to);
-
-			for (MappingTree.ClassMapping classDef : mappings.getClasses()) {
-				String className = classDef.getName(fromId);
-
-				if (className == null) {
-					continue;
-				}
-
-				String dstClassName = classDef.getName(toId);
-
-				if (dstClassName == null) {
-					// Unsure if this is correct, should be better than crashing tho.
-					dstClassName = className;
-				}
-
-				acceptor.acceptClass(className, dstClassName);
-
-				for (MappingTree.FieldMapping field : classDef.getFields()) {
-					String fieldName = field.getName(fromId);
-
-					if (fieldName == null) {
-						continue;
-					}
-
-					String dstFieldName = field.getName(toId);
-
-					if (dstFieldName == null) {
-						dstFieldName = fieldName;
-					}
-
-					acceptor.acceptField(memberOf(className, fieldName, field.getDesc(fromId)), dstFieldName);
-				}
-
-				for (MappingTree.MethodMapping method : classDef.getMethods()) {
-					String methodName = method.getName(fromId);
-
-					if (methodName == null) {
-						continue;
-					}
-
-					String dstMethodName = method.getName(toId);
-
-					if (dstMethodName == null) {
-						dstMethodName = methodName;
-					}
-
-					IMappingProvider.Member methodIdentifier = memberOf(className, methodName, method.getDesc(fromId));
-					acceptor.acceptMethod(methodIdentifier, dstMethodName);
-
-					if (remapLocalVariables) {
-						for (MappingTree.MethodArgMapping parameter : method.getArgs()) {
-							String name = parameter.getName(toId);
-
-							if (name == null) {
-								continue;
-							}
-
-							acceptor.acceptMethodArg(methodIdentifier, parameter.getLvIndex(), name);
-						}
-
-						for (MappingTree.MethodVarMapping localVariable : method.getVars()) {
-							acceptor.acceptMethodVar(methodIdentifier, localVariable.getLvIndex(),
-									localVariable.getStartOpIdx(), localVariable.getLvtRowIndex(),
-									localVariable.getName(toId));
-						}
-					}
-				}
-			}
-		};
-	}
-	private static IMappingProvider.Member memberOf(String className, String memberName, String descriptor) {
-		return new IMappingProvider.Member(className, memberName, descriptor);
 	}
 }

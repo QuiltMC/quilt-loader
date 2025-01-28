@@ -165,7 +165,7 @@ public final class GameProviderHelper {
 
 	private static boolean emittedInfo = false;
 
-	public static Map<String, Path> deobfuscate(Map<String, Path> inputFileMap, String gameId, String gameVersion, Path gameDir, QuiltLauncher launcher) {
+	public static Map<String, Path> deobfuscate(Map<String, Path> inputFileMap, String gameId, String gameVersion, Path gameDir, QuiltLauncher launcher, String targetNamespace) {
 		Log.debug(LogCategory.GAME_REMAP, "Requesting deobfuscation of %s", inputFileMap);
 
 		if (launcher.isDevelopment()) { // in-dev is already deobfuscated
@@ -186,7 +186,6 @@ public final class GameProviderHelper {
 							gameVersion));
 		}
 
-		String targetNamespace = mappingConfig.getTargetNamespace();
 		MappingTreeView mappings = mappingConfig.getMappings();
 
 		if (mappings == null

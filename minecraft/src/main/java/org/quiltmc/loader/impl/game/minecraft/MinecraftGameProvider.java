@@ -384,7 +384,7 @@ public class MinecraftGameProvider implements GameProvider {
 				obfJars = GameProviderHelper.deobfuscate(obfJars,
 						getGameId(), getNormalizedGameVersion(),
 						getLaunchDirectory(),
-						launcher);
+						launcher, launcher.getTargetNamespace());
 			} catch (RuntimeException e) {
 				if ("Unfixable conflicts".equals(e.getMessage())) {
 					String source = launcher.getMappingConfiguration().getMappingsSource().replace(File.separator, "/");

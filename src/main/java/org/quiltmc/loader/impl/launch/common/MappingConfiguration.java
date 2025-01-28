@@ -105,6 +105,9 @@ public final class MappingConfiguration {
 	}
 
 	public String getTargetNamespace() {
+		if (targetNamespace == null) {
+			targetNamespace = System.getProperty(SystemProperties.TARGET_NAMESPACE, QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary");
+		}
 		return targetNamespace;
 	}
 
@@ -115,8 +118,6 @@ public final class MappingConfiguration {
 
 	private void initialize() {
 		if (initialized) return;
-
-		targetNamespace = System.getProperty(SystemProperties.TARGET_NAMESPACE, QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary");
 
 		// Load named/intermediary
 		Enumeration<URL> urls;
@@ -188,14 +189,9 @@ public final class MappingConfiguration {
 		// Load mojmap
 		String mojmapPath = System.getProperty(SystemProperties.MOJMAP_PATH);
 		if (mojmapPath != null) {
-			Log.info(LogCategory.MAPPINGS, "Loading mappings: %s", mojmapPath);
+			Log.info(LogCategory.MAPPINGS, "Loading mojang mappings: %s", mojmapPath);
 			try (BufferedReader reader = Files.newBufferedReader(Paths.get(mojmapPath))) {
-				DoubleNsCompleterVisitor fixer = new DoubleNsCompleterVisitor(new MappingSourceNsSwitch(mappings, "official"),
-						"mojang",
-						"mojang",
-						"official");
-
-				ProGuardFileReader.read(reader, "mojang", "official", new MappingSourceNsSwitch(fixer, "official"));
+				ProGuardFileReader.read(reader, "mojang", "official", new MappingSourceNsSwitch(mappings, "official"));
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -206,8 +202,8 @@ public final class MappingConfiguration {
 		namespaces.addAll(mappings.getDstNamespaces());
 		this.namespaces = Collections.unmodifiableList(namespaces);
 		Log.info(LogCategory.MAPPINGS, "Loaded mapping namespaces: %s", namespaces);
-		Log.info(LogCategory.MAPPINGS, "Target namespace: %s", targetNamespace);
-		if (!namespaces.contains(targetNamespace)) {
+		Log.info(LogCategory.MAPPINGS, "Target namespace: %s", getTargetNamespace());
+		if (!namespaces.contains(getTargetNamespace())) {
 			throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
 		}
 		initialized = true;
