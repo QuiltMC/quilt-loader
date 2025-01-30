@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.Version;
@@ -83,6 +84,7 @@ public class MinecraftGameProvider implements GameProvider {
 	private String entrypoint;
 	private Arguments arguments;
 	private final List<Path> gameJars = new ArrayList<>(2); // env game jar and common game jar, potentially
+	private Map<String, List<Path>> gameJarsByNamespace = new HashMap<>();
 	private Path realmsJar;
 	private final Set<Path> logJars = new HashSet<>();
 	private boolean log4jAvailable;
@@ -379,9 +381,13 @@ public class MinecraftGameProvider implements GameProvider {
 			for (Path obf : obfJars.values()) {
 				launcher.hideParentPath(obf);
 			}
+			if (!launcher.isDevelopment()) {
+				gameJarsByNamespace.put("official", Collections.unmodifiableList(new ArrayList<>(obfJars.values())));
+			}
 
+			Map<String, Path> newObfJars;
 			try {
-				obfJars = GameProviderHelper.deobfuscate(obfJars,
+				newObfJars = GameProviderHelper.deobfuscate(obfJars,
 						getGameId(), getNormalizedGameVersion(),
 						getLaunchDirectory(),
 						launcher, launcher.getTargetNamespace());
@@ -407,13 +413,23 @@ public class MinecraftGameProvider implements GameProvider {
 			}
 
 			for (int i = 0; i < gameJars.size(); i++) {
-				Path newJar = obfJars.get(names[i]);
+				Path newJar = newObfJars.get(names[i]);
 				Path oldJar = gameJars.set(i, newJar);
 
 				if (logJars.remove(oldJar)) logJars.add(newJar);
 			}
 
-			realmsJar = obfJars.get("realms");
+			realmsJar = newObfJars.get("realms");
+			gameJarsByNamespace.put(launcher.getTargetNamespace(), Collections.unmodifiableList(new ArrayList<>(newObfJars.values())));
+
+			for (String namespace : launcher.getMappingConfiguration().getNamespaces()) {
+				if (!namespace.equals("official") && !namespace.equals(launcher.getTargetNamespace())) {
+					Map<String, Path> output = GameProviderHelper.deobfuscate(obfJars, getGameId(), getNormalizedGameVersion(), getLaunchDirectory(), launcher, namespace);
+					gameJarsByNamespace.put(namespace, Collections.unmodifiableList(new ArrayList<>(output.values())));
+				}
+			}
+
+			gameJarsByNamespace = Collections.unmodifiableMap(gameJarsByNamespace);
 		}
 
 		if (!logJars.isEmpty() && !Boolean.getBoolean(SystemProperties.UNIT_TEST)) {
@@ -551,5 +567,13 @@ public class MinecraftGameProvider implements GameProvider {
 		} catch (ReflectiveOperationException e) {
 			throw new FormattedException("Failed to start Minecraft", e);
 		}
+	}
+
+	@Override
+	public List<Path> getGameJars(@Nullable String namespace) {
+		if (namespace == null) {
+			return gameJarsByNamespace.get(QuiltLauncherBase.getLauncher().getTargetNamespace());
+		}
+		return gameJarsByNamespace.get(namespace);
 	}
 }

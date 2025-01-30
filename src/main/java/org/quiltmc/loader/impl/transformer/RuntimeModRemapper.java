@@ -33,14 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import net.fabricmc.mappingio.MappingReader;
-import net.fabricmc.mappingio.tree.MappingTree;
-import net.fabricmc.mappingio.tree.MemoryMappingTree;
-import net.fabricmc.tinyremapper.IMappingProvider;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 import org.objectweb.asm.commons.Remapper;
@@ -49,7 +43,6 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
-import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -88,6 +81,7 @@ final class RuntimeModRemapper {
 				.withMappings(TinyUtils.createMappingProvider(QuiltLauncherBase.getLauncher().getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains))
+				.extraPreApplyVisitor(KotlinMetadataRemapper::new)
 				.build();
 
 		if (launcher.isDevelopment()) {
@@ -97,48 +91,8 @@ final class RuntimeModRemapper {
 				throw new RuntimeException("Failed to populate remap classpath", e);
 			}
 		} else {
-			// TODO: should the game provider prepare this instead?
-			// TODO: duplicates code with MinecraftGameProvider for simplicity
-			List<Path> gameJars = (List<Path>) QuiltLoader.getObjectShare().get("fabric-loader:inputGameJars");
-			Path realmsJar = (Path) QuiltLoader.getObjectShare().get("fabric-loader:inputRealmsJar");
-
-			Map<String, Path> obfJars = new HashMap<>(3);
-			String[] names = new String[gameJars.size()];
-
-			for (int i = 0; i < gameJars.size(); i++) {
-				String name;
-
-				if (i == 0) {
-					name = QuiltLoaderImpl.INSTANCE.getEnvironmentType().name().toLowerCase(Locale.ENGLISH);
-				} else if (i == 1) {
-					name = "common";
-				} else {
-					name = String.format(Locale.ENGLISH, "extra-%d", i - 2);
-				}
-
-				obfJars.put(name, gameJars.get(i));
-				names[i] = name;
-			}
-
-			if (realmsJar != null) {
-				obfJars.put("realms", realmsJar);
-			}
-
-			for (Path obf : obfJars.values()) {
-				launcher.hideParentPath(obf);
-			}
-
-			try {
-				obfJars = GameProviderHelper.deobfuscate(obfJars,
-						"minecraft", QuiltLoaderImpl.INSTANCE.getGameProvider().getNormalizedGameVersion(),
-						QuiltLoaderImpl.INSTANCE.getGameProvider().getLaunchDirectory(),
-						launcher, "intermediary");
-			} catch (RuntimeException e) {
-				// this should never happen
-				throw e;
-			}
 			remapper.readClassPathAsync(launcher.getClassPath().toArray(new Path[0]));
-			remapper.readClassPathAsync(obfJars.values().toArray(new Path[0]));
+			remapper.readClassPathAsync(QuiltLoaderImpl.INSTANCE.getGameProvider().getGameJars("intermediary").toArray(new Path[0]));
 		}
 
 		try {

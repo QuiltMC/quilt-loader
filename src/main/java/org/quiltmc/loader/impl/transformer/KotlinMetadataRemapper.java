@@ -1,0 +1,64 @@
+package org.quiltmc.loader.impl.transformer;
+
+import net.fabricmc.tinyremapper.api.TrClass;
+
+import org.objectweb.asm.AnnotationVisitor;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.commons.Remapper;
+import org.objectweb.asm.tree.AnnotationNode;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+
+import java.util.Iterator;
+import java.util.List;
+
+public class KotlinMetadataRemapper extends ClassVisitor {
+	Remapper remapper;
+	protected KotlinMetadataRemapper(TrClass cls, ClassVisitor parent) {
+		super(QuiltLoaderImpl.ASM_VERSION, parent);
+		this.remapper = cls.getEnvironment().getRemapper();
+	}
+
+	// This  is based off the observation that the nice, clean, metadata remapper written for Loom in Kotlin
+	// only uses remapper.map, mapDesc, and mapFieldDesc.
+	// These are extremely identifiable in the metadata's constant pool: field descriptors begin with L,
+	// method descriptors begin with (, and classes we need to remap begin with class_ or contain a package, so we can
+	// just brute-force the constant pool
+	// and remap those 3 things as they come by.
+	@Override
+	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+		if (descriptor.equals("Lkotlin/Metadata;")) {
+			return new AnnotationNode(QuiltLoaderImpl.ASM_VERSION, descriptor) {
+				@Override
+				public void visitEnd() {
+					super.visitEnd();
+
+					List<String> data = null;
+					Iterator<Object> iter = this.values.iterator();
+					while (iter.hasNext()) {
+						if (iter.next().equals("d2")) {
+							//noinspection unchecked
+							data = (List<String>) iter.next();
+							break;
+						}
+					}
+					if (data == null) {
+						return;
+					}
+					for (int i = 0; i < data.size(); i++) {
+						String candidate = data.get(i);
+						if (candidate.startsWith("(")) {
+							candidate = remapper.mapMethodDesc(candidate);
+						} else if (candidate.startsWith("L")) { // this could technically catch strays but it should just not do anything
+							candidate = remapper.mapDesc(candidate);
+						} else if (candidate.startsWith("class_") || candidate.contains("/")) { // must go last to not accidentally catch descriptors
+							candidate = remapper.map(candidate);
+						} // else hope nothing goes wrong
+						data.set(i, candidate);
+					}
+
+				}
+			};
+		}
+		return super.visitAnnotation(descriptor, visible);
+	}
+}

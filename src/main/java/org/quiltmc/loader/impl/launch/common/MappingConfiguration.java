@@ -39,9 +39,9 @@ import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.format.tiny.Tiny1FileReader;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 
+import net.fabricmc.mappingio.tree.MappingTree;
+
 import org.quiltmc.loader.api.QuiltLoader;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -55,7 +55,6 @@ import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
-import org.quiltmc.loader.impl.util.mappings.DoubleNsCompleterVisitor;
 import org.quiltmc.loader.impl.util.mappings.FilteringMappingVisitor;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
@@ -203,9 +202,11 @@ public final class MappingConfiguration {
 		this.namespaces = Collections.unmodifiableList(namespaces);
 		Log.info(LogCategory.MAPPINGS, "Loaded mapping namespaces: %s", namespaces);
 		Log.info(LogCategory.MAPPINGS, "Target namespace: %s", getTargetNamespace());
+		
 		if (!namespaces.contains(getTargetNamespace())) {
 			throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
 		}
+
 		initialized = true;
 	}
 

@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Objects;
 
 import net.fabricmc.loader.api.metadata.ModMetadata;
+
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -52,7 +54,14 @@ public interface GameProvider {
 	GameTransformer getEntrypointTransformer();
 	void unlockClassPath(QuiltLauncher launcher);
 	void launch(ClassLoader loader);
-	List<Path> getGameJars();
+
+	/**
+	 * Returns the game jars mapped to the given namespace.
+	 * @param namespace if null, returns the default (mapped) jars
+	 * @return a list of all game jars, or null if they do not exist (or, in development environments,
+	 * are not known to the gameprovider -- see {@link org.quiltmc.loader.impl.util.SystemProperties#REMAP_CLASSPATH_FILE})
+	 */
+	@Nullable List<Path> getGameJars(@Nullable String namespace);
 	default boolean isGameClass(String name) {
 		return true;
 	}
