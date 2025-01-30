@@ -76,8 +76,6 @@ public interface ModMetadataExt extends ModMetadata, ModMetadataToBeMovedToPlugi
 
 	Map<String, String> languageAdapters();
 
-	String intermediateMappings();
-
 	/** Entrypoint holder. Since plugins aren't expected to read from this only creation is supported. */
 	@ApiStatus.NonExtendable
 	public interface ModEntrypoint {

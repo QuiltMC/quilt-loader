@@ -34,6 +34,7 @@ import org.quiltmc.loader.impl.fabric.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.metadata.NestedJarEntry;
+import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.BuiltinQuiltPlugin;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -104,11 +105,11 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			boolean mandatory = location.isDirect();
 			// a mod needs to be remapped if the mod did not come from the classpath and its mappings do not match
 			// the current runtime namespace
-			String mappings = meta.asQuiltModMetadata().intermediateMappings();
+			String mappings = ((InternalModMetadata) meta).intermediateMappings();
 			if (mappings.equals("net.fabricmc:intermediary")) {
 				mappings = "intermediary";
 			}
-			boolean requiresRemap = !location.onClasspath() && !meta.asQuiltModMetadata().intermediateMappings().equals(QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
+			boolean requiresRemap = !location.onClasspath() && !mappings.equals(QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());
