@@ -198,16 +198,15 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	archiveClassifier = ""
 	configurations = [project.configurations.include]
 
-//	relocate 'org.quiltmc.loader.util.sat4j', 'org.quiltmc.loader.impl.lib.sat4j'
-//	relocate 'org.quiltmc.parsers', 'org.quiltmc.loader.impl.lib.parsers'
-//	relocate 'com.electronwill', 'org.quiltmc.loader.impl.lib.electronwill'
-//	relocate 'com.unascribed.flexver', 'org.quiltmc.loader.impl.lib.flexver'
-//	relocate 'net.fabricmc.mappingio', 'org.quiltmc.loader.impl.lib.mappingio'
-//	relocate 'net.fabricmc.tinyremapper', 'org.quiltmc.loader.impl.lib.tinyremapper'
-//	relocate 'net.fabricmc.accesswidener', 'org.quiltmc.loader.impl.lib.accesswidener'
+	relocate 'org.quiltmc.loader.util.sat4j', 'org.quiltmc.loader.impl.lib.sat4j'
+	relocate 'org.quiltmc.parsers', 'org.quiltmc.loader.impl.lib.parsers'
+	relocate 'com.electronwill', 'org.quiltmc.loader.impl.lib.electronwill'
+	relocate 'com.unascribed.flexver', 'org.quiltmc.loader.impl.lib.flexver'
+	relocate 'net.fabricmc.mappingio', 'org.quiltmc.loader.impl.lib.mappingio'
+	relocate 'net.fabricmc.tinyremapper', 'org.quiltmc.loader.impl.lib.tinyremapper'
+	relocate 'net.fabricmc.accesswidener', 'org.quiltmc.loader.impl.lib.accesswidener'
 
-	// For attaching a debugger
-//	minimize()
+	minimize()
 
 	exclude 'about.html'
 	exclude 'sat4j.version'

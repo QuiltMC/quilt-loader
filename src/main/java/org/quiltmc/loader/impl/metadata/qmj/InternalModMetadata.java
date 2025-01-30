@@ -46,8 +46,6 @@ public interface InternalModMetadata
 
 	Collection<String> repositories();
 
-	String intermediateMappings();
-
 	@Override
 	default InternalModMetadata asQuiltModMetadata() {
 		return this;

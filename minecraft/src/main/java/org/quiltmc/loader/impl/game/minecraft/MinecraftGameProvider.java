@@ -168,8 +168,12 @@ public class MinecraftGameProvider implements GameProvider {
 		return Collections.singletonList(new BuiltinMod(paths, metadata.build()));
 	}
 
-	public List<Path> getGameJars() {
-		return gameJars;
+	@Override
+	public List<Path> getGameJars(@Nullable String namespace) {
+		if (namespace == null) {
+			return gameJarsByNamespace.get(QuiltLauncherBase.getLauncher().getTargetNamespace());
+		}
+		return gameJarsByNamespace.get(namespace);
 	}
 
 	@Override
@@ -567,13 +571,5 @@ public class MinecraftGameProvider implements GameProvider {
 		} catch (ReflectiveOperationException e) {
 			throw new FormattedException("Failed to start Minecraft", e);
 		}
-	}
-
-	@Override
-	public List<Path> getGameJars(@Nullable String namespace) {
-		if (namespace == null) {
-			return gameJarsByNamespace.get(QuiltLauncherBase.getLauncher().getTargetNamespace());
-		}
-		return gameJarsByNamespace.get(namespace);
 	}
 }

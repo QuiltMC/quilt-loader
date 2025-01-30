@@ -150,16 +150,18 @@ public final class MappingConfiguration {
 					FilteringMappingVisitor filter = new FilteringMappingVisitor(mappings);
 					switch (format) {
 						case TINY_FILE:
+							if (!Tiny1FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
+								Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
+								continue;
+							}
 							reader.reset();
 							Tiny1FileReader.read(reader, filter);
 							break;
 						case TINY_2_FILE:
-							/*
 							if (!Tiny2FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
 								Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
 								continue;
 							}
-							 */
 							reader.reset();
 							Tiny2FileReader.read(reader, filter);
 							break;
@@ -202,7 +204,7 @@ public final class MappingConfiguration {
 		this.namespaces = Collections.unmodifiableList(namespaces);
 		Log.info(LogCategory.MAPPINGS, "Loaded mapping namespaces: %s", namespaces);
 		Log.info(LogCategory.MAPPINGS, "Target namespace: %s", getTargetNamespace());
-		
+
 		if (!namespaces.contains(getTargetNamespace())) {
 			throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
 		}

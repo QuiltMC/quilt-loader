@@ -66,7 +66,13 @@ final class RuntimeModRemapper {
 
 	public static void remap(TransformCache cache) {
 		List<ModLoadOption> modsToRemap = cache.getModsInCache().stream()
-				.filter(modLoadOption -> modLoadOption.namespaceMappingFrom() != null)
+				.filter(modLoadOption -> {
+					String namespace = modLoadOption.namespaceMappingFrom();
+					if ("mojang".equals(namespace)) {
+						throw new UnsupportedOperationException("Cannot remap mojang mods to another environment!");
+					}
+					return namespace != null;
+				})
 				.collect(Collectors.toList());
 		Set<InputTag> remapMixins = new HashSet<>();
 
@@ -78,7 +84,7 @@ final class RuntimeModRemapper {
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyUtils.createMappingProvider(QuiltLauncherBase.getLauncher().getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
+				.withMappings(TinyUtils.createMappingProvider(launcher.getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains))
 				.extraPreApplyVisitor(KotlinMetadataRemapper::new)
@@ -99,8 +105,6 @@ final class RuntimeModRemapper {
 			Map<ModLoadOption, RemapInfo> infoMap = new HashMap<>();
 
 			for (ModLoadOption mod : modsToRemap) {
-				System.out.println(mod.id());
-				System.out.println(mod.namespaceMappingFrom() + " " + mod.needsTransforming());
 				RemapInfo info = new RemapInfo();
 				infoMap.put(mod, info);
 				InputTag tag = remapper.createInputTag();
