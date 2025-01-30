@@ -426,10 +426,12 @@ public class MinecraftGameProvider implements GameProvider {
 			realmsJar = newObfJars.get("realms");
 			gameJarsByNamespace.put(launcher.getTargetNamespace(), Collections.unmodifiableList(new ArrayList<>(newObfJars.values())));
 
-			for (String namespace : launcher.getMappingConfiguration().getNamespaces()) {
-				if (!namespace.equals("official") && !namespace.equals(launcher.getTargetNamespace())) {
-					Map<String, Path> output = GameProviderHelper.deobfuscate(obfJars, getGameId(), getNormalizedGameVersion(), getLaunchDirectory(), launcher, namespace);
-					gameJarsByNamespace.put(namespace, Collections.unmodifiableList(new ArrayList<>(output.values())));
+			if (!launcher.isDevelopment()) {
+				for (String namespace : launcher.getMappingConfiguration().getNamespaces()) {
+					if (!namespace.equals("official") && !namespace.equals(launcher.getTargetNamespace())) {
+						Map<String, Path> output = GameProviderHelper.deobfuscate(obfJars, getGameId(), getNormalizedGameVersion(), getLaunchDirectory(), launcher, namespace);
+						gameJarsByNamespace.put(namespace, Collections.unmodifiableList(new ArrayList<>(output.values())));
+					}
 				}
 			}
 
