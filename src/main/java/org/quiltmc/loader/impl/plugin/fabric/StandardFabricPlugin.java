@@ -105,11 +105,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			boolean mandatory = location.isDirect();
 			// a mod needs to be remapped if the mod did not come from the classpath and its mappings do not match
 			// the current runtime namespace
-			String mappings = ((InternalModMetadata) meta).intermediateMappings();
-			if (mappings.equals("net.fabricmc:intermediary")) {
-				mappings = "intermediary";
-			}
-			boolean requiresRemap = !location.onClasspath() && !mappings.equals(QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
+			boolean requiresRemap = !location.onClasspath() && !"intermediary".equals(QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
 			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
 		} catch (ParseMetadataException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());

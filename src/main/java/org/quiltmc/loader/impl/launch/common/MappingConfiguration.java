@@ -100,6 +100,8 @@ public final class MappingConfiguration {
 	}
 
 	public List<String> getNamespaces() {
+		initialize();
+
 		return namespaces;
 	}
 
@@ -148,9 +150,11 @@ public final class MappingConfiguration {
 					MappingFormat format = readMappingFormat(reader);
 					reader.mark(8192*2); // seems to read 2x the buffer size
 					FilteringMappingVisitor filter = new FilteringMappingVisitor(mappings);
+					String tinyNamespace = QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
+
 					switch (format) {
 						case TINY_FILE:
-							if (!Tiny1FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
+							if (!Tiny1FileReader.getNamespaces(reader).contains(tinyNamespace)) {
 								Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
 								continue;
 							}
@@ -158,7 +162,7 @@ public final class MappingConfiguration {
 							Tiny1FileReader.read(reader, filter);
 							break;
 						case TINY_2_FILE:
-							if (!Tiny2FileReader.getNamespaces(reader).contains(getTargetNamespace())) {
+							if (!Tiny2FileReader.getNamespaces(reader).contains(tinyNamespace)) {
 								Log.info(LogCategory.MAPPINGS, "Skipping mappings: Missing namespace '%s'", getTargetNamespace());
 								continue;
 							}
