@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.jetbrains.annotations.VisibleForTesting;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
@@ -61,7 +62,8 @@ public abstract class QuiltLauncherBase implements QuiltLauncher {
 		properties = propertiesA;
 	}
 
-	private static void setLauncher(QuiltLauncher launcherA) {
+	@VisibleForTesting
+	public static void setLauncher(QuiltLauncher launcherA) {
 		if (launcher != null && launcher != launcherA) {
 			throw new RuntimeException("Duplicate setLauncher call!");
 		}

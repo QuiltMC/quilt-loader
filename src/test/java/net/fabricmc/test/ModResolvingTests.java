@@ -31,6 +31,7 @@ import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.discovery.ModSolvingException;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
@@ -41,6 +42,7 @@ public final class ModResolvingTests {
 
 	@BeforeAll
 	public static void setupPaths() {
+		QuiltLauncherBase.setLauncher(new DummyQuiltLauncher());
 		testLocation = new File(System.getProperty("user.dir")).toPath()//
 			.resolve("src")//
 			.resolve("test")//

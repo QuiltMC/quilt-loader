@@ -58,7 +58,7 @@ import net.fabricmc.mappingio.tree.VisitableMappingTree;
 import org.quiltmc.loader.impl.util.mappings.FilteringMappingVisitor;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class MappingConfiguration {
+public class MappingConfiguration {
 	private boolean initialized;
 
 	private String gameId;
