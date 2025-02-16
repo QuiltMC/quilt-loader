@@ -28,7 +28,6 @@ import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.QuiltFileHasher;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
-import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -39,11 +38,11 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 	protected final ModMetadataExt metadata;
 	protected final Path from, resourceRoot;
 	protected final boolean mandatory;
-	protected final boolean requiresRemap;
+	protected final boolean couldRequireRemap;
 	protected final QuiltLoaderIcon fileIcon;
 
 	public InternalModOptionBase(QuiltPluginContext pluginContext, ModMetadataExt meta, Path from,
-		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+		QuiltLoaderIcon fileIcon, Path resourceRoot, boolean mandatory, boolean couldRequireRemap) {
 
 		this.pluginContext = pluginContext;
 		this.metadata = Objects.requireNonNull(meta, "meta");
@@ -51,7 +50,7 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 		this.fileIcon = Objects.requireNonNull(fileIcon, "fileIcon");
 		this.resourceRoot = Objects.requireNonNull(resourceRoot, "resourceRoot");
 		this.mandatory = mandatory;
-		this.requiresRemap = requiresRemap;
+		this.couldRequireRemap = couldRequireRemap;
 	}
 
 	@Override
@@ -109,11 +108,16 @@ public abstract class InternalModOptionBase extends ModLoadOption {
 
 	@Override
 	public @Nullable String namespaceMappingFrom() {
-		if (requiresRemap) {
+		// TODO: Loader needs some better system to identify the compiled namespace of the mod -- the current system is
+		// 	internal and requires the mod developer to manually identify the mappings being used in the QMJ
+		if (couldRequireRemap) {
 			if (!(metadata instanceof InternalModMetadata)) {
 				throw new AbstractMethodError("// TODO: Handle remapping mods from plugins! (" + metadata.getClass() + ")");
 			}
-			return ((InternalModMetadata) metadata).intermediateMappings();
+
+			// format <maven.group>:<internal namespace>
+			String identifier = ((InternalModMetadata) metadata).intermediateMappings();
+			return identifier.substring(identifier.indexOf(':')+1);
 		} else {
 			return null;
 		}

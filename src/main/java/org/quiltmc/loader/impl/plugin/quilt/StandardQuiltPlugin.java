@@ -394,15 +394,10 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 				context().addFileToScan(inner, jarNode, false);
 			}
 
-			// a mod needs to be remapped if the mod did not come from the classpath and its mappings do not match
-			// the current runtime namespace
-			String mappings = meta.intermediateMappings();
-			if (mappings.equals("net.fabricmc:intermediary")) {
-				mappings = "intermediary";
-			}
-			boolean requiresRemap = !location.onClasspath() && !mappings.equals(QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
+			// mods on the classpath should not be remapped by Loader
+			boolean couldRequireRemap = !location.onClasspath();
 			return new ModLoadOption[] { new QuiltModOption(
-				context(), meta, from, fileIcon, root, location.isDirect(), requiresRemap
+				context(), meta, from, fileIcon, root, location.isDirect(), couldRequireRemap
 			) };
 		} catch (ParseException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate(

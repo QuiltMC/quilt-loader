@@ -31,9 +31,9 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class QuiltModOption extends InternalModOptionBase {
 
 	public QuiltModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, QuiltLoaderIcon fileIcon,
-		Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+		Path resourceRoot, boolean mandatory, boolean couldRequireRemap) {
 
-		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, requiresRemap);
+		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, couldRequireRemap);
 	}
 
 	@Override
