@@ -20,7 +20,7 @@ import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import org.quiltmc.loader.impl.launch.common.MappingConfiguration;
+import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 
 import java.io.IOException;
@@ -36,8 +36,8 @@ import java.util.jar.Manifest;
 public class DummyQuiltLauncher implements QuiltLauncher {
 
 	@Override
-	public MappingConfiguration getMappingConfiguration() {
-		return new MappingConfiguration() {
+	public MappingConfigurationImpl getMappingConfiguration() {
+		return new MappingConfigurationImpl() {
 			@Override
 			public List<String> getNamespaces() {
 				return Collections.singletonList("intermediary");

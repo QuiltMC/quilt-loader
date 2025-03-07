@@ -18,7 +18,9 @@ package org.quiltmc.loader.impl.config;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.impl.game.EmptyMappingConfiguration;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.Arguments;
 
@@ -69,8 +71,8 @@ public class DummyGameProvider implements GameProvider {
 	}
 
 	@Override
-	public boolean isObfuscated() {
-		return false;
+	public MappingConfiguration getMappingConfiguration() {
+		return new EmptyMappingConfiguration();
 	}
 
 	@Override

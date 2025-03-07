@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-import net.fabricmc.loader.api.metadata.ModMetadata;
-
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -45,7 +43,11 @@ public interface GameProvider {
 
 	String getEntrypoint();
 	Path getLaunchDirectory();
-	boolean isObfuscated();
+
+	/**
+	 * The mapping configuration for the game. Unobfuscated games should use {@link EmptyMappingConfiguration}.
+	 */
+	MappingConfiguration getMappingConfiguration();
 	boolean requiresUrlClassLoader();
 
 	boolean isEnabled();

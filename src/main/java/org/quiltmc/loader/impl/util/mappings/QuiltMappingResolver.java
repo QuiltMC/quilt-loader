@@ -24,6 +24,9 @@ import java.util.List;
 
 import net.fabricmc.mappingio.tree.MappingTreeView;
 
+import net.fabricmc.mappingio.tree.MemoryMappingTree;
+
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -35,7 +38,14 @@ public class QuiltMappingResolver implements MappingResolver {
 	private final int targetNamespaceId;
 	private final List<String> namespaces;
 
-	public QuiltMappingResolver(MappingTreeView tree, String targetNamespace) {
+	public QuiltMappingResolver(@Nullable MappingTreeView tree, String targetNamespace) {
+		if (tree == null) {
+			// Will return null (and therefore identity) if namespace == targetNamespace, and otherwise
+			// throw an exception in safeGetId
+			MemoryMappingTree mappings = new MemoryMappingTree();
+			mappings.setSrcNamespace(targetNamespace);
+			tree = mappings;
+		}
 		this.tree = tree;
 		this.targetNamespace = targetNamespace;
 		this.targetNamespaceId = tree.getNamespaceId(targetNamespace);

@@ -25,6 +25,7 @@ import net.fabricmc.api.EnvType;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -38,7 +39,7 @@ import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 final class QuiltTransformer {
 	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
 		boolean isGameClass = mod.id().equals(QuiltLoaderImpl.INSTANCE.getGameProvider().getGameId());
-		boolean transformAccess = isGameClass && QuiltLauncherBase.getLauncher().getMappingConfiguration().requiresPackageAccessHack();
+		boolean transformAccess = isGameClass && ((MappingConfigurationImpl) QuiltLauncherBase.getLauncher().getMappingConfiguration()).requiresPackageAccessHack();
 		boolean strip = !isGameClass || isDevelopment;
 		boolean applyAccessWidener = isGameClass && accessWidener.getTargets().contains(name);
 

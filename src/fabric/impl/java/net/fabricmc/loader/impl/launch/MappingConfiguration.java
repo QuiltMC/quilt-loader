@@ -16,32 +16,41 @@
 
 package net.fabricmc.loader.impl.launch;
 
+import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
+
 @Deprecated
 public final class MappingConfiguration {
-	private final org.quiltmc.loader.impl.launch.common.MappingConfiguration delegate;
+	private final org.quiltmc.loader.impl.game.MappingConfiguration delegate;
 
-	public MappingConfiguration(org.quiltmc.loader.impl.launch.common.MappingConfiguration delegate) {
+	public MappingConfiguration(org.quiltmc.loader.impl.game.MappingConfiguration delegate) {
 		this.delegate = delegate;
 	}
 
+	private MappingConfigurationImpl cast() {
+		if (delegate instanceof MappingConfigurationImpl) {
+			return (MappingConfigurationImpl) delegate;
+		} else {
+			throw new UnsupportedOperationException("Fabric MappingConfiguration is not supported on game providers other than Minecraft!");
+		}
+	}
 	public String getGameId() {
-		return delegate.getGameId();
+		return cast().getGameId();
 	}
 
 	public String getGameVersion() {
-		return delegate.getGameVersion();
+		return cast().getGameVersion();
 	}
 
 	public boolean matches(String gameId, String gameVersion) {
-		return delegate.matches(gameId, gameVersion);
+		return cast().matches(gameId, gameVersion);
 	}
 
 
 	public String getTargetNamespace() {
-		return delegate.getTargetNamespace();
+		return cast().getTargetNamespace();
 	}
 
 	public boolean requiresPackageAccessHack() {
-		return delegate.requiresPackageAccessHack();
+		return cast().requiresPackageAccessHack();
 	}
 }

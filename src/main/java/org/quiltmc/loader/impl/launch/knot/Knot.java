@@ -26,6 +26,7 @@ import org.quiltmc.loader.impl.config.QuiltConfigImpl;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.launch.common.QuiltMixinBootstrap;
 import org.quiltmc.loader.impl.util.FileUtil;
@@ -266,6 +267,11 @@ public final class Knot extends QuiltLauncherBase {
 	@Override
 	public GameTransformer getEntrypointTransformer() {
 		return provider.getEntrypointTransformer();
+	}
+
+	@Override
+	public MappingConfiguration getMappingConfiguration() {
+		return provider.getMappingConfiguration();
 	}
 
 	@Override

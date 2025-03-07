@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -44,12 +45,15 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
 import org.quiltmc.loader.impl.game.GameProviderHelper;
+import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import net.fabricmc.accesswidener.AccessWidenerReader;
 import net.fabricmc.accesswidener.AccessWidenerRemapper;
@@ -65,6 +69,23 @@ final class RuntimeModRemapper {
 	private static final String REMAP_TYPE_STATIC = "static";
 
 	public static void remap(TransformCache cache) {
+		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
+
+		if (mappingConfiguration == null) {
+			// TODO: Right now, there's no easy way for people implementing other game providers
+			// 	 but wanting to use the default Quilt plugin to change the namespaceMappingFrom
+			//   (in fact, they still have to declare a supported-by-Quilt intermediateMappings in their quilt.mod.json,
+			//   even if their game is not obfuscated at all!)
+			//   Once that is supported, this should change to error or even crash when mods we know are not going to
+			//   be able to load are found.
+
+			Log.info(LogCategory.MOD_REMAP, "Not remapping mods because mappings are empty");
+			return;
+		} else if (!mappingConfiguration.getNamespaces().contains("intermediary")) {
+			Log.warn(LogCategory.MOD_REMAP, "Not remapping mods because intermediary is missing!");
+		}
+
 		List<ModLoadOption> modsToRemap = cache.getModsInCache().stream()
 				.filter(modLoadOption -> {
 					String namespace = modLoadOption.namespaceMappingFrom();
@@ -74,17 +95,19 @@ final class RuntimeModRemapper {
 					return namespace != null;
 				})
 				.collect(Collectors.toList());
-		Set<InputTag> remapMixins = new HashSet<>();
 
-		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache-remapping", false);
 		if (modsToRemap.isEmpty()) {
 			return;
 		}
+		Set<InputTag> remapMixins = new HashSet<>();
 
-		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache-remapping", false);
+
+
+
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
-				.withMappings(TinyUtils.createMappingProvider(launcher.getMappingConfiguration().getMappings(), "intermediary", launcher.getTargetNamespace()))
+				.withMappings(TinyUtils.createMappingProvider(mappingConfiguration.getMappings(), "intermediary", mappingConfiguration.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains))
 				.extraPreApplyVisitor(KotlinMetadataRemapper::new)

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.launch.common;
+package org.quiltmc.loader.impl.game;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -39,9 +39,9 @@ import net.fabricmc.mappingio.format.MappingFormat;
 import net.fabricmc.mappingio.format.tiny.Tiny1FileReader;
 import net.fabricmc.mappingio.format.tiny.Tiny2FileReader;
 
-import net.fabricmc.mappingio.tree.MappingTree;
-
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.ManifestUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -57,14 +57,15 @@ import net.fabricmc.mappingio.tree.VisitableMappingTree;
 
 import org.quiltmc.loader.impl.util.mappings.FilteringMappingVisitor;
 
+// this implementation is intended specifically for use by the Minecraft game provider
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class MappingConfiguration {
+public class MappingConfigurationImpl implements MappingConfiguration {
 	private boolean initialized;
 
 	private String gameId;
 	private String gameVersion;
 	private String mappingsSource;
-	private final VisitableMappingTree mappings = new MemoryMappingTree();
+	private VisitableMappingTree mappings = new MemoryMappingTree();
 	private List<String> namespaces;
 	private String targetNamespace;
 
@@ -93,6 +94,7 @@ public class MappingConfiguration {
 				&& (this.gameVersion == null || gameVersion == null || gameVersion.equals(this.gameVersion));
 	}
 
+	@Nullable
 	public MappingTreeView getMappings() {
 		initialize();
 
@@ -113,7 +115,6 @@ public class MappingConfiguration {
 	}
 
 	public boolean requiresPackageAccessHack() {
-		// TODO
 		return getTargetNamespace().equals("named");
 	}
 
@@ -123,7 +124,7 @@ public class MappingConfiguration {
 		// Load named/intermediary
 		Enumeration<URL> urls;
 		try {
-			urls = MappingConfiguration.class.getClassLoader().getResources("mappings/mappings.tiny");
+			urls = MappingConfigurationImpl.class.getClassLoader().getResources("mappings/mappings.tiny");
 		} catch (IOException e) {
 			throw new UncheckedIOException("Error trying to locate mappings", e);
 		}
@@ -203,14 +204,32 @@ public class MappingConfiguration {
 		}
 
 		this.namespaces = new ArrayList<>();
-		namespaces.add(mappings.getSrcNamespace());
+		if (mappings.getSrcNamespace() != null) {
+			namespaces.add(mappings.getSrcNamespace());
+		}
 		namespaces.addAll(mappings.getDstNamespaces());
 		this.namespaces = Collections.unmodifiableList(namespaces);
-		Log.info(LogCategory.MAPPINGS, "Loaded mapping namespaces: %s", namespaces);
+
+		if (!namespaces.isEmpty()) {
+			Log.info(LogCategory.MAPPINGS, "Loaded mapping namespaces: %s", namespaces);
+		} else {
+			Log.warn(LogCategory.MAPPINGS, "No mappings namespaces were loaded!");
+			mappings = null;
+		}
+
 		Log.info(LogCategory.MAPPINGS, "Target namespace: %s", getTargetNamespace());
 
 		if (!namespaces.contains(getTargetNamespace())) {
-			throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
+			if (!namespaces.isEmpty()) {
+				throw new IllegalStateException(String.format("Requested target namespace %s not loaded. Available options: %s", targetNamespace, namespaces));
+			} else {
+				if (getTargetNamespace().equals("official")) {
+					Log.warn(LogCategory.MAPPINGS, "Continuing without mappings because target namespace is 'official'");
+				} else {
+					throw new IllegalStateException("Requested target namespace %s not loaded. To continue without mappings, " +
+							"set the target namespace to 'official' with -D" + SystemProperties.TARGET_NAMESPACE + "=official");
+				}
+			}
 		}
 
 		initialized = true;

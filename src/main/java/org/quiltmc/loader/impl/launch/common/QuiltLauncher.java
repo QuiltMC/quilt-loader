@@ -29,6 +29,7 @@ import java.util.jar.Manifest;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
