@@ -74,6 +74,12 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 				from = context().manager().getParent(root);
 			}
 
+			boolean mandatory = location.isDirect();
+			// a mod needs to be remapped if we are in a development environment, and the mod
+			// did not come from the classpath
+			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
+			FabricModOption fabricMod = new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap, location.containingOption());
+
 			jars: for (NestedJarEntry jarEntry : meta.getJars()) {
 				String jar = jarEntry.getFile();
 				Path inner = root;
@@ -98,14 +104,10 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 				}
 
 				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
-				context().addFileToScan(inner, jarNode, false);
+				context().addFileToScan(inner, jarNode.getNew(), fabricMod);
 			}
 
-			boolean mandatory = location.isDirect();
-			// a mod needs to be remapped if we are in a development environment, and the mod
-			// did not come from the classpath
-			boolean requiresRemap = !location.onClasspath() && QuiltLoader.isDevelopmentEnvironment();
-			return new ModLoadOption[] { new FabricModOption(context(), meta, from, fileIcon, root, mandatory, requiresRemap) };
+			return new ModLoadOption[] { fabricMod };
 		} catch (ParseMetadataException parse) {
 			QuiltLoaderText title = QuiltLoaderText.translate("gui.text.invalid_metadata.title", "fabric.mod.json", parse.getMessage());
 			QuiltDisplayedError error = context().reportError(title);

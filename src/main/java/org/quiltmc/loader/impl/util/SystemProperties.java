@@ -44,6 +44,7 @@ public final class SystemProperties {
 	public static final String UNIT_TEST = "loader.unitTest";
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
 	public static final String PRINT_MOD_SOLVING_RESULTS = "loader.mod_solving.print_results";
+	public static final String PRINT_MOD_SOLVING_ERROR_DOT_GRAPH = "loader.mod_solving.error.print_dot_graph";
 	public static final String DISABLE_MOD_SOLVING_PRE_PROCESSING = "loader.mod_solving.disable_pre_processor";
 	public static final String MODS_DIRECTORY = "loader.modsDir";
 	public static final String CACHE_DIRECTORY = "loader.cacheDir";

@@ -16,7 +16,9 @@
 
 package org.quiltmc.loader.impl.plugin;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.ModLocation;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -24,10 +26,13 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public final class ModLocationImpl implements ModLocation {
 
 	private final boolean classpath, direct;
+	@Nullable
+	private final ModLoadOption containingOption;
 
-	ModLocationImpl(boolean classpath, boolean direct) {
+	ModLocationImpl(boolean classpath, boolean direct, @Nullable ModLoadOption containingOption) {
 		this.classpath = classpath;
 		this.direct = direct;
+		this.containingOption = containingOption;
 	}
 
 	@Override
@@ -38,5 +43,10 @@ public final class ModLocationImpl implements ModLocation {
 	@Override
 	public boolean isDirect() {
 		return direct;
+	}
+
+	@Override
+	public @Nullable ModLoadOption containingOption() {
+		return containingOption;
 	}
 }

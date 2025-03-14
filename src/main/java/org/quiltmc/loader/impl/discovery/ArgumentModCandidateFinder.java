@@ -123,7 +123,7 @@ public class ArgumentModCandidateFinder {
 				error.appendReportText(" (Inside the file " + source + ")");
 			}
 		} else {
-			ctx.addFileToScan(path, argModsNode.addChild(QuiltLoaderText.of(pathStr)), true);
+			ctx.addFileToScan(path, argModsNode.addChild(QuiltLoaderText.of(pathStr)).getNew(), null);
 		}
 	}
 }

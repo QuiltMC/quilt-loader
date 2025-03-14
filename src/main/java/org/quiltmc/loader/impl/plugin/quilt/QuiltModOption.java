@@ -18,9 +18,11 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.nio.file.Path;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.plugin.base.InternalModOptionBase;
@@ -31,9 +33,9 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class QuiltModOption extends InternalModOptionBase {
 
 	public QuiltModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, QuiltLoaderIcon fileIcon,
-		Path resourceRoot, boolean mandatory, boolean requiresRemap) {
+						  Path resourceRoot, boolean mandatory, boolean requiresRemap, @Nullable ModLoadOption containingMod) {
 
-		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, requiresRemap);
+		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, requiresRemap, containingMod);
 	}
 
 	@Override

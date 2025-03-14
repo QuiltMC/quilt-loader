@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api.plugin;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -29,8 +30,16 @@ public interface ModLocation {
 	/** @return True if the mod is directly on the classpath, otherwise false. */
 	boolean onClasspath();
 
+	/**
+	 * @return the containing mod option for this location. If the method returns {@code null}, the mod is not contained within
+	 * 		   another mod
+	 */
+	@Nullable ModLoadOption containingOption();
+
 	/** @return True if the mod was directly scanned as a file or folder, rather than being scanned as a sub-mod.
 	 *         This also returns true if {@link #onClasspath()} returns true.
 	 *         Influences {@link ModLoadOption#isMandatory()} in the built-in plugins. */
-	boolean isDirect();
+	default boolean isDirect() {
+		return this.containingOption() == null;
+	}
 }

@@ -138,6 +138,8 @@ public abstract class ModLoadOption extends LoadOption {
 
 	public abstract ModContainerExt convertToMod(Path transformedResourceRoot);
 
+	public abstract @Nullable ModLoadOption getContainingMod();
+
 	@Override
 	public String toString() {
 		return shortString();

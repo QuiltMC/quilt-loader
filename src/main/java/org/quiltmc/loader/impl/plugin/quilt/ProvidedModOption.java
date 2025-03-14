@@ -133,6 +133,11 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
+	public @Nullable ModLoadOption getContainingMod() {
+		return provider.getContainingMod();
+	}
+
+	@Override
 	public @Nullable String namespaceMappingFrom() {
 		return null;
 	}

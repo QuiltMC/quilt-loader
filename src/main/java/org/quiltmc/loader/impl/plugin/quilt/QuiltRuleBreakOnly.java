@@ -42,7 +42,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 	final List<ModLoadOption> okayOptions;
 	final List<ModLoadOption> allOptions;
 
-	final QuiltRuleDep unless;
+	public final QuiltRuleDep unless;
 
 	public QuiltRuleBreakOnly(QuiltPluginManager manager, RuleContext ctx, LoadOption source, ModDependency.Only publicDep) {
 		super(source);
@@ -122,7 +122,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		options[1] = definer.negate(source);
 
 		if (unless != null) {
-			options[2] = definer.negate(unless.source);
+			options[2] = unless.source;
 		}
 
 		for (ModLoadOption conflict : conficts) {

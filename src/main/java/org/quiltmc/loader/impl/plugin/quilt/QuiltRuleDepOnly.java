@@ -246,7 +246,7 @@ public class QuiltRuleDepOnly extends QuiltRuleDep {
 			id.append(":");
 		}
 		id.append(publicDep.id().id());
-		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false);
+		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), true, false);
 		to.accept(QuiltLoaderText.translate("solver.rule.dep.only", on));
 		to.accept(QuiltLoaderText.translate("solver.rule.dep.only.matching", validOptions.size()));
 		for (ModLoadOption option : validOptions) {

@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
@@ -29,6 +30,7 @@ import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.RuleContext;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
+import org.quiltmc.loader.impl.plugin.quilt.QuiltModOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -75,8 +77,19 @@ public interface QuiltPluginContext {
 	 * or vice versa. Or any mod type of which a loader plugin can load).
 	 * 
 	 * @param guiNode The GUI node to display the loaded mod details under
-	 * @param direct True if the file is directly loaded rather than being included in another mod (see {@link ModLocation#isDirect()}) */
+	 * @param direct True if the file is directly loaded rather than being included in another mod (see {@link ModLocation#isDirect()})
+	 * @deprecated Please use {@link #addFileToScan(Path, QuiltTreeNode, ModLoadOption)}
+	 * 			   as specifying the containing option improves error messages */
+	@Deprecated
 	void addFileToScan(Path file, QuiltTreeNode guiNode, boolean direct);
+
+	/** Adds an additional file to scan for mods, which will go through the same steps as files found in mod folders.
+	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
+	 * or vice versa. Or any mod type of which a loader plugin can load).
+	 *
+	 * @param guiNode The GUI node to display the loaded mod details under
+	 * @param containing The {@link ModLoadOption} that contains the file to scan, null if it is not contained. */
+	void addFileToScan(Path file, QuiltTreeNode guiNode, @Nullable ModLoadOption containing);
 
 	/** Adds an additional folder to scan for mods, which will be treated in the same way as the regular mods folder.
 	 *
