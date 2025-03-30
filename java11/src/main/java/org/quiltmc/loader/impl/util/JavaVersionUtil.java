@@ -21,9 +21,6 @@ package org.quiltmc.loader.impl.util;
 public final class JavaVersionUtil {
 
     public static int getJavaVersion() {
-        if (true) {
-            throw new Error("Success! This means that the multi-release-jar is working!");
-        }
         return Runtime.version().feature();
     }
 }

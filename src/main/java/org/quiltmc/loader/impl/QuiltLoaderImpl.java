@@ -296,7 +296,6 @@ public final class QuiltLoaderImpl {
 	}
 
 	public void load() {
-		JavaVersionUtil.getJavaVersion();
 		if (provider == null) throw new IllegalStateException("game provider not set");
 		if (frozen) throw new IllegalStateException("Frozen - cannot load additional mods!");
 
