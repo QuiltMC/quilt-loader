@@ -187,11 +187,16 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 		rename { "${it}_${project.archivesBaseName}"}
 	}
 
+	into("META-INF/versions/11") {
+		from project(":java11").sourceSets.main.output
+	}
+
 	manifest {
 		attributes (
 			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher",
 			"Fabric-Loom-Remap": "false",
-			"Automatic-Module-Name": "org.quiltmc.loader"
+			"Automatic-Module-Name": "org.quiltmc.loader",
+			"Multi-Release": "true"
 		)
 	}
 
