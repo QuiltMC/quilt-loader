@@ -43,35 +43,30 @@ public class KotlinMetadataRemapper extends ClassVisitor {
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (descriptor.equals("Lkotlin/Metadata;")) {
-			return new AnnotationNode(QuiltLoaderImpl.ASM_VERSION, descriptor) {
+			return new AnnotationVisitor(api, super.visitAnnotation(descriptor, visible)) {
 				@Override
-				public void visitEnd() {
-					super.visitEnd();
+				public AnnotationVisitor visitArray(String name) {
+					if ("d2".equals(name)) {
+						return new AnnotationVisitor(api, super.visitArray(name)) {
+							@Override
+							public void visit(String name, Object value) {
+								if (value instanceof String) {
+									String candidate = (String) value;
+									if (candidate.startsWith("(")) {
+										candidate = remapper.mapMethodDesc(candidate);
+									} else if (candidate.startsWith("L")) { // this could technically catch strays but it should just not do anything
+										candidate = remapper.mapDesc(candidate);
+									} else if (candidate.startsWith("class_") || candidate.contains("/")) { // must go last to not accidentally catch descriptors
+										candidate = remapper.map(candidate);
+									} // else hope nothing goes wrong
+									value = candidate;
+								}
 
-					List<String> data = null;
-					Iterator<Object> iter = this.values.iterator();
-					while (iter.hasNext()) {
-						if (iter.next().equals("d2")) {
-							//noinspection unchecked
-							data = (List<String>) iter.next();
-							break;
-						}
+								super.visit(name, value);
+							}
+						};
 					}
-					if (data == null) {
-						return;
-					}
-					for (int i = 0; i < data.size(); i++) {
-						String candidate = data.get(i);
-						if (candidate.startsWith("(")) {
-							candidate = remapper.mapMethodDesc(candidate);
-						} else if (candidate.startsWith("L")) { // this could technically catch strays but it should just not do anything
-							candidate = remapper.mapDesc(candidate);
-						} else if (candidate.startsWith("class_") || candidate.contains("/")) { // must go last to not accidentally catch descriptors
-							candidate = remapper.map(candidate);
-						} // else hope nothing goes wrong
-						data.set(i, candidate);
-					}
-
+					return super.visitArray(name);
 				}
 			};
 		}

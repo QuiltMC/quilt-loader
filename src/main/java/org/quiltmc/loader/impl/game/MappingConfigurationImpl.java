@@ -226,7 +226,7 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 				if (getTargetNamespace().equals("official")) {
 					Log.warn(LogCategory.MAPPINGS, "Continuing without mappings because target namespace is 'official'");
 				} else {
-					throw new IllegalStateException("Requested target namespace %s not loaded. To continue without mappings, " +
+					throw new IllegalStateException("Requested target namespace " + targetNamespace + " not loaded. To continue without mappings, " +
 							"set the target namespace to 'official' with -D" + SystemProperties.TARGET_NAMESPACE + "=official");
 				}
 			}

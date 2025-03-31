@@ -67,6 +67,8 @@ class TransformCache {
 		this.allMods = orderedMods;
 		this.modsInCache = orderedMods.stream().filter(mod -> mod.needsTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())).collect(Collectors.toList());
 
+		RuntimeModRemapper remapper = new RuntimeModRemapper(modsInCache);
+
 		for (ModLoadOption mod : this.modsInCache) {
 			Path modSrc = mod.createTransformRoot();
 			Path modDst = root.resolve(mod.id());
@@ -124,7 +126,7 @@ class TransformCache {
 					}
 
 					// copy classes for mods which don't need remapped
-					if (mod.namespaceMappingFrom() == null) {
+					if (!remapper.doesModNeedRemapping(mod)) {
 						try (Stream<Path> stream = Files.walk(modSrc)) {
 							stream
 								.filter(FasterFiles::isRegularFile)
@@ -132,7 +134,7 @@ class TransformCache {
 								.forEach(path -> copyFile(path, modSrc, modDst));
 						}
 					}
-				} else if (mod.namespaceMappingFrom() != null) {
+				} else if (remapper.doesModNeedRemapping(mod)) {
 					// Copy everything that isn't a class file, since those get remapped
 					try (Stream<Path> stream = Files.walk(modSrc)) {
 						stream
@@ -153,7 +155,7 @@ class TransformCache {
 			}
 		}
 		// Populate mods that need remapped
-		RuntimeModRemapper.remap(this);
+		remapper.remap(this);
 		for (ModLoadOption orderedMod : this.modsInCache) {
 			modRoots.put(orderedMod, root.resolve(orderedMod.id() + "/"));
 		}

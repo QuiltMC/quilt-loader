@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -68,8 +69,9 @@ final class RuntimeModRemapper {
 	private static final String REMAP_TYPE_MANIFEST_KEY = "Fabric-Loom-Mixin-Remap-Type";
 	private static final String REMAP_TYPE_STATIC = "static";
 
-	public static void remap(TransformCache cache) {
-		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+	private final Set<ModLoadOption> modsToRemap = new LinkedHashSet<>();
+
+	RuntimeModRemapper(List<ModLoadOption> mods) {
 		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 
 		if (mappingConfiguration == null) {
@@ -84,27 +86,32 @@ final class RuntimeModRemapper {
 			return;
 		} else if (!mappingConfiguration.getNamespaces().contains("intermediary")) {
 			Log.warn(LogCategory.MOD_REMAP, "Not remapping mods because intermediary is missing!");
+			return;
 		}
 
-		List<ModLoadOption> modsToRemap = cache.getModsInCache().stream()
-				.filter(modLoadOption -> {
-					String namespace = modLoadOption.namespaceMappingFrom();
-					if ("mojang".equals(namespace)) {
-						throw new UnsupportedOperationException("Cannot remap mojang mods to another environment!");
-					}
-					return namespace != null;
-				})
-				.collect(Collectors.toList());
+		for (ModLoadOption mod : mods) {
+			String namespace = mod.namespaceMappingFrom();
+			if ("mojang".equals(namespace)) {
+				throw new UnsupportedOperationException("Cannot remap mojang mods to another environment!");
+			}
+			if (namespace != null) {
+				modsToRemap.add(mod);
+			}
+		}
+	}
+
+	public boolean doesModNeedRemapping(ModLoadOption mod) {
+		return modsToRemap.contains(mod);
+	}
+
+	public void remap(TransformCache cache) {
+		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
+		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 
 		if (modsToRemap.isEmpty()) {
 			return;
 		}
 		Set<InputTag> remapMixins = new HashSet<>();
-
-		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache-remapping", false);
-
-
-
 
 		TinyRemapper remapper = TinyRemapper.newRemapper()
 				.withMappings(TinyUtils.createMappingProvider(mappingConfiguration.getMappings(), "intermediary", mappingConfiguration.getTargetNamespace()))
@@ -112,6 +119,15 @@ final class RuntimeModRemapper {
 				.extension(new MixinExtension(remapMixins::contains))
 				.extraPreApplyVisitor(KotlinMetadataRemapper::new)
 				.build();
+
+		try {
+			remap0(cache, launcher, remapMixins, remapper);
+		} finally {
+			remapper.finish();
+		}
+	}
+
+	private void remap0(TransformCache cache, QuiltLauncher launcher, Set<InputTag> remapMixins, TinyRemapper remapper) {
 
 		if (launcher.isDevelopment()) {
 			try {
@@ -123,6 +139,8 @@ final class RuntimeModRemapper {
 			remapper.readClassPathAsync(launcher.getClassPath().toArray(new Path[0]));
 			remapper.readClassPathAsync(QuiltLoaderImpl.INSTANCE.getGameProvider().getGameJars("intermediary").toArray(new Path[0]));
 		}
+
+		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache-remapping", false);
 
 		try {
 			Map<ModLoadOption, RemapInfo> infoMap = new HashMap<>();
@@ -184,7 +202,6 @@ final class RuntimeModRemapper {
 				}
 			}
 
-			remapper.finish();
 			fs.close();
 
 			for (ModLoadOption mod : modsToRemap) {
@@ -199,7 +216,6 @@ final class RuntimeModRemapper {
 			}
 
 		} catch (IOException e) {
-			remapper.finish();
 			throw new RuntimeException("Failed to remap mods", e);
 		}
 	}
