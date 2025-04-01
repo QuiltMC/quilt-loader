@@ -285,7 +285,6 @@ public final class V1ModMetadataReader {
 			@Nullable
 			JsonLoaderValue intermediateMappingsValue = quiltLoader.get(QLKeys.INTERMEDIATE_MAPPINGS);
 
-			// TODO: "mojang" for mojmap breaks spec; it is just temporary for now because its experimental
 			String[] supported_mappings = { "org.quiltmc:hashed", "net.fabricmc:intermediary", "org.quiltmc.experimental:mojang" };
 			String mappings = "org.quiltmc:hashed";
 
