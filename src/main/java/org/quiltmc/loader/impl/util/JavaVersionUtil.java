@@ -32,15 +32,14 @@ public final class JavaVersionUtil {
 			} else {
 				int firstDot = jVersion.indexOf('.');
 				if (firstDot > 0) {
-					try {
-						JAVA_VERSION = Integer.parseInt(jVersion.substring(0, firstDot));
-					} catch (NumberFormatException nfe) {
-						throw new IllegalStateException(
-							"Unable to convert 'java.version' (" + jVersion + ") into a version number!", nfe
-						);
-					}
-				} else {
-					throw new IllegalStateException("Unable to convert 'java.version' (" + jVersion + ") into a version number!");
+					jVersion = jVersion.substring(0, firstDot);
+				}
+				try {
+					JAVA_VERSION = Integer.parseInt(jVersion);
+				} catch (NumberFormatException nfe) {
+					throw new IllegalStateException(
+						"Unable to convert 'java.version' (" + jVersion + ") into a version number!", nfe
+					);
 				}
 			}
 		}

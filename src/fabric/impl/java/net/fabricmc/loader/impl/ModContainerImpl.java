@@ -90,7 +90,7 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 			subtracted.remove(subtracted.size() - 1);
 			for (ModContainer container : QuiltLoader.getAllMods()) {
 				if (container.getSourcePaths().contains(subtracted)) {
-					return Optional.of(new ModContainerImpl(quilt));
+					return Optional.of(new ModContainerImpl(container));
 				}
 			}
 		}

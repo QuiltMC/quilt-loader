@@ -195,7 +195,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 			id.append(":");
 		}
 		id.append(publicDep.id().id());
-		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false);
+		Object on = VersionRangeDescriber.describe(source.describe(), publicDep.versionRange(), id.toString(), false, false);
 		to.accept(QuiltLoaderText.translate("solver.rule.break.only", on));
 		to.accept(QuiltLoaderText.translate("solver.rule.break.only.conflicting", conflictingOptions.size()));
 		for (ModLoadOption option : conflictingOptions) {

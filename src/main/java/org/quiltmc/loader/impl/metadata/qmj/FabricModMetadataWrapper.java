@@ -40,6 +40,8 @@ import org.quiltmc.loader.impl.metadata.NestedJarEntry;
 import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.metadata.CustomValue;
@@ -220,7 +222,9 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 
 			VersionRange range = VersionRange.ofIntervals(quiltIntervals);
 			if (range.isEmpty()) {
-				throw new ParseMetadataException("Dependency version range was empty for " + f);
+				// Bad dependency range - the developer likely misread the spec
+				Log.warn(LogCategory.DISCOVERY, "Multi-version dependency range (AND) has no valid versions for " + f + " (the developer probably meant to use an array for OR logic).");
+				continue;
 			}
 			out.add(new ModDependencyImpl.OnlyImpl("Fabric Dependency", new ModDependencyIdentifierImpl(f.getModId()), range, null, false, null));
 		}

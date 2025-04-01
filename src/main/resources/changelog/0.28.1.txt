@@ -1,0 +1,5 @@
+Bug Fixes:
+
+- [#470] Fixed quilt-to-fabric ModContainer wrapper returning itself from getContainingMod()
+- Fixed JavaVersionUtil crash with major-only java versions (like temurin "24" 2025-03-18)
+- Fixed server mixin crash when mixin is before loader on the classpath.

@@ -114,7 +114,7 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 			error.appendDescription(QuiltLoaderText.translate("gui.text.invalid_metadata.desc.0", describedPath));
 			error.appendThrowable(parse);
 			context().manager().getRealContainingFile(root).ifPresent(real ->
-					error.addFileViewButton(QuiltLoaderText.translate("button.view_file"), real)
+					error.addFileViewButton(QuiltLoaderText.translate("button.view_file", real.getFileName()), real)
 					.icon(QuiltLoaderGui.iconJarFile().withDecoration(QuiltLoaderGui.iconFabric()))
 			);
 
