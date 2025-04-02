@@ -23,7 +23,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /** Indicates to future quilt maintainers that the class is intended to be converted to a Multi-Release jar after we add
- * support for it, and then this annotation should be deleted.
+ * support for it, and then this annotation should be replaced with {@link MultiReleaseJarModified}.
  * <p>
  * (This merely allows for this to be searched) */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
