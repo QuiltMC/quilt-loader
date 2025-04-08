@@ -89,9 +89,15 @@ final class RuntimeModRemapper {
 			return;
 		}
 
+		boolean mojmapEnvironment = "mojang".equals(mappingConfiguration.getTargetNamespace());
+
 		for (ModLoadOption mod : mods) {
 			String namespace = mod.namespaceMappingFrom();
 			if ("mojang".equals(namespace)) {
+				if (mojmapEnvironment) {
+					break;
+				}
+
 				throw new UnsupportedOperationException("Cannot remap mojang mods to another environment!");
 			}
 			if (namespace != null) {
