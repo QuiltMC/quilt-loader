@@ -290,6 +290,12 @@ abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 			this.length = from.length;
 		}
 
+		ReadWrite(QuiltMapPath<?, ?> path, byte[] array, boolean copy) {
+			super(path);
+			this.bytes = copy ? Arrays.copyOf(array, array.length) : array;
+			this.length = array.length;
+		}
+
 		private ReadWrite sync() {
 			return this;
 		}

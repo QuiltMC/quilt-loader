@@ -16,10 +16,12 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -32,9 +34,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.ReadOnlyByteArrayChannel;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFolder, QuiltUnifiedFile */ {
@@ -63,6 +67,10 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 	/** Like {@link #createCopiedTo(QuiltMapPath)}, but used when the original file will be deleted - which allows some entries to
 	 * be shallow copied. */
 	protected QuiltUnifiedEntry createMovedTo(QuiltMapPath<?, ?> newPath) {
+		return createCopiedTo(newPath);
+	}
+
+	protected QuiltUnifiedEntry createCopiedToExt(QuiltMapPath<?, ?> newPath) {
 		return createCopiedTo(newPath);
 	}
 
@@ -245,6 +253,53 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 				return deepCopy(truncate).createByteChannel(options);
 			}
 			return super.createByteChannel(options);
+		}
+	}
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static class QuiltUnifiedDynamicFile extends QuiltUnifiedFile {
+
+		final Supplier<byte[]> supplier;
+
+		public QuiltUnifiedDynamicFile(QuiltMapPath<?, ?> path, Supplier<byte[]> supplier) {
+			super(path);
+			this.supplier = supplier;
+		}
+
+		@Override
+		InputStream createInputStream() throws IOException {
+			return new ByteArrayInputStream(supplier.get());
+		}
+
+		@Override
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
+			// Truncate option handled specifically for this class in QuiltMapFileSystemProvider
+			throw new IOException("Cannot partially overwrite a dynamic file!");
+		}
+
+		@Override
+		SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException {
+			for (OpenOption option : options) {
+				if (option != StandardOpenOption.READ) {
+					throw new IOException("Invalid open option " + option + ", only StandardOpenOption.READ is supported!");
+				}
+			}
+			return new ReadOnlyByteArrayChannel(supplier.get());
+		}
+
+		@Override
+		protected BasicFileAttributes createAttributes() throws IOException {
+			return new QuiltFileAttributes(path, supplier.get().length);
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
+			return new QuiltMemoryFile.ReadWrite(newPath, supplier.get(), true);
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createCopiedToExt(QuiltMapPath<?, ?> newPath) {
+			return new QuiltUnifiedDynamicFile(newPath, supplier);
 		}
 	}
 }

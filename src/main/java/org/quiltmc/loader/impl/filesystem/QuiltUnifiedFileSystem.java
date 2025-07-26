@@ -19,19 +19,22 @@ package org.quiltmc.loader.impl.filesystem;
 import java.io.IOException;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.ExtendedFileSystem;
 import org.quiltmc.loader.api.MountOption;
+import org.quiltmc.loader.api.NotDynamicFileException;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedCopyOnWriteFile;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedDynamicFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedMountedFile;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -89,6 +92,85 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 	@Override
 	public boolean isReadOnly() {
 		return isPermanentlyReadOnly();
+	}
+
+	@Override
+	public Path copyExt(Path source, Path target, CopyOption... options) throws IOException {
+		FileSystem srcFS = source.getFileSystem();
+		if (srcFS instanceof ExtendedFileSystem) {
+			ExtendedFileSystem srcExtFS = (ExtendedFileSystem) srcFS;
+
+			// Check the boolean first since it saves us from constructing an exception
+
+			final Supplier<byte[]> dynamicSource;
+
+			if (srcFS instanceof QuiltUnifiedFileSystem) {
+				synchronized (srcFS) {
+					QuiltUnifiedEntry entry = ((QuiltUnifiedFileSystem) srcFS).getEntry(source);
+					if (entry instanceof QuiltUnifiedDynamicFile) {
+						dynamicSource = ((QuiltUnifiedDynamicFile) entry).supplier;
+					} else {
+						dynamicSource = null;
+					}
+				}
+			} else {
+				if (srcExtFS.isDynamicFile(source)) {
+					Supplier<byte[]> supplier = null;
+					try {
+						supplier = srcExtFS.readDynamicFileSource(source);
+					} catch (NotDynamicFileException ignored) {
+						// Can happen due to threading or other issues
+					}
+					dynamicSource = supplier;
+				} else {
+					dynamicSource = null;
+				}
+			}
+
+			if (dynamicSource != null) {
+				boolean canExist = false;
+
+				for (CopyOption option : options) {
+					if (option instanceof StandardCopyOption) {
+						switch ((StandardCopyOption) option) {
+							case REPLACE_EXISTING: {
+								canExist = true;
+								break;
+							}
+							case COPY_ATTRIBUTES: {
+								// Ignored
+								break;
+							}
+							case ATOMIC_MOVE:
+							default: {
+								throw new UnsupportedOperationException(option.toString());
+							}
+						}
+					} else if (option == LinkOption.NOFOLLOW_LINKS) {
+						// Ignored
+					} else {
+						throw new UnsupportedOperationException(option.toString());
+					}
+				}
+
+
+				synchronized (this) {
+					QuiltUnifiedEntry dstEntry = getEntry(target);
+
+					if (canExist) {
+						provider().deleteIfExists(target);
+					} else if (dstEntry != null) {
+						throw new FileAlreadyExistsException(target.toString());
+					}
+					return createDynamicFile(target, dynamicSource);
+				}
+			}
+
+			return copy(source, target, options);
+
+		} else {
+			return copy(source, target, options);
+		}
 	}
 
 	@Override
@@ -190,6 +272,28 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 			return ((QuiltUnifiedMountedFile) entry).to;
 		} else {
 			throw new NotLinkException(file.toString() + " is not a mounted file!");
+		}
+	}
+
+	@Override
+	public Path createDynamicFile(Path file, Supplier<byte[]> supplier) throws IOException {
+		QuiltUnifiedPath dst = provider().toAbsolutePath(file);
+		addEntryRequiringParent(new QuiltUnifiedDynamicFile(dst, supplier));
+		return dst;
+	}
+
+	@Override
+	public boolean isDynamicFile(Path file) {
+		return getEntry(file) instanceof QuiltUnifiedDynamicFile;
+	}
+
+	@Override
+	public Supplier<byte[]> readDynamicFileSource(Path file) throws NotDynamicFileException {
+		QuiltUnifiedEntry entry = getEntry(file);
+		if (entry instanceof QuiltUnifiedDynamicFile) {
+			return ((QuiltUnifiedDynamicFile) entry).supplier;
+		} else {
+			throw new NotDynamicFileException(file.toString());
 		}
 	}
 }
