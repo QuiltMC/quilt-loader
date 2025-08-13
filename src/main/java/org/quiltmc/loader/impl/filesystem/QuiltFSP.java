@@ -26,9 +26,10 @@ import java.nio.file.spi.FileSystemProvider;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-class QuiltFSP<FS extends QuiltBaseFileSystem<FS, ?>> {
+class QuiltFSP<@NotNull FS extends QuiltBaseFileSystem<FS, @NotNull ?>> {
 
 	private final String scheme;
 	private final Map<String, WeakReference<FS>> activeFilesystems = new HashMap<>();
@@ -83,6 +84,7 @@ class QuiltFSP<FS extends QuiltBaseFileSystem<FS, ?>> {
 			// We add a (useless) port to allow URI.authority and host to be populated
 			authority = authority.substring(0, authority.length() - 2);
 		}
+		@Nullable
 		FS fs = getFileSystem(authority);
 		if (fs == null) {
 			throw new IllegalArgumentException("Unknown file system name '" + authority + "'");

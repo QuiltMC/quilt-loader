@@ -46,7 +46,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
+public abstract class QuiltBasePath<@NotNull FS extends QuiltBaseFileSystem<FS, P>, @NotNull P extends QuiltBasePath<FS, P>>
 	implements Path {
 
 	static final String NAME_ROOT = "/";
@@ -203,6 +203,8 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		}
 
 		P p = getThisPath();
+
+		@Nullable
 		P upper;
 
 		while (true) {
@@ -235,10 +237,10 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		int hash;
 
 		if (parent != null) {
-			if (parent.isRoot()) {
-				hash = '/';
-			} else {
+			if (!parent.isRoot()) {
 				hash = 31 * parent.toStringHashCode() + '/';
+			} else {
+				hash = '/';
 			}
 		} else {
 			hash = 0;
@@ -276,11 +278,11 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	private boolean quickIsToStringEqual(Path other) {
 		QuiltBasePath<?, ?> o = (QuiltBasePath<?, ?>) other;
-		if (parent == null || o.parent == null) {
-			if ((parent == null) != (o.parent == null)) {
+		if (parent != null && o.parent != null) {
+			if (!parent.isToStringEqual(o.parent)) {
 				return false;
 			}
-		} else if (!parent.isToStringEqual(o.parent)) {
+		} else if ((parent == null) != (o.parent == null)) {
 			return false;
 		}
 		return name.equals(o.name);
@@ -305,9 +307,19 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			return fs.createPath(null, name);
 		}
 
+		@Nullable
 		P p = getThisPath();
 		for (int i = index + 1; i < getNameCount(); i++) {
+			if (p == null) {
+				break;
+			}
 			p = p.parent;
+		}
+
+		if (p == null) {
+			throw new IllegalStateException(
+				"Found a path object with an unexpected lack of parent: " + this + " for name count " + getNameCount()
+			);
 		}
 
 		return fs.createPath(null, p.name);
@@ -364,6 +376,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 			// TODO: Optimise this!
 
+			@Nullable
 			P p = getThisPath();
 
 			do {
@@ -387,8 +400,9 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 	@Override
 	public boolean endsWith(Path other) {
 		if (fs.pathClass.isInstance(other)) {
-			P o = fs.pathClass.cast(other);
-			P t = getThisPath();
+
+			@Nullable P o = fs.pathClass.cast(other);
+			@Nullable P t = getThisPath();
 
 			while (o != null && t != null) {
 				if (!t.name.equals(o.name)) {
@@ -415,6 +429,9 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		if (isNormalized()) {
 			return getThisPath();
 		}
+
+		@Nullable
+		P parent = this.parent;
 
 		if (NAME_SELF.equals(name)) {
 			if (parent != null) {
@@ -461,7 +478,8 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 		if (other.getNameCount() == 0) {
 			return getThisPath();
 		}
-		P o = fs.pathClass.cast(other);
+
+		@Nullable P o = fs.pathClass.cast(other);
 
 		Deque<P> stack = new ArrayDeque<>();
 
@@ -491,6 +509,9 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 
 	@Override
 	public P resolveSibling(Path other) {
+
+		@Nullable P parent = this.parent;
+
 		if (other.isAbsolute() || parent == null) {
 			return fs.pathClass.cast(other);
 		}
@@ -527,7 +548,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			}
 		}
 
-		P path = null;
+		@Nullable P path = null;
 		for (int j = i; j < names.size(); j++) {
 			if (path == null) {
 				path = fs.createPath(null, NAME_PARENT);
@@ -542,6 +563,10 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			} else {
 				path = path.resolve(oNames.get(j));
 			}
+		}
+
+		if (path == null) {
+			return fs.createPath(null, "");
 		}
 
 		return path;
@@ -607,7 +632,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			}
 		}
 		List<String> list = new ArrayList<>(getNameCount());
-		P p = getThisPath();
+		@Nullable P p = getThisPath();
 		do {
 			if (p.isRoot()) {
 				break;
@@ -628,7 +653,7 @@ public abstract class QuiltBasePath<FS extends QuiltBaseFileSystem<FS, P>, P ext
 			}
 		}
 		List<Path> list = new ArrayList<>(getNameCount());
-		P p = getThisPath();
+		@Nullable P p = getThisPath();
 		do {
 			if (p.isRoot()) {
 				break;

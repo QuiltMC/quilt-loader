@@ -75,12 +75,11 @@ abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 				return new QuiltMemoryFile.ReadOnly(path, false, size, bytes);
 			}
 
-			try {
+			try  {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				GZIPOutputStream gzip = new GZIPOutputStream(baos);
-				gzip.write(bytes);
-				gzip.close();
-
+				try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
+					gzip.write(bytes);
+				}
 				byte[] c = baos.toByteArray();
 
 				if (c.length + 24 < size) {

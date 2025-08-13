@@ -21,13 +21,13 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
 import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.ExtendedFileSystem;
@@ -43,7 +43,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 /** General-purpose {@link FileSystem}, used when building the transform cache. Also intended to replace the various
  * zip/memory file systems currently in use. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileSystem, QuiltUnifiedPath> implements ExtendedFileSystem {
+public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<@NotNull QuiltUnifiedFileSystem, @NotNull QuiltUnifiedPath> implements ExtendedFileSystem {
 
 	private boolean readOnly = false;
 
@@ -77,16 +77,6 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<QuiltUnifiedFileS
 	@Override
 	public boolean isPermanentlyReadOnly() {
 		return readOnly;
-	}
-
-	@Override
-	public void close() throws IOException {
-
-	}
-
-	@Override
-	public boolean isOpen() {
-		return true;
 	}
 
 	@Override

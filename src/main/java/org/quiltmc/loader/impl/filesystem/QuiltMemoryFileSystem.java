@@ -34,9 +34,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,13 +52,13 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemoryFileSystem, QuiltMemoryPath> implements CachedFileSystem {
+public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<@NotNull QuiltMemoryFileSystem, @NotNull QuiltMemoryPath> implements CachedFileSystem {
 
 	private static final Set<String> FILE_ATTRS = Collections.singleton("basic");
 
 	enum OpenState {
 		OPEN,
-		/** Used by {@link ReadWrite#replaceWithReadOnly()} when moving from one filesystem to another - since we need
+		/** Used by {@link ReadWrite#replaceWithReadOnly(boolean)} when moving from one filesystem to another - since we need
 		 * to remove the old file system from the provider while still being able to read it. */
 		MOVING,
 		CLOSED;
@@ -126,6 +124,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 		}
 	}
 
+	@Nullable
 	public <V extends FileAttributeView> V getFileAttributeView(QuiltMemoryPath qmp, Class<V> type) {
 		if (type == BasicFileAttributeView.class) {
 			BasicFileAttributeView view = new BasicFileAttributeView() {
@@ -146,7 +145,7 @@ public abstract class QuiltMemoryFileSystem extends QuiltMapFileSystem<QuiltMemo
 					return QuiltMemoryFileSystem.this.readAttributes(qmp);
 				}
 			};
-			return (V) view;
+			return type.cast(view);
 		}
 
 		return null;

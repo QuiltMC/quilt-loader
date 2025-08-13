@@ -48,7 +48,7 @@ public interface ExtendedFileSystem extends FasterFileSystem {
 	 * @param target A {@link Path} which must be from this {@link ExtendedFileSystem}
 	 * @return target */
 	default Path copyOnWrite(Path source, Path target, CopyOption... options) throws IOException {
-		return Files.copy(source, target, options);
+		return copy(source, target, options);
 	}
 
 	/** Mounts the given source file on the target file, such that all reads and writes will actually read and write the

@@ -27,8 +27,11 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltModContainer extends InternalModContainerBase {
 
-	public QuiltModContainer(QuiltPluginContext pluginContext, ModMetadataExt metadata, Path from, Path resourceRoot) {
+	private final Path modifiableRoot;
+
+	public QuiltModContainer(QuiltPluginContext pluginContext, ModMetadataExt metadata, Path from, Path resourceRoot, Path modifiableRoot) {
 		super(pluginContext, metadata, from, resourceRoot);
+		this.modifiableRoot = modifiableRoot;
 	}
 
 	@Override
@@ -39,5 +42,13 @@ public class QuiltModContainer extends InternalModContainerBase {
 	@Override
 	public BasicSourceType getSourceType() {
 		return BasicSourceType.NORMAL_QUILT;
+	}
+
+	@Override
+	public Path getMutableFileOverlay() {
+		if (modifiableRoot == null) {
+			throw new UnsupportedOperationException(metadata().id() + " hasn't declared itself as requiring the mutable file overlay!");
+		}
+		return modifiableRoot;
 	}
 }

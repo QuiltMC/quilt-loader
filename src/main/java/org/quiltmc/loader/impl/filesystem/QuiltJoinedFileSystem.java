@@ -19,16 +19,14 @@ package org.quiltmc.loader.impl.filesystem;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
-import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -37,7 +35,7 @@ import org.quiltmc.loader.api.FasterFiles;
 
 /** A {@link FileSystem} that exposes multiple {@link Path}s in a single {@link FileSystem}. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<QuiltJoinedFileSystem, QuiltJoinedPath> implements CachedFileSystem {
+public class QuiltJoinedFileSystem extends QuiltBaseFileSystem<@NotNull QuiltJoinedFileSystem, @NotNull QuiltJoinedPath> implements CachedFileSystem {
 
 	final Path[] from;
 	final boolean[] shouldCloseFroms;

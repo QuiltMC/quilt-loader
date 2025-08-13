@@ -41,6 +41,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -84,9 +85,9 @@ public class QuiltClassPath<D> {
 		public final Path root;
 
 		/** The data associated with the root path. May be null if no data was added for the root path. */
-		public final D data;
+		public final @Nullable D data;
 
-		PathResult(Path path, Path root, D data) {
+		PathResult(Path path, Path root, @Nullable D data) {
 			this.path = path;
 			this.root = root;
 			this.data = data;
@@ -138,7 +139,7 @@ public class QuiltClassPath<D> {
 		addRoot(root, null);
 	}
 
-	public void addRoot(Path root, D data) {
+	public void addRoot(Path root, @Nullable D data) {
 		if (dataClass == null) {
 			if (data != null) {
 				throw new IllegalArgumentException("Cannot add extra data if this doesn't have a data class!");
@@ -210,7 +211,7 @@ public class QuiltClassPath<D> {
 		}
 	}
 
-	private void addRootToInternalArray(Path root, D data) {
+	private void addRootToInternalArray(Path root, @Nullable D data) {
 		roots.updateAndGet(array -> {
 			PathData[] array2 = Arrays.copyOf(array, array.length + 1);
 			array2[array.length] = new PathData(root, data);
@@ -358,6 +359,7 @@ public class QuiltClassPath<D> {
 		return quick;
 	}
 
+	@Nullable
 	private D castData(Object data) {
 		if (dataClass == null) {
 			if (data != null) {

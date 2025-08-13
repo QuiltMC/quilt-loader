@@ -17,23 +17,6 @@
 
 package org.quiltmc.loader.impl.launch.knot;
 
-import net.fabricmc.api.EnvType;
-
-import org.quiltmc.loader.api.ExtendedFiles;
-import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
-import org.quiltmc.loader.impl.filesystem.QuiltClassPath.PathResult;
-import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.ZipHandling;
-import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
-import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.util.DeferredInputStream;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.UrlUtil;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -47,6 +30,22 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+
+import org.quiltmc.loader.api.ExtendedFiles;
+import org.quiltmc.loader.api.ModContainer;
+import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
+import org.quiltmc.loader.impl.filesystem.QuiltClassPath.PathResult;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
+import org.quiltmc.loader.impl.filesystem.ZipHandling;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.DeferredInputStream;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.UrlUtil;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
+
+import net.fabricmc.api.EnvType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterface {

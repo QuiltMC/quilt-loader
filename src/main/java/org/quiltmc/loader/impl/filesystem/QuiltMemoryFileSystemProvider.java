@@ -24,11 +24,12 @@ import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
 
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class QuiltMemoryFileSystemProvider extends QuiltMapFileSystemProvider<QuiltMemoryFileSystem, QuiltMemoryPath> {
+public final class QuiltMemoryFileSystemProvider extends QuiltMapFileSystemProvider<@NotNull QuiltMemoryFileSystem, @NotNull QuiltMemoryPath> {
 	public QuiltMemoryFileSystemProvider() {
 		if (instance == null) {
 			instance = this;
@@ -39,8 +40,7 @@ public final class QuiltMemoryFileSystemProvider extends QuiltMapFileSystemProvi
 
 	private static QuiltMemoryFileSystemProvider instance;
 
-	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
-	static final QuiltFSP<QuiltMemoryFileSystem> PROVIDER = new QuiltFSP<>(SCHEME);
+	static final QuiltFSP<@NotNull QuiltMemoryFileSystem> PROVIDER = new QuiltFSP<>(SCHEME);
 
 	public static QuiltMemoryFileSystemProvider instance() {
 		QuiltMemoryFileSystemProvider found = findInstance();
@@ -65,7 +65,7 @@ public final class QuiltMemoryFileSystemProvider extends QuiltMapFileSystemProvi
 	}
 
 	@Override
-	protected QuiltFSP<QuiltMemoryFileSystem> quiltFSP() {
+	protected QuiltFSP<@NotNull QuiltMemoryFileSystem> quiltFSP() {
 		return PROVIDER;
 	}
 

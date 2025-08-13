@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedDynamicFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
@@ -57,7 +58,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<FS, P>, P extends QuiltMapPath<FS, P>> extends FileSystemProvider {
+public abstract class QuiltMapFileSystemProvider<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> extends FileSystemProvider {
 
 	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
 

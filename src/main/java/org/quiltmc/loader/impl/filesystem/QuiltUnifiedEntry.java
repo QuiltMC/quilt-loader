@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -229,7 +228,6 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		}
 
 		private QuiltUnifiedFile deepCopy(boolean truncate) throws IOException {
-			System.out.println("REMOVED copy-on-write " + path);
 			path.fs.provider().delete(path);
 			QuiltMemoryFile.ReadWrite file = new QuiltMemoryFile.ReadWrite(path);
 			if (!truncate) {

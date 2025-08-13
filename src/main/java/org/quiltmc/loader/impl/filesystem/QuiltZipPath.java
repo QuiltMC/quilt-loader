@@ -16,13 +16,14 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import org.jetbrains.annotations.NotNull;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class QuiltZipPath extends QuiltMapPath<QuiltZipFileSystem, QuiltZipPath> {
+public class QuiltZipPath extends QuiltMapPath<@NotNull QuiltZipFileSystem, @NotNull QuiltZipPath> {
 
-	QuiltZipPath(QuiltZipFileSystem fs, QuiltZipPath parent, String name) {
+	QuiltZipPath(@NotNull QuiltZipFileSystem fs, QuiltZipPath parent, String name) {
 		super(fs, parent, name);
 	}
 

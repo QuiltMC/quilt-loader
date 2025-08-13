@@ -42,19 +42,21 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolder;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
+import org.quiltmc.loader.impl.util.ExceptionConstructor;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P extends QuiltMapPath<FS, P>>
+public abstract class QuiltMapFileSystem<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>>
 	extends QuiltBaseFileSystem<FS, P>
 	implements CachedFileSystem {
 
@@ -154,9 +156,9 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		addEntryRequiringParents0(newEntry, IllegalStateException::new);
 	}
 
-	private <T extends Throwable> void addEntryRequiringParents0(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
+	private <T extends Throwable> void addEntryRequiringParents0(QuiltUnifiedEntry newEntry, ExceptionConstructor<T> execCtor) throws T {
 		P path = pathClass.cast(newEntry.path);
-		P parent = path.parent;
+		@Nullable P parent = path.parent;
 		if (parent == null) {
 			if (root.equals(path)) {
 				addEntryWithoutParents0(newEntry, execCtor);
@@ -172,9 +174,9 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 				addEntryWithoutParents0(newEntry, execCtor);
 				((QuiltUnifiedFolderWriteable) entry).children.add(path);
 			} else if (entry == null) {
-				throw execCtor.apply("Cannot put entry " + path + " because the parent folder doesn't exist!");
+				throw execCtor.construct("Cannot put entry " + path + " because the parent folder doesn't exist!");
 			} else {
-				throw execCtor.apply("Cannot put entry " + path + " because the parent is not a folder (was " + entry + ")");
+				throw execCtor.construct("Cannot put entry " + path + " because the parent is not a folder (was " + entry + ")");
 			}
 
 			validate();
@@ -189,9 +191,9 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		addEntryAndParents0(newEntry, IllegalStateException::new);
 	}
 
-	private synchronized <T extends Throwable> void addEntryAndParents0(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
+	private synchronized <T extends Throwable> void addEntryAndParents0(QuiltUnifiedEntry newEntry, ExceptionConstructor<T> execCtor) throws T {
 		P path = addEntryWithoutParents0(newEntry, execCtor);
-		P parent = path;
+		@Nullable P parent = path;
 		P previous = path;
 		while ((parent = parent.getParent()) != null) {
 			QuiltUnifiedEntry parentEntry = getEntry(parent);
@@ -201,7 +203,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 			} else if (parentEntry instanceof QuiltUnifiedFolderWriteable) {
 				parentFolder = (QuiltUnifiedFolderWriteable) parentEntry;
 			} else {
-				throw execCtor.apply(
+				throw execCtor.construct(
 					"Cannot make a file into a folder " + parent + " for " + path + ", currently " + parentEntry
 				);
 			}
@@ -224,7 +226,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		addEntryWithoutParents0(newEntry, IOException::new);
 	}
 
-	private <T extends Throwable> P addEntryWithoutParents0(QuiltUnifiedEntry newEntry, Function<String, T> execCtor) throws T {
+	private <T extends Throwable> P addEntryWithoutParents0(QuiltUnifiedEntry newEntry, ExceptionConstructor<T> execCtor) throws T {
 		if (newEntry.path.fs != this) {
 			throw new IllegalArgumentException("The given entry is for a different filesystem!");
 		}
@@ -233,7 +235,7 @@ public abstract class QuiltMapFileSystem<FS extends QuiltMapFileSystem<FS, P>, P
 		if (current == null) {
 			return path;
 		} else {
-			throw execCtor.apply("Cannot replace existing entry " + current + " with " + newEntry);
+			throw execCtor.construct("Cannot replace existing entry " + current + " with " + newEntry);
 		}
 	}
 

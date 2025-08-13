@@ -58,6 +58,8 @@ import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.MappingResolver;
 import org.quiltmc.loader.api.ModContainer.BasicSourceType;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.QuiltFileSystems;
+import org.quiltmc.loader.api.QuiltFileSystems.ExtendedFileSystemRef;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.entrypoint.EntrypointContainer;
@@ -83,8 +85,11 @@ import org.quiltmc.loader.impl.entrypoint.EntrypointStorage;
 import org.quiltmc.loader.impl.entrypoint.EntrypointUtils;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
+import org.quiltmc.loader.impl.filesystem.ZipMountType;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.GuiManagerImpl;
 import org.quiltmc.loader.impl.gui.QuiltJsonGuiMessage;
@@ -131,7 +136,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.29.2-beta.4";
+	public static final String VERSION = "0.29.2-alexiil-modifiable-fs.1";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -399,59 +404,84 @@ public final class QuiltLoaderImpl {
 		long jarCopyTotal = 0;
 
 		for (ModLoadOption modOption : modList) {
-			Path resourceRoot;
+
+			List<Path> sourcePaths = new ArrayList<>();
+			String modid = modOption.id();
+
+			QuiltUnifiedPath modifiableRoot = null;
+			boolean forceJoined = false;
 
 			if (!modOption.needsTransforming() && modOption.namespaceMappingFrom() == null) {
-				resourceRoot = modOption.resourceRoot();
+				sourcePaths.add(modOption.resourceRoot());
 			} else {
-				String modid = modOption.id();
 				Path modTransformed = transformedModBundle.resolve(modid + "/");
 				Path excluded = transformedModBundle.resolve(modid + ".removed");
 
 				if (FasterFiles.exists(excluded)) {
 					throw new Error("// TODO: Implement pre-transform file removal!");
 				} else if (!FasterFiles.isDirectory(modTransformed)) {
-					resourceRoot = modOption.resourceRoot();
+					sourcePaths.add(modOption.resourceRoot());
 				} else {
-					List<Path> paths = new ArrayList<>();
 
 					long start = System.nanoTime();
 					String fsName = modid + "-" + modOption.version();
-					paths.add(new QuiltZipFileSystem(fsName, transformedModBundle.resolve(modid)).getRoot());
+					QuiltZipPath source = transformedModBundle.resolve(modid);
+					boolean modWantsFullModification = modOption.requiresMutableFileOverlay();// TODO!
+					if (modWantsFullModification) {
+						forceJoined = true;
+						modifiableRoot = new QuiltUnifiedFileSystem(fsName, true).getRoot();
+						QuiltZipFileSystem.mountFolder(source, modifiableRoot, ZipMountType.COPY_ON_WRITE);
+						sourcePaths.add(modifiableRoot);
+					} else {
+						sourcePaths.add(new QuiltZipFileSystem(fsName, source).getRoot());
+					}
 					if (modOption.couldResourcesChange()) {
-						paths.add(modOption.resourceRoot());
+						sourcePaths.add(modOption.resourceRoot());
 					}
 					zipSubCopyTotal += System.nanoTime() - start;
-
-					// This cannot pass a java ZipFileSystem directly since URLClassPath can't load
-					// from folders inside a zip.
-
-					// Since we're using our own QuiltZipFileSystem this is okay, but if that gets reverted
-					// we'll also need to revert this optimisation
-
-					 if (paths.size() == 1) {
-						 resourceRoot = paths.get(0);
-					 } else {
-						 resourceRoot = new QuiltJoinedFileSystem("_" + fsName, paths).getRoot();
-					 }
 				}
 			}
 
-			String modid2 = modOption.id();
+			Path overlayRoot = null;
+
+			if (modOption.requiresMutableFileOverlay()) {
+				overlayRoot = QuiltFileSystems.createExtendedFileSystem("modifiable-overlay-" + modid).root;
+				sourcePaths.add(overlayRoot);
+			}
+
+			Path resourceRoot;
+
+			// This cannot pass a java ZipFileSystem directly since URLClassPath can't load
+			// from folders inside a zip.
+
+			// Since we're using our own QuiltZipFileSystem this is okay, but if that gets reverted
+			// we'll also need to revert this optimisation
+			if (sourcePaths.size() == 1 && !forceJoined) {
+				resourceRoot = sourcePaths.get(0);
+			} else {
+				String fsName = "_" + modid + "-" + modOption.version();
+				resourceRoot = new QuiltJoinedFileSystem(fsName, sourcePaths).getRoot();
+			}
 
 			boolean copyThis = false;
 
 			if (resourceRoot.getFileSystem() != FileSystems.getDefault() && !"jar".equals(resourceRoot.getFileSystem().provider().getScheme())) {
-				copyThis = copyAllMods || modsToCopy.contains(modid2) || shouldCopyToJar(modOption, modIds);
+				copyThis = copyAllMods || modsToCopy.contains(modid) || shouldCopyToJar(modOption, modIds);
 			}
 
 			if (copyThis) {
-				long start = System.nanoTime();
-				resourceRoot = copyToJar(transformCacheFolder, modOption, resourceRoot);
-				jarCopyTotal += System.nanoTime() - start;
+				if (overlayRoot == null) {
+					long start = System.nanoTime();
+					resourceRoot = copyToJar(transformCacheFolder, modOption, resourceRoot);
+					jarCopyTotal += System.nanoTime() - start;
+				}
 			}
 
-			addMod(modOption.convertToMod(resourceRoot));
+			if (overlayRoot == null) {
+				addMod(modOption.convertToMod(resourceRoot));
+			} else {
+				addMod(modOption.convertToMod(resourceRoot, overlayRoot));
+			}
 		}
 
 		try {
