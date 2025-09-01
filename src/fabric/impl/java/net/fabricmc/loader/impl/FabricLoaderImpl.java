@@ -138,6 +138,11 @@ public class FabricLoaderImpl extends FabricLoader {
 	}
 
 	@Override
+	public String getRawGameVersion() {
+		return QuiltLoader.getRawGameVersion();
+	}
+
+	@Override
 	@Deprecated
 	public File getConfigDirectory() {
 		Path configDir = getConfigDir();

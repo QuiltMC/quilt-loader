@@ -18,6 +18,7 @@
 package net.fabricmc.loader.api;
 
 @Deprecated
+@SuppressWarnings({ "deprecation", "serial" }) //Extending the deprecated one for backwards compatibility
 public class VersionParsingException extends net.fabricmc.loader.util.version.VersionParsingException {
 	public VersionParsingException() {
 		super();

@@ -21,9 +21,10 @@ import java.util.List;
 
 import org.quiltmc.loader.api.ModContainer;
 
-/** Representation of the various locations a mod was loaded from originally.
- * <p>
- * This location is not necessarily identical to the code source used at runtime, a mod may get copied or otherwise
+/**
+ * Representation of the various locations a mod was loaded from originally.
+ *
+ * <p>This location is not necessarily identical to the code source used at runtime, a mod may get copied or otherwise
  * transformed before being put on the class path. It thus mostly represents the installation and initial loading, not
  * what is being directly accessed at runtime.
  * 
@@ -56,9 +57,9 @@ public interface ModOrigin {
 	String getParentModId();
 
 	/**
-	 * Get the jar or folder paths for a {@link Kind#PATH} origin.
+	 * Get the sub-location within the parent mod for a {@link Kind#NESTED} origin.
 	 *
-	 * @return jar or folder paths
+	 * @return sub-location
 	 * @throws UnsupportedOperationException for incompatible kinds
 	 */
 	String getParentSubLocation();

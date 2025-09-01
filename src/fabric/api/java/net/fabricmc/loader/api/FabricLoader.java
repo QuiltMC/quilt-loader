@@ -47,7 +47,13 @@ public interface FabricLoader {
 	 * Returns the public-facing Fabric Loader instance.
 	 */
 	static FabricLoader getInstance() {
-		return FabricLoaderImpl.INSTANCE;
+		FabricLoader ret = FabricLoaderImpl.INSTANCE;
+
+		if (ret == null) {
+			throw new RuntimeException("Accessed FabricLoader too early!");
+		}
+
+		return ret;
 	}
 
 	/**
@@ -195,6 +201,15 @@ public interface FabricLoader {
 	EnvType getEnvironmentType();
 
 	/**
+	 * Get the original unprocessed game version.
+	 *
+	 * <p>There is normally a Semver-compatible derived game version, obtainable from a mod container representing the
+	 * game, that is derived from this raw version. The raw version may not comparable or even follow a well defined
+	 * pattern, making it unusable for dependency range evaluation.
+	 */
+	String getRawGameVersion();
+
+	/**
 	 * Get the current game instance. Can represent a game client or
 	 * server object. As such, the exact return is dependent on the
 	 * current environment type.
@@ -202,7 +217,7 @@ public interface FabricLoader {
 	 * <p>The game instance may not always be available depending on the game version and {@link EnvType environment}.
 	 *
 	 * @return A client or server instance object
-	 * @deprecated This method is experimental and it's use is discouraged.
+	 * @deprecated This method is experimental and its use is discouraged.
 	 */
 	@Nullable
 	@Deprecated

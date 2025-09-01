@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package net.fabricmc.loader.entrypoint.minecraft.hooks;
+package net.fabricmc.test;
 
-import java.util.function.Consumer;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@Deprecated
-public final class EntrypointUtils {
+import org.quiltmc.loader.impl.util.Localization;
 
-	public static <T> void invoke(String name, Class<T> type, Consumer<? super T> invoker) {
-		net.fabricmc.loader.impl.entrypoint.EntrypointUtils.invoke(name, type, invoker);
+public class LocalizationTests {
+	@Test
+	public void formatRoot() {
+		Assertions.assertEquals("client", Localization.format("environment.client"));
+		Assertions.assertEquals("Install A, B.", Localization.format("resolution.solution.addMod", "A", "B"));
 	}
 }
