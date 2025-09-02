@@ -24,6 +24,8 @@ import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
+
 /** Similar to {@link Files}, but for {@link ExtendedFileSystem}. Unlike {@link Files}, most operations can take
  * {@link Path}s from any file system. */
 public class ExtendedFiles {

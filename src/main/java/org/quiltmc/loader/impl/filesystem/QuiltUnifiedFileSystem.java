@@ -32,7 +32,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.ExtendedFileSystem;
 import org.quiltmc.loader.api.MountOption;
-import org.quiltmc.loader.api.NotDynamicFileException;
+import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedCopyOnWriteFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedDynamicFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;

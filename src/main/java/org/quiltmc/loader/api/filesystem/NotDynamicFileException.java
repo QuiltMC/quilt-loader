@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.api;
+package org.quiltmc.loader.api.filesystem;
 
 import java.nio.file.FileSystemException;
 import java.nio.file.NotLinkException;
+
+import org.quiltmc.loader.api.ExtendedFileSystem;
 
 /** Thrown by {@link ExtendedFileSystem#readDynamicFileSource(java.nio.file.Path)} if the file was not a dynamic file.
  * This is similar in spirit to {@link NotLinkException} */

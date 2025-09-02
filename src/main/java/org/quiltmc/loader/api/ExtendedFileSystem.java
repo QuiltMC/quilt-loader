@@ -24,6 +24,8 @@ import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
+
 /** A {@link FileSystem} which may support additional features, beyond those which normal file systems support. Similar
  * to regular file systems, you should generally use {@link ExtendedFiles} to perform these operations. */
 public interface ExtendedFileSystem extends FasterFileSystem {
