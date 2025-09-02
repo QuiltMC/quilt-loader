@@ -94,15 +94,6 @@ public interface ModContainer {
 		throw new UnsupportedOperationException(this + " is incompatible with mutable file overlays!");
 	}
 
-	/** @return A {@link Path} which is of an {@link ExtendedFileSystem}, and supports all of its features. The path is
-	 *         at the root of the mod.
-	 * @throws UnsupportedOperationException if this mod hasn't enabled the mutable filesystem in its quilt.mod.json
-	 *             file. */
-	default Path getMutableRoot() {
-		// TODO: Think about UnifiedMountedFolder / UnifiedPartialMountedFolder
-		throw new UnsupportedOperationException(this + " is incompatible with a mutable file system!");
-	}
-
 	public enum BasicSourceType {
 		/** A regular quilt mod, likely loaded from a mod jar file, but could be from the classpath instead. */
 		NORMAL_QUILT,
