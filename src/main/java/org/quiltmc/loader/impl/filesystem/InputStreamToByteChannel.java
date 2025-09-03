@@ -60,6 +60,7 @@ public class InputStreamToByteChannel implements SeekableByteChannel {
 	@Override
 	public void close() throws IOException {
 		open = false;
+		source.close();
 	}
 
 	private void ensureOpen() throws ClosedChannelException {
