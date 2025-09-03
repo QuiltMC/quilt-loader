@@ -57,7 +57,7 @@ public interface InputStreamSupplier {
 
 	/** Java's file systems allow opening any file as a {@link SeekableByteChannel}, which requires that quilt maintain
 	 * a complete buffer of all read bytes so far - and you may be able to provide a more optimised implementation of
-	 * this. The returned byte channel should not support any modification operations.
+	 * this. The returned byte channel should not support modification.
 	 * 
 	 * @throws IOException if something goes wrong while creating the {@link SeekableByteChannel} */
 	default SeekableByteChannel createByteChannel() throws IOException {

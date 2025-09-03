@@ -121,7 +121,7 @@ public interface ExtendedFileSystem extends FasterFileSystem {
 	 *             or if anything else goes wrong.
 	 * @throws UnsupportedOperationException if this filesystem doesn't support dynamic files. */
 	default Path createDynamicFile(Path file, InputStreamSupplier supplier) throws IOException {
-		throw new UnsupportedOperationException(getClass() + " doesn't file support ExtendedFileSystem.writeDynamicFile");
+		throw new UnsupportedOperationException(getClass() + " doesn't file support ExtendedFileSystem.createDynamicFile");
 	}
 
 	/** Checks to see if the given file is a dynamic file.
