@@ -426,7 +426,7 @@ public final class QuiltLoaderImpl {
 					long start = System.nanoTime();
 					String fsName = modid + "-" + modOption.version();
 					QuiltZipPath source = transformedModBundle.resolve(modid);
-					boolean modWantsFullModification = modOption.requiresMutableFileOverlay();// TODO!
+					boolean modWantsFullModification = false; // Disabled until we can mount the backing folder in the same filesystem?
 					if (modWantsFullModification) {
 						forceJoined = true;
 						modifiableRoot = new QuiltUnifiedFileSystem(fsName, true).getRoot();

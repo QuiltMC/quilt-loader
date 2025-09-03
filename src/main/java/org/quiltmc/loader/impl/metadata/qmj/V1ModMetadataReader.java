@@ -101,6 +101,7 @@ public final class V1ModMetadataReader {
 		static final String PROVIDES = add("provides");
 		static final String INTERMEDIATE_MAPPINGS = add("intermediate_mappings");
 		static final String METADATA = add("metadata");
+		static final String REQUIRED_FEATURES = add("required_features");
 
 		private static String add(String str) {
 			QLKeys.VALID_KEYS.add(str);
@@ -314,6 +315,35 @@ public final class V1ModMetadataReader {
 			}
 
 			builder.intermediateMappings = mappings;
+
+			@Nullable
+			JsonLoaderValue requiredFeaturesValue = quiltLoader.get(QLKeys.REQUIRED_FEATURES);
+
+			if (requiredFeaturesValue != null) {
+				if (requiredFeaturesValue.type() == LType.ARRAY) {
+					for (LoaderValue feature : requiredFeaturesValue.asArray()) {
+						if (feature.type() != LType.STRING) {
+							throw parseException((JsonLoaderValue) feature, "required_features must either be an array of strings or an object!");
+						}
+
+						String featureString = feature.asString();
+
+						switch (featureString) {
+							case "quilt_loader:modifiable_filesystem_overlay":
+							case "modifiable_filesystem_overlay": {
+								builder.requiresModifiableFilesystemOverlay = true;
+								break;
+							}
+							default: {
+								throw parseException((JsonLoaderValue) feature, "Oh no! This version of Quilt Loader does not support any features other than 'modifiable_filesystem_overlay'!");
+							}
+						}
+					}
+				} else {
+					// When other features are added we'll need to support modifiable filesystem overlays here.
+					throw parseException(requiredFeaturesValue, "This version of Quilt Loader doesn't support any features other than 'modifiable_filesystem_overlay', which has no options!");
+				}
+			}
 
 			// Metadata
 			JsonLoaderValue metadataValue = quiltLoader.get(QLKeys.METADATA);

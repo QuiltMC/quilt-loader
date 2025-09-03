@@ -48,6 +48,10 @@ public interface InternalModMetadata
 
 	String intermediateMappings();
 
+	default boolean requiresModifiableFilesystemOverlay() {
+		return false;
+	}
+
 	@Override
 	default InternalModMetadata asQuiltModMetadata() {
 		return this;

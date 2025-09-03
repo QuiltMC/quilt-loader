@@ -39,8 +39,7 @@ public class QuiltModOption extends InternalModOptionBase {
 
 		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, couldRequireRemap);
 
-		LoaderValue val = meta.value("x-alexiil-temporary-modifiable-file-system");
-		requiresMutableFileOverlay = val != null && val.type() == LType.BOOLEAN && val.asBoolean();
+		requiresMutableFileOverlay = meta.requiresModifiableFilesystemOverlay();
 	}
 
 	@Override
