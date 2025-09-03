@@ -25,13 +25,13 @@ import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.ExtendedFileSystem;
 import org.quiltmc.loader.api.MountOption;
+import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
 import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedCopyOnWriteFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedDynamicFile;
@@ -92,7 +92,7 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<@NotNull QuiltUni
 
 			// Check the boolean first since it saves us from constructing an exception
 
-			final Supplier<byte[]> dynamicSource;
+			final InputStreamSupplier dynamicSource;
 
 			if (srcFS instanceof QuiltUnifiedFileSystem) {
 				synchronized (srcFS) {
@@ -105,7 +105,7 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<@NotNull QuiltUni
 				}
 			} else {
 				if (srcExtFS.isDynamicFile(source)) {
-					Supplier<byte[]> supplier = null;
+					InputStreamSupplier supplier = null;
 					try {
 						supplier = srcExtFS.readDynamicFileSource(source);
 					} catch (NotDynamicFileException ignored) {
@@ -266,7 +266,7 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<@NotNull QuiltUni
 	}
 
 	@Override
-	public Path createDynamicFile(Path file, Supplier<byte[]> supplier) throws IOException {
+	public Path createDynamicFile(Path file, InputStreamSupplier supplier) throws IOException {
 		QuiltUnifiedPath dst = provider().toAbsolutePath(file);
 		addEntryRequiringParent(new QuiltUnifiedDynamicFile(dst, supplier));
 		return dst;
@@ -278,7 +278,7 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<@NotNull QuiltUni
 	}
 
 	@Override
-	public Supplier<byte[]> readDynamicFileSource(Path file) throws NotDynamicFileException {
+	public InputStreamSupplier readDynamicFileSource(Path file) throws NotDynamicFileException {
 		QuiltUnifiedEntry entry = getEntry(file);
 		if (entry instanceof QuiltUnifiedDynamicFile) {
 			return ((QuiltUnifiedDynamicFile) entry).supplier;

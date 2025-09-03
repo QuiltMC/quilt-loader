@@ -16,7 +16,6 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,11 +32,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
+import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.ReadOnlyByteArrayChannel;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFolder, QuiltUnifiedFile */ {
@@ -61,15 +60,15 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 	}
 
 	/** @return A new entry which has been copied to the new path. Might not be on the same filesystem. */
-	protected abstract QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath);
+	protected abstract QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) throws IOException;
 
 	/** Like {@link #createCopiedTo(QuiltMapPath)}, but used when the original file will be deleted - which allows some entries to
 	 * be shallow copied. */
-	protected QuiltUnifiedEntry createMovedTo(QuiltMapPath<?, ?> newPath) {
+	protected QuiltUnifiedEntry createMovedTo(QuiltMapPath<?, ?> newPath) throws IOException {
 		return createCopiedTo(newPath);
 	}
 
-	protected QuiltUnifiedEntry createCopiedToExt(QuiltMapPath<?, ?> newPath) {
+	protected QuiltUnifiedEntry createCopiedToExt(QuiltMapPath<?, ?> newPath) throws IOException {
 		return createCopiedTo(newPath);
 	}
 
@@ -257,16 +256,16 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 	public static class QuiltUnifiedDynamicFile extends QuiltUnifiedFile {
 
-		final Supplier<byte[]> supplier;
+		final InputStreamSupplier supplier;
 
-		public QuiltUnifiedDynamicFile(QuiltMapPath<?, ?> path, Supplier<byte[]> supplier) {
+		public QuiltUnifiedDynamicFile(QuiltMapPath<?, ?> path, InputStreamSupplier supplier) {
 			super(path);
 			this.supplier = supplier;
 		}
 
 		@Override
 		InputStream createInputStream() throws IOException {
-			return new ByteArrayInputStream(supplier.get());
+			return supplier.get();
 		}
 
 		@Override
@@ -282,17 +281,17 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 					throw new IOException("Invalid open option " + option + ", only StandardOpenOption.READ is supported!");
 				}
 			}
-			return new ReadOnlyByteArrayChannel(supplier.get());
+			return supplier.createByteChannel();
 		}
 
 		@Override
 		protected BasicFileAttributes createAttributes() throws IOException {
-			return new QuiltFileAttributes(path, supplier.get().length);
+			return new QuiltFileAttributes(path, supplier.computeLength());
 		}
 
 		@Override
-		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
-			return new QuiltMemoryFile.ReadWrite(newPath, supplier.get(), true);
+		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) throws IOException {
+			return new QuiltMemoryFile.ReadWrite(newPath, FileUtil.readAllBytes(supplier.get()), true);
 		}
 
 		@Override

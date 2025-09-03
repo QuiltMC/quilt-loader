@@ -24,6 +24,8 @@ import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.quiltmc.loader.api.filesystem.ByteArrayInputStreamSupplier;
+import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
 import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
 
 /** Similar to {@link Files}, but for {@link ExtendedFileSystem}. Unlike {@link Files}, most operations can take
@@ -134,6 +136,30 @@ public class ExtendedFiles {
 		}
 	}
 
+	/** Creates a new file in this file system that has dynamic content, provided by the given
+	 * {@link InputStreamSupplier}.
+	 * <p>
+	 * {@link Files#copy(Path, Path, CopyOption...) Copying} or {@link Files#move(Path, Path, CopyOption...) moving} the
+	 * file will copy its contents at the time of copying (or moving), unless the target file system has an identical
+	 * provider ({@link FileSystem#provider()}). If you want to be able to copy the supplier across providers you should
+	 * use {@link ExtendedFiles#copyExt(Path, Path, CopyOption...)}
+	 * 
+	 * @param file a Path from this {@link ExtendedFileSystem}
+	 * @param supplier The source for the dynamic file's content. This will be re-queried every time
+	 *            {@link Files#newInputStream(Path, java.nio.file.OpenOption...)} is called.
+	 * @return The file
+	 * @throws IOException if there is already a file for the given path, or the parent file is not already a directory,
+	 *             or if anything else goes wrong.
+	 * @throws UnsupportedOperationException if this filesystem doesn't support dynamic files. */
+	public static Path createDynamicFile(Path file, InputStreamSupplier supplier) throws IOException {
+		FileSystem fs = file.getFileSystem();
+		if (fs instanceof ExtendedFileSystem) {
+			return ((ExtendedFileSystem) fs).createDynamicFile(file, supplier);
+		} else {
+			throw new UnsupportedOperationException(fs + " does not support dynamic files!");
+		}
+	}
+
 	/** @return True if the given file has been created by {@link #createDynamicFile(Path, Supplier)} */
 	public static boolean isDynamicFile(Path file) {
 		if (file.getFileSystem() instanceof ExtendedFileSystem) {
@@ -143,13 +169,15 @@ public class ExtendedFiles {
 		}
 	}
 
-	/** Retrieves the byte array supplier that was used to create the given file, if it was created with
-	 * {@link #createDynamicFile(Path, Supplier)}.
+	/** Retrieves the {@link InputStreamSupplier} that was used to create the given file, if it was created with
+	 * {@link #createDynamicFile(Path, Supplier)} or {@link #createDynamicFile(Path, Supplier)}. The byte array version
+	 * will always return {@link ByteArrayInputStreamSupplier}, which can be used to obtain the original
+	 * {@link Supplier}.
 	 * 
 	 * @throws NotDynamicFileException if the given file is not a {@link #createDynamicFile(Path, Supplier) dynamic
 	 *             file}
 	 * @throws UnsupportedOperationException if the file system doesn't support dynamic files. */
-	public static Supplier<byte[]> readDynamicFileSource(Path file) throws NotDynamicFileException {
+	public static InputStreamSupplier readDynamicFileSource(Path file) throws NotDynamicFileException {
 		if (file.getFileSystem() instanceof ExtendedFileSystem) {
 			return ((ExtendedFileSystem) file.getFileSystem()).readDynamicFileSource(file);
 		} else {

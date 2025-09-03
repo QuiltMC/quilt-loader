@@ -24,6 +24,8 @@ import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.quiltmc.loader.api.filesystem.ByteArrayInputStreamSupplier;
+import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
 import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
 
 /** A {@link FileSystem} which may support additional features, beyond those which normal file systems support. Similar
@@ -102,6 +104,23 @@ public interface ExtendedFileSystem extends FasterFileSystem {
 	 *             or if anything else goes wrong.
 	 * @throws UnsupportedOperationException if this filesystem doesn't support dynamic files. */
 	default Path createDynamicFile(Path file, Supplier<byte[]> supplier) throws IOException {
+		return createDynamicFile(file, new ByteArrayInputStreamSupplier(supplier));
+	}
+
+	/** Creates a new file in this file system that has dynamic content, provided by the given {@link InputStreamSupplier}.
+	 * <p>
+	 * {@link Files#copy(Path, Path, CopyOption...) Copying} or {@link Files#move(Path, Path, CopyOption...) moving} the
+	 * file will copy its contents at the time of copying (or moving), unless the target file system has an identical
+	 * provider ({@link FileSystem#provider()}). If you want to be able to copy the supplier across providers you should use {@link ExtendedFiles}
+	 * 
+	 * @param file a Path from this {@link ExtendedFileSystem}
+	 * @param supplier The source for the dynamic file's content. This will be re-queried every time
+	 *            {@link Files#newInputStream(Path, java.nio.file.OpenOption...)} is called.
+	 * @return The file
+	 * @throws IOException if there is already a file for the given path, or the parent file is not already a directory,
+	 *             or if anything else goes wrong.
+	 * @throws UnsupportedOperationException if this filesystem doesn't support dynamic files. */
+	default Path createDynamicFile(Path file, InputStreamSupplier supplier) throws IOException {
 		throw new UnsupportedOperationException(getClass() + " doesn't file support ExtendedFileSystem.writeDynamicFile");
 	}
 
@@ -118,7 +137,7 @@ public interface ExtendedFileSystem extends FasterFileSystem {
 	 * @throws NotDynamicFileException if the given file is not a {@link #createDynamicFile(Path, Supplier) dynamic
 	 *             file}
 	 * @throws UnsupportedOperationException if the file system doesn't support dynamic files. */
-	default Supplier<byte[]> readDynamicFileSource(Path file) throws NotDynamicFileException {
+	default InputStreamSupplier readDynamicFileSource(Path file) throws NotDynamicFileException {
 		throw new NotDynamicFileException(file.toString());
 	}
 }
