@@ -62,6 +62,8 @@ public final class SystemProperties {
 	public static final String ADD_MODS = "loader.addMods";
 	// class path groups to map multiple class path entries to a mod (paths separated by path separator, groups by double path separator)
 	public static final String PATH_GROUPS = "loader.classPathGroups";
+	// enable the fixing of package access errors in the game jar(s)
+	public static final String FIX_PACKAGE_ACCESS = "loader.fixPackageAccess";
 	// system level libraries, matching code sources will not be assumed to be part of the game or mods and remain on the system class path (paths separated by path separator)
 	public static final String SYSTEM_LIBRARIES = "loader.systemLibraries";
 	public static final String DISABLE_FORKED_GUIS = "loader.disable_forked_guis";

@@ -60,6 +60,8 @@ import org.quiltmc.loader.impl.util.mappings.FilteringMappingVisitor;
 // this implementation is intended specifically for use by the Minecraft game provider
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class MappingConfigurationImpl implements MappingConfiguration {
+	private static final boolean FIX_PACKAGE_ACCESS = System.getProperty(SystemProperties.FIX_PACKAGE_ACCESS) != null;
+
 	private boolean initialized;
 
 	private String gameId;
@@ -118,7 +120,7 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 	}
 
 	public boolean requiresPackageAccessHack() {
-		return getTargetNamespace().equals("named");
+		return FIX_PACKAGE_ACCESS || getTargetNamespace().equals("named");
 	}
 
 	private void initialize() {
