@@ -83,7 +83,7 @@ public class QuiltForkServerMain {
 
 	private static HashMap<String, String> parseArgs(String[] args) {
 		HashMap<String, String> parsed = new HashMap<>();
-		for (int i = 1; i < args.length - 1; i += 2) {
+		for (int i = 0; i < args.length - 1; i += 2) {
 			if (!args[i].startsWith("--")) {
 				System.err.printf("QUILT_IPC_SERVER: Invalid argument '%s' at pos %d!\n", args[i], i);
 				System.exit(1);
