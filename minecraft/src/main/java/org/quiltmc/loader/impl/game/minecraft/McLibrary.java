@@ -9,7 +9,7 @@ import java.util.Map;
 import org.quiltmc.loader.impl.game.LibClassifier;
 
 enum McLibrary implements LibClassifier.LibraryType {
-	MC_CLIENT(EnvType.CLIENT, "net/minecraft/client/main/Main.class", "net/minecraft/client/MinecraftApplet.class", "com/mojang/minecraft/MinecraftApplet.class", "com/mojang/rubydung/RubyDung.class"),
+	MC_CLIENT(EnvType.CLIENT, "net/minecraft/client/main/Main.class", "net/minecraft/client/MinecraftApplet.class", "com/mojang/minecraft/MinecraftApplet.class", "com/mojang/minecraft/RubyDung.class", "com/mojang/rubydung/RubyDung.class"),
 	MC_SERVER(EnvType.SERVER, "net/minecraft/server/Main.class", "net/minecraft/server/MinecraftServer.class", "com/mojang/minecraft/server/MinecraftServer.class"),
 	MC_COMMON("net/minecraft/server/MinecraftServer.class"),
 	MC_ASSETS_ROOT("assets/.mcassetsroot"),
