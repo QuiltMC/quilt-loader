@@ -1,0 +1,4 @@
+Changes:
+
+- [#479] Added the system property `loader.fixPackageAccess` to allow enabling the package access fix in any namespace. (SpaceWalkerRS)
+
