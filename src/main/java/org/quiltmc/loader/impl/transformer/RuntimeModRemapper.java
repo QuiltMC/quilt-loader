@@ -100,14 +100,14 @@ final class RuntimeModRemapper {
 
 				throw new UnsupportedOperationException("Cannot remap mojang mods to another environment!");
 			}
-			if (namespace != null) {
+			if (namespace != null && !namespace.equals(mappingConfiguration.getTargetNamespace())) {
 				modsToRemap.add(mod);
 			}
 		}
 	}
 
-	public boolean doesModNeedRemapping(ModLoadOption mod) {
-		return modsToRemap.contains(mod);
+	public boolean modNeedsRemapping(ModLoadOption mod) {
+		return mod.namespaceMappingFrom() != null && !mod.namespaceMappingFrom().equals(QuiltLauncherBase.getLauncher().getMappingConfiguration().getTargetNamespace());
 	}
 
 	public void remap(TransformCache cache) {

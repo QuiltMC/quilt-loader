@@ -126,7 +126,7 @@ class TransformCache {
 					}
 
 					// copy classes for mods which don't need remapped
-					if (!remapper.doesModNeedRemapping(mod)) {
+					if (!remapper.modNeedsRemapping(mod)) {
 						try (Stream<Path> stream = Files.walk(modSrc)) {
 							stream
 								.filter(FasterFiles::isRegularFile)
@@ -134,7 +134,7 @@ class TransformCache {
 								.forEach(path -> copyFile(path, modSrc, modDst));
 						}
 					}
-				} else if (remapper.doesModNeedRemapping(mod)) {
+				} else if (remapper.modNeedsRemapping(mod)) {
 					// Copy everything that isn't a class file, since those get remapped
 					try (Stream<Path> stream = Files.walk(modSrc)) {
 						stream
