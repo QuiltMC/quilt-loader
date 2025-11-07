@@ -97,40 +97,12 @@ class TransformCache {
 						copyFile(modSrc.resolve(aw), modSrc, modDst);
 					}
 
-					LoaderValue value = mod.metadata().value("experimental_chasm_transformers");
-
-					// TODO: copied from ChasmInvoker
-					final String[] chasmPaths;
-					if (value == null) {
-						chasmPaths = new String[0];
-					} else if (value.type() == LoaderValue.LType.STRING) {
-						chasmPaths = new String[]{value.asString()};
-					} else if (value.type() == LoaderValue.LType.ARRAY) {
-						LoaderValue.LArray array = value.asArray();
-						chasmPaths = new String[array.size()];
-						for (int i = 0; i < array.size(); i++) {
-							LoaderValue entry = array.get(i);
-							if (entry.type() == LoaderValue.LType.STRING) {
-								chasmPaths[i] = entry.asString();
-							} else {
-								Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers[" + i + "]' in " + mod.id());
-							}
-						}
-					} else {
-						chasmPaths = new String[0];
-						Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers' in " + mod.id());
-					}
-
-					for (String chasmPath : chasmPaths) {
-						copyFile(modSrc.resolve(chasmPath), modSrc, modDst);
-					}
-
 					// copy classes for mods which don't need remapped
 					if (!remapper.doesModNeedRemapping(mod)) {
 						try (Stream<Path> stream = Files.walk(modSrc)) {
 							stream
 								.filter(FasterFiles::isRegularFile)
-								.filter(p -> p.getFileName().toString().endsWith(".class") || p.getFileName().toString().endsWith(".chasm"))
+								.filter(p -> p.getFileName().toString().endsWith(".class"))
 								.forEach(path -> copyFile(path, modSrc, modDst));
 						}
 					}

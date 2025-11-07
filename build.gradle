@@ -85,10 +85,6 @@ dependencies {
 	include project(path: ':dependencies', configuration: 'include')
 	development project(path: ':dependencies', configuration: 'development')
 
-	// also must update in minecraft AND minecraft test
-	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
-	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-
 	testCompileOnly "org.jetbrains:annotations:${project.annotations}"
 
 	// Unit testing

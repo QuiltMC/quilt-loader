@@ -343,7 +343,7 @@ public final class QuiltLoaderImpl {
 
 		performMixinReordering(modList);
 		// TODO: reorder libraries to be first in the classloader order
-		// (after we actually transform & load them with chasm)
+		// (after we actually transform & load them)
 		performLoadLateReordering(modList);
 		temporaryOrderedModList = modList.toArray(new ModLoadOption[0]);
 

@@ -90,9 +90,6 @@ public class TransformCacheManager {
 			map.put("mod:" + mod.getKey(), name + " " + modOriginHash.get(modOption.id()));
 		}
 
-		boolean enableChasm = Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM);
-		map.put("system-property:" + SystemProperties.ENABLE_EXPERIMENTAL_CHASM, "" + enableChasm);
-
 		try {
 			Files.createDirectories(transformCacheFolder.getParent());
 		} catch (IOException e) {

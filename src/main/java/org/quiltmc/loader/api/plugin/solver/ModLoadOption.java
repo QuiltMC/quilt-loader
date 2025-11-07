@@ -97,8 +97,8 @@ public abstract class ModLoadOption extends LoadOption {
 	public abstract boolean needsTransforming();
 
 	/** @param hasher The hasher to use when hashing files and folders.
-	 * @return A hash of the origin files used for the mod. This is used to cache class transformations (like remapping
-	 *         and chasm) between launches. This may be called off-thread. This should always return an array with a
+	 * @return A hash of the origin files used for the mod. This is used to cache class transformations (like remapping)
+		 between launches. This may be called off-thread. This should always return an array with a
 	 *         length {@link QuiltFileHasher#getHashLength()}. */
 	public abstract byte[] computeOriginHash(QuiltFileHasher hasher) throws IOException;
 
