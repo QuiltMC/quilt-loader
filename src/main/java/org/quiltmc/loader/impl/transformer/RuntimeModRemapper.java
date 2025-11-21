@@ -110,7 +110,7 @@ final class RuntimeModRemapper {
 		return modsToRemap.contains(mod);
 	}
 
-	public void remap(TransformCache cache) {
+	public void remap(TransformCacheImpl cache) {
 		QuiltLauncher launcher = QuiltLauncherBase.getLauncher();
 		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 
@@ -138,7 +138,7 @@ final class RuntimeModRemapper {
 		}
 	}
 
-	private void remap0(TransformCache cache, QuiltLauncher launcher, Set<InputTag> remapMixins, TinyRemapper remapper) {
+	private void remap0(TransformCacheImpl cache, QuiltLauncher launcher, Set<InputTag> remapMixins, TinyRemapper remapper) {
 
 		if (launcher.isDevelopment()) {
 			try {

@@ -296,7 +296,7 @@ public class TransformCacheManager {
 	}
 
 	private static void writeTransformCache(String options, List<ModLoadOption> modList, Path root) throws ModResolutionException, IOException {
-		TransformCache cache = TransformCacheGenerator.generate(root, modList);
+		TransformCacheImpl cache = TransformCacheGenerator.generate(root, modList);
 		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-populate");
 		Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 		try (JsonWriter json = JsonWriter.json(Files.newBufferedWriter(root.resolve(DENY_LOAD_REASONS_PATH)))) {

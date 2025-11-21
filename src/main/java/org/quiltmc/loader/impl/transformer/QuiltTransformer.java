@@ -39,7 +39,7 @@ import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
-	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
+	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCacheImpl cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
 		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.getGameProvider();
 		boolean isGameClass = mod.id().equals(gameProvider.getGameId());
 		boolean transformAccess = isGameClass && gameProvider.requiresPackageAccessFix();

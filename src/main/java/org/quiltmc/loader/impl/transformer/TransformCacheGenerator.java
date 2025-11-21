@@ -23,15 +23,20 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.transformer.QuiltTransformerPlugin;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.transformer.phase.PhaseData;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.accesswidener.AccessWidenerReader;
@@ -39,10 +44,29 @@ import net.fabricmc.accesswidener.AccessWidenerReader;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class TransformCacheGenerator {
 
-
-	static TransformCache generate(Path root, List<ModLoadOption> modList) throws ModResolutionException, IOException {
-		TransformCache cache = new TransformCache(root, modList);
+	private static QuiltTransformerPlugin[] BUILTIN_PLUGINS = new QuiltTransformerPlugin[] {};
+	static TransformCacheImpl generate(Path root, List<ModLoadOption> modList) throws ModResolutionException, IOException {
+		TransformCacheImpl cache = new TransformCacheImpl(root, modList);
 		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-copy");
+
+		TransformerPluginContextImpl ctx = new TransformerPluginContextImpl();
+		QuiltLauncherBase.getLauncher().getTransformer().accept(ctx);
+		for (QuiltTransformerPlugin plugin : BUILTIN_PLUGINS) {
+			plugin.accept(ctx);
+		}
+		for (TransformPhaseData phase : ctx.sort()) {
+			if (phase.getData() == null) {
+				Stream.concat(phase.previousPhases().stream(), phase.subsequentPhases().stream()).filter(p -> p.getData() != null).map(PhaseData::getId).forEach(id ->
+					Log.warn(LogCategory.CACHE, "Phase %s depends on empty phase %s", id, phase.getId()));
+			}
+			try {
+				if (phase.getData() != null) {
+					phase.getData().accept(cache);
+				}
+			} catch (Throwable t) {
+				throw new RuntimeException("Exception thrown while processing builtin plugin " + phase.getId(), t);
+			}
+		}
 
 		// Transform time!
 		// Load AWs
@@ -50,11 +74,8 @@ final class TransformCacheGenerator {
 		// game provider transformer and QuiltTransformer
 		cache.forEachClassFile((mod, name, file) -> {
 
-			byte[] classBytes = QuiltLauncherBase.getLauncher().getEntrypointTransformer().transform(name);
-
-			if (classBytes == null) {
-				classBytes = Files.readAllBytes(file);
-			}
+			
+			byte[] classBytes = Files.readAllBytes(file);
 
 			return QuiltTransformer.transform(
 					QuiltLoader.isDevelopmentEnvironment(),
@@ -66,7 +87,6 @@ final class TransformCacheGenerator {
 					classBytes
 			);
 		});
-
 		InternalsHiderTransform internalsHider = new InternalsHiderTransform(InternalsHiderTransform.Target.MOD);
 		Map<Path, ModLoadOption> classes = new HashMap<>();
 
@@ -97,11 +117,10 @@ final class TransformCacheGenerator {
 		}
 
 		internalsHider.finish();
-
 		return cache;
 	}
 
-	private static AccessWidener loadAccessWideners(TransformCache cache) {
+	private static AccessWidener loadAccessWideners(TransformCacheImpl cache) {
 		AccessWidener ret = new AccessWidener();
 		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(ret);
 

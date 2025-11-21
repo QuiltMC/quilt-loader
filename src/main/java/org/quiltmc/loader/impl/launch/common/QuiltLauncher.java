@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.jar.Manifest;
 
 import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.api.plugin.transformer.QuiltTransformerPlugin;
 import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -36,7 +36,6 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public interface QuiltLauncher {
 	MappingConfiguration getMappingConfiguration();
-
 	void addToClassPath(Path path, String... allowedPrefixes);
 	void addToClassPath(Path path, ModContainer mod, URL origin, String... allowedPrefixes);
 	void setAllowedPrefixes(Path path, String... prefixes);
@@ -72,7 +71,7 @@ public interface QuiltLauncher {
 	 * @param runTransformers Whether to run all transformers <i>except mixin</i> on the class
 	 */
 	byte[] getClassByteArray(String name, boolean runTransformers) throws IOException;
-
+	
 	Manifest getManifest(Path originPath);
 
 	boolean isDevelopment();
@@ -85,5 +84,5 @@ public interface QuiltLauncher {
 
 	List<Path> getClassPath();
 
-	GameTransformer getEntrypointTransformer();
+	QuiltTransformerPlugin getTransformer();
 }

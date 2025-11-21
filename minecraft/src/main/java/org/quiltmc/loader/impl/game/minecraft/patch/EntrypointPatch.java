@@ -18,13 +18,7 @@ package org.quiltmc.loader.impl.game.minecraft.patch;
 
 import java.util.List;
 import java.util.ListIterator;
-import java.util.function.Consumer;
 import java.util.function.Function;
-
-import net.fabricmc.loader.api.SemanticVersion;
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.VersionParsingException;
-import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
@@ -38,18 +32,21 @@ import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.VarInsnNode;
-import org.quiltmc.loader.impl.entrypoint.GamePatch;
-import org.quiltmc.loader.impl.entrypoint.GamePatchContext;
 import org.quiltmc.loader.impl.fabric.util.version.VersionPredicateParser;
+import org.quiltmc.loader.impl.game.minecraft.Hooks;
 import org.quiltmc.loader.impl.game.minecraft.MinecraftGameProvider;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import net.fabricmc.api.EnvType;
-import org.quiltmc.loader.impl.game.minecraft.Hooks;
+import net.fabricmc.loader.api.Version;
+import net.fabricmc.loader.api.VersionParsingException;
+import net.fabricmc.loader.api.metadata.version.VersionPredicate;
 
-
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class EntrypointPatch extends GamePatch {
 	/* QUILT */private static final VersionPredicate BEFORE_1_17 = createVersionPredicate("<=1.17");
 	private static final VersionPredicate VERSION_1_19_4 = createVersionPredicate(">=1.19.4-");

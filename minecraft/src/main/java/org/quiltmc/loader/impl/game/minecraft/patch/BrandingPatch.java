@@ -15,18 +15,16 @@ package org.quiltmc.loader.impl.game.minecraft.patch;
  * limitations under the License.
  */
 
+import java.util.ListIterator;
+
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
-import org.quiltmc.loader.impl.entrypoint.GamePatch;
-import org.quiltmc.loader.impl.entrypoint.GamePatchContext;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
-
-import java.util.ListIterator;
 
 public final class BrandingPatch extends GamePatch {
 	@Override

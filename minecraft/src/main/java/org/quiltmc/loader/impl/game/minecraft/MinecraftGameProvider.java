@@ -41,9 +41,9 @@ import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModDependencyIdentifier;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionRange;
+import org.quiltmc.loader.api.plugin.transformer.QuiltTransformerPlugin;
 import org.quiltmc.loader.impl.FormattedException;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.LibClassifier;
@@ -51,6 +51,7 @@ import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
 import org.quiltmc.loader.impl.game.minecraft.patch.BrandingPatch;
 import org.quiltmc.loader.impl.game.minecraft.patch.EntrypointPatch;
+import org.quiltmc.loader.impl.game.minecraft.patch.GameTransformerPlugin;
 import org.quiltmc.loader.impl.game.minecraft.patch.TinyFDPatch;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -63,9 +64,8 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.loader.impl.util.log.LogHandler;
 
-import net.fabricmc.loader.api.ObjectShare;
-
 import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.ObjectShare;
 
 public class MinecraftGameProvider implements GameProvider {
 	private static final String[] ALLOWED_EARLY_CLASS_PREFIXES = { "org.apache.logging.log4j.", "com.mojang.util." };
@@ -95,7 +95,7 @@ public class MinecraftGameProvider implements GameProvider {
 	private McVersion versionData;
 	private boolean useGameJarForLogging;
 	private boolean hasModLoader = false;
-	private final GameTransformer transformer = new GameTransformer(
+	private final GameTransformerPlugin transformer = new GameTransformerPlugin(
 			new EntrypointPatch(this),
 			new BrandingPatch(),
 			new TinyFDPatch());
@@ -448,8 +448,6 @@ public class MinecraftGameProvider implements GameProvider {
 		}
 
 		setupLogHandler(launcher, true);
-
-		transformer.locateEntrypoints(launcher, QuiltLauncherBase.getLauncher().getTargetNamespace(), gameJars);
 	}
 
 	private void setupLogHandler(QuiltLauncher launcher, boolean useTargetCl) {
@@ -515,7 +513,7 @@ public class MinecraftGameProvider implements GameProvider {
 	}
 
 	@Override
-	public GameTransformer getEntrypointTransformer() {
+	public QuiltTransformerPlugin getTransformer() {
 		return transformer;
 	}
 
