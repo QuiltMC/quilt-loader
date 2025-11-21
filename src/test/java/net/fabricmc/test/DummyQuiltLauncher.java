@@ -19,7 +19,7 @@ package net.fabricmc.test;
 import net.fabricmc.api.EnvType;
 
 import org.quiltmc.loader.api.ModContainer;
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.api.plugin.transformer.QuiltTransformerPlugin;
 import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 
@@ -161,7 +161,7 @@ public class DummyQuiltLauncher implements QuiltLauncher {
 	}
 
 	@Override
-	public GameTransformer getEntrypointTransformer() {
+	public QuiltTransformerPlugin getTransformer() {
 		return null;
 	}
 }

@@ -17,7 +17,7 @@
 package org.quiltmc.loader.impl.config;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
+import org.quiltmc.loader.api.plugin.transformer.QuiltTransformerPlugin;
 import org.quiltmc.loader.impl.game.EmptyMappingConfiguration;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.game.MappingConfiguration;
@@ -96,7 +96,7 @@ public class DummyGameProvider implements GameProvider {
 	}
 
 	@Override
-	public GameTransformer getEntrypointTransformer() {
+	public QuiltTransformerPlugin getTransformer() {
 		return null;
 	}
 

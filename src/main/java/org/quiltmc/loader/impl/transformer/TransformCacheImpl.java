@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 QuiltMC
+ * Copyright 2023, 2025 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,26 +27,22 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.FasterFiles;
-import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.api.plugin.transformer.TransformCache;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.log.Log;
-import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.parsers.json.JsonReader;
 import org.quiltmc.parsers.json.ParseException;
 
@@ -54,7 +50,7 @@ import org.quiltmc.parsers.json.ParseException;
  * A representation of the transform cache to be used by transformers when generating the cache for the first time.
  */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-class TransformCache {
+class TransformCacheImpl implements TransformCache {
 	private final Path root;
 	private final Map<ModLoadOption, Path> modRoots = new HashMap<>();
 	private final List<ModLoadOption> allMods;
@@ -62,7 +58,7 @@ class TransformCache {
 	private final Map<String, String> hiddenClasses = new HashMap<>();
 	private static final boolean COPY_ON_WRITE = true;
 
-	public TransformCache(Path root, List<ModLoadOption> orderedMods) {
+	public TransformCacheImpl(Path root, List<ModLoadOption> orderedMods) {
 		this.root = root;
 		this.allMods = orderedMods;
 		this.modsInCache = orderedMods.stream().filter(mod -> mod.needsTransforming() && !QuiltLoaderImpl.MOD_ID.equals(mod.id())).collect(Collectors.toList());
@@ -97,40 +93,12 @@ class TransformCache {
 						copyFile(modSrc.resolve(aw), modSrc, modDst);
 					}
 
-					LoaderValue value = mod.metadata().value("experimental_chasm_transformers");
-
-					// TODO: copied from ChasmInvoker
-					final String[] chasmPaths;
-					if (value == null) {
-						chasmPaths = new String[0];
-					} else if (value.type() == LoaderValue.LType.STRING) {
-						chasmPaths = new String[]{value.asString()};
-					} else if (value.type() == LoaderValue.LType.ARRAY) {
-						LoaderValue.LArray array = value.asArray();
-						chasmPaths = new String[array.size()];
-						for (int i = 0; i < array.size(); i++) {
-							LoaderValue entry = array.get(i);
-							if (entry.type() == LoaderValue.LType.STRING) {
-								chasmPaths[i] = entry.asString();
-							} else {
-								Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers[" + i + "]' in " + mod.id());
-							}
-						}
-					} else {
-						chasmPaths = new String[0];
-						Log.warn(LogCategory.CHASM, "Unknown value found for 'experimental_chasm_transformers' in " + mod.id());
-					}
-
-					for (String chasmPath : chasmPaths) {
-						copyFile(modSrc.resolve(chasmPath), modSrc, modDst);
-					}
-
 					// copy classes for mods which don't need remapped
 					if (!remapper.doesModNeedRemapping(mod)) {
 						try (Stream<Path> stream = Files.walk(modSrc)) {
 							stream
 								.filter(FasterFiles::isRegularFile)
-								.filter(p -> p.getFileName().toString().endsWith(".class") || p.getFileName().toString().endsWith(".chasm"))
+								.filter(p -> p.getFileName().toString().endsWith(".class"))
 								.forEach(path -> copyFile(path, modSrc, modDst));
 						}
 					}
@@ -161,31 +129,49 @@ class TransformCache {
 		}
 	}
 
+	@Override
 	public Path getRoot(ModLoadOption mod) {
 		return modRoots.get(mod);
 	}
 
 	/** @return Every mod which has a {@link #getRoot(ModLoadOption)} in this cache. */
+	@Override
 	public List<ModLoadOption> getModsInCache() {
 		return Collections.unmodifiableList(modsInCache);
 	}
 
 	/** @return The original list of mods, including any which aren't directly in this cache. */
+	@Override
 	public List<ModLoadOption> getAllMods() {
 		return Collections.unmodifiableList(allMods);
 	}
 
+	@Override
 	public Map<String, String> getHiddenClasses() {
 		return Collections.unmodifiableMap(hiddenClasses);
 	}
 
-	public void forEachClassFile(ClassConsumer action)
-			throws IOException {
-		for (ModLoadOption mod : modsInCache) {
-			visitFolder(mod, getRoot(mod), action);
+	@Override
+	public void forEachClassFile(ClassConsumer action) {
+		try {
+			for (ModLoadOption mod : modsInCache) {
+				visitFolder(mod, getRoot(mod), action);
+			}
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
 		}
 	}
 
+	@Override
+	public void forEachClassFile(ModLoadOption mod, ModClassConsumer action) {
+    try {
+			visitFolder(mod, getRoot(mod), (m, name, file) -> action.run(name, file));
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+	}
+	
+	@Override
 	public void hideClass(String className, String denyReason) {
 		hiddenClasses.merge(className, denyReason, (current, nval) -> {
 			return current + "\n" + nval;
@@ -274,17 +260,5 @@ class TransformCache {
 				return true;
 			}
 		});
-	}
-
-	@FunctionalInterface
-	public interface ClassConsumer {
-		/**
-		 * Consume a class and potentially transform it.
-		 *
-		 * @param mod       the mod which "owns" this class file
-		 * @param className the name of the class in dot form (e.g. {@code net.minecraft.client.MinecraftClient$1}
-		 * @return the transformed bytes, or null if nothing was changed
-		 */
-		byte @Nullable [] run(ModLoadOption mod, String className, Path file) throws IOException;
 	}
 }

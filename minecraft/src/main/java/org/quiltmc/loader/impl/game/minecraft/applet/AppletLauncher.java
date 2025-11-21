@@ -1,8 +1,5 @@
 package org.quiltmc.loader.impl.game.minecraft.applet;
 
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
-import org.quiltmc.loader.impl.game.minecraft.Hooks;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import java.applet.Applet;
 import java.applet.AppletStub;
 import java.awt.BorderLayout;
@@ -13,6 +10,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.quiltmc.loader.impl.game.minecraft.Hooks;
+import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 
 /**
  * PLEASE NOTE:

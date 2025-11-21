@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.entrypoint;
+package org.quiltmc.loader.impl.game.minecraft.patch;
+
 
 import org.objectweb.asm.ClassReader;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
@@ -32,9 +33,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public abstract class GamePatch {
-	protected static ClassNode readClass(ClassReader reader) {
+	public static ClassNode readClass(ClassReader reader) {
 		if (reader == null) return null;
 
 		ClassNode node = new ClassNode();

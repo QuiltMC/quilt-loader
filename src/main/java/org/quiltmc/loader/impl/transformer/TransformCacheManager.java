@@ -90,9 +90,6 @@ public class TransformCacheManager {
 			map.put("mod:" + mod.getKey(), name + " " + modOriginHash.get(modOption.id()));
 		}
 
-		boolean enableChasm = Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_CHASM);
-		map.put("system-property:" + SystemProperties.ENABLE_EXPERIMENTAL_CHASM, "" + enableChasm);
-
 		try {
 			Files.createDirectories(transformCacheFolder.getParent());
 		} catch (IOException e) {
@@ -299,7 +296,7 @@ public class TransformCacheManager {
 	}
 
 	private static void writeTransformCache(String options, List<ModLoadOption> modList, Path root) throws ModResolutionException, IOException {
-		TransformCache cache = TransformCacheGenerator.generate(root, modList);
+		TransformCacheImpl cache = TransformCacheGenerator.generate(root, modList);
 		QuiltMapFileSystem.dumpEntries(root.getFileSystem(), "after-populate");
 		Files.write(root.resolve("options.txt"), options.getBytes(StandardCharsets.UTF_8));
 		try (JsonWriter json = JsonWriter.json(Files.newBufferedWriter(root.resolve(DENY_LOAD_REASONS_PATH)))) {

@@ -23,7 +23,6 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class LogCategory {
 	public static final LogCategory CACHE = create("Cache");
-	public static final LogCategory CHASM = create("Chasm");
 	public static final LogCategory CONFIG = create("Config");
 	public static final LogCategory DISCOVERY = create("Discovery");
 	public static final LogCategory ENTRYPOINT = create("Entrypoint");

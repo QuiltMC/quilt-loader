@@ -28,9 +28,6 @@ dependencies {
 	implementation project(":dependencies")
 	implementation project(path: ":dependencies", configuration: "include")
 	implementation project(":").sourceSets.main.output
-	// so that it works on runtime
-	implementation "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-	implementation "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 
 	// Required for mixin annotation processor
 	annotationProcessor "org.ow2.asm:asm:${project.asm}"

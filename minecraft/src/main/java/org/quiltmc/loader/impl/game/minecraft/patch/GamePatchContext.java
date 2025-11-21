@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.transformer;
+package org.quiltmc.loader.impl.game.minecraft.patch;
 
+import org.jetbrains.annotations.ApiStatus;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** Indicates that the installed chasm version doesn't match what loader expects. Temporary exception since chasm will
- * eventually be built into loader. */
+@ApiStatus.NonExtendable
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class UnsupportedChasmException extends RuntimeException {
+public interface GamePatchContext {
 
-	public UnsupportedChasmException(String message, Throwable cause) {
-		super(message, cause);
-	}
+	/** @return A {@link ClassReader} which reads the original class file. */
+	ClassReader getClassSourceReader(String className);
 
-	public UnsupportedChasmException(String message) {
-		super(message);
-	}
+	/** @return A {@link ClassNode}, which may have already been modified by another {@link GamePatch}. */
+	ClassNode getClassNode(String className);
 
-	public UnsupportedChasmException(Throwable cause) {
-		super(cause);
-	}
-
+	void addPatchedClass(ClassNode patchedClass);
 }

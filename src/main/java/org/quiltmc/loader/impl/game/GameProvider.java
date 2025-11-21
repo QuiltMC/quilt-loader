@@ -26,9 +26,9 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.entrypoint.GameTransformer;
 import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.transformer.PackageAccessFixer;
+import org.quiltmc.loader.api.plugin.transformer.QuiltTransformerPlugin;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 
 import org.quiltmc.loader.impl.util.Arguments;
@@ -66,7 +66,7 @@ public interface GameProvider {
 	boolean isEnabled();
 	boolean locateGame(QuiltLauncher launcher, String[] args);
 	void initialize(QuiltLauncher launcher);
-	GameTransformer getEntrypointTransformer();
+	QuiltTransformerPlugin getTransformer();
 	void unlockClassPath(QuiltLauncher launcher);
 	void launch(ClassLoader loader);
 

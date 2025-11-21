@@ -33,10 +33,6 @@ dependencies {
 	api platform("org.junit:junit-bom:5.9.2")
 	api "org.junit.jupiter:junit-jupiter-engine"
 	implementation "org.junit.platform:junit-platform-launcher"
-
-	// HACK: work around proguard only seeing dependencies on the minecraft compile classpath
-	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
-	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 }
 
 tasks.withType(JavaCompile).configureEach {
