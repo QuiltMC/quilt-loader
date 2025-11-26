@@ -62,6 +62,7 @@ public class QuiltForkComms {
 
 	private static ForkSide side;
 	private static final AtomicReference<QuiltForkComms> currentComms = new AtomicReference<>();
+	private static final InetAddress localhostAddress = InetAddress.getLoopbackAddress(); // keep one localhost address and pass it to the server to ensure consistency
 
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 	enum ForkSide {
@@ -124,6 +125,9 @@ public class QuiltForkComms {
 
 			commands.add("--file");
 			commands.add(medium.getAbsolutePath());
+
+			commands.add("--address");
+			commands.add(localhostAddress.getHostAddress());
 
 			ProcessBuilder pb = new ProcessBuilder(commands);
 			pb.redirectError(Redirect.INHERIT);
@@ -286,7 +290,7 @@ public class QuiltForkComms {
 		private final Executor handler;
 
 		ReadySender(int port) throws IOException {
-			this(new Socket(InetAddress.getLoopbackAddress(), port));
+			this(new Socket(localhostAddress, port));
 		}
 
 		ReadySender(Socket socket) {

@@ -1,6 +1,7 @@
 Bug Fixes:
 
 - [#474] Fixed ReflectiveFixUtil crashing with certain method descriptors
+- [#477] Fixed FabricLoaderImpl not returning the same object for mods, which fixes a crash with PuzzleLib
 
 Changes from updating Fabric Loader from 0.16.14 to 0.17.2:
 
