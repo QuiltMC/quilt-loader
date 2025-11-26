@@ -64,7 +64,7 @@ public class V1ModMetadataBuilder {
 	public final List<String> repositories = new ArrayList<>();
 	/* TODO: Move to plugins */
 	public final Map<EnvType, List<String>> mixins = new HashMap<>();
-	public final List<String> accessWideners = new ArrayList<>();
+	public final List<String> classTweakers = new ArrayList<>();
 	public ModEnvironment env = ModEnvironment.UNIVERSAL;
 
 	public InternalModMetadata build() {

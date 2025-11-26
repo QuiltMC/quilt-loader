@@ -71,8 +71,8 @@ public class ProvidedModMetadata implements ModMetadataExt {
 	}
 
 	@Override
-	public Collection<String> accessWideners() {
-		return metadata.accessWideners();
+	public Collection<String> classTweakers() {
+		return metadata.classTweakers();
 	}
 
 	@Override

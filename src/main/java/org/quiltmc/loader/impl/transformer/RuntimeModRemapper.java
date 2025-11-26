@@ -29,23 +29,24 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.api.ClassTweakerWriter;
+import net.fabricmc.classtweaker.reader.ClassTweakerReaderImpl;
+import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
+import net.fabricmc.classtweaker.writer.ClassTweakerWriterImpl;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.MountOption;
-import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
-import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -56,9 +57,6 @@ import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -204,11 +202,11 @@ final class RuntimeModRemapper {
 			// Run while the remapper is doing its thing.
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
-				if (!mod.metadata().accessWideners().isEmpty()) {
-					info.accessWideners = new HashMap<>();
-					for (String accessWidener : mod.metadata().accessWideners()) {
+				if (!mod.metadata().classTweakers().isEmpty()) {
+					info.classTweakers = new HashMap<>();
+					for (String classTweaker : mod.metadata().classTweakers()) {
 						// use resourceRoot as the info.inputPath only contains class files
-						info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(mod.resourceRoot().resolve(accessWidener)), remapper.getRemapper()));
+						info.classTweakers.put(classTweaker, remapClassTweaker(Files.readAllBytes(mod.resourceRoot().resolve(classTweaker)), remapper.getRemapper()));
 					}
 				}
 			}
@@ -219,8 +217,8 @@ final class RuntimeModRemapper {
 				RemapInfo info = infoMap.get(mod);
 
 				info.outputConsumerPath.close();
-				if (info.accessWideners != null) {
-					for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
+				if (info.classTweakers != null) {
+					for (Map.Entry<String, byte[]> entry : info.classTweakers.entrySet()) {
 						Files.write(info.outputPath.resolve(entry.getKey()), entry.getValue());
 					}
 				}
@@ -231,12 +229,12 @@ final class RuntimeModRemapper {
 		}
 	}
 
-	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
-		AccessWidenerWriter writer = new AccessWidenerWriter();
-		AccessWidenerRemapper remappingDecorator = new AccessWidenerRemapper(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
-		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(remappingDecorator);
-		accessWidenerReader.read(input, "intermediary");
-		return writer.write();
+	private static byte[] remapClassTweaker(byte[] input, Remapper remapper) {
+		ClassTweakerWriter writer = new ClassTweakerWriterImpl(ClassTweakerReaderImpl.readVersion(input));
+		ClassTweakerRemapperVisitor remappingVisitor = new ClassTweakerRemapperVisitor(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
+		ClassTweakerReader classTweakerReader = new ClassTweakerReaderImpl(remappingVisitor);
+		classTweakerReader.read(input, "intermediary");
+		return writer.getOutput();
 	}
 
 	private static List<Path> getRemapClasspath() throws IOException {
@@ -267,6 +265,6 @@ final class RuntimeModRemapper {
 		Path inputPath;
 		Path outputPath;
 		OutputConsumerPath outputConsumerPath;
-		Map<String, byte[]> accessWideners;
+		Map<String, byte[]> classTweakers;
 	}
 }

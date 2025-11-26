@@ -112,7 +112,7 @@ processResources {
 	inputs.property "tiny_mappings_parser", project.tiny_mappings_parser
 	inputs.property "sponge_mixin", project.sponge_mixin
 	inputs.property "tiny_remapper", project.tiny_remapper
-	inputs.property "access_widener", project.access_widener
+	inputs.property "class_tweaker", project.class_tweaker
 	inputs.property "quilt_json5", project.quilt_json5
 	inputs.property "asm", project.asm
 	inputs.property "asm_analysis", project.asm
@@ -204,7 +204,7 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	relocate 'com.unascribed.flexver', 'org.quiltmc.loader.impl.lib.flexver'
 	relocate 'net.fabricmc.mappingio', 'org.quiltmc.loader.impl.lib.mappingio'
 	relocate 'net.fabricmc.tinyremapper', 'org.quiltmc.loader.impl.lib.tinyremapper'
-	relocate 'net.fabricmc.accesswidener', 'org.quiltmc.loader.impl.lib.accesswidener'
+	relocate 'net.fabricmc.classtweaker', 'org.quiltmc.loader.impl.lib.classtweaker'
 
 	minimize()
 

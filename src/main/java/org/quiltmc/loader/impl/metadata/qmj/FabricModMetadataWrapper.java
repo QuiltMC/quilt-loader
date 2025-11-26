@@ -285,8 +285,8 @@ public class FabricModMetadataWrapper implements InternalModMetadata {
 	}
 
 	@Override
-	public Collection<String> accessWideners() {
-		String acc = fabricMeta.getAccessWidener();
+	public Collection<String> classTweakers() {
+		String acc = fabricMeta.getClassTweaker();
 		return acc == null ? Collections.emptyList() : Collections.singleton(acc);
 	}
 

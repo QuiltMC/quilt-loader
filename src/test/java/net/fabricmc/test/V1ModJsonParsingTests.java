@@ -148,7 +148,7 @@ final class V1ModJsonParsingTests {
 	public void testLongFile() throws IOException, ParseMetadataException {
 		final FabricLoaderModMetadata modMetadata = parseMetadata(specPath.resolve("long.json"));
 
-		if (!modMetadata.getAccessWidener().equals("examplemod.accessWidener")) {
+		if (!modMetadata.getClassTweaker().equals("examplemod.accessWidener")) {
 			throw new RuntimeException("Incorrect access widener entry");
 		}
 

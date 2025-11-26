@@ -273,7 +273,7 @@ final class V0ModMetadataFabric extends AbstractModMetadata implements FabricLoa
 	}
 
 	@Override
-	public String getAccessWidener() {
+	public String getClassTweaker() {
 		return null; // intentional null
 	}
 

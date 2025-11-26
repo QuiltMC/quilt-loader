@@ -415,10 +415,10 @@ public final class V1ModMetadataReader {
 			if (awValue != null) {
 				switch (awValue.type()) {
 					case ARRAY:
-						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", builder.accessWideners);
+						readStringList((JsonLoaderValue.ArrayImpl) awValue, "access_widener", builder.classTweakers);
 						break;
 					case STRING:
-						builder.accessWideners.add(awValue.asString());
+						builder.classTweakers.add(awValue.asString());
 						break;
 					default:
 						throw parseException(awValue, "mixin value must be an array of strings or a string");

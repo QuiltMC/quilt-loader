@@ -325,7 +325,7 @@ public class GeneralExt2FabricMetadata implements FabricLoaderModMetadata {
 	}
 
 	@Override
-	public @Nullable String getAccessWidener() {
+	public @Nullable String getClassTweaker() {
 		throw internalError();
 	}
 

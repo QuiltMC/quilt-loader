@@ -22,8 +22,6 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
-import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
-import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -49,7 +47,7 @@ public interface FabricLoaderModMetadata extends ModMetadata, ConvertibleModMeta
 	Collection<NestedJarEntry> getJars();
 	Collection<String> getMixinConfigs(EnvType type);
 	@Nullable
-	String getAccessWidener();
+	String getClassTweaker();
 	@Override
 	boolean loadsInEnvironment(EnvType type);
 
