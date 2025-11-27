@@ -43,7 +43,7 @@ final class QuiltTransformer {
 		boolean isGameClass = mod.id().equals(gameProvider.getGameId());
 		boolean transformAccess = isGameClass && gameProvider.requiresPackageAccessFix();
 		boolean strip = !isGameClass || isDevelopment;
-		boolean applyClassTweaker = isGameClass && classTweaker.getTargets().contains(name);
+		boolean applyClassTweaker = isGameClass && classTweaker.getTargets().contains(name.replace('.', '/'));
 		boolean reflectiveFixes = !isGameClass && !Boolean.getBoolean(SystemProperties.DISABLE_REFLECTIVE_FIXES);
 
 		if (!transformAccess && !strip && !applyClassTweaker && !reflectiveFixes) {
@@ -105,7 +105,7 @@ final class QuiltTransformer {
 		}
 
 		if (applyClassTweaker) {
-			visitor = new AccessWidenerClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, classTweaker);
+			visitor = classTweaker.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, null);
 			visitorCount++;
 		}
 

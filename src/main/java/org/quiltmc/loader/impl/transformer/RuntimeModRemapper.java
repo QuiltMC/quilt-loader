@@ -35,11 +35,10 @@ import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
+import net.fabricmc.classtweaker.api.ClassTweaker;
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
 import net.fabricmc.classtweaker.api.ClassTweakerWriter;
-import net.fabricmc.classtweaker.reader.ClassTweakerReaderImpl;
 import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
-import net.fabricmc.classtweaker.writer.ClassTweakerWriterImpl;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 import org.objectweb.asm.commons.Remapper;
@@ -230,9 +229,9 @@ final class RuntimeModRemapper {
 	}
 
 	private static byte[] remapClassTweaker(byte[] input, Remapper remapper) {
-		ClassTweakerWriter writer = new ClassTweakerWriterImpl(ClassTweakerReaderImpl.readVersion(input));
+		ClassTweakerWriter writer = ClassTweakerWriter.create(ClassTweaker.CT_LATEST);
 		ClassTweakerRemapperVisitor remappingVisitor = new ClassTweakerRemapperVisitor(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
-		ClassTweakerReader classTweakerReader = new ClassTweakerReaderImpl(remappingVisitor);
+		ClassTweakerReader classTweakerReader = ClassTweakerReader.create(remappingVisitor);
 		classTweakerReader.read(input, "intermediary");
 		return writer.getOutput();
 	}

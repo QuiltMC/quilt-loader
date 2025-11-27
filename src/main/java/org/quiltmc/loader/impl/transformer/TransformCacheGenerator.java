@@ -27,9 +27,6 @@ import java.util.Map;
 import net.fabricmc.classtweaker.api.ClassTweaker;
 
 import net.fabricmc.classtweaker.api.ClassTweakerReader;
-import net.fabricmc.classtweaker.impl.ClassTweakerImpl;
-
-import net.fabricmc.classtweaker.reader.ClassTweakerReaderImpl;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
@@ -111,8 +108,8 @@ final class TransformCacheGenerator {
 	}
 
 	private static ClassTweaker loadClassTweakers(TransformCache cache) {
-		ClassTweaker ret = new ClassTweakerImpl();
-		ClassTweakerReader classTweakerReader = new ClassTweakerReaderImpl(ret);
+		ClassTweaker ret = ClassTweaker.newInstance();
+		ClassTweakerReader classTweakerReader = ClassTweakerReader.create(ret);
 
 		for (ModLoadOption mod : cache.getModsInCache()) {
 			for (String classTweaker : mod.metadata().classTweakers()) {
