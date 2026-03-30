@@ -69,6 +69,7 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 	private String mappingsSource;
 	private VisitableMappingTree mappings = new MemoryMappingTree(true);
 	private List<String> namespaces;
+	private String modDistributionNamespace;
 	private String targetNamespace;
 	private String mappingName;
 
@@ -118,6 +119,15 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 			targetNamespace = System.getProperty(SystemProperties.TARGET_NAMESPACE, QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary");
 		}
 		return targetNamespace;
+	}
+
+	@Override
+	public String getModDistributionNamespace() {
+		if (modDistributionNamespace == null) {
+			modDistributionNamespace = System.getProperty(SystemProperties.DEFAULT_MOD_DISTRIBUTION_NAMESPACE,
+					"intermediary");
+		}
+		return modDistributionNamespace;
 	}
 
 	@Override

@@ -32,13 +32,15 @@ import java.util.List;
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public class EmptyMappingConfiguration implements MappingConfiguration {
 	String namespace;
+	String modDistributionNamespace;
 
 	public EmptyMappingConfiguration() {
-		this("official"); // "official" is recommended for unobfuscated games
+		this("official", "official"); // "official" is recommended for unobfuscated games
 	}
 
-	public EmptyMappingConfiguration(String namespace) {
+	public EmptyMappingConfiguration(String namespace, String modDistributionNamespace) {
 		this.namespace = namespace;
+		this.modDistributionNamespace = modDistributionNamespace;
 	}
 	@Override
 	public MappingTreeView getMappings() {
@@ -48,6 +50,11 @@ public class EmptyMappingConfiguration implements MappingConfiguration {
 	@Override
 	public List<String> getNamespaces() {
 		return Collections.emptyList();
+	}
+
+	@Override
+	public String getModDistributionNamespace() {
+		return modDistributionNamespace;
 	}
 
 	@Override

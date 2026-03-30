@@ -84,16 +84,16 @@ public final class QuiltMixinBootstrap {
 		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 		MappingTreeView mappings = mappingConfiguration.getMappings();
 
-		if (mappings != null) {
+		if (mappings != null && !mappingConfiguration.getModDistributionNamespace()
+				.equals(mappingConfiguration.getTargetNamespace())) {
 			List<String> namespaces = new ArrayList<>(mappings.getDstNamespaces());
 			namespaces.add(mappings.getSrcNamespace());
 
-			// TODO: This needs special support for when there's a mod compiled to mojmap
-			if (namespaces.contains("intermediary") && namespaces.contains(mappingConfiguration.getTargetNamespace()) && !mappingConfiguration.getTargetNamespace().equals("intermediary")) {
+			if (namespaces.contains(mappingConfiguration.getModDistributionNamespace()) && namespaces.contains(mappingConfiguration.getTargetNamespace())) {
 				System.setProperty("mixin.env.remapRefMap", "true");
 
 				try {
-					MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, "intermediary", mappingConfiguration.getTargetNamespace());
+					MixinIntermediaryDevRemapper remapper = new MixinIntermediaryDevRemapper(mappings, mappingConfiguration.getModDistributionNamespace(), mappingConfiguration.getTargetNamespace());
 					MixinEnvironment.getDefaultEnvironment().getRemappers().add(remapper);
 					Log.info(LogCategory.MIXIN, "Loaded Quilt mappings for mixin remapper!");
 				} catch (Exception e) {

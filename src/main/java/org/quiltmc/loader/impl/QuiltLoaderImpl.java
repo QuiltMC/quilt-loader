@@ -135,7 +135,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.31.0-beta.4";
+	public static final String VERSION = "0.31.0-beta.5";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -1159,8 +1159,10 @@ public final class QuiltLoaderImpl {
 		if (mappingResolver == null) {
 			mappingResolver = new LazyMappingResolver(() -> new QuiltMappingResolver(
 				QuiltLauncherBase.getLauncher().getMappingConfiguration().getMappings(),
-				QuiltLauncherBase.getLauncher().getTargetNamespace()
-			), QuiltLauncherBase.getLauncher().getTargetNamespace());
+				QuiltLauncherBase.getLauncher().getTargetNamespace(),
+				QuiltLauncherBase.getLauncher().getModDistributionNamespace()
+			), QuiltLauncherBase.getLauncher().getTargetNamespace(),
+				QuiltLauncherBase.getLauncher().getModDistributionNamespace());
 		}
 
 		return mappingResolver;
