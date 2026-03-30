@@ -72,7 +72,7 @@ final class RuntimeModRemapper {
 	RuntimeModRemapper(List<ModLoadOption> mods) {
 		MappingConfiguration mappingConfiguration = QuiltLauncherBase.getLauncher().getMappingConfiguration();
 
-		if (mappingConfiguration == null) {
+		if (mappingConfiguration == null || mappingConfiguration.getTargetNamespace().equals("official")) {
 			// TODO: Right now, there's no easy way for people implementing other game providers
 			// 	 but wanting to use the default Quilt plugin to change the namespaceMappingFrom
 			//   (in fact, they still have to declare a supported-by-Quilt intermediateMappings in their quilt.mod.json,

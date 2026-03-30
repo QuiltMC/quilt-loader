@@ -68,6 +68,7 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 	private String gameVersion;
 	private String mappingsSource;
 	private VisitableMappingTree mappings = new MemoryMappingTree(true);
+	private boolean isOfficialMappings;
 	private List<String> namespaces;
 	private String targetNamespace;
 
@@ -114,7 +115,12 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 	@Override
 	public String getTargetNamespace() {
 		if (targetNamespace == null) {
-			targetNamespace = System.getProperty(SystemProperties.TARGET_NAMESPACE, QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary");
+			targetNamespace = System.getProperty(SystemProperties.TARGET_NAMESPACE);
+			if (targetNamespace != null) {
+				return targetNamespace;
+			}
+
+			targetNamespace = isOfficialMappings ? "official" : QuiltLauncherBase.getLauncher().isDevelopment() ? "named" : "intermediary";
 		}
 		return targetNamespace;
 	}
@@ -208,11 +214,19 @@ public class MappingConfigurationImpl implements MappingConfiguration {
 			}
 		}
 
+		// Use official mapping namespace if the mappings file is empty
+		if (mappings.getClasses().isEmpty()) {
+			isOfficialMappings = true;
+			targetNamespace = null;
+		}
+
 		this.namespaces = new ArrayList<>();
 		if (mappings.getSrcNamespace() != null) {
 			namespaces.add(mappings.getSrcNamespace());
 		}
-		namespaces.addAll(mappings.getDstNamespaces());
+		if (!isOfficialMappings) {
+			namespaces.addAll(mappings.getDstNamespaces());
+		}
 		this.namespaces = Collections.unmodifiableList(namespaces);
 
 		if (!namespaces.isEmpty()) {
