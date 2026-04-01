@@ -30,3 +30,4 @@ jobs:
           b2-key-id: ${{ secrets.META_B2_KEY_ID }}
           b2-key: ${{ secrets.META_B2_KEY }}
           cf-key: ${{ secrets.META_CF_KEY }}
+          cf-base-url: "https://meta.quiltmc.org/"
