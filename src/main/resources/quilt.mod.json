@@ -22,7 +22,7 @@
     "provides": [
         {
           "id": "fabricloader",
-          "version": "0.18.5"
+          "version": "0.18.6"
         }
       ],
       "depends": [
