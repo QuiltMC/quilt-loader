@@ -33,6 +33,7 @@ import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -46,10 +47,12 @@ public final class QuiltGuiEntry {
 		if (warnEarly) {
 			Log.error(LogCategory.GUI, "An error occurred: " + mainText, exception);
 		}
+		boolean isCI = System.getenv("CI") != null;
+		boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
 
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
-		if ((provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
+		if (!isCI && !isNoGui && (provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
 
 			QuiltReport report = new QuiltReport("Crashed!");
 			// It's arguably the most important version - if anything goes wrong while writing this report

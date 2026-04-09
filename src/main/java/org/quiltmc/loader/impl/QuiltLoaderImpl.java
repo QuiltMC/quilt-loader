@@ -131,7 +131,7 @@ public final class QuiltLoaderImpl {
 
 	public static final int ASM_VERSION = Opcodes.ASM9;
 
-	public static final String VERSION = "0.30.0-beta.7";
+	public static final String VERSION = "0.31.0-beta.1";
 	public static final String MOD_ID = "quilt_loader";
 	public static final String DEFAULT_MODS_DIR = "mods";
 	public static final String DEFAULT_CACHE_DIR = ".cache";
@@ -613,7 +613,10 @@ public final class QuiltLoaderImpl {
 				return result;
 			}
 
-			if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
+			boolean isCI = System.getenv("CI") != null;
+			boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
+
+			if (isCI || isNoGui || (provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 				return result;
 			}
 
@@ -671,7 +674,11 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
-		if ((provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
+
+		boolean isCI = System.getenv("CI") != null;
+		boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
+
+		if (isCI || isNoGui || (provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 			if (crashReportFile != null) {
 				System.err.println("Game crashed! Saved the crash report to " + crashReportFile);
 			}

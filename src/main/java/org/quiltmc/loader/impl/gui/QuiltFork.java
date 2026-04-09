@@ -60,8 +60,11 @@ public class QuiltFork {
 	private static Error previousServerError;
 
 	static {
+		boolean isCI = System.getenv("CI") != null;
+		boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
+
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
-		if (Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || (provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
+		if (isCI || isNoGui || Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || (provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 			COMMS = null;
 			FORK_EXCEPTION = null;
 		} else {

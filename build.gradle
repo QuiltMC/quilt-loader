@@ -12,9 +12,9 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id 'org.quiltmc.gradle.licenser' version '2.0.1'
-	id 'org.quiltmc.loom' version '1.6.7' apply false
-	id 'com.github.johnrengelman.shadow' version '8.1.1'
+	id 'org.quiltmc.gradle.licenser' version '2.0.2'
+	id 'org.quiltmc.loom' version '1.11.1' apply false
+	id 'com.gradleup.shadow' version '8.3.10'
 }
 
 java {
