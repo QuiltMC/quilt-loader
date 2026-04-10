@@ -160,8 +160,6 @@ public final class QuiltMixinBootstrap {
 			// infer from loader dependency by determining the least relevant loader version the mod accepts
 			// AND any loader deps
 
-			List<VersionInterval> reqIntervals = Collections.singletonList(VersionInterval.INFINITE);
-
 			if (!isFabric) {
 				// quilt or builtin mod, we can assume it uses latest (0.10.0 at the time) compat
 				// Except since <insert update that introduces mixin 0.14.0 compat>, we can't assume that anymore!
@@ -170,38 +168,40 @@ public final class QuiltMixinBootstrap {
 				return FabricUtil.COMPATIBILITY_0_10_0;
 			}
 
+			List<VersionInterval> fabricReqIntervals = Collections.singletonList(VersionInterval.INFINITE);
+
 			FabricLoaderModMetadata fabricMeta = ((InternalModMetadata) metadata).asFabricModMetadata();
 
 			for (ModDependency dep : fabricMeta.getDependencies()) {
 				if (dep.getModId().equals("fabricloader") || dep.getModId().equals("fabric-loader")) {
 					if (dep.getKind() == ModDependency.Kind.DEPENDS) {
-						reqIntervals = VersionInterval.and(reqIntervals, dep.getVersionIntervals());
+						fabricReqIntervals = VersionInterval.and(fabricReqIntervals, dep.getVersionIntervals());
 					} else if (dep.getKind() == ModDependency.Kind.BREAKS) {
-						reqIntervals = VersionInterval.and(reqIntervals, VersionInterval.not(dep.getVersionIntervals()));
+						fabricReqIntervals = VersionInterval.and(fabricReqIntervals, VersionInterval.not(dep.getVersionIntervals()));
 					}
 				}
 			}
 
-			if (reqIntervals.isEmpty()) throw new IllegalStateException("mod "+metadata.id()+" is incompatible with every loader version?"); // shouldn't get there
+			if (fabricReqIntervals.isEmpty()) throw new IllegalStateException("mod "+metadata.id()+" is incompatible with every loader version?"); // shouldn't get there
 
-			Version minLoaderVersion = reqIntervals.get(0).getMin(); // it is sorted, to 0 has the absolute lower bound
+			Version minFabricLoaderVersion = fabricReqIntervals.get(0).getMin(); // it is sorted, to 0 has the absolute lower bound
 
 			// Quilt: If we can't determine the minimum loader version, we prefer the latest compatibility
 			// instead of the lowest one.
 
-			if (minLoaderVersion != null) { // has a lower bound
+			if (minFabricLoaderVersion != null) { // has a lower bound
 				for (QuiltMixinVersions.LoaderMixinVersionEntry version : QuiltMixinVersions.getVersions()) {
-					if (minLoaderVersion.compareTo(version.fabricLoaderVersion) >= 0) { // lower bound is >= current version
-						Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using mixin compatibility %s", metadata.id(), minLoaderVersion, version.mixinVersion);
+					if (minFabricLoaderVersion.compareTo(version.fabricLoaderVersion) >= 0) { // lower bound is >= current version
+						Log.debug(LogCategory.MIXIN, "Mod %s requires fabric loader version %s, using mixin compatibility %s", metadata.id(), minFabricLoaderVersion, version.mixinVersion);
 						return version.mixinVersion;
 					}
 				}
-				Log.debug(LogCategory.MIXIN, "Mod %s requires loader version %s, using 0.9.2 mixin compatability", metadata.id(), minLoaderVersion);
+				Log.debug(LogCategory.MIXIN, "Mod %s requires fabric loader version %s, using 0.9.2 mixin compatability", metadata.id(), minFabricLoaderVersion);
 				return FabricUtil.COMPATIBILITY_0_9_2;
 			}
 
 			// Mod doesn't declare a dependency on a loader version; use oldest mixin compat version
-			Log.debug(LogCategory.MIXIN, "Mod %s doesn't declare a dependency on a loader version, using 0.9.2 mixin compatability", metadata.id());
+			Log.debug(LogCategory.MIXIN, "Mod %s doesn't declare a dependency on a fabric loader version, using 0.9.2 mixin compatability", metadata.id());
 			return FabricUtil.COMPATIBILITY_0_9_2;
 		}
 

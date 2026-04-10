@@ -42,7 +42,7 @@ public class QuiltMixinVersions {
 		addVersion("0.18.4", "0.30.0-beta.2", FabricUtil.COMPATIBILITY_0_17_0);
 		addVersion("0.17.3", "0.29.3-beta.1", FabricUtil.COMPATIBILITY_0_16_5);
 		addVersion("0.16.0", "0.26.2", FabricUtil.COMPATIBILITY_0_14_0);
-		addVersion("0.12.0-", "<0.12.0", FabricUtil.COMPATIBILITY_0_10_0);
+		addVersion("0.12.0-", "0.12.0", FabricUtil.COMPATIBILITY_0_10_0);
 	}
 
 	static List<LoaderMixinVersionEntry> getVersions() {
@@ -65,7 +65,8 @@ public class QuiltMixinVersions {
 			throw new RuntimeException(e);
 		}
 
-		minLoaderVersions.put(mixinCompat, minFabricLoaderVersion);
+		minFabricLoaderVersions.put(mixinCompat, minFabricLoaderVersion);
+		minQuiltLoaderVersions.put(mixinCompat, minQuiltLoaderVersion);
 	}
 
 	static final class LoaderMixinVersionEntry {
