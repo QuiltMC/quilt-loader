@@ -2,8 +2,8 @@ plugins {
 	id "java"
 	id "idea"
 	id "eclipse"
-	id("com.diffplug.spotless") version "5.12.5"
-	id("fabric-loom") version "0.10-SNAPSHOT"
+	id("com.diffplug.spotless") version "8.2.1"
+	id("fabric-loom") version "1.15-SNAPSHOT"
 }
 
 java {
@@ -26,11 +26,11 @@ dependencies {
 
 	// This is not typical for a buildscript
 	// ASM is required for the mixin annotation processor
-	annotationProcessor('org.ow2.asm:asm:${project.asm}')
-	annotationProcessor('org.ow2.asm:asm-analysis:${project.asm}')
-	annotationProcessor('org.ow2.asm:asm-commons:${project.asm}')
-	annotationProcessor('org.ow2.asm:asm-tree:${project.asm}')
-	annotationProcessor('org.ow2.asm:asm-util:${project.asm}')
+	annotationProcessor("org.ow2.asm:asm:${project.asm}")
+	annotationProcessor("org.ow2.asm:asm-analysis:${project.asm}")
+	annotationProcessor("org.ow2.asm:asm-commons:${project.asm}")
+	annotationProcessor("org.ow2.asm:asm-tree:${project.asm}")
+	annotationProcessor("org.ow2.asm:asm-util:${project.asm}")
 }
 
 processResources {

@@ -2,8 +2,8 @@ pluginManagement {
 	repositories {
 		gradlePluginPortal()
 		maven {
-			name = 'Quilt Releases'
-			url = 'https://maven.quiltmc.org/repository/release/'
+			name = "Quilt Releases"
+			url = "https://maven.quiltmc.org/repository/release/"
 		}
 		maven {
 			name = "Fabric"
@@ -14,12 +14,12 @@ pluginManagement {
 }
 
 plugins {
-	id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+	id "org.gradle.toolchains.foojay-resolver-convention" version "1.0.0"
 }
 
 rootProject.name = "quilt-loader"
 
 include "minecraft"
 include "minecraft:minecraft-test"
-include 'junit'
-include 'dependencies'
+include "junit"
+include "dependencies"

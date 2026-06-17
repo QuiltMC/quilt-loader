@@ -1,7 +1,7 @@
 apply plugin: "org.quiltmc.loom"
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
 
 loom {
 	runConfigs.configureEach {
@@ -20,7 +20,8 @@ repositories {
 }
 
 dependencies {
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
+	testImplementation(platform("org.junit:junit-bom:${project.junit_bom}"))
+	testImplementation "org.junit.jupiter:junit-jupiter"
 	minecraft "com.mojang:minecraft:1.20.6"
 	mappings "org.quiltmc:quilt-mappings:1.20.6+build.6:intermediary-v2"
 
@@ -44,8 +45,8 @@ dependencies {
 	 * Otherwise Loom will default to an older version (due to no mod loader on the mod* configs)
 	 */
 	annotationProcessor ("net.fabricmc:sponge-mixin:${project.sponge_mixin}") {
-		exclude module: 'launchwrapper'
-		exclude module: 'guava'
+		exclude module: "launchwrapper"
+		exclude module: "guava"
 	}
 
 	testImplementation project(":junit")
@@ -57,10 +58,10 @@ test {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release.set(17)
+	it.options.release.set(21)
 }
 
 runClient {
-	classpath += project(':').sourceSets.main.output
-	classpath += project(':minecraft').sourceSets.main.output
+	classpath += project(":").sourceSets.main.output
+	classpath += project(":minecraft").sourceSets.main.output
 }

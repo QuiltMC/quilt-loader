@@ -8,13 +8,13 @@ buildscript {
 }
 
 plugins {
-	id 'java'
-	id 'java-library'
-	id 'eclipse'
-	id 'maven-publish'
-	id 'org.quiltmc.gradle.licenser' version '2.0.2'
-	id 'org.quiltmc.loom' version '1.11.1' apply false
-	id 'com.gradleup.shadow' version '8.3.10'
+	id "java"
+	id "java-library"
+	id "eclipse"
+	id "maven-publish"
+	id "dev.yumi.gradle.licenser" version "2.2.+"
+	id "org.quiltmc.loom" version "1.11.1" apply false
+	id "com.gradleup.shadow" version "8.3.10"
 }
 
 java {
@@ -25,13 +25,15 @@ java {
 	withSourcesJar()
 }
 
-archivesBaseName = "quilt-loader"
+base {
+	archivesName = "quilt-loader"
+}
 version = project.quilt_loader
 def ENV = System.getenv()
 
 allprojects {
-	apply plugin: 'java-library'
-	apply plugin: 'eclipse'
+	apply plugin: "java-library"
+	apply plugin: "eclipse"
 
 	if (ENV.SNAPSHOTS_URL) {
 		version = version + "-SNAPSHOT"
@@ -42,24 +44,24 @@ allprojects {
 
 	repositories {
 		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
+			name = "Fabric"
+			url = "https://maven.fabricmc.net/"
 		}
 		maven {
-			name = 'Quilt'
-			url = 'https://maven.quiltmc.org/repository/release'
+			name = "Quilt"
+			url = "https://maven.quiltmc.org/repository/release"
 		}
 		maven {
-			name = 'Quilt'
-			url = 'https://maven.quiltmc.org/repository/snapshot'
+			name = "Quilt"
+			url = "https://maven.quiltmc.org/repository/snapshot"
 		}
 		maven {
-		  name = 'Unascribed'
-		  url = 'https://repo.sleeping.town/'
+		  name = "Unascribed"
+		  url = "https://repo.sleeping.town/"
 		}
 		mavenCentral() {
 			content {
-				excludeGroupByRegex "org.ow2.asm"
+				//excludeGroupByRegex "org.ow2.asm" // TODO Add back upon addition of ASM 9.9.1 to Quilt Maven
 			}
 		}
 	}
@@ -67,7 +69,7 @@ allprojects {
 
 sourceSets {
 	main {
-		java.srcDirs = ['src/main/java', 'src/fabric/api/java', 'src/fabric/impl/java', 'src/fabric/legacy/java']
+		java.srcDirs = ["src/main/java", "src/fabric/api/java", "src/fabric/impl/java", "src/fabric/legacy/java"]
 	}
 }
 
@@ -82,14 +84,14 @@ configurations {
 }
 
 dependencies {
-	include project(path: ':dependencies', configuration: 'include')
+	include project(path: ":dependencies", configuration: "include")
 	development project(path: ':dependencies', configuration: 'development')
 
 	// also must update in minecraft AND minecraft test
 	compileOnly "org.quiltmc.chasm:chasm:${project.quilt_chasm}"
 	compileOnly "org.quiltmc.chasm:chassembly:${project.quilt_chasm}"
 
-	testCompileOnly "org.jetbrains:annotations:${project.annotations}"
+	testCompileOnly "org.jspecify:jspecify:${project.jspecify}"
 
 	// Unit testing
 	testImplementation(platform("org.junit:junit-bom:${project.junit_bom}"))
@@ -159,7 +161,7 @@ shadowJar {
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 // Renaming in the shadow jar task doesnt seem to work, so do it here
-task getSat4jAbout(type: Copy) {
+tasks.register('getSat4jAbout', Copy) {
 	dependsOn project.configurations.include
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 
@@ -179,16 +181,17 @@ task getSat4jAbout(type: Copy) {
 File outputFile = file("build/libs/quilt-loader-${version}.jar")
 evaluationDependsOnChildren()
 
-task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
+tasks.register('fatJar', ShadowJar) {
+	dependsOn getSat4jAbout
 	from sourceSets.main.output
 	from project(":minecraft").sourceSets.main.output
 	from getSat4jAbout.destinationDir
 	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
+		rename { "${it}_${project.archivesBaseName}" }
 	}
 
 	manifest {
-		attributes (
+		attributes(
 			"Main-Class": "net.fabricmc.loader.launch.server.FabricServerLauncher",
 			"Fabric-Loom-Remap": "false",
 			"Automatic-Module-Name": "org.quiltmc.loader"
@@ -227,7 +230,7 @@ jar {
 	// Set the classifier to fix gradle task validation confusion.
 	archiveClassifier = "disabled"
 }
-tasks.withType(AbstractArchiveTask) {
+tasks.withType(AbstractArchiveTask).configureEach {
 	preserveFileTimestamps = false
 	reproducibleFileOrder = true
 }
@@ -238,19 +241,19 @@ sourcesJar {
 }
 
 // useful for creating test mod jar
-task testJar(type: Jar) {
+tasks.register('testJar', Jar) {
 	archiveClassifier = "test"
 	from sourceSets.test.output
 }
 
-task copyJson() {
+tasks.register('copyJson') {
 	def inJson = file('build/resources/main/quilt_installer.json')
 	//def inLwJson = file('src/main/resources/fabric-installer.launchwrapper.json')
 
-	def outJson = file("build/libs/${archivesBaseName}-${version}.json")
+	def outJson = file("build/libs/${name}-${version}.json")
 	//def outLwJson = file("build/libs/${archivesBaseName}-${version}.launchwrapper.json")
 
-	inputs.files (inJson, /*inLwJson*/)
+	inputs.files(inJson, /*inLwJson*/)
 	outputs.files(outJson, /*outLwJson*/)
 
 	doLast {
@@ -305,7 +308,6 @@ javadoc {
 
 allprojects {
 	license {
-		rule project.rootProject.file("codeformat/FABRIC_MODIFIED_HEADER")
 		rule project.rootProject.file("codeformat/HEADER")
 		include '**/*.java'
 

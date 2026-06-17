@@ -1,9 +1,9 @@
 plugins {
-	id 'maven-publish'
-	id 'java'
+	id "maven-publish"
+	id "java"
 }
 
-base.archivesName.set 'quilt-loader-dependencies'
+base.archivesName.set "quilt-loader-dependencies"
 version = rootProject.version
 group = rootProject.group
 
@@ -43,8 +43,8 @@ configurations {
 
 [configurations.runtimeElements, configurations.apiElements].each {
 	// included in quilt loader and not relocated
-	it.exclude(group: 'org.quiltmc.quilt-config.serializers', module: 'toml')
-	it.exclude(group: 'org.quiltmc.quilt-config.serializers', module: 'json5')
+	it.exclude(group: "org.quiltmc.quilt-config.serializers", module: "toml")
+	it.exclude(group: "org.quiltmc.quilt-config.serializers", module: "json5")
 }
 
 dependencies {
@@ -56,8 +56,8 @@ dependencies {
 	published "org.ow2.asm:asm-util:${project.asm}"
 
 	published("net.fabricmc:sponge-mixin:${project.sponge_mixin}") {
-		exclude module: 'launchwrapper'
-		exclude module: 'guava'
+		exclude module: "launchwrapper"
+		exclude module: "guava"
 	}
 
 	/*include*/ published "org.quiltmc:quilt-json5:${project.quilt_json5}"
@@ -87,7 +87,7 @@ dependencies {
 publishing {
 	publications {
 		maven(MavenPublication) {
-			artifactId project.archivesBaseName
+			artifactId project.name
 			from components.java
 		}
 	}
