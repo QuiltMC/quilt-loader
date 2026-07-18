@@ -174,13 +174,6 @@ class QuiltPluginClassLoader extends ClassLoader {
 				} else {
 					Path path = additionalClassPath.findResource(name.replace(".", "/").concat(".class"));
 					if (path == null) {
-
-						if (getPackage(pkg) != null) {
-							throw new ClassNotFoundException(
-								name + " already has a package defined, refusing to load it's classes from elsewhere"
-							);
-						}
-
 						break load_from_plugin;
 					}
 					src = Files.readAllBytes(path);
