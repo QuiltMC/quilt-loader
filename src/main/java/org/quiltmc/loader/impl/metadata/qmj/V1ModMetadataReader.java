@@ -45,12 +45,12 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltLoaderIcon.SubIconPosition;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -68,11 +68,6 @@ import net.fabricmc.api.EnvType;
 public final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
 		return read(root, null, null, (QuiltTreeNode) null);
-	}
-
-	@Deprecated
-	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root, Path path, QuiltPluginManager manager, PluginGuiTreeNode parentNode) {
-		return read(root, path, manager, (QuiltTreeNode) parentNode);
 	}
 
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root, Path path, QuiltPluginManager manager, QuiltTreeNode parentNode) {
@@ -848,7 +843,7 @@ public final class V1ModMetadataReader {
 		}
 		if (modJsonNode == null) {
 			modJsonNode = warningNode.addChild(QuiltLoaderText.of("quilt.mod.json"));
-			modJsonNode.icon(QuiltLoaderGui.iconJsonFile().withDecoration(QuiltLoaderGui.iconQuilt()));
+			modJsonNode.icon(QuiltLoaderGui.iconJsonFile().withDecoration(SubIconPosition.BOTTOM_RIGHT, QuiltLoaderGui.iconQuilt()));
 		}
 		return modJsonNode;
 	}

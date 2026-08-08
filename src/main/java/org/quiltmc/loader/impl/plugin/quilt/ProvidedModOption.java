@@ -22,13 +22,14 @@ import java.nio.file.Path;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.QuiltFileHasher;
@@ -114,7 +115,7 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 
 	@Override
 	public QuiltLoaderIcon modFileIcon() {
-		return loader().manager().getGuiManager().iconUnknownFile();
+		return QuiltLoaderGui.iconUnknownFile();
 	}
 
 	@Override
@@ -123,13 +124,13 @@ public class ProvidedModOption extends ModLoadOption implements AliasedLoadOptio
 	}
 
 	@Override
-	public void populateModsTabInfo(PluginGuiTreeNode guiNode) {
-		guiNode.mainIcon(guiNode.manager().iconJavaClassFile());
+	public void populateModsTabInfo(QuiltTreeNode guiNode) {
+		guiNode.icon(QuiltLoaderGui.iconJavaClassFile());
 
-		PluginGuiTreeNode c = guiNode.addChild(QuiltLoaderText.of(provider.id() + " " + provider.version()));
-		c.mainIcon(provider.modTypeIcon());
+		QuiltTreeNode c = guiNode.addChild(QuiltLoaderText.of(provider.id() + " " + provider.version()));
+		c.icon(provider.modTypeIcon());
 		c.addChild(QuiltLoaderText.of(loader().manager().describePath(provider.from())))
-			.mainIcon(guiNode.manager().iconFolder());
+			.icon(QuiltLoaderGui.iconFolder());
 	}
 
 	@Override

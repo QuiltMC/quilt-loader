@@ -33,7 +33,6 @@ import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -133,19 +132,12 @@ public abstract class ModLoadOption extends LoadOption {
 		return modFileIcon().withDecoration(modTypeIcon());
 	}
 
-	/** @deprecated Please call/override the {@link QuiltTreeNode} version:
-	 *             {@link #populateModsTabInfo(QuiltTreeNode)} */
-	@Deprecated
-	public void populateModsTabInfo(PluginGuiTreeNode guiNode) {
-		guiNode.mainIcon(modTypeIcon());
-		guiNode.addChild(QuiltLoaderText.of(loader().manager().describePath(from())))//
-			.mainIcon(QuiltLoaderGui.iconFolder());
-	}
-
-	/** Populates the given gui node with information about this mod. The {@link PluginGuiTreeNode#text()} will have
+	/** Populates the given gui node with information about this mod. The {@link QuiltTreeTreeNode#text()} will have
 	 * been set to the {@link #version()} before this method is called. */
 	public void populateModsTabInfo(QuiltTreeNode guiNode) {
-		populateModsTabInfo((PluginGuiTreeNode) guiNode);
+		guiNode.icon(modTypeIcon());
+		guiNode.addChild(QuiltLoaderText.of(loader().manager().describePath(from())))//
+			.icon(QuiltLoaderGui.iconFolder());
 	}
 
 	public abstract ModContainerExt convertToMod(Path transformedResourceRoot);

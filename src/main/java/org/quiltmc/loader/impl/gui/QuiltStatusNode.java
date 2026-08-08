@@ -34,13 +34,11 @@ import org.quiltmc.loader.api.gui.QuiltLoaderIcon.SubIconPosition;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTreeNode, PluginGuiTreeNode {
+public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTreeNode {
 
 	interface TreeNodeListener extends Listener {
 		default void onTextChanged() {}
@@ -362,153 +360,5 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTree
 			}
 			return a.text.compareTo(b.text);
 		});
-	}
-
-	// Deprecated PluginGuiTreeNode methods
-
-	@Override
-	@Deprecated
-	public QuiltTreeNode getNew() {
-		return this;
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode addChild(PluginGuiTreeNode.SortOrder sortOrder) {
-		return addChild(QuiltLoaderText.EMPTY, sortOrder);
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode addChild(QuiltLoaderText text, PluginGuiTreeNode.SortOrder sortOrder) {
-		QuiltTreeNode.SortOrder newOrder = sortOrder == PluginGuiTreeNode.SortOrder.ADDITION_ORDER
-			? QuiltTreeNode.SortOrder.ADDITION_ORDER
-			: QuiltTreeNode.SortOrder.ALPHABETICAL_ORDER;
-		return addChild(newOrder);
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode setDirectLevel(WarningLevel level) {
-		level(fromOldLevel(level));
-		return this;
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode setException(Throwable exception) {
-		return this;
-	}
-
-	@Deprecated
-	private static QuiltWarningLevel fromOldLevel(WarningLevel level) {
-		switch (level) {
-			case CONCERN:
-				return QuiltWarningLevel.CONCERN;
-			case DEBUG_ONLY:
-				return QuiltWarningLevel.DEBUG_ONLY;
-			case ERROR:
-				return QuiltWarningLevel.ERROR;
-			case FATAL:
-				return QuiltWarningLevel.FATAL;
-			case INFO:
-				return QuiltWarningLevel.INFO;
-			case NONE:
-				return QuiltWarningLevel.NONE;
-			case WARN:
-				return QuiltWarningLevel.WARN;
-			default:
-				throw new IllegalStateException("Unknown WarningLevel " + level);
-		}
-	}
-
-	@Deprecated
-	private WarningLevel toOldLevel(QuiltWarningLevel level) {
-		switch (level) {
-			case CONCERN:
-				return WarningLevel.CONCERN;
-			case DEBUG_ONLY:
-				return WarningLevel.DEBUG_ONLY;
-			case ERROR:
-				return WarningLevel.ERROR;
-			case FATAL:
-				return WarningLevel.FATAL;
-			case INFO:
-				return WarningLevel.INFO;
-			case NONE:
-				return WarningLevel.NONE;
-			case WARN:
-				return WarningLevel.WARN;
-			default:
-				throw new IllegalStateException("Unknown QuiltWarningLevel " + level);
-		}
-	}
-
-	@Override
-	@Deprecated
-	public WarningLevel getDirectLevel() {
-		return toOldLevel(level());
-	}
-
-	@Override
-	@Deprecated
-	public WarningLevel getMaximumLevel() {
-		return toOldLevel(maximumLevel());
-	}
-
-	@Override
-	@Deprecated
-	public int countOf(WarningLevel level) {
-		return countAtLevel(fromOldLevel(level));
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon mainIcon() {
-		QuiltLoaderIcon i = icon();
-		if (i == null) {
-			return QuiltLoaderGui.iconTreeDot();
-		}
-		for (SubIconPosition pos : SubIconPosition.values()) {
-			if (i.getDecoration(pos) != null) {
-				i = i.withDecoration(pos, null);
-			}
-		}
-		return i;
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode mainIcon(QuiltLoaderIcon icon) {
-		for (SubIconPosition pos : SubIconPosition.values()) {
-			icon = icon.withDecoration(pos, icon().getDecoration(pos));
-		}
-		icon(icon);
-		return this;
-	}
-
-	@Override
-	@Deprecated
-	public @Nullable QuiltLoaderIcon subIcon() {
-		return icon.getDecoration(SubIconPosition.BOTTOM_RIGHT);
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode subIcon(QuiltLoaderIcon subIcon) {
-		icon(icon().withDecoration(SubIconPosition.BOTTOM_RIGHT, subIcon));
-		return this;
-	}
-
-	@Override
-	@Deprecated
-	public void expandByDefault(boolean autoCollapse) {
-		autoExpandLevel(autoCollapse ? QuiltWarningLevel.NONE : QuiltWarningLevel.FATAL);
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiManager manager() {
-		return GuiManagerImpl.MANAGER;
 	}
 }

@@ -27,7 +27,6 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
@@ -48,8 +47,8 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * will be opened, and checked for a "quilt.mod.json" file. If one is found, then it is loaded as a quilt mod (and
  * possibly as a new plugin - which will be loaded instantly, rather than waiting until the next cycle).</li>
  * <li>If "quilt.mod.json" couldn't be found then the zip root will be passed to
- * {@link #scanZip(Path, ModLocation, PluginGuiTreeNode)}</li>
- * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)}</li>
+ * {@link #scanZip(Path, ModLocation, QuiltTreeNode)}</li>
+ * <li>Otherwise it will be passed to {@link #scanUnknownFile(Path, ModLocation, QuiltTreeTreeNode)}</li>
  * </ol>
  * </li>
  * <li>{@link #beforeSolve()} is called.</li>
@@ -94,13 +93,6 @@ public interface QuiltLoaderPlugin {
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
 	default ModLoadOption[] scanZip(Path zipFile, Path root, ModLocation location, QuiltTreeNode guiNode) throws IOException {
-		return scanZip(root, location, (PluginGuiTreeNode) guiNode);
-	}
-
-	/** @deprecated Override {@link #scanZip(Path, Path, ModLocation, QuiltTreeNode)} instead, as that doesn't use the
-	 *             deprecated {@link PluginGuiTreeNode} type. */
-	@Deprecated
-	default ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
@@ -112,16 +104,7 @@ public interface QuiltLoaderPlugin {
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
-	default ModLoadOption[] scanUnknownFile(Path file, ModLocation location, QuiltTreeNode guiNode)
-		throws IOException {
-		return scanUnknownFile(file, location, (PluginGuiTreeNode) guiNode);
-	}
-
-	/** @deprecated Override {@link #scanUnknownFile(Path, ModLocation, QuiltTreeNode)} instead, as that doesn't use the
-	 *             deprecated {@link PluginGuiTreeNode} type. */
-	@Deprecated
-	default ModLoadOption[] scanUnknownFile(Path file, ModLocation location, PluginGuiTreeNode guiNode)
-		throws IOException {
+	default ModLoadOption[] scanUnknownFile(Path file, ModLocation location, QuiltTreeNode guiNode) throws IOException {
 		return null;
 	}
 
@@ -139,16 +122,7 @@ public interface QuiltLoaderPlugin {
 	 *         an empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading a file in the folder and so an error message should be
 	 *             displayed. */
-	default ModLoadOption[] scanFolder(Path folder, ModLocation location, QuiltTreeNode guiNode)
-		throws IOException {
-		return scanFolder(folder, location, (PluginGuiTreeNode) guiNode);
-	}
-
-	/** @deprecated Override {@link #scanFolder(Path, ModLocation, QuiltTreeNode)} instead, as that doesn't use the
-	 *             deprecated {@link PluginGuiTreeNode} type. */
-	@Deprecated
-	default ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode)
-		throws IOException {
+	default ModLoadOption[] scanFolder(Path folder, ModLocation location, QuiltTreeNode guiNode) throws IOException {
 		return null;
 	}
 
@@ -160,9 +134,9 @@ public interface QuiltLoaderPlugin {
 	 * 
 	 * @param path The path that the mods were loaded from. This is either the
 	 *            {@link QuiltPluginManager#getParent(Path)} of the path passed to
-	 *            {@link #scanZip(Path, ModLocation, PluginGuiTreeNode)}, or the exact path passed to either
-	 *            {@link #scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)} or
-	 *            {@link #scanFolder(Path, ModLocation, PluginGuiTreeNode)}
+	 *            {@link #scanZip(Path, ModLocation, QuiltTreeNode)}, or the exact path passed to either
+	 *            {@link #scanUnknownFile(Path, ModLocation, QuiltTreeNode)} or
+	 *            {@link #scanFolder(Path, ModLocation, QuiltTreeNode)}
 	 * @param thisOptions An unmodifiable list of the options this plugin loaded from the path.
 	 * @param otherPluginId The ID of the other plugin. This is never quilt loader itself
 	 *            ({@link QuiltPluginManager#QUILT_LOADER}), since files recognised as quilt mods are never passed to
@@ -172,7 +146,8 @@ public interface QuiltLoaderPlugin {
 	 *            intended to check {@link ModLoadOption#subType}, and nothing else.
 	 * @return True if this plugin has a higher priority than the other plugin, or false if this plugin has a lower
 	 *         priority. If this plugin doesn't know then it should return null. */
-	default @Nullable Boolean isHigherPriorityThan(Path path, List<ModLoadOption> thisOptions, String otherPluginId, List<ModLoadOption> otherOptions) {
+	default @Nullable Boolean isHigherPriorityThan(Path path, List<ModLoadOption> thisOptions, String otherPluginId, 
+		List<ModLoadOption> otherOptions) {
 		return null;
 	}
 
