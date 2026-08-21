@@ -289,7 +289,43 @@ public final class Knot extends QuiltLauncherBase {
 		try {
 			URL url = UrlUtil.asUrl(path);
 			classLoader.getDelegate().setAllowedPrefixes(url, allowedPrefixes);
-			classLoader.addPath(path, mod, origin); // TODO: Create a method which passes the actual origin!
+
+			if (allowedPrefixes.length > 0) {
+				/*
+				 * Prefix-restricted entries must be searched last to prevent
+				 * shadowing transformed classes once `unlockClassPath` drops the restriction.
+				 *
+				 * Use `addURL` instead of `addPath` because it ensures the entry is checked last.
+				 * Prevents early additions (i.e. raw <1.18 Minecraft jars) from overriding patched game classes.
+				 */
+				if (mod != null) {
+					String errorMessage = String.format(
+						"Cannot add mod '%s' with restricted prefixes %s: mods must not be searched last.",
+						mod.metadata().id(),
+						Arrays.toString(allowedPrefixes)
+					);
+					throw new IllegalArgumentException(errorMessage);
+				}
+
+				if (classLoader instanceof KnotCompatibilityClassLoader) {
+					/*
+					 * `KnotCompatibilityClassLoader` can't honor the "search last" order as `addURL` and `addPath` are identical.
+					 * Warn instead of silently loading unrestricted/untransformed classes.
+					 */
+					String warningMessage = String.format(
+						"Restricted path %s %s cannot be searched last in KnotCompatibilityClassLoader. " +
+						"Shared classes (i.e. <1.18 game classes) will load from here, bypassing transformations.",
+						path,
+						Arrays.toString(allowedPrefixes)
+					);
+					Log.warn(LogCategory.KNOT, warningMessage);
+				}
+
+				classLoader.addURL(url);
+			} else {
+				classLoader.addPath(path, mod, origin); // TODO: Create a method which passes the actual origin!
+			}
+
 			classLoader.getDelegate().hideParentUrl(url);
 		} catch (MalformedURLException e) {
 			throw new RuntimeException(e);
