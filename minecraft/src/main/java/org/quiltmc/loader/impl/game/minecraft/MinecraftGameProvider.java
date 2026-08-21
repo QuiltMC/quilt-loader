@@ -567,6 +567,9 @@ public class MinecraftGameProvider implements GameProvider {
 
 	@Override
 	public void unlockClassPath(QuiltLauncher launcher) {
+		// Don't add the game jar to the classpath
+		// since the transform cache will do that instead
+		/*
 		for (Path gameJar : gameJars) {
 			if (logJars.contains(gameJar)) {
 				launcher.setAllowedPrefixes(gameJar);
@@ -574,6 +577,7 @@ public class MinecraftGameProvider implements GameProvider {
 				launcher.addToClassPath(gameJar);
 			}
 		}
+		*/
 
 		if (realmsJar != null) launcher.addToClassPath(realmsJar);
 

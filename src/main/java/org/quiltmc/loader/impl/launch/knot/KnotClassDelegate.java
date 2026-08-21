@@ -52,6 +52,7 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.cert.Certificate;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -246,32 +247,41 @@ class KnotClassDelegate {
 			}
 		}
 
-		if (!allowedPrefixes.isEmpty() && url != null) {
+		prefix_restriction: if (!allowedPrefixes.isEmpty() && url != null) {
 			String fileName = LoaderUtil.getClassFileName(name);
-			URL codeSource = null;
 
-			try {
-				codeSource = UrlUtil.getSource(fileName, url);
-			} catch (UrlConversionException e) {
-				Log.warn(LogCategory.GENERAL, "Failed to get the code source URL for " + url);
-			}
+			if (isPrefixRestricted(name, fileName, url)) {
 
-			String[] prefixes;
+				// The prefix may be disallowed for this URL
+				// but a later URL may be allowed to load this class
 
-			if (codeSource != null && (prefixes = allowedPrefixes.get(codeSource.toString())) != null) {
-				assert prefixes.length > 0;
-				boolean found = false;
+				IOException error = null;
 
-				for (String prefix : prefixes) {
-					if (name.startsWith(prefix)) {
-						found = true;
-						break;
+				try {
+					Enumeration<URL> resources = itf.getResources(fileName, allowFromParent);
+
+					while (resources.hasMoreElements()) {
+						URL next = resources.nextElement();
+						if (next == url) {
+							// We just tested this
+							continue;
+						}
+
+						if (!isPrefixRestricted(name, fileName, next)) {
+							url = next;
+							break prefix_restriction;
+						}
 					}
+
+				} catch (IOException e) {
+					error = e;
 				}
 
-				if (!found) {
-					throw new ClassNotFoundException("class " + name + " is currently restricted from being loaded");
+				ClassNotFoundException cnfe = new ClassNotFoundException("class " + name + " is currently restricted from being loaded");
+				if (error != null) {
+					cnfe.addSuppressed(error);
 				}
+				throw cnfe;
 			}
 		}
 
@@ -373,6 +383,36 @@ class KnotClassDelegate {
 		String fileName = pkgName + ".package-info";
 		String hideReason = hiddenClasses.get(fileName);
 		return hideReason != null ? hideReason : "";
+	}
+
+	private boolean isPrefixRestricted(String name, String fileName, URL fileURL) {
+		URL codeSource = null;
+
+		try {
+			codeSource = UrlUtil.getSource(fileName, fileURL);
+		} catch (UrlConversionException e) {
+			Log.warn(LogCategory.GENERAL, "Failed to get the code source URL for " + fileURL);
+		}
+
+		if (codeSource == null) {
+			return false;
+		}
+
+		String[] prefixes = allowedPrefixes.get(codeSource.toString());
+
+		if (prefixes == null) {
+			return false;
+		}
+
+		assert prefixes.length > 0;
+
+		for (String prefix : prefixes) {
+			if (name.startsWith(prefix)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	Metadata getMetadata(String name, URL resourceURL) {

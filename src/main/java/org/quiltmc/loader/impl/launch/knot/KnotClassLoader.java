@@ -43,6 +43,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.security.SecureClassLoader;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -174,11 +175,16 @@ class KnotClassLoader extends SecureClassLoader implements KnotClassLoaderInterf
 
 	@Override
 	public Enumeration<URL> getResources(String name) throws IOException {
+		return getResources(name, true);
+	}
+
+	@Override
+	public Enumeration<URL> getResources(String name, boolean allowFromParent) throws IOException {
 		Objects.requireNonNull(name);
 
 		List<PathResult<PathCustomUrl>> fromPaths = paths.getAllResourceData(name);
 		Enumeration<URL> first = minimalLoader.getResources(name);
-		Enumeration<URL> second = originalLoader.getResources(name);
+		Enumeration<URL> second = allowFromParent ? originalLoader.getResources(name) : Collections.emptyEnumeration();
 		return new Enumeration<URL>() {
 			Iterator<PathResult<PathCustomUrl>> iterator = fromPaths.iterator();
 			Enumeration<URL> current = first;
