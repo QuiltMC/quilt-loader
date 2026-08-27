@@ -140,9 +140,6 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		if (e == null) {
 			plugin = null;
 		} else {
-			if (!Boolean.getBoolean(SystemProperties.ENABLE_EXPERIMENTAL_LOADING_PLUGINS)) {
-				throw new ParseException("Mod " + asQuiltModMetadata().id() + " provides a loader plugin, which is not yet allowed!");
-			}
 			// humorous error message dirties the log + again makes it clear you shouldn't be doing this
 			Log.error(LogCategory.GENERAL, "MOD " + asQuiltModMetadata().id() + " PROVIDES A PLUGIN!" +
 					"MOD-PROVIDED PLUGINS ARE FOR AMUSEMENT PURPOSES ONLY." +
