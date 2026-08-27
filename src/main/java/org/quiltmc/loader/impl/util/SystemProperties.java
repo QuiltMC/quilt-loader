@@ -66,6 +66,8 @@ public final class SystemProperties {
 	public static final String PATH_GROUPS = "loader.classPathGroups";
 	// enable the fixing of package access errors in the game jar(s)
 	public static final String FIX_PACKAGE_ACCESS = "loader.fixPackageAccess";
+	// disable the stripping of environment code
+	public static final String DISABLE_ENVIRONMENT_STRIP = "loader.disableEnvironmentStrip";
 	// system level libraries, matching code sources will not be assumed to be part of the game or mods and remain on the system class path (paths separated by path separator)
 	public static final String SYSTEM_LIBRARIES = "loader.systemLibraries";
 	// whether to disable the swing gui popup when error occurred

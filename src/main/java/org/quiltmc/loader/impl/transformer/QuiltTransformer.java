@@ -38,11 +38,13 @@ import org.objectweb.asm.ClassWriter;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
+	private static final boolean DISABLE_ENVIRONMENT_STRIP = SystemProperties.getBoolean(SystemProperties.DISABLE_ENVIRONMENT_STRIP);
+
 	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, ClassTweaker classTweaker, String name, ModLoadOption mod, byte[] bytes) {
 		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.getGameProvider();
 		boolean isGameClass = mod.id().equals(gameProvider.getGameId());
 		boolean transformAccess = isGameClass && gameProvider.requiresPackageAccessFix();
-		boolean strip = !isGameClass || isDevelopment;
+		boolean strip = (!isGameClass || isDevelopment) && !DISABLE_ENVIRONMENT_STRIP;
 		boolean applyClassTweaker = isGameClass && classTweaker.getTargets().contains(name.replace('.', '/'));
 		boolean reflectiveFixes = !isGameClass && !Boolean.getBoolean(SystemProperties.DISABLE_REFLECTIVE_FIXES);
 
