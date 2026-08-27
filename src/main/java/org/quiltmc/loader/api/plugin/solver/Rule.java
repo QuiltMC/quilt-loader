@@ -21,10 +21,14 @@ import java.util.function.Consumer;
 
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** Base definition of a link between one or more {@link LoadOption}s, that */
+/** Base definition of a link between one or more {@link LoadOption}s, that is used by the solver to determine whether
+ * to load those options.
+ * <p>
+ * Rules can be added and removed using {@link QuiltPluginContext#ruleContext()} */
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public abstract class Rule {
 
@@ -47,15 +51,16 @@ public abstract class Rule {
 		return false;
 	}
 
+	/** Actually defines this rule. There's no limit to the number of definitions that this rule has. If this rule
+	 * changes, then you can request a redefinition using
+	 * {@link QuiltPluginContext#ruleContext()}.{@link RuleContext#redefine(Rule) redefine(Rule)} */
 	public abstract void define(RuleDefiner definer);
 
 	/** @return A description of the link. */
 	@Override
 	public abstract String toString();
 
-	/** Checks to see if this link is [...]
-	 * 
-	 * @deprecated Not used yet. In the future this will be used for better error message generation. */
+	/** @deprecated Not used yet. In the future this might be used for better error generation. */
 	@Deprecated
 	public boolean isNode() {
 		return true;

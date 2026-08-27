@@ -22,18 +22,17 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.QuiltLoader;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.api.plugin.solver.TentativeLoadOption;
-import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -80,45 +79,74 @@ public interface QuiltLoaderPlugin {
 	 * {@link QuiltPluginContext#addFolderToScan(Path)} */
 	default void onModFolderAdded(Path folder) {}
 
-	/** Called once per archival file found in any of the folders added by {@link #addModFolders(Set)} or
-	 * {@link #onModFolderAdded(Path)}. This is only called for zips that aren't identified as quilt mods, and aren't
-	 * system files.
+	/** Called once per archival file found in any of the folders added by
+	 * {@link QuiltPluginContext#addFolderToScan(Path)}. This is only called for zips that aren't identified as quilt
+	 * mods, and aren't system files.
 	 * <p>
 	 * You can retrieve the file name of the original zip by using {@link QuiltPluginManager#getParent(Path)}.
 	 * <p>
 	 * Note that this will be called for <em>all</em> plugins, even if previous plugins loaded the zip as a mod!
 	 * 
-	 * @param root The root of the zip file.
-	 * @param fromClasspath TODO
+	 * @param zipFile The file of the zip.
+	 * @param root The root of a filesystem inside the zip file.
 	 * @param guiNode TODO
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
+	default ModLoadOption[] scanZip(Path zipFile, Path root, ModLocation location, QuiltTreeNode guiNode) throws IOException {
+		return scanZip(root, location, (PluginGuiTreeNode) guiNode);
+	}
+
+	/** @deprecated Override {@link #scanZip(Path, Path, ModLocation, QuiltTreeNode)} instead, as that doesn't use the
+	 *             deprecated {@link PluginGuiTreeNode} type. */
+	@Deprecated
 	default ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
 		return null;
 	}
 
 	/** Called once per file encountered which loader can't open (I.E. those which are not passed to
-	 * {@link #scanZip(Path, boolean, PluginGuiTreeNode)}). However system files are not passed here.
+	 * {@link #scanZip(Path, Path, ModLocation, QuiltTreeNode)}). However system files are not passed here.
 	 * 
 	 * @param file
-	 * @param fromClasspath TODO
 	 * @param guiNode TODO
 	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
 	 *         empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading the zip and so an error message should be displayed. */
+	default ModLoadOption[] scanUnknownFile(Path file, ModLocation location, QuiltTreeNode guiNode)
+		throws IOException {
+		return scanUnknownFile(file, location, (PluginGuiTreeNode) guiNode);
+	}
+
+	/** @deprecated Override {@link #scanUnknownFile(Path, ModLocation, QuiltTreeNode)} instead, as that doesn't use the
+	 *             deprecated {@link PluginGuiTreeNode} type. */
+	@Deprecated
 	default ModLoadOption[] scanUnknownFile(Path file, ModLocation location, PluginGuiTreeNode guiNode)
 		throws IOException {
 		return null;
 	}
 
-	/** Called once per folder group added as a mod. This is called for both classpath groups, and folders added with
-	 * -Dloader.addMods=folder
+	/** Called once per folder group added as a mod. This is called for:
+	 * <ul>
+	 * <li>classpath groups</li>
+	 * <li>folders added with -Dloader.addMods=folder</li>
+	 * <li>Folders added via {@link QuiltPluginContext#addFileToScan(Path, QuiltTreeNode, boolean)}.</li>
+	 * </ul>
+	 * <p>
+	 * This is <em>not</em> called for the entire "mods/" folder, subfolders, or folders added by
+	 * {@link QuiltPluginContext#addFolderToScan(Path)}
 	 * 
-	 * @return One or many {@link ModLoadOption}s if this plugin could load the given zip as a mod, or either null or an
-	 *         empty array if it couldn't.
+	 * @return One or many {@link ModLoadOption}s if this plugin could load the given folder as a mod, or either null or
+	 *         an empty array if it couldn't.
 	 * @throws IOException if something went wrong while reading a file in the folder and so an error message should be
 	 *             displayed. */
+	default ModLoadOption[] scanFolder(Path folder, ModLocation location, QuiltTreeNode guiNode)
+		throws IOException {
+		return scanFolder(folder, location, (PluginGuiTreeNode) guiNode);
+	}
+
+	/** @deprecated Override {@link #scanFolder(Path, ModLocation, QuiltTreeNode)} instead, as that doesn't use the
+	 *             deprecated {@link PluginGuiTreeNode} type. */
+	@Deprecated
 	default ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode)
 		throws IOException {
 		return null;
@@ -183,7 +211,7 @@ public interface QuiltLoaderPlugin {
 
 	/** Called whenever a new LoadOption is added, for plugins to add Rules based on this. (For example the default
 	 * plugin creates rules based on the dependencies and breaks sections of the quilt.mod.json if this option is a
-	 * {@link MainModLoadOption}).
+	 * {@link ModLoadOption}).
 	 * <p>
 	 * Most plugins are not expected to implement this. */
 	default void onLoadOptionAdded(LoadOption option) {}

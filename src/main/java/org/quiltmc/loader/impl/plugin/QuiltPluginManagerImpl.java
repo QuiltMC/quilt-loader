@@ -45,7 +45,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -886,7 +885,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 			for (ModLoadOption option : set.all) {
 				QuiltStatusNode modNode = gui.addChild(QuiltLoaderText.of(option.version().toString()), SortOrder.ALPHABETICAL_ORDER);
-				option.populateModsTabInfo(modNode);
+				option.populateModsTabInfo((QuiltTreeNode)modNode);
 				if (result != null && result.directMods().containsValue(option)) {
 					modNode.icon(modNode.icon().withDecoration(QuiltLoaderGui.iconTick()));
 				}
@@ -1790,7 +1789,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				if (loadState instanceof PathLoadState.Folder) {
 					scanFolderWithPlugin(loadState, pluginCtx, guiNode);
 				} else if (loadState instanceof PathLoadState.Zip) {
-					scanZipWithPlugin(((PathLoadState.Zip) loadState).insideZipRoot, loadState, pluginCtx, guiNode);
+					PathLoadState.Zip zip = (PathLoadState.Zip) loadState;
+					scanZipWithPlugin(zip.path, zip.insideZipRoot, loadState, pluginCtx, guiNode);
 				} else if (loadState instanceof PathLoadState.UnknownFile) {
 					scanUnknownFileWithPlugin(loadState, pluginCtx, guiNode);
 				}
@@ -2014,7 +2014,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private List<ModLoadOption> scanFolderWithPlugin(PathLoadState loadState, BasePluginContext ctx, QuiltStatusNode guiNode) {
 		ModLoadOption[] mods;
 		try {
-			mods = ctx.plugin().scanFolder(loadState.path, loadState.location, guiNode);
+			mods = ctx.plugin().scanFolder(loadState.path, loadState.location, (QuiltTreeNode)guiNode);
 		} catch (IOException e) {
 			// FOR NOW
 			// TODO: Proper error handling!
@@ -2192,7 +2192,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			boolean isQuilt = false;
 
 			for (BasePluginContext ctx : plugins.values()) {
-				List<ModLoadOption> list = scanZipWithPlugin(zipRoot, loadState, ctx, guiNode);
+				List<ModLoadOption> list = scanZipWithPlugin(zipFile, zipRoot, loadState, ctx, guiNode);
 				if (!list.isEmpty() && ctx == theQuiltPlugin.context()) {
 					isQuilt = true;
 					break;
@@ -2213,10 +2213,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	private List<ModLoadOption> scanZipWithPlugin(Path zipRoot, PathLoadState loadState, BasePluginContext ctx, QuiltStatusNode guiNode) {
+	private List<ModLoadOption> scanZipWithPlugin(Path zipFile, Path zipRoot, PathLoadState loadState, BasePluginContext ctx, QuiltStatusNode guiNode) {
 		ModLoadOption[] mods;
 		try {
-			mods = ctx.plugin().scanZip(zipRoot, loadState.location, guiNode);
+			mods = ctx.plugin().scanZip(zipFile, zipRoot, loadState.location, guiNode);
 		} catch (IOException e) {
 			// FOR NOW
 			// TODO: Proper error handling!
@@ -2277,7 +2277,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		Path file = loadState.path;
 		ModLoadOption[] mods;
 		try {
-			mods = ctx.plugin().scanUnknownFile(file, loadState.location, guiNode);
+			mods = ctx.plugin().scanUnknownFile(file, loadState.location, (QuiltTreeNode)guiNode);
 		} catch (IOException e) {
 			// FOR NOW
 			// TODO: Proper error handling!
