@@ -38,7 +38,7 @@ import org.objectweb.asm.ClassWriter;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
-	private static final boolean DISABLE_ENVIRONMENT_STRIP = SystemProperties.getBoolean(SystemProperties.DISABLE_ENVIRONMENT_STRIP);
+	private static final boolean DISABLE_ENVIRONMENT_STRIP = SystemProperties.getBoolean(SystemProperties.DISABLE_ENVIRONMENT_STRIP, false);
 
 	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, ClassTweaker classTweaker, String name, ModLoadOption mod, byte[] bytes) {
 		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.getGameProvider();
