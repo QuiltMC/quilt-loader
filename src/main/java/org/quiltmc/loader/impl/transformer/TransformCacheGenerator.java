@@ -24,6 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.fabricmc.classtweaker.api.ClassTweaker;
+
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -33,9 +37,6 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
-
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.accesswidener.AccessWidenerReader;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class TransformCacheGenerator {
@@ -47,7 +48,7 @@ final class TransformCacheGenerator {
 
 		// Transform time!
 		// Load AWs
-		AccessWidener accessWidener = loadAccessWideners(cache);
+		ClassTweaker classTweaker = loadClassTweakers(cache);
 		// game provider transformer and QuiltTransformer
 		cache.forEachClassFile((mod, name, file) -> {
 
@@ -61,7 +62,7 @@ final class TransformCacheGenerator {
 					QuiltLoader.isDevelopmentEnvironment(),
 					QuiltLauncherBase.getLauncher().getEnvironmentType(),
 					cache,
-					accessWidener,
+					classTweaker,
 					name,
 					mod,
 					classBytes
@@ -106,23 +107,23 @@ final class TransformCacheGenerator {
 		return cache;
 	}
 
-	private static AccessWidener loadAccessWideners(TransformCache cache) {
-		AccessWidener ret = new AccessWidener();
-		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(ret);
+	private static ClassTweaker loadClassTweakers(TransformCache cache) {
+		ClassTweaker ret = ClassTweaker.newInstance();
+		ClassTweakerReader classTweakerReader = ClassTweakerReader.create(ret);
 
 		for (ModLoadOption mod : cache.getModsInCache()) {
-			for (String accessWidener : mod.metadata().accessWideners()) {
+			for (String classTweaker : mod.metadata().accessWideners()) {
 
-				Path path = cache.getRoot(mod).resolve(accessWidener);
+				Path path = cache.getRoot(mod).resolve(classTweaker);
 
 				if (!FasterFiles.isRegularFile(path)) {
-					throw new RuntimeException("Failed to find accessWidener file from mod " + mod.metadata().id() + " '" + accessWidener + "'");
+					throw new RuntimeException("Failed to find classTweaker from mod " + mod.metadata().id() + " '" + classTweaker + "'");
 				}
 
 				try (BufferedReader reader = Files.newBufferedReader(path)) {
-					accessWidenerReader.read(reader, QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
+					classTweakerReader.read(reader, QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
 				} catch (Exception e) {
-					throw new RuntimeException("Failed to read accessWidener file from mod " + mod.metadata().id(), e);
+					throw new RuntimeException("Failed to read classTweaker from mod " + mod.metadata().id(), e);
 				}
 			}
 		}

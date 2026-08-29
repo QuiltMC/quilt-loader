@@ -29,23 +29,23 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
+import net.fabricmc.classtweaker.api.ClassTweaker;
+import net.fabricmc.classtweaker.api.ClassTweakerReader;
+import net.fabricmc.classtweaker.api.ClassTweakerWriter;
+import net.fabricmc.classtweaker.visitors.ClassTweakerRemapperVisitor;
 import net.fabricmc.tinyremapper.TinyUtils;
 
 import org.objectweb.asm.commons.Remapper;
 import org.quiltmc.loader.api.MountOption;
-import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
-import org.quiltmc.loader.impl.game.GameProviderHelper;
 import org.quiltmc.loader.impl.game.MappingConfiguration;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncher;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -56,9 +56,6 @@ import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
-import net.fabricmc.accesswidener.AccessWidenerReader;
-import net.fabricmc.accesswidener.AccessWidenerRemapper;
-import net.fabricmc.accesswidener.AccessWidenerWriter;
 import net.fabricmc.tinyremapper.InputTag;
 import net.fabricmc.tinyremapper.OutputConsumerPath;
 import net.fabricmc.tinyremapper.TinyRemapper;
@@ -67,6 +64,7 @@ import net.fabricmc.tinyremapper.extension.mixin.MixinExtension;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class RuntimeModRemapper {
 	private static final String REMAP_TYPE_MANIFEST_KEY = "Fabric-Loom-Mixin-Remap-Type";
+	private static final String REMAP_TYPE_MIXIN = "mixin";
 	private static final String REMAP_TYPE_STATIC = "static";
 
 	private final Set<ModLoadOption> modsToRemap = new LinkedHashSet<>();
@@ -89,10 +87,14 @@ final class RuntimeModRemapper {
 			return;
 		}
 
-		boolean mojmapEnvironment = "mojang".equals(mappingConfiguration.getTargetNamespace());
+		String targetNamespace = mappingConfiguration.getTargetNamespace();
+		boolean mojmapEnvironment = "mojang".equals(targetNamespace);
 
 		for (ModLoadOption mod : mods) {
 			String namespace = mod.namespaceMappingFrom();
+			if (namespace == null || namespace.equals(targetNamespace)) {
+				continue;
+			}
 			if ("mojang".equals(namespace)) {
 				if (mojmapEnvironment) {
 					break;
@@ -100,9 +102,7 @@ final class RuntimeModRemapper {
 
 				throw new UnsupportedOperationException("Cannot remap mojang mods to another environment!");
 			}
-			if (namespace != null) {
-				modsToRemap.add(mod);
-			}
+			modsToRemap.add(mod);
 		}
 	}
 
@@ -120,7 +120,8 @@ final class RuntimeModRemapper {
 		Set<InputTag> remapMixins = new HashSet<>();
 
 		TinyRemapper.Builder remapBuilder = TinyRemapper.newRemapper()
-				.withMappings(TinyUtils.createMappingProvider(mappingConfiguration.getMappings(), "intermediary", mappingConfiguration.getTargetNamespace()))
+				.withMappings(TinyUtils.createMappingProvider(mappingConfiguration.getMappings(),
+						"intermediary", mappingConfiguration.getTargetNamespace()))
 				.renameInvalidLocals(false)
 				.extension(new MixinExtension(remapMixins::contains));
 
@@ -153,6 +154,8 @@ final class RuntimeModRemapper {
 
 		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache-remapping", false);
 
+		String defaultMixinRemapType = System.getProperty(SystemProperties.DEFAULT_MIXIN_REMAP_TYPE, REMAP_TYPE_MIXIN);
+
 		try {
 			Map<ModLoadOption, RemapInfo> infoMap = new HashMap<>();
 
@@ -162,7 +165,7 @@ final class RuntimeModRemapper {
 				InputTag tag = remapper.createInputTag();
 				info.tag = tag;
 
-				if (requiresMixinRemap(mod.resourceRoot())) {
+				if (requiresMixinRemap(mod.resourceRoot(), defaultMixinRemapType)) {
 					remapMixins.add(tag);
 				}
 
@@ -205,10 +208,10 @@ final class RuntimeModRemapper {
 			for (ModLoadOption mod : modsToRemap) {
 				RemapInfo info = infoMap.get(mod);
 				if (!mod.metadata().accessWideners().isEmpty()) {
-					info.accessWideners = new HashMap<>();
-					for (String accessWidener : mod.metadata().accessWideners()) {
+					info.classTweakers = new HashMap<>();
+					for (String classTweaker : mod.metadata().accessWideners()) {
 						// use resourceRoot as the info.inputPath only contains class files
-						info.accessWideners.put(accessWidener, remapAccessWidener(Files.readAllBytes(mod.resourceRoot().resolve(accessWidener)), remapper.getRemapper()));
+						info.classTweakers.put(classTweaker, remapClassTweaker(Files.readAllBytes(mod.resourceRoot().resolve(classTweaker)), remapper.getRemapper()));
 					}
 				}
 			}
@@ -219,8 +222,8 @@ final class RuntimeModRemapper {
 				RemapInfo info = infoMap.get(mod);
 
 				info.outputConsumerPath.close();
-				if (info.accessWideners != null) {
-					for (Map.Entry<String, byte[]> entry : info.accessWideners.entrySet()) {
+				if (info.classTweakers != null) {
+					for (Map.Entry<String, byte[]> entry : info.classTweakers.entrySet()) {
 						Files.write(info.outputPath.resolve(entry.getKey()), entry.getValue());
 					}
 				}
@@ -231,12 +234,12 @@ final class RuntimeModRemapper {
 		}
 	}
 
-	private static byte[] remapAccessWidener(byte[] input, Remapper remapper) {
-		AccessWidenerWriter writer = new AccessWidenerWriter();
-		AccessWidenerRemapper remappingDecorator = new AccessWidenerRemapper(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
-		AccessWidenerReader accessWidenerReader = new AccessWidenerReader(remappingDecorator);
-		accessWidenerReader.read(input, "intermediary");
-		return writer.write();
+	private static byte[] remapClassTweaker(byte[] input, Remapper remapper) {
+		ClassTweakerWriter writer = ClassTweakerWriter.create(ClassTweaker.CT_LATEST);
+		ClassTweakerRemapperVisitor remappingVisitor = new ClassTweakerRemapperVisitor(writer, remapper, "intermediary", QuiltLauncherBase.getLauncher().getTargetNamespace());
+		ClassTweakerReader classTweakerReader = ClassTweakerReader.create(remappingVisitor);
+		classTweakerReader.read(input, "intermediary");
+		return writer.getOutput();
 	}
 
 	private static List<Path> getRemapClasspath() throws IOException {
@@ -253,13 +256,17 @@ final class RuntimeModRemapper {
 				.collect(Collectors.toList());
 	}
 
-	private static boolean requiresMixinRemap(Path inputPath) throws IOException {
+	private static boolean requiresMixinRemap(Path inputPath, String defaultMixinRemapType) throws IOException {
 		final Manifest manifest = ManifestUtil.readManifest(inputPath);
 		if (manifest == null) {
 			return false;
 		}
 		final Attributes mainAttributes = manifest.getMainAttributes();
-		return REMAP_TYPE_STATIC.equalsIgnoreCase(mainAttributes.getValue(REMAP_TYPE_MANIFEST_KEY));
+
+		String remapType = mainAttributes.getValue(REMAP_TYPE_MANIFEST_KEY);
+		if (remapType == null) remapType = defaultMixinRemapType;
+
+		return REMAP_TYPE_STATIC.equalsIgnoreCase(remapType);
 	}
 
 	private static class RemapInfo {
@@ -267,6 +274,6 @@ final class RuntimeModRemapper {
 		Path inputPath;
 		Path outputPath;
 		OutputConsumerPath outputConsumerPath;
-		Map<String, byte[]> accessWideners;
+		Map<String, byte[]> classTweakers;
 	}
 }

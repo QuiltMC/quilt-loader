@@ -55,8 +55,13 @@ public class HashUtil {
 	}
 
 	public static String hashToString(byte[] hash) {
+		return hashToString(hash, 0, hash.length);
+	}
+
+	public static String hashToString(byte[] hash, int offset, int length) {
 		StringBuilder sb = new StringBuilder();
-		for (byte b : hash) {
+		for (int index = offset; index < offset + length; index++) {
+			byte b = hash[index];
 			int i = Byte.toUnsignedInt(b);
 			if (i < 0xF) {
 				sb.append("0");

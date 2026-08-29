@@ -77,7 +77,7 @@ dependencies {
 	include "com.unascribed:flexver-java:${project.flexver}"
 
 	include "net.fabricmc:tiny-remapper:${project.tiny_remapper}"
-	include "net.fabricmc:access-widener:${project.access_widener}"
+	include "net.fabricmc:class-tweaker:${project.class_tweaker}"
 	include ("net.fabricmc:mapping-io:${project.mapping_io}") {
 		// dont include asm
 		transitive = false

@@ -32,6 +32,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.security.CodeSource;
+import java.util.Enumeration;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLoaderInterface {
@@ -124,6 +125,15 @@ class KnotCompatibilityClassLoader extends URLClassLoader implements KnotClassLo
 			return super.getResource(name);
 		} else {
 			return findResource(name);
+		}
+	}
+
+	@Override
+	public Enumeration<URL> getResources(String name, boolean allowFromParent) throws IOException {
+		if (allowFromParent) {
+			return super.getResources(name);
+		} else {
+			return findResources(name);
 		}
 	}
 

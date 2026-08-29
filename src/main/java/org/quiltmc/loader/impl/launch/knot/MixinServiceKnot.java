@@ -22,6 +22,7 @@ import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
+import org.quiltmc.loader.impl.launch.common.QuiltMixinVersions;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -34,9 +35,11 @@ import org.spongepowered.asm.logging.ILogger;
 import org.spongepowered.asm.mixin.MixinEnvironment;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformer;
 import org.spongepowered.asm.mixin.transformer.IMixinTransformerFactory;
+import org.spongepowered.asm.service.IAdviceProvider;
 import org.spongepowered.asm.service.IClassBytecodeProvider;
 import org.spongepowered.asm.service.IClassProvider;
 import org.spongepowered.asm.service.IClassTracker;
+import org.spongepowered.asm.service.IFeatureValidator;
 import org.spongepowered.asm.service.IMixinAuditTrail;
 import org.spongepowered.asm.service.IMixinInternal;
 import org.spongepowered.asm.service.IMixinService;
@@ -184,6 +187,18 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 	}
 
 	@Override
+	public IFeatureValidator getFeatureValidator() {
+		return IFeatureValidator.ALLOW_ALL;
+	}
+
+	@Override
+	public IAdviceProvider getAdviceProvider() {
+		return (requiredCompatibility, requiredCompatibilityString) ->
+				"Increase your Quilt Loader dependency to at least " +
+						QuiltMixinVersions.getMinQuiltLoaderVersion(requiredCompatibility);
+	}
+
+	@Override
 	public Collection<String> getPlatformAgents() {
 		return Collections.singletonList("org.spongepowered.asm.launch.platform.MixinPlatformAgentDefault");
 	}
@@ -270,7 +285,7 @@ public class MixinServiceKnot implements IMixinService, IClassProvider, IClassBy
 
 	@Override
 	public MixinEnvironment.CompatibilityLevel getMaxCompatibilityLevel() {
-		return MixinEnvironment.CompatibilityLevel.JAVA_22;
+		return MixinEnvironment.CompatibilityLevel.JAVA_25;
 	}
 
 	@Override

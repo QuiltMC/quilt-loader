@@ -26,6 +26,7 @@ import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.game.GameProvider;
 import org.quiltmc.loader.impl.gui.QuiltGuiEntry;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -54,9 +55,12 @@ public class FabricGuiEntry {
 	}
 
 	public static void displayError(String mainText, Throwable exception, Consumer<FabricStatusTree> treeCustomiser, boolean exitAfter) {
+		boolean isCI = System.getenv("CI") != null;
+		boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
+
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
-		if ((provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
+		if (!isCI && !isNoGui && (provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
 			FabricStatusTree tree = new FabricStatusTree("Quilt Loader " + QuiltLoaderImpl.VERSION, mainText);
 			FabricStatusTab crashTab = tree.addTab(QuiltLoaderText.translate("tab.messages").toString());
 

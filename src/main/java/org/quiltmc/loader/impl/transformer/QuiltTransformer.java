@@ -19,35 +19,33 @@ package org.quiltmc.loader.impl.transformer;
 import java.util.Collection;
 import java.util.HashSet;
 
-import net.fabricmc.accesswidener.AccessWidener;
-import net.fabricmc.api.EnvType;
-
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
-import org.quiltmc.loader.impl.QuiltLoaderImpl;
-import org.quiltmc.loader.impl.game.GameProvider;
-import org.quiltmc.loader.impl.game.MappingConfigurationImpl;
-import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-import org.quiltmc.loader.impl.util.SystemProperties;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
+import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
+import org.quiltmc.loader.impl.QuiltLoaderImpl;
+import org.quiltmc.loader.impl.game.GameProvider;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
+import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
-import net.fabricmc.accesswidener.AccessWidenerClassVisitor;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.classtweaker.api.ClassTweaker;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class QuiltTransformer {
-	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, AccessWidener accessWidener, String name, ModLoadOption mod, byte[] bytes) {
+	private static final boolean DISABLE_ENVIRONMENT_STRIP = SystemProperties.getBoolean(SystemProperties.DISABLE_ENVIRONMENT_STRIP, false);
+
+	public static byte @Nullable [] transform(boolean isDevelopment, EnvType envType, TransformCache cache, ClassTweaker classTweaker, String name, ModLoadOption mod, byte[] bytes) {
 		GameProvider gameProvider = QuiltLoaderImpl.INSTANCE.getGameProvider();
 		boolean isGameClass = mod.id().equals(gameProvider.getGameId());
 		boolean transformAccess = isGameClass && gameProvider.requiresPackageAccessFix();
-		boolean strip = !isGameClass || isDevelopment;
-		boolean applyAccessWidener = isGameClass && accessWidener.getTargets().contains(name);
+		boolean strip = (!isGameClass || isDevelopment) && !DISABLE_ENVIRONMENT_STRIP;
+		boolean applyClassTweaker = isGameClass && classTweaker.getTargets().contains(name.replace('.', '/'));
 		boolean reflectiveFixes = !isGameClass && !Boolean.getBoolean(SystemProperties.DISABLE_REFLECTIVE_FIXES);
 
-		if (!transformAccess && !strip && !applyAccessWidener && !reflectiveFixes) {
+		if (!transformAccess && !strip && !applyClassTweaker && !reflectiveFixes) {
 			return bytes;
 		}
 
@@ -105,8 +103,8 @@ final class QuiltTransformer {
 			visitor = classWriter;
 		}
 
-		if (applyAccessWidener) {
-			visitor = AccessWidenerClassVisitor.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, accessWidener);
+		if (applyClassTweaker) {
+			visitor = classTweaker.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, null);
 			visitorCount++;
 		}
 

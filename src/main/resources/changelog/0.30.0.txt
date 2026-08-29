@@ -1,0 +1,24 @@
+Changes:
+
+- [#405] Forked gui communications fails sometimes when using IPv6 (fixed by #480) (pandaninjas)
+- [#479] Added the system property `loader.fixPackageAccess` to allow enabling the package access fix in any namespace. (SpaceWalkerRS)
+- [#481,#486,#488,#489,#490,#492,#495] Updated to Fabric Loader 0.19.2 (Codetoil)
+- [#485] Updated quilt config to 1.3.3
+- Treat all minecraft versions after 25 as unobfuscated by default.
+    - This behavour can be overriden by setting an explicit target namespace ("-Dloader.experimental.minecraft.targetNamespace=<namespace>")
+
+Bug Fixes:
+
+- Fixed the logged error for invalid dependencies always reporting the desired mod as missing, rather than including the present version
+    - This is most common when a fabric mod requires a newer version of fabric-loader than what quilt-loader provides.
+- Fixed the crash window not opening if the game provider failed to load.
+- Fixed accidently remapping mods that are already in the correct namespace.
+
+Changes from updating Fabric Loader from 0.17.2 to 0.19.2:
+
+- Updated ASM from 9.8 to 9.9
+- Added support for 1.21.11 snapshot versions
+- Add missing entrypoint support for pre-classic versions.
+- Updated Mixin from 0.16.3 to 0.17.2
+- Updated Mixin Extras from 0.5.0 to 0.5.4
+

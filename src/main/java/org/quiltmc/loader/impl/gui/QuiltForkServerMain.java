@@ -21,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -28,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -54,14 +56,23 @@ public class QuiltForkServerMain {
 	private static QuiltForkServerMain currentConnection;
 
 	public static void main(String[] args) {
-		if (args.length < 2 || !"--file".equals(args[0])) {
-			System.err.println("QUILT_IPC_SERVER: missing arguments / first argument wasn't a file!");
+		HashMap<String, String> arguments = parseArgs(args);
+
+		if (!arguments.containsKey("file")) {
+			System.err.println("QUILT_IPC_SERVER: missing file argument!");
 			System.exit(1);
 			return;
 		}
 
+		if (!arguments.containsKey("address")) {
+			System.err.println("QUILT_IPC_SERVER: missing address argument!");
+			System.exit(1);
+			return;
+		}
+
+
 		try {
-			run(args);
+			run(arguments);
 		} catch (IOException io) {
 			System.err.println("QUILT_IPC_SERVER: Failed to run!");
 			io.printStackTrace();
@@ -70,9 +81,21 @@ public class QuiltForkServerMain {
 		}
 	}
 
-	private static void run(String[] args) throws IOException {
-		File portFile = new File(args[1] + ".port");
-		File readyFile = new File(args[1] + ".ready");
+	private static HashMap<String, String> parseArgs(String[] args) {
+		HashMap<String, String> parsed = new HashMap<>();
+		for (int i = 0; i < args.length - 1; i += 2) {
+			if (!args[i].startsWith("--")) {
+				System.err.printf("QUILT_IPC_SERVER: Invalid argument '%s' at pos %d!\n", args[i], i);
+				System.exit(1);
+			}
+			parsed.put(args[i].trim().replaceFirst("--", ""), args[i + 1]);
+		}
+		return parsed;
+	}
+	
+	private static void run(HashMap<String, String> args) throws IOException {
+		File portFile = new File(args.get("file") + ".port");
+		File readyFile = new File(args.get("file") + ".ready");
 
 		if (portFile.exists()) {
 			System.err.println("QUILT_IPC_SERVER: IPC file already exists" + portFile);
@@ -80,7 +103,14 @@ public class QuiltForkServerMain {
 			return;
 		}
 
-		ServerSocket socket = new ServerSocket(0, 0, InetAddress.getByName(null));
+		InetAddress address = InetAddress.getByName(args.get("address"));
+
+		if (!address.isLoopbackAddress()) {
+			System.err.println("QUILT_IPC_SERVER: Refusing to listen on a non-local address!");
+			System.exit(1);
+		}
+
+		ServerSocket socket = new ServerSocket(0, 0, address);
 		int port = socket.getLocalPort();
 		System.out.println("Port = " + port);
 		byte[] bytes = { //

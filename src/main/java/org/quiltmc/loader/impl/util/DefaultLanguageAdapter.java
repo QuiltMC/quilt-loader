@@ -28,6 +28,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class DefaultLanguageAdapter implements LanguageAdapter {
@@ -65,14 +66,17 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 				throw new LanguageAdapterException("Class " + c.getName() + " cannot be cast to " + type.getName() + "!");
 			}
 		} else /* length == 2 */ {
-			List<Method> methodList = new ArrayList<>();
-
+			List<Executable> executableList = new ArrayList<>();
 			for (Method m : c.getDeclaredMethods()) {
 				if (!(m.getName().equals(methodSplit[1]))) {
 					continue;
 				}
 
-				methodList.add(m);
+		    	executableList.add(m);
+			}
+
+			if (methodSplit[1].equals("<init>")) {
+				executableList.addAll(Arrays.asList(c.getDeclaredConstructors()));
 			}
 
 			try {
@@ -83,7 +87,7 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 					throw new LanguageAdapterException("Field " + value + " must be static!");
 				}
 
-				if (!methodList.isEmpty()) {
+				if (!executableList.isEmpty()) {
 					throw new LanguageAdapterException("Ambiguous " + value + " - refers to both field and method!");
 				}
 
@@ -104,27 +108,37 @@ public final class DefaultLanguageAdapter implements LanguageAdapter {
 				throw new LanguageAdapterException("Cannot proxy method " + value + " to non-interface type " + type.getName() + "!");
 			}
 
-			if (methodList.isEmpty()) {
+			if (executableList.isEmpty()) {
 				throw new LanguageAdapterException("Could not find " + value + "!");
-			} else if (methodList.size() >= 2) {
+			} else if (executableList.size() >= 2) {
 				throw new LanguageAdapterException("Found multiple method entries of name " + value + "!");
 			}
 
-			final Method targetMethod = methodList.get(0);
+			final Executable targetExecutable = executableList.get(0);
 			Object object = null;
 
-			if ((targetMethod.getModifiers() & Modifier.STATIC) == 0) {
-				try {
-					object = c.getDeclaredConstructor().newInstance();
-				} catch (Exception e) {
-					throw new LanguageAdapterException(e);
+			if (targetExecutable instanceof Method) {
+				Method targetMethod = (Method) targetExecutable;
+
+				if ((targetMethod.getModifiers() & Modifier.STATIC) == 0) {
+					try {
+						object = c.getDeclaredConstructor().newInstance();
+					} catch (Exception e) {
+						throw new LanguageAdapterException(e);
+					}
 				}
 			}
 
 			MethodHandle handle;
 
 			try {
-				handle = MethodHandles.lookup().unreflect(targetMethod);
+				if (targetExecutable instanceof Method) {
+					Method targetMethod = (Method) targetExecutable;
+					handle = MethodHandles.lookup().unreflect(targetMethod);
+				} else {
+					Constructor<?> targetConstructor = (Constructor<?>) targetExecutable;
+					handle = MethodHandles.lookup().unreflectConstructor(targetConstructor);
+				}
 			} catch (Exception ex) {
 				throw new LanguageAdapterException(ex);
 			}

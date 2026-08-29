@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Enumeration;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -35,5 +36,6 @@ interface KnotClassLoaderInterface extends KnotBaseClassLoader {
 	void addPath(Path root, ModContainer mod, URL origin);
 	URL getResource(String name);
 	URL getResource(String name, boolean allowFromParent);
+	Enumeration<URL> getResources(String name, boolean allowFromParent) throws IOException;
 	InputStream getResourceAsStream(String filename, boolean allowFromParent) throws IOException;
 }

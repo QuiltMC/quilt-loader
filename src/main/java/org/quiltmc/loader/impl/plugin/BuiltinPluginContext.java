@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
+import org.quiltmc.loader.api.plugin.QuiltPluginLogger;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -32,6 +33,11 @@ class BuiltinPluginContext extends BasePluginContext {
 	public BuiltinPluginContext(QuiltPluginManagerImpl manager, String pluginId, QuiltLoaderPlugin plugin) {
 		super(manager, pluginId);
 		this.plugin = plugin;
+	}
+
+	@Override
+	public QuiltPluginLogger logger() {
+		throw new UnsupportedOperationException("Builtin plugins don't need their own loggers.");
 	}
 
 	@Override

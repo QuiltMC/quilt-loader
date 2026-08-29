@@ -12,9 +12,9 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id 'org.quiltmc.gradle.licenser' version '2.0.1'
-	id 'org.quiltmc.loom' version '1.6.7' apply false
-	id 'com.github.johnrengelman.shadow' version '8.1.1'
+	id 'org.quiltmc.gradle.licenser' version '2.0.2'
+	id 'org.quiltmc.loom' version '1.11.1' apply false
+	id 'com.gradleup.shadow' version '8.3.10'
 }
 
 java {
@@ -42,10 +42,6 @@ allprojects {
 
 	repositories {
 		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-		maven {
 			name = 'Quilt'
 			url = 'https://maven.quiltmc.org/repository/release'
 		}
@@ -54,8 +50,15 @@ allprojects {
 			url = 'https://maven.quiltmc.org/repository/snapshot'
 		}
 		maven {
-		  name = 'Unascribed'
-		  url = 'https://repo.sleeping.town/'
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		maven {
+			name = 'Unascribed'
+			url = 'https://repo.sleeping.town/'
+            content {
+				includeGroup "com.unascribed"
+			}
 		}
 		mavenCentral() {
 			content {
@@ -105,6 +108,9 @@ javaComponent.withVariantsFromConfiguration(configurations.shadowRuntimeElements
 
 test {
 	useJUnitPlatform()
+	testLogging {
+		exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+	}
 }
 
 processResources {
@@ -112,7 +118,7 @@ processResources {
 	inputs.property "tiny_mappings_parser", project.tiny_mappings_parser
 	inputs.property "sponge_mixin", project.sponge_mixin
 	inputs.property "tiny_remapper", project.tiny_remapper
-	inputs.property "access_widener", project.access_widener
+	inputs.property "class_tweaker", project.class_tweaker
 	inputs.property "quilt_json5", project.quilt_json5
 	inputs.property "asm", project.asm
 	inputs.property "asm_analysis", project.asm
@@ -204,7 +210,7 @@ task fatJar(type: ShadowJar, dependsOn: getSat4jAbout) {
 	relocate 'com.unascribed.flexver', 'org.quiltmc.loader.impl.lib.flexver'
 	relocate 'net.fabricmc.mappingio', 'org.quiltmc.loader.impl.lib.mappingio'
 	relocate 'net.fabricmc.tinyremapper', 'org.quiltmc.loader.impl.lib.tinyremapper'
-	relocate 'net.fabricmc.accesswidener', 'org.quiltmc.loader.impl.lib.accesswidener'
+	relocate 'net.fabricmc.classtweaker', 'org.quiltmc.loader.impl.lib.classtweaker'
 
 	minimize()
 

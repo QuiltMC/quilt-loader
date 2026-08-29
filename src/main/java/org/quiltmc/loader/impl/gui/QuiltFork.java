@@ -60,15 +60,26 @@ public class QuiltFork {
 	private static Error previousServerError;
 
 	static {
-		GameProvider provider = QuiltLoaderImpl.INSTANCE.getGameProvider();
-		if (Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || !provider.canOpenGui() || GraphicsEnvironment.isHeadless()) {
+		boolean isCI = System.getenv("CI") != null;
+		boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
+
+		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
+		if (isCI || isNoGui || Boolean.getBoolean(SystemProperties.DISABLE_FORKED_GUIS) || (provider != null && !provider.canOpenGui()) || GraphicsEnvironment.isHeadless()) {
 			COMMS = null;
 			FORK_EXCEPTION = null;
 		} else {
 			QuiltForkComms comms = null;
 			IOException error = null;
 			try {
-				File base = QuiltLoaderImpl.INSTANCE.getQuiltLoaderCacheDir().resolve("comms").toFile();
+				File base;
+				if (provider == null) {
+					base = new File(
+						QuiltLoaderImpl.DEFAULT_CACHE_DIR + "/" + QuiltLoaderImpl.CACHE_DIR_NAME + "/comms"
+					);
+					base.getParentFile().mkdirs();
+				} else {
+					base = QuiltLoaderImpl.INSTANCE.getQuiltLoaderCacheDir().resolve("comms").toFile();
+				}
 				comms = QuiltForkComms.connect(base, QuiltFork::handleMessageFromServer);
 			} catch (IOException e) {
 				Log.error(LogCategory.GUI, "Failed to spawn the child process!", e);

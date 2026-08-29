@@ -24,7 +24,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.quiltmc.loader.api.ModContainer;
@@ -41,10 +43,16 @@ import net.fabricmc.loader.metadata.LoaderModMetadata;
 
 @Deprecated
 public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
+	private static final Map<ModContainer, ModContainerImpl> VALUES = new HashMap<>();
+
 	private final ModContainer quilt;
 
 	public ModContainerImpl(ModContainer quilt) {
 		this.quilt = quilt;
+	}
+
+	public static ModContainerImpl from(ModContainer quilt) {
+		return VALUES.computeIfAbsent(quilt, ModContainerImpl::new);
 	}
 
 	@Override
@@ -90,7 +98,7 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 			subtracted.remove(subtracted.size() - 1);
 			for (ModContainer container : QuiltLoader.getAllMods()) {
 				if (container.getSourcePaths().contains(subtracted)) {
-					return Optional.of(new ModContainerImpl(container));
+					return Optional.of(ModContainerImpl.from(container));
 				}
 			}
 		}
@@ -111,7 +119,7 @@ public final class ModContainerImpl extends net.fabricmc.loader.ModContainer {
 				List<Path> subtracted = new ArrayList<>(paths);
 				subtracted.remove(subtracted.size() - 1);
 				if (quilt.getSourcePaths().contains(subtracted)) {
-					contained.add(new ModContainerImpl(other));
+					contained.add(ModContainerImpl.from(other));
 					break;
 				}
 			}

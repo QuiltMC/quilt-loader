@@ -33,6 +33,7 @@ import org.quiltmc.loader.impl.report.QuiltReport;
 import org.quiltmc.loader.impl.report.QuiltReport.CrashReportSaveFailed;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
@@ -46,10 +47,12 @@ public final class QuiltGuiEntry {
 		if (warnEarly) {
 			Log.error(LogCategory.GUI, "An error occurred: " + mainText, exception);
 		}
+		boolean isCI = System.getenv("CI") != null;
+		boolean isNoGui = SystemProperties.getBoolean(SystemProperties.NO_GUI, false);
 
 		GameProvider provider = QuiltLoaderImpl.INSTANCE.tryGetGameProvider();
 
-		if ((provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
+		if (!isCI && !isNoGui && (provider == null || provider.canOpenGui()) && !GraphicsEnvironment.isHeadless()) {
 
 			QuiltReport report = new QuiltReport("Crashed!");
 			// It's arguably the most important version - if anything goes wrong while writing this report
@@ -62,10 +65,12 @@ public final class QuiltGuiEntry {
 				report.addStacktraceSection("Exception while building the mods table", 0, t);
 			}
 
+			Path gameDir = QuiltLoader.getGameDir();
+
 			Path crashReportFile = null;
 			String crashReportText = null;
 			try {
-				crashReportFile = report.writeInDirectory(QuiltLoader.getGameDir());
+				crashReportFile = report.writeInDirectory(gameDir);
 			} catch (CrashReportSaveFailed e) {
 				crashReportText = e.fullReportText;
 			}
@@ -98,7 +103,9 @@ public final class QuiltGuiEntry {
 				window.addCopyFileToClipboardButton(QuiltLoaderText.translate("button.copy_crash_report"), crashReportFile);
 			}
 
-			window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), QuiltLoaderImpl.INSTANCE.getModsDir());
+			if (gameDir != null) {
+				window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), QuiltLoaderImpl.INSTANCE.getModsDir());
+			}
 
 			QuiltErrorButton continueBtn = window.addContinueButton();
 			continueBtn.text(QuiltLoaderText.translate("button.exit"));

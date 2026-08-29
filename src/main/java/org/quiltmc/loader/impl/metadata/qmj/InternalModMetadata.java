@@ -17,13 +17,9 @@
 package org.quiltmc.loader.impl.metadata.qmj;
 
 import java.util.Collection;
-import java.util.Map;
 
-import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.ModMetadata;
-import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
-import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 

@@ -45,11 +45,12 @@ import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.SimpleClassPath;
 
 public final class McVersionLookup {
-	private static final Pattern RELEASE_PATTERN = Pattern.compile("(1\\.(\\d+)(?:\\.(\\d+))?)(?:-(\\d+))?"); // 1.6, 1.16.5, 1,16+231620
+	private static final Pattern DATE_BASED_PATTERN = Pattern.compile("(\\d{2}\\.\\d+(?:\\.\\d+)?)(?:-(snapshot|pre|rc)-(\\d+))?");
+	private static final Pattern RELEASE_PATTERN = Pattern.compile("(1\\.(\\d+)(?:\\.(\\d+))?)(?:-(\\d+))?(?:[ _]([Uu]nobfuscated))?"); // 1.6, 1.16.5, 1,16+231620, 1.21.11_unobfuscated
 	private static final Pattern TEST_BUILD_PATTERN = Pattern.compile(".+(?:-tb| Test Build )(\\d+)?(?:-(\\d+))?"); // ... Test Build 1, ...-tb2, ...-tb3-1234
-	private static final Pattern PRE_RELEASE_PATTERN = Pattern.compile(".+(?:-pre| Pre-?[Rr]elease ?)(?:(\\d+)(?: ;\\))?)?(?:-(\\d+))?"); // ... Prerelease, ... Pre-release 1, ... Pre-Release 2, ...-pre3, ...-pre4-1234
-	private static final Pattern RELEASE_CANDIDATE_PATTERN = Pattern.compile(".+(?:-rc| RC| [Rr]elease Candidate )(\\d+)(?:-(\\d+))?"); // ... RC1, ... Release Candidate 2, ...-rc3, ...-rc4-1234
-	private static final Pattern SNAPSHOT_PATTERN = Pattern.compile("(?:Snapshot )?(\\d+)w0?(0|[1-9]\\d*)([a-z])(?:-(\\d+))?"); // Snapshot 16w02a, 20w13b, 22w18c-1234
+	private static final Pattern PRE_RELEASE_PATTERN = Pattern.compile(".+(?:-pre| Pre-?[Rr]elease ?)(?:(\\d+)(?: ;\\))?)?(?:-(\\d+))?(?:[ _]([Uu]nobfuscated))?"); // ... Prerelease, ... Pre-release 1, ... Pre-Release 2, ...-pre3, ...-pre4-1234, ...-pre1_unobfuscated
+	private static final Pattern RELEASE_CANDIDATE_PATTERN = Pattern.compile(".+(?:-rc| RC| [Rr]elease Candidate )(\\d+)(?:-(\\d+))?(?:[ _]([Uu]nobfuscated))?"); // ... RC1, ... Release Candidate 2, ...-rc3, ...-rc4-1234, ...-rc1_unobfuscated
+	private static final Pattern SNAPSHOT_PATTERN = Pattern.compile("(?:Snapshot )?(\\d+)w0?(0|[1-9]\\d*)([a-z])(?:-(\\d+)|[ _]([Uu]nobfuscated))?"); // Snapshot 16w02a, 20w13b, 22w18c-1234, 25w45a Unobfuscated
 	private static final Pattern EXPERIMENTAL_PATTERN = Pattern.compile(".+(?:-exp|(?:_deep_dark)?_experimental[_-]snapshot-|(?: Deep Dark)? [Ee]xperimental [Ss]napshot )(\\d+)"); // 1.18 Experimental Snapshot 1, 1.18_experimental-snapshot-2, 1.18-exp3, 1.19 Deep Dark Experimental Snapshot 1
 	private static final Pattern BETA_PATTERN = Pattern.compile("(?:b|Beta v?)1\\.((\\d+)(?:\\.(\\d+))?(_0\\d)?)([a-z])?(?:-(\\d+))?(?:-(launcher))?"); // Beta 1.2, b1.2_02-launcher, b1.3b, b1.3-1731, Beta v1.5_02, b1.8.1
 	private static final Pattern ALPHA_PATTERN = Pattern.compile("(?:(?:server-)?a|Alpha v?)[01]\\.(\\d+\\.\\d+(?:_0\\d)?)([a-z])?(?:-(\\d+))?(?:-(launcher))?"); // Alpha v1.0.1, Alpha 1.0.1_01, a1.0.4-launcher, a1.1.0-131933, a1.2.2a, a1.2.3_05, Alpha 0.1.0, server-a0.2.8
@@ -219,10 +220,15 @@ public final class McVersionLookup {
 
 			reader.endObject();
 
+			if (id != null) { // strip trailing git hash
+				int pos = id.indexOf(" / ");
+				if (pos > 0) id = id.substring(0, pos);
+			}
+
 			String version;
 
 			if (name == null
-					|| id != null && id.length() < name.length()) {
+					|| id != null && id.length() <= name.length()) { // takes care of 21w39a (id=Minecraft.Server name=21w39a)
 				version = id;
 			} else {
 				version = name;
@@ -280,8 +286,15 @@ public final class McVersionLookup {
 
 	@VisibleForTesting
 	public static String getRelease(String version) {
+		// 26.1, 26.1.1, 26.1-snapshot-1, 26.1-pre-1, 26.1-rc-1
+		Matcher matcher = DATE_BASED_PATTERN.matcher(version);
+
+		if (matcher.matches()) {
+			return matcher.group(1);
+		}
+
 		// 1.6, 1.16.5, 1,16+231620
-		Matcher matcher = RELEASE_PATTERN.matcher(version);
+		matcher = RELEASE_PATTERN.matcher(version);
 
 		if (matcher.matches()) {
 			// return name without timestamp
@@ -350,13 +363,17 @@ public final class McVersionLookup {
 		pos = version.indexOf(" Release Candidate");
 		if (pos >= 0) return version.substring(0, pos);
 
-		matcher = SNAPSHOT_PATTERN.matcher(version); // Snapshot 16w02a, 20w13b, 22w18c-1234
+		matcher = SNAPSHOT_PATTERN.matcher(version); // Snapshot 16w02a, 20w13b, 22w18c-1234, 25w45a Unobfuscated
 
 		if (matcher.matches()) {
 			int year = Integer.parseInt(matcher.group(1));
 			int week = Integer.parseInt(matcher.group(2));
 
-			if (year == 25 && week >= 31 || year > 25) {
+			if (year == 26 && week == 14) {
+				return "26.1.1"; // 2026 April fools snapshot
+			} else if (year == 25 && week >= 41 || year > 25) {
+				return "1.21.11";
+			} else if (year == 25 && week >= 31 && week <= 37) {
 				return "1.21.9";
 			} else if (year == 25 && week >= 15 && week <= 21) {
 				return "1.21.6";
@@ -472,8 +489,25 @@ public final class McVersionLookup {
 
 		Matcher matcher;
 
-		if ((matcher = RELEASE_PATTERN.matcher(name)).matches()) { // 1.6, 1.16.5, 1.16+131620
-			timestamp = matcher.group(4);
+		if ((matcher = DATE_BASED_PATTERN.matcher(name)).matches()) { // 26.1, 26.1.1, 26.1-snapshot-1, 26.1-pre-1, 26.1-rc-1
+			if (matcher.group(2) != null) {
+				switch (matcher.group(2)) {
+					case "snapshot":
+						ret.append("alpha");
+						break;
+					default:
+						ret.append(matcher.group(2));
+				}
+
+				ret.append('.');
+				ret.append(matcher.group(3));
+			}
+		} else if ((matcher = RELEASE_PATTERN.matcher(name)).matches()) { // 1.6, 1.16.5, 1.16+131620
+			if (matcher.group(4) != null) {
+				timestamp = matcher.group(4);
+			} else if (matcher.group(5) != null) { // 1.21.11_unobfuscated
+				timestamp = "unobfuscated";
+			}
 
 			// remove - separator
 			ret.setLength(ret.length() - 1);
@@ -483,7 +517,12 @@ public final class McVersionLookup {
 		} else if (name.startsWith(release)) {
 			if ((matcher = RELEASE_CANDIDATE_PATTERN.matcher(name)).matches()) { // ... RC1, ... Release Candidate 2, ...-rc3, ...-rc4-1234
 				String rcBuild = matcher.group(1);
-				timestamp = matcher.group(2);
+
+				if (matcher.group(2) != null) {
+					timestamp = matcher.group(2);
+				} else if (matcher.group(3) != null) { // 1.21.11-rc1_unobfuscated
+					timestamp = "unobfuscated";
+				}
 
 				// 1.0.0 release candidates are simply known as eg. 'Minecraft RC1' in the jar
 				if (release.equals("Minecraft")) {
@@ -525,7 +564,12 @@ public final class McVersionLookup {
 					legacyVersion = Version.of("1.16").compareTo(Version.of(release)) >= 0;
 
 					String prBuild = matcher.group(1);
-					timestamp = matcher.group(2);
+
+					if (matcher.group(2) != null) {
+						timestamp = matcher.group(2);
+					} else if (matcher.group(3) != null) { // 1.21.11-pre1_unobfuscated
+						timestamp = "unobfuscated";
+					}
 
 					if (prBuild == null) {
 						// between 1.2 and 1.7, regular release ids were used for
@@ -541,9 +585,12 @@ public final class McVersionLookup {
 						}
 
 						int minor = Integer.parseInt(releaseMatcher.group(2));
-						int patch = (releaseMatcher.group(3) == null)
-											? 0 // use 0 if no patch version is given (1.7 -> 1.7.0)
-											: Integer.parseInt(releaseMatcher.group(3));
+						int patch;
+						if (releaseMatcher.group(3) == null) {
+							patch = 0; // use 0 if no patch version is given (1.7 -> 1.7.0)
+						} else {
+							patch = Integer.parseInt(releaseMatcher.group(3));
+						}
 
 						boolean showAsRelease = (minor == 2 && patch == 0) // 1.2
 											|| (minor == 3 && patch == 0) // 1.3
@@ -598,8 +645,12 @@ public final class McVersionLookup {
 				String normalized = normalizeSpecialVersion(name);
 				if (normalized != null) return normalized;
 			}
-		} else if ((matcher = SNAPSHOT_PATTERN.matcher(name)).matches()) { // Snapshot 16w02a, 20w13b, 22w18c-1234
-			timestamp = matcher.group(4);
+		} else if ((matcher = SNAPSHOT_PATTERN.matcher(name)).matches()) { // Snapshot 16w02a, 20w13b, 22w18c-1234, 25w45a Unobfuscated
+			if (matcher.group(4) != null) { // 22w18c-1234
+				timestamp = matcher.group(4);
+			} else if (matcher.group(5) != null) {
+				timestamp = "unobfuscated";
+			}
 
 			ret.append("alpha.");
 			ret.append(matcher.group(1)); // year
@@ -865,16 +916,23 @@ public final class McVersionLookup {
 			// 2.0 update version as known in the jar, forked from 1.5.1
 			return "1.5.2-2.0";
 
+		case "2.0-preview":
+			// a preview for the 2.0 april fools version, similar to blue
+			return "1.5.2-2.0+preview";
+
+		case "2.0-red":
 		case "2point0_red":
 		case "af-2013-red":
 			// 2.0 update version red, forked from 1.5.1
 			return "1.5.2-2.0+red";
 
+		case "2.0-purple":
 		case "2point0_purple":
 		case "af-2013-purple":
 			// 2.0 update version purple, forked from 1.5.1
 			return "1.5.2-2.0+purple";
 
+		case "2.0-blue":
 		case "2point0_blue":
 		case "af-2013-blue":
 			// 2.0 update version blue, forked from 1.5.1
@@ -999,6 +1057,10 @@ public final class McVersionLookup {
 		case "1.16_combat-6":
 			// The ninth Combat Test 8c, forked from 1.16.2
 			return "1.16.3-combat.8.c";
+
+		case "26w14a":
+			// 2026 April fools version, forked from 1.26.1
+			return "26.1.1-alpha.26.14.a";
 
 		default:
 			return null; //Don't recognise the version

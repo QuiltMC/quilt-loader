@@ -28,6 +28,7 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
+import net.fabricmc.loader.impl.util.version.SemanticVersionImpl;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
@@ -40,7 +41,15 @@ import net.fabricmc.loader.api.metadata.version.VersionPredicate.PredicateTerm;
 public final class VersionPredicateParser {
 	private static final VersionComparisonOperator[] OPERATORS = VersionComparisonOperator.values();
 
+	public static VersionPredicate any() {
+		return AnyVersionPredicate.INSTANCE;
+	}
+
 	public static VersionPredicate parse(String predicate) throws VersionParsingException {
+		if (predicate.isEmpty() || predicate.equals("*")) {
+			return AnyVersionPredicate.INSTANCE;
+		}
+
 		List<SingleVersionPredicate> predicateList = new ArrayList<>();
 
 		for (String s : predicate.split(" ")) {
@@ -76,13 +85,6 @@ public final class VersionPredicateParser {
 						throw new VersionParsingException("Invalid predicate: "+predicate+", version ranges with wildcards (.X) require using the equality operator or no operator at all!");
 					}
 
-					assert !semVer.getPrereleaseKey().isPresent();
-
-					int compCount = semVer.getVersionComponentCount();
-					assert compCount == 2 || compCount == 3;
-
-					operator = compCount == 2 ? VersionComparisonOperator.SAME_TO_NEXT_MAJOR : VersionComparisonOperator.SAME_TO_NEXT_MINOR;
-
 					int[] newComponents = new int[semVer.getVersionComponentCount() - 1];
 
 					for (int i = 0; i < semVer.getVersionComponentCount() - 1; i++) {
@@ -94,9 +96,28 @@ public final class VersionPredicateParser {
 					} catch (VersionFormatException e) {
 						throw new IllegalStateException("Failed to reconstruct a version from " + version, e);
 					}
+
+					
+					int compCount = semVer.getVersionComponentCount();
+
+					if (compCount <= 1) {
+						throw new IllegalStateException("invalid component count " + compCount + " for version " + semVer);
+					} else if (compCount <= 3) { // 2, 3 -> represent a.x as ^a-, a.b.x as ~a.b-
+						operator = compCount == 2 ? VersionComparisonOperator.SAME_TO_NEXT_MAJOR : VersionComparisonOperator.SAME_TO_NEXT_MINOR;
+					} else { // > 3 -> represent a.b.c.x as >=a.b.c- <a.b.(c+1)-
+						// generate two predicates for the bounds by adding the first to the list in this block
+						predicateList.add(new SingleVersionPredicate(VersionComparisonOperator.GREATER_EQUAL, version));
+
+						newComponents = newComponents.clone();
+						newComponents[newComponents.length - 1]++;
+						version = new SemanticVersionImpl(newComponents, "", null);
+						operator = VersionComparisonOperator.LESS;
+					}
+
+					// version, operator are being used later
 				}
 			} else if (!operator.isMinInclusive() && !operator.isMaxInclusive()) { // non-semver without inclusive bound
-				throw new VersionParsingException("Invalid predicate: "+predicate+", version ranges need to be semantic version compatible to use operators that exclude the bound!");
+				throw new VersionParsingException("Invalid predicate: " + predicate + ", version ranges need to be semantic version compatible to use operators that exclude the bound!");
 			} else { // non-semver with inclusive bound
 				operator = VersionComparisonOperator.EQUAL;
 			}

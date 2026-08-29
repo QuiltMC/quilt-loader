@@ -24,15 +24,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.parsers.json.JsonFormat;
-import org.quiltmc.parsers.json.JsonReader;
-import org.quiltmc.parsers.json.JsonToken;
-import org.quiltmc.parsers.json.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.parsers.json.JsonFormat;
+import org.quiltmc.parsers.json.JsonReader;
+import org.quiltmc.parsers.json.JsonToken;
+import org.quiltmc.parsers.json.ParseException;
 
 /**
  * The central class used to read a {@code quilt.mod.json}.
@@ -47,17 +48,27 @@ public final class ModMetadataReader {
 	private static final String SCHEMA_VERSION = "schema_version";
 
 	public static InternalModMetadata read(Path json) throws IOException, ParseException {
-		return read(json, null, null);
+		return read(json, null, (QuiltTreeNode)null);
 	}
 
+	@Deprecated
 	public static InternalModMetadata read(Path json, QuiltPluginManager manager, PluginGuiTreeNode warningNode) throws IOException, ParseException {
+		return read(Files.newInputStream(json), json, manager, warningNode);
+	}
+
+	public static InternalModMetadata read(Path json, QuiltPluginManager manager, QuiltTreeNode warningNode) throws IOException, ParseException {
 		return read(Files.newInputStream(json), json, manager, warningNode);
 	}
 
 	/** @deprecated Kept since this class is only LEGACY_EXPOSED. */
 	@Deprecated
 	public static InternalModMetadata read(InputStream json) throws IOException, ParseException {
-		return read(json, null, null, null);
+		return read(json, null, null, (QuiltTreeNode) null);
+	}
+
+	@Deprecated
+	public static InternalModMetadata read(InputStream json, Path path, QuiltPluginManager manager, PluginGuiTreeNode warningNode) throws IOException, ParseException {
+		return read(json, path, manager, (QuiltTreeNode) warningNode);
 	}
 
 	/**
@@ -69,7 +80,7 @@ public final class ModMetadataReader {
 	 * @throws ParseException if the json file has errors in the quilt.mod.json specification
 	 */
 	@SuppressWarnings("SwitchStatementWithTooFewBranches") // Switch statement intentionally used for future expandability
-	public static InternalModMetadata read(InputStream json, Path path, QuiltPluginManager manager, PluginGuiTreeNode warningNode) throws IOException, ParseException {
+	public static InternalModMetadata read(InputStream json, Path path, QuiltPluginManager manager, QuiltTreeNode warningNode) throws IOException, ParseException {
 		JsonLoaderValue value;
 
 		final JsonFormat format;

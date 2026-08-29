@@ -36,7 +36,7 @@ public final class EntrypointContainerImpl<T> implements EntrypointContainer<T> 
 
 	@Override
 	public ModContainer getProvider() {
-		return new ModContainerImpl(quilt.getProvider());
+		return ModContainerImpl.from(quilt.getProvider());
 	}
 
 	@Override

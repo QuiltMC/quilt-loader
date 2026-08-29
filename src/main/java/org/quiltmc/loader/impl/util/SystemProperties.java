@@ -43,6 +43,8 @@ public final class SystemProperties {
 	public static final String TARGET_NAMESPACE = "loader.experimental.minecraft.targetNamespace";
 	public static final String GAME_VERSION = "loader.gameVersion";
 	public static final String REMAP_CLASSPATH_FILE = "loader.remapClasspathFile";
+	// mixin remap type to assume mods are using when not explicit stated, defaults to mixin
+	public static final String DEFAULT_MIXIN_REMAP_TYPE = "loader.defaultMixinRemapType";
 	public static final String UNIT_TEST = "loader.unitTest";
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
 	public static final String PRINT_MOD_SOLVING_RESULTS = "loader.mod_solving.print_results";
@@ -62,8 +64,14 @@ public final class SystemProperties {
 	public static final String ADD_MODS = "loader.addMods";
 	// class path groups to map multiple class path entries to a mod (paths separated by path separator, groups by double path separator)
 	public static final String PATH_GROUPS = "loader.classPathGroups";
+	// enable the fixing of package access errors in the game jar(s)
+	public static final String FIX_PACKAGE_ACCESS = "loader.fixPackageAccess";
+	// disable the stripping of environment code
+	public static final String DISABLE_ENVIRONMENT_STRIP = "loader.disableEnvironmentStrip";
 	// system level libraries, matching code sources will not be assumed to be part of the game or mods and remain on the system class path (paths separated by path separator)
 	public static final String SYSTEM_LIBRARIES = "loader.systemLibraries";
+	// whether to disable the swing gui popup when error occurred
+	public static final String NO_GUI = "loader.noGui";
 	public static final String DISABLE_FORKED_GUIS = "loader.disable_forked_guis";
 	public static final String DEBUG_LOG_LIB_CLASSIFICATION = "loader.debug.logLibClassification";
 	// throw exceptions from entrypoints, discovery etc. directly instead of gathering and attaching as suppressed
@@ -84,6 +92,9 @@ public final class SystemProperties {
 	public static final String DEBUG_OVERRIDE_FILE = "loader.debug.override_file";
 	public static final String GENERATE_OVERRIDES_FILE = "loader.overrides.generate_file";
 	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
+
+	/** @deprecated Loader plugins are no longer considered experimental, so loader no longer reads this flag */
+	@Deprecated
 	public static final String ENABLE_EXPERIMENTAL_LOADING_PLUGINS = "loader.experimental.allow_loading_plugins";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
 	public static final String JAR_COPY_ALL_MODS = "loader.workaround.jar_copy_all_mods";

@@ -24,14 +24,17 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
+import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
+import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltJoinedPath;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -66,8 +69,8 @@ public abstract class ModLoadOption extends LoadOption {
 	public abstract ModMetadataExt metadata();
 
 	/** @return The {@link Path} where this is loaded from. This should be either the Path that was passed to
-	 *         {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)} or the Path that was passed to
-	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)}. */
+	 *         {@link QuiltLoaderPlugin#scanZip(Path, Path, ModLocation, QuiltTreeNode)} or the Path that was passed to
+	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)}. */
 	public abstract Path from();
 
 	/** @return The {@link Path} where this mod's classes and resources can be loaded from. */
@@ -84,17 +87,19 @@ public abstract class ModLoadOption extends LoadOption {
 
 	/** @return True if this mod MUST be loaded or false if this should be loaded depending on it's {@link ModLoadType}.
 	 *         Quilt returns true here for mods on the classpath and directly in the mods folder, but not when
-	 *         jar-in-jar'd. */
+	 *         jar-in-jar'd.
+	 *         <p>
+	 *         The standard quilt plugin will add a rule requiring that this load option is selected if this returns
+	 *         true. */
 	public abstract boolean isMandatory();
-
-	// TODO: How do we turn this into a ModContainer?
-	// like... how should we handle mods that need remapping vs those that don't?
-	// plus how is that meant to work with caches in the future?
 
 	/** @return The namespace to map classes from, or null if this mod shouldn't have it's classes remapped. */
 	@Nullable
 	public abstract String namespaceMappingFrom();
 
+	/** Checks to see if this mod should be stored in the transform cache, which will cache any and all transforms
+	 * applied. (Currently only remapping, "class hiding", class tweakers, and a few other quilt-loader transformers are
+	 * applied here - however in the future plugins may be able to transform any mod). */
 	public abstract boolean needsTransforming();
 
 	/** @param hasher The hasher to use when hashing files and folders.
@@ -129,12 +134,19 @@ public abstract class ModLoadOption extends LoadOption {
 		return modFileIcon().withDecoration(modTypeIcon());
 	}
 
-	/** Populates the given gui node with information about this mod. The {@link PluginGuiTreeNode#text()} will have
-	 * been set to the {@link #version()} before this method is called. */
+	/** @deprecated Please call/override the {@link QuiltTreeNode} version:
+	 *             {@link #populateModsTabInfo(QuiltTreeNode)} */
+	@Deprecated
 	public void populateModsTabInfo(PluginGuiTreeNode guiNode) {
 		guiNode.mainIcon(modTypeIcon());
 		guiNode.addChild(QuiltLoaderText.of(loader().manager().describePath(from())))//
-			.mainIcon(guiNode.manager().iconFolder());
+			.mainIcon(QuiltLoaderGui.iconFolder());
+	}
+
+	/** Populates the given gui node with information about this mod. The {@link PluginGuiTreeNode#text()} will have
+	 * been set to the {@link #version()} before this method is called. */
+	public void populateModsTabInfo(QuiltTreeNode guiNode) {
+		populateModsTabInfo((PluginGuiTreeNode) guiNode);
 	}
 
 	/** @return True if this mod should be mounted with an additional modifiable file system overlay at runtime. */

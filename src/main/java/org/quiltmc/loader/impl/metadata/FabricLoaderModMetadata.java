@@ -22,8 +22,6 @@ import net.fabricmc.loader.api.metadata.ModMetadata;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.metadata.qmj.ConvertibleModMetadata;
-import org.quiltmc.loader.impl.metadata.qmj.FabricModMetadataWrapper;
-import org.quiltmc.loader.impl.metadata.qmj.InternalModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 

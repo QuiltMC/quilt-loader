@@ -690,13 +690,34 @@ class SolverErrorHelper {
 			} else {
 				report.append(" version ").append(versionsOn).append(" of ");
 			}
-			report.append(modOn);// TODO
-			report.append(", which is missing!");
-			error.appendReportText(report.toString(), "");
-
-			for (ModLoadOption mod : from) {
-				error.appendReportText("- " + manager.describePath(mod.from()));
+			report.append(modOn);
+			if (allInvalidOptions.isEmpty()) {
+				report.append(", which is missing!");
+			} else {
+				report.append(", but only wrong versions are present:\n");
+				for (ModLoadOption option : allInvalidOptions) {
+					report.append("\n- version ");
+					report.append(option.version());
+					ModLoadOption real = null;
+					if (option instanceof AliasedLoadOption) {
+						LoadOption target = ((AliasedLoadOption) option).getTarget();
+						if (target instanceof ModLoadOption) {
+							real = (ModLoadOption) target;
+						}
+					}
+					if (real != null) {
+						report.append(" provided by ");
+						report.append(real.metadata().name());
+					}
+					report.append(" from ");
+					report.append(manager.describePath(option.from()));
+				}
 			}
+ 			error.appendReportText(report.toString(), "");
+
+ 			for (ModLoadOption mod : from) {
+				error.appendReportText(mod.metadata().name() + " is loaded from " + manager.describePath(mod.from()));
+ 			}
 		}
 	}
 

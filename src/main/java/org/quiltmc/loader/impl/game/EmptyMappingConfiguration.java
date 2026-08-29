@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.game;
 import net.fabricmc.mappingio.tree.MappingTreeView;
 import net.fabricmc.mappingio.tree.MemoryMappingTree;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -52,5 +53,10 @@ public class EmptyMappingConfiguration implements MappingConfiguration {
 	@Override
 	public String getTargetNamespace() {
 		return namespace;
+	}
+
+	@Override
+	public @Nullable String getMappingName() {
+		return null;
 	}
 }

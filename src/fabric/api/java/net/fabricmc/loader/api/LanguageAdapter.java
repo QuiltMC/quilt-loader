@@ -27,11 +27,11 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *
  * <p>A language adapter is defined as so in {@code fabric.mod.json}:
  * <pre><blockquote>
- *   "languageAdapter": {
+ *   "languageAdapters": {
  *     "&lt;a key&gt;": "&lt;the binary name of the language adapter class&gt;"
  *   }
  * </blockquote></pre>
- * Multiple keys can be present in the {@code languageAdapter} section.</p>
+ * Multiple keys can be present in the {@code languageAdapters} section.</p>
  *
  * <p>In the declaration, the language adapter is referred by its <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1">binary name</a>,
  * such as {@code "mypackage.MyClass$Inner"}. It must have a no-argument public constructor for the Loader to instantiate.</p>
@@ -121,7 +121,7 @@ public interface LanguageAdapter extends org.quiltmc.loader.api.LanguageAdapter 
 			throws org.quiltmc.loader.api.LanguageAdapterException {
 
 		try {
-			return create(new ModContainerImpl(mod), value, type);
+			return create(ModContainerImpl.from(mod), value, type);
 		} catch (LanguageAdapterException e) {
 			throw new org.quiltmc.loader.api.LanguageAdapterException(e);
 		}

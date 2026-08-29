@@ -17,15 +17,12 @@
 package org.quiltmc.loader.api.plugin;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.api.LanguageAdapter;
 import org.quiltmc.loader.api.ModMetadata;
 import org.quiltmc.loader.api.ModMetadataToBeMovedToPlugins;
-import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
 import org.quiltmc.loader.impl.metadata.qmj.AdapterLoadableClassEntry;

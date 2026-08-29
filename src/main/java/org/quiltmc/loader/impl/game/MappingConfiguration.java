@@ -44,4 +44,7 @@ public interface MappingConfiguration {
 	 * not obfuscated.
 	 **/
 	String getTargetNamespace();
+
+	@Nullable
+	String getMappingName();
 }

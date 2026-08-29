@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.game;
 import java.net.URL;
 import java.nio.file.Path;
 
+import net.fabricmc.classtweaker.api.ClassTweaker;
 import net.fabricmc.mappingio.tree.MappingTreeView;
 
 import org.objectweb.asm.ClassReader;
@@ -31,7 +32,6 @@ import org.quiltmc.loader.impl.util.UrlConversionException;
 import org.quiltmc.loader.impl.util.UrlUtil;
 import org.spongepowered.asm.launch.MixinBootstrap;
 
-import net.fabricmc.accesswidener.AccessWidener;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.tinyremapper.TinyRemapper;
 
@@ -45,7 +45,7 @@ enum LoaderLibrary {
 	SPONGE_MIXIN(MixinBootstrap.class),
 	TINY_REMAPPER(TinyRemapper.class),
 	MAPPING_IO(MappingTreeView.class),
-	ACCESS_WIDENER(AccessWidener.class),
+	CLASS_TWEAKER(ClassTweaker.class),
 	// This is an older library, so there's nothing we can do about this deprecation warning
 	// However it shouldn't be replaced with the newer version, since we want to target this
 	// library exactly
