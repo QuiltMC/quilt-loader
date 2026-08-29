@@ -46,7 +46,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFileSystem, @NotNull QuiltZipPath>
 	implements ReadOnlyFileSystem, ExtendedFileSystem {
 
-	static final boolean DEBUG_TEST_READING = true;
+	static final boolean DEBUG_TEST_READING = false;
 
 	public QuiltZipFileSystem(String name, Path zipFrom, String zipPathPrefix) throws IOException {
 		this(name, zipFrom, zipPathPrefix, ZipHandling.PLAIN);
