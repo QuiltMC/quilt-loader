@@ -69,4 +69,9 @@ public class ProvidedModContainer implements ModContainerExt {
 	public boolean shouldAddToQuiltClasspath() {
 		return false;
 	}
+
+	@Override
+	public Path getMutableFileOverlay() {
+		return container.getMutableFileOverlay();
+	}
 }
