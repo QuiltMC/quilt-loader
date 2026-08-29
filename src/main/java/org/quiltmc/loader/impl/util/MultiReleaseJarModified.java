@@ -22,13 +22,11 @@ import static java.lang.annotation.RetentionPolicy.SOURCE;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-/** Indicates to future quilt maintainers that the class is intended to be converted to a Multi-Release jar after we add
- * support for it, and then this annotation should be replaced with {@link MultiReleaseJarModified}.
- * <p>
- * (This merely allows for this to be searched) */
+/** Indicates that the annotated class has additional implementations in the various javaXX subprojects, and so changes
+ * to the annotated class (such as new methods or fields) must be propagated to those additional subprojects. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 @Retention(SOURCE)
 @Target(TYPE)
-public @interface MultiReleaseJarCandidate {
+public @interface MultiReleaseJarModified {
 
 }

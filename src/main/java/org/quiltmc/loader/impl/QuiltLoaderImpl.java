@@ -112,6 +112,7 @@ import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileHasherImpl;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.JavaVersionUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;

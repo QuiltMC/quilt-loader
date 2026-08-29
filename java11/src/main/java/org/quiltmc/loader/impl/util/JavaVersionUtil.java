@@ -20,30 +20,7 @@ package org.quiltmc.loader.impl.util;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class JavaVersionUtil {
 
-	private static int JAVA_VERSION = -1;
-
-	public static int getJavaVersion() {
-		if (JAVA_VERSION < 0) {
-			String jVersion = System.getProperty("java.version", "");
-			if (jVersion.startsWith("1.")) {
-				// Java 8 or earlier
-				// However loader itself requires java 8, so just force java 8
-				JAVA_VERSION = 8;
-			} else {
-				int firstDot = jVersion.indexOf('.');
-				if (firstDot > 0) {
-					jVersion = jVersion.substring(0, firstDot);
-				}
-				try {
-					JAVA_VERSION = Integer.parseInt(jVersion);
-				} catch (NumberFormatException nfe) {
-					throw new IllegalStateException(
-						"Unable to convert 'java.version' (" + jVersion + ") into a version number!", nfe
-					);
-				}
-			}
-		}
-
-		return JAVA_VERSION;
-	}
+    public static int getJavaVersion() {
+        return Runtime.version().feature();
+    }
 }
