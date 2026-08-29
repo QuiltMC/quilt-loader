@@ -1,0 +1,10 @@
+Changes:
+
+- [#503] Make loader plugins no longer require the "loader.experimental.allow_loading_plugins" flag to be set to true to load.
+- [#505] Cleaned up a few parts of the loader plugin API
+    - Added `QuiltPluginLogger` for pluggins to perform logging
+    - Deprecated all references to the deprecated `org.quiltmc.loader.api.plugin.gui` package,
+       as the `loader.api.gui` package should be used instead.
+    - Changed zip file handling to only treat files as ZIPs if they start with the 4-byte zip header.
+        - All other files will now correctly be send to "scanUnknownFile"
+    - Cleaned up a little bit of documentaion
