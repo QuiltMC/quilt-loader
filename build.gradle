@@ -42,10 +42,6 @@ allprojects {
 
 	repositories {
 		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-		maven {
 			name = 'Quilt'
 			url = 'https://maven.quiltmc.org/repository/release'
 		}
@@ -54,8 +50,15 @@ allprojects {
 			url = 'https://maven.quiltmc.org/repository/snapshot'
 		}
 		maven {
-		  name = 'Unascribed'
-		  url = 'https://repo.sleeping.town/'
+			name = 'Fabric'
+			url = 'https://maven.fabricmc.net/'
+		}
+		maven {
+			name = 'Unascribed'
+			url = 'https://repo.sleeping.town/'
+            content {
+				includeGroup "com.unascribed"
+			}
 		}
 		mavenCentral() {
 			content {
