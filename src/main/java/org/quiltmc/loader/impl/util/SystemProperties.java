@@ -92,6 +92,10 @@ public final class SystemProperties {
 	public static final String DEBUG_OVERRIDE_FILE = "loader.debug.override_file";
 	public static final String GENERATE_OVERRIDES_FILE = "loader.overrides.generate_file";
 	public static final String ENABLE_EXPERIMENTAL_CHASM = "loader.experimental.enable_chasm";
+
+	/** @deprecated Loader plugins are no longer considered experimental, so loader no longer reads this flag */
+	@Deprecated
+	public static final String ENABLE_EXPERIMENTAL_LOADING_PLUGINS = "loader.experimental.allow_loading_plugins";
 	public static final String JAR_COPIED_MODS = "loader.workaround.jar_copied_mods";
 	public static final String JAR_COPY_ALL_MODS = "loader.workaround.jar_copy_all_mods";
 	public static final String DISABLE_STRICT_PARSING = "loader.workaround.disable_strict_parsing";

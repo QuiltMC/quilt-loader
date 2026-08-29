@@ -16,6 +16,7 @@
 
 package org.quiltmc.loader.impl.metadata.qmj;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -29,6 +30,7 @@ import org.quiltmc.loader.api.ModContributor;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModLicense;
 import org.quiltmc.loader.api.Version;
+import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -134,22 +136,41 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		this.accessWideners = Collections.unmodifiableCollection(builder.accessWideners);
 		this.environment = builder.env;
 
-		// Experimental
-		ModPlugin plugin;
+		// TODO: Declare a proper value "plugin" directly in the QMJ spec in the quilt_loader block
+		// then try that property first preferentially
+		// (I don't want to actually try to load the plugin property yet until we can get an RFC in)
 		@Nullable JsonLoaderValue e = root.get("experimental_quilt_loader_plugin");
 		if (e == null) {
-			plugin = null;
+			this.plugin = null;
 		} else {
-			// humorous error message dirties the log + again makes it clear you shouldn't be doing this
-			Log.error(LogCategory.GENERAL, "MOD " + asQuiltModMetadata().id() + " PROVIDES A PLUGIN!" +
-					"MOD-PROVIDED PLUGINS ARE FOR AMUSEMENT PURPOSES ONLY." +
-					" NO WARRANTY IS PROVIDED, EXPRESS OR IMPLIED. CONTINUE AT YOUR OWN RISK.");
-
 			LoaderValue.LObject obj = e.asObject();
-			String clazz = obj.get("class").asString();
-			List<String> packages = obj.get("packages").asArray().stream().map(LoaderValue::asString).collect(Collectors.toList());
+			LoaderValue valClass = obj.get("class");
+			if (valClass == null || valClass.type() != LType.STRING) {
+				throw new ParseException(
+					"Expected to find a string called 'class' in the 'experimental_quilt_loader_plugin' block, but found "
+						+ valClass + "!"
+				);
+			}
+			String clazz = valClass.asString();
+			LoaderValue valPackages = obj.get("packages");
+			if (valPackages == null || valPackages.type() != LType.ARRAY) {
+				throw new ParseException(
+					"Expected to find an array called 'packages' in the 'experimental_quilt_loader_plugin' block, but found "
+						+ valPackages
+				);
+			}
+			List<String> packages = new ArrayList<>();
+			for (LoaderValue sub : valPackages.asArray()) {
+				if (sub == null || sub.type() != LType.STRING) {
+					throw new ParseException(
+						"Expected to find a string array called 'packages' in the 'experimental_quilt_loader_plugin' block, but found "
+							+ sub + " in " + valPackages
+					);
+				}
+				packages.add(sub.asString());
+			}
 
-			plugin = new ModPlugin() {
+			this.plugin = new ModPlugin() {
 				@Override
 				public String pluginClass() {
 					return clazz;
@@ -161,7 +182,6 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 				}
 			};
 		}
-		this.plugin = plugin;
 	}
 
 	@Override

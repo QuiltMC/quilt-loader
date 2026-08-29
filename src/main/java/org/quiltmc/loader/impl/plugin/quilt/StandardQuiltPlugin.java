@@ -45,6 +45,8 @@ import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.VersionRange;
@@ -52,8 +54,6 @@ import org.quiltmc.loader.api.plugin.ModLocation;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -261,9 +261,9 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	@Override
-	public ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanZip(Path zipFile, Path root, ModLocation location, QuiltTreeNode guiNode) throws IOException {
 
-		Path parent = context().manager().getParent(root);
+		Path parent = zipFile;
 
 		if (!parent.getFileName().toString().endsWith(".jar")) {
 			return null;
@@ -273,12 +273,12 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 	}
 
 	@Override
-	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanFolder(Path folder, ModLocation location, QuiltTreeNode guiNode) throws IOException {
 		return scan0(folder, QuiltLoaderGui.iconFolder(), location, false, guiNode);
 	}
 
 	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip,
-		PluginGuiTreeNode guiNode) throws IOException {
+		QuiltTreeNode guiNode) throws IOException {
 
 		Path qmj = root.resolve("quilt.mod.json");
 		Path qmj5 = root.resolve("quilt.mod.json5");
@@ -380,13 +380,13 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 					continue;
 				}
 
-				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
+				QuiltTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
 				if (DISBALE_BUILTIN_MIXIN_EXTRAS) {
 					if (QuiltLoaderImpl.MOD_ID.equals(meta.id())) {
 						if (inner.toString().startsWith("/META-INF/jars/mixinextras-")) {
 							Log.info(LogCategory.GENERAL, "Disabling loader's builtin mixin extras library due to command line flag");
 							jarNode.addChild(QuiltLoaderText.translate("mixin_extras.disabled"));
-							jarNode.mainIcon(QuiltLoaderGui.iconDisabled());
+							jarNode.icon(QuiltLoaderGui.iconDisabled());
 							continue;
 						}
 					}
@@ -414,7 +414,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			);
 
 			guiNode.addChild(QuiltLoaderText.translate("gui.text.invalid_metadata", parse.getMessage()))//
-				.setError(parse, error);
+				.level(QuiltWarningLevel.ERROR);
 			return null;
 		}
 	}

@@ -60,6 +60,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedMountedF
 import org.quiltmc.loader.impl.util.DisconnectableByteChannel;
 import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 import org.quiltmc.loader.impl.util.FileUtil;
+import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.JavaVersionUtil;
 import org.quiltmc.loader.impl.util.LimitedInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderCleanupTasks;
@@ -129,6 +130,11 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<QuiltZipFileSystem, Q
 				}
 			} else if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.PARTIAL_HEADER)) {
 				throw new PartiallyWrittenIOException();
+			} else if (readLength <= 3) {
+				throw new IOException("File is too small to contain a ZIP header! (" + readLength + " bytes)");
+			} else if (header[0] != 0x50 || header[1] != 0x4b || header[2] != 0x03 || header[3] != 0x04) {
+				String actuallyRead = HashUtil.hashToString(header, 0, readLength);
+				throw new IOException("File header doesn't match the ZIP magic number! " + actuallyRead);
 			} else {
 				pushback.reset();
 				initializeFromZip(pushback, zipPathPrefix);

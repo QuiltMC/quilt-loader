@@ -32,11 +32,8 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import net.fabricmc.api.EnvType;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.quiltmc.parsers.json.ParseException;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.ModDependency;
@@ -48,29 +45,37 @@ import org.quiltmc.loader.api.VersionFormatException;
 import org.quiltmc.loader.api.VersionRange;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModEntrypoint;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModLoadType;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.impl.metadata.qmj.JsonLoaderValue.ObjectImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
-
-import net.fabricmc.loader.api.metadata.ModEnvironment;
-
 import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
+import org.quiltmc.parsers.json.ParseException;
+
+import net.fabricmc.loader.api.metadata.ModEnvironment;
+
+import net.fabricmc.api.EnvType;
 
 // TODO: Figure out a way to not need to always specify JsonLoaderValue everywhere so we can let other users and plugins have location data.
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
 public final class V1ModMetadataReader {
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root) {
-		return read(root, null, null, null);
+		return read(root, null, null, (QuiltTreeNode) null);
 	}
 
+	@Deprecated
 	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root, Path path, QuiltPluginManager manager, PluginGuiTreeNode parentNode) {
+		return read(root, path, manager, (QuiltTreeNode) parentNode);
+	}
+
+	public static V1ModMetadataImpl read(JsonLoaderValue.ObjectImpl root, Path path, QuiltPluginManager manager, QuiltTreeNode parentNode) {
 		// Read loader category
 		@Nullable JsonLoaderValue quiltLoader = root.get("quilt_loader");
 
@@ -110,12 +115,12 @@ public final class V1ModMetadataReader {
 
 	final Path from;
 	final QuiltPluginManager manager;
-	final PluginGuiTreeNode warningNode;
-	PluginGuiTreeNode modJsonNode = null;
+	final QuiltTreeNode warningNode;
+	QuiltTreeNode modJsonNode = null;
 	boolean loggedAnyWarnings = false;
 	boolean loggedDeprecatedArrayDepends = false;
 
-	private V1ModMetadataReader(Path from, QuiltPluginManager manager, PluginGuiTreeNode warningNode) {
+	private V1ModMetadataReader(Path from, QuiltPluginManager manager, QuiltTreeNode warningNode) {
 		this.from = from;
 		this.manager = manager;
 		this.warningNode = warningNode;
@@ -760,7 +765,7 @@ public final class V1ModMetadataReader {
 					if (warningNode != null) {
 						createModJsonNode()
 							.addChild(QuiltLoaderText.of("Uses deprecated array format for declaring dependencies."))
-							.setDirectLevel(WarningLevel.CONCERN)
+							.level(QuiltWarningLevel.CONCERN)
 							.addChild(QuiltLoaderText.of("See " + RFC_56_LINK + " for more information on how to fix this"));
 					}
 				}
@@ -820,7 +825,7 @@ public final class V1ModMetadataReader {
 					if (warningNode != null) {
 						createModJsonNode()
 							.addChild(QuiltLoaderText.of(msg))
-							.setDirectLevel(WarningLevel.CONCERN)
+							.level(QuiltWarningLevel.CONCERN)
 							.addChild(QuiltLoaderText.of("See " + RFC_56_LINK + " for more information on how to fix this"));
 					}
 				}
@@ -837,13 +842,13 @@ public final class V1ModMetadataReader {
 		Log.warn(LogCategory.DISCOVERY, "Warnings for quilt.mod.json at: '" + describedPath + "'");
 	}
 
-	private PluginGuiTreeNode createModJsonNode() {
+	private QuiltTreeNode createModJsonNode() {
 		if (warningNode == null) {
 			throw new IllegalStateException("Check 'warningNode' first!");
 		}
 		if (modJsonNode == null) {
 			modJsonNode = warningNode.addChild(QuiltLoaderText.of("quilt.mod.json"));
-			modJsonNode.mainIcon(QuiltLoaderGui.iconJsonFile()).subIcon(QuiltLoaderGui.iconQuilt());
+			modJsonNode.icon(QuiltLoaderGui.iconJsonFile().withDecoration(QuiltLoaderGui.iconQuilt()));
 		}
 		return modJsonNode;
 	}

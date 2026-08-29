@@ -25,6 +25,7 @@ import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.plugin.LoaderValueFactory;
 import org.quiltmc.loader.api.plugin.ModMetadataExt.ModPlugin;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
+import org.quiltmc.loader.api.plugin.QuiltPluginLogger;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -34,6 +35,7 @@ public class QuiltPluginContextImpl extends BasePluginContext {
 
 	final ModLoadOption optionFrom;
 	final Path pluginPath;
+	final PluginLoggerImpl logger;
 	final QuiltPluginClassLoader classLoader;
 	final QuiltLoaderPlugin plugin;
 
@@ -44,6 +46,8 @@ public class QuiltPluginContextImpl extends BasePluginContext {
 		super(manager, from.id());
 		this.optionFrom = from;
 		this.pluginPath = from.resourceRoot();
+		this.logger = new PluginLoggerImpl(pluginId);
+		logger.debug("Starting plugin from " + manager.describePath(pluginPath));
 
 		ClassLoader parent = Thread.currentThread().getContextClassLoader();
 		ModPlugin pluginMeta = from.metadata().plugin();
@@ -67,6 +71,11 @@ public class QuiltPluginContextImpl extends BasePluginContext {
 	@Override
 	public Path pluginPath() {
 		return pluginPath;
+	}
+
+	@Override
+	public QuiltPluginLogger logger() {
+		return logger;
 	}
 
 	@Override

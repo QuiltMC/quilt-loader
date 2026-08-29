@@ -18,10 +18,8 @@ package org.quiltmc.loader.api.plugin;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.Callable;
 
 import org.jetbrains.annotations.ApiStatus;
-import org.quiltmc.loader.api.ExtendedFileSystem;
 import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
@@ -60,6 +58,10 @@ public interface QuiltPluginContext {
 	/** @return The original {@link ModLoadOption} that this plugin is loaded from. */
 	ModLoadOption pluginOption();
 
+	/** @return A specialised Logger for the plugin to use. This will redirect to loaders internal Log, prefixed with
+	 *         the {@link #pluginId()} */
+	QuiltPluginLogger logger();
+
 	// ##############
 	// # Operations #
 	// ##############
@@ -81,7 +83,8 @@ public interface QuiltPluginContext {
 	 * or vice versa. Or any mod type of which a loader plugin can load).
 	 * 
 	 * @param guiNode The GUI node to display the loaded mod details under
-	 * @param direct True if the file is directly loaded rather than being included in another mod (see {@link ModLocation#isDirect()}) */
+	 * @param direct True if the file is directly loaded rather than being included in another mod (see
+	 *            {@link ModLocation#isDirect()}) */
 	void addFileToScan(Path file, QuiltTreeNode guiNode, boolean direct);
 
 	/** Adds an additional folder to scan for mods, which will be treated in the same way as the regular mods folder.
@@ -135,7 +138,8 @@ public interface QuiltPluginContext {
 	 * information.
 	 * <p>
 	 * This is preferable to calling {@link RuleContext#addOption(LoadOption)} since that adds a "floating" parent node
-	 * associated with the plugin itself, not where it might have been loaded from. 
+	 * associated with the plugin itself, not where it might have been loaded from.
+	 * 
 	 * @param fileNode The {@link PluginGuiTreeNode} which is shown in the 'Files' tab of the error window.
 	 * @deprecated {@link PluginGuiTreeNode} has moved to public API: {@link QuiltTreeNode}. As such please call
 	 *             {@link #addModLoadOption(ModLoadOption, QuiltTreeNode)} instead. */
@@ -146,17 +150,17 @@ public interface QuiltPluginContext {
 	 * information.
 	 * <p>
 	 * This is preferable to calling {@link RuleContext#addOption(LoadOption)} since that adds a "floating" parent node
-	 * associated with the plugin itself, not where it might have been loaded from. 
-	 * @param fileNode The {@link PluginGuiTreeNode} which is shown in the 'Files' tab of the error window.*/
+	 * associated with the plugin itself, not where it might have been loaded from.
+	 * 
+	 * @param fileNode The {@link PluginGuiTreeNode} which is shown in the 'Files' tab of the error window. */
 	void addModLoadOption(ModLoadOption mod, QuiltTreeNode fileNode);
 
-	/** Adds a tentative option which can be resolved later by
-	 * {@link QuiltLoaderPlugin#resolve(TentativeLoadOption)}, if it is selected.
-	 * 
+	/** Adds a tentative option which can be resolved later by {@link TentativeLoadOption#resolve()}, if it is selected.
+	 *
 	 * @param option */
 	<T extends LoadOption & TentativeLoadOption> void addTentativeOption(T option);
 
-	/** Only callable during {@link QuiltLoaderPlugin#handleError(java.util.Collection)} to identify the given rule as one
-	 * which can be removed for the purposes of error message generation. */
+	/** Only callable during {@link QuiltLoaderPlugin#handleError(java.util.Collection)} to identify the given rule as
+	 * one which can be removed for the purposes of error message generation. */
 	void blameRule(Rule rule);
 }

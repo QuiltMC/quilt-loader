@@ -19,11 +19,11 @@ package org.quiltmc.loader.impl.plugin;
 import java.nio.file.Path;
 import java.util.Collection;
 
-import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
+import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
 import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
@@ -86,8 +86,8 @@ abstract class BasePluginContext implements QuiltPluginContext {
 
 	@Override
 	public void lockZip(Path path) {
-		// TODO Auto-generated method stub
-		throw new AbstractMethodError("// TODO: Implement this!");
+		// NO-OP
+		// currently opened zips get GC'd, and we can't explicitly close them
 	}
 
 	@Override
@@ -106,6 +106,7 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	}
 
 	@Override
+	@Deprecated
 	public void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode guiNode) {
 		manager.addSingleModOption(mod, BasePluginContext.this, true, (QuiltStatusNode) guiNode);
 	}
