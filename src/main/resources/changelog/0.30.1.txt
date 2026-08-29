@@ -2,7 +2,6 @@ Changes:
 
 - [#498] Updated to Fabric Loader 0.19.3 (Mr Cat)
 
-
 Bug Fixes:
 
 - [#496] Fixed a crash when initialising loader plugins (Codetoil)
