@@ -51,7 +51,7 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTree
 
 		default void onMaxLevelChanged() {}
 
-		default void onChildAdded(QuiltStatusNode child) {}
+		default void onChildAdded(QuiltStatusNode child, QuiltTreeNode.SortOrder sortOrder) {}
 	}
 
 	private QuiltLoaderText apiText = QuiltLoaderText.EMPTY;
@@ -131,6 +131,25 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTree
 			case "set_max_level": {
 				this.maxLevel = HELPER.expectEnum(QuiltWarningLevel.class, data, "max_level");
 				invokeListeners(TreeNodeListener.class, TreeNodeListener::onMaxLevelChanged);
+				break;
+			}
+			case "set_sort_prefix": {
+				this.sortPrefix = HELPER.expectString(data, "sort_prefix");
+				QuiltStatusNode p = parent();
+				if (p != null) {
+					p.sortChildren();
+				}
+				break;
+			}
+			case "add_child": {
+				QuiltStatusNode child = readChild(HELPER.expectValue(data, "child"), QuiltStatusNode.class);
+				QuiltTreeNode.SortOrder sortOrder = HELPER.expectEnum(QuiltTreeNode.SortOrder.class, data, "sort_order");
+				if (sortOrder == QuiltTreeNode.SortOrder.ADDITION_ORDER) {
+					childNodesByAddition.add(child);
+				} else {
+					childNodesByAlphabetical.add(child);
+				}
+				invokeListeners(TreeNodeListener.class, l -> l.onChildAdded(child, sortOrder));
 				break;
 			}
 			default: {
@@ -275,7 +294,7 @@ public final class QuiltStatusNode extends QuiltGuiSyncBase implements QuiltTree
 		} else {
 			childNodesByAlphabetical.add(child);
 		}
-		invokeListeners(TreeNodeListener.class, l -> l.onChildAdded(child));
+		invokeListeners(TreeNodeListener.class, l -> l.onChildAdded(child, sortOrder));
 		if (shouldSendUpdates()) {
 			Map<String, LoaderValue> map = new HashMap<>();
 			map.put("sort_order", lvf().string(sortOrder.name()));
