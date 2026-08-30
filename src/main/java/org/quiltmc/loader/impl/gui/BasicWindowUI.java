@@ -309,6 +309,12 @@ class BasicWindowUI {
 					button.sendClickToClient();
 					break;
 				}
+				case RUN_ACTION_AND_CONTINUE: {
+					button.sendClickToClient();
+					quiltWindow.onClosedFuture.complete(null);
+					swingFrame.dispose();
+					return;
+				}
 				default:
 					throw new IllegalStateException("Unknown / unimplemented action " + button.action);
 			}

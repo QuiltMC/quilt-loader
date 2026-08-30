@@ -49,4 +49,10 @@ public interface QuiltBasicWindow<R> extends QuiltLoaderWindow<R>, QuiltGuiButto
 	/** @return A new {@link QuiltErrorButton} that will close this window and return the current {@link #returnValue()}
 	 *         from the caller when pressed. */
 	QuiltErrorButton addContinueButton();
+
+	/** Adds a new button to this window which will invoke the given {@link Runnable}, and close this window.
+	 * 
+	 * @return A new {@link QuiltErrorButton} that will close this window and return the current {@link #returnValue()}
+	 *         from the caller when pressed. */
+	QuiltErrorButton addContinueButton(Runnable action);
 }

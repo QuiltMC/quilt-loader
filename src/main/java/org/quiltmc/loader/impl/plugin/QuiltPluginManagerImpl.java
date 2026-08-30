@@ -146,7 +146,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	private final Path absGameDir, absModsDir;
 	final Map<Path, Path> pathParents = new HashMap<>();
 	final Map<Path, String> customPathNames = new HashMap<>();
-	Map<Path, List<List<Path>>> sourcePaths;
+	private Map<Path, List<List<Path>>> sourcePaths;
+
+	/** Used as a sentinel value for {@link #sourcePaths} when the source paths have been unloaded. */
+	private static final Map<Path, List<List<Path>>> CLEARED_SOURCE_PATHS = Collections.emptyMap();
 
 	public final FileHasherImpl hasher;
 
@@ -188,6 +191,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	final Map<ModLoadOption, QuiltStatusNode> modGuiNodes = new HashMap<>();
 	final List<QuiltJsonGuiMessage> errors = new ArrayList<>();
 	public final Map<UnsupportedType, QuiltDisplayedError> guiUnknownMods = new TreeMap<>();
+
+	/** Prevent plugins from getting around the unsupported mods window. */
+	private final boolean ignoreUnsupportedMods = SystemProperties.getBoolean(SystemProperties.IGNORE_UNSUPPORTED_MODS, false);
 
 	/** Only written by {@link #runSingleCycle()}, only read during crash report generation. */
 	private PerCycleStep perCycleStep;
@@ -293,6 +299,9 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	public List<List<Path>> convertToSourcePaths(Path path) {
 		if (sourcePaths == null) {
 			throw new IllegalStateException("Called too early - we haven't been able to generate the paths yet!");
+		}
+		if (sourcePaths == CLEARED_SOURCE_PATHS) {
+			throw new IllegalStateException("Called too late - source paths are unloaded to save memory! (They link to potentially large in-memory file systems)");
 		}
 		if (path.getFileSystem() == FileSystems.getDefault()) {
 			return Collections.singletonList(Collections.singletonList(path));
@@ -892,8 +901,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			}
 		}
 
-		if (SystemProperties.getBoolean(SystemProperties.IGNORE_UNSUPPORTED_MODS, false)) {
-			/* skip unsupported mod checking */
+		if (ignoreUnsupportedMods) {
 			return;
 		}
 
@@ -921,6 +929,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			UnsupportedType type = entry.getKey();
 			guiUnknownMods.put(type, type.createMessage(this, entry.getValue()));
 		}
+	}
+
+	public void prepareForUnload() {
+		sourcePaths = CLEARED_SOURCE_PATHS;
 	}
 
 	public String createModTable() {

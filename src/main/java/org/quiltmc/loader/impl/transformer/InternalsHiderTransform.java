@@ -34,7 +34,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.quiltmc.loader.api.ModInternal;
-import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -64,13 +63,13 @@ public class InternalsHiderTransform {
 		this.target = target;
 	}
 
-	void scanClass(ModLoadOption mod, Path file, byte[] classBytes) {
+	void scanClass(String modId, String modName, Path file, byte[] classBytes) {
 		// TODO: Replace this with full-reflect lookup!
 		ClassReader reader;
 		try {
 			reader = new ClassReader(classBytes);
 		} catch (IllegalArgumentException e) {
-			throw new IllegalArgumentException("Failed to read the class " + file + " from mod " + mod.id(), e);
+			throw new IllegalArgumentException("Failed to read the class " + file + " from mod " + modId, e);
 		}
 		String className = reader.getClassName();
 		boolean isPackageInfo = className.endsWith("/package-info");
@@ -88,7 +87,7 @@ public class InternalsHiderTransform {
 						if (isPackageInfo) {
 							key = key.substring(0, className.length() - "/package-info".length());
 						}
-						put(mod, (isPackageInfo ? internalPackages : internalClasses), key);
+						put(modId, modName, (isPackageInfo ? internalPackages : internalClasses), key);
 					}
 				};
 			}
@@ -106,7 +105,7 @@ public class InternalsHiderTransform {
 						return new ScanningAnnotationVisitor() {
 							@Override
 							public void visitEnd() {
-								put(mod, internalMethods, new MethodKey(className, name, descriptor));
+								put(modId, modName, internalMethods, new MethodKey(className, name, descriptor));
 							}
 						};
 					}
@@ -124,7 +123,7 @@ public class InternalsHiderTransform {
 						return new ScanningAnnotationVisitor() {
 							@Override
 							public void visitEnd() {
-								put(mod, internalFields, new FieldKey(className, name, descriptor));
+								put(modId, modName, internalFields, new FieldKey(className, name, descriptor));
 							}
 						};
 					}
@@ -134,7 +133,7 @@ public class InternalsHiderTransform {
 		reader.accept(visitor, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
 	}
 
-	public byte[] run(ModLoadOption mod, byte[] classBytes) {
+	public byte[] run(String modId, String modName, byte[] classBytes) {
 		ClassReader reader = new ClassReader(classBytes);
 		String className = reader.getClassName();
 		ClassWriter writer = new ClassWriter(reader, 0) {
@@ -145,9 +144,9 @@ public class InternalsHiderTransform {
 		};
 
 		List<InternalSuper> illegalSupers = new ArrayList<>();
-		checkSuper(mod, reader.getSuperName(), false, illegalSupers);
+		checkSuper(modId, modName, reader.getSuperName(), false, illegalSupers);
 		for (String itf : reader.getInterfaces()) {
-			checkSuper(mod, itf, true, illegalSupers);
+			checkSuper(modId, modName, itf, true, illegalSupers);
 		}
 
 		boolean[] hasClassInit = { false };
@@ -196,9 +195,9 @@ public class InternalsHiderTransform {
 							set = getAnnotationSet(owner);
 						}
 
-						if (set != null && !set.isPermitted(mod)) {
+						if (set != null && !set.isPermitted(modId, modName)) {
 							hasIllegal = true;
-							super.visitLdcInsn(set.generateError(mod, "the field " + owner + "." + name, className + "." + mthName + mthDescriptor));
+							super.visitLdcInsn(set.generateError(modId, modName, "the field " + owner + "." + name, className + "." + mthName + mthDescriptor));
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(), "(Ljava/lang/String;)V",
 								false
@@ -224,10 +223,10 @@ public class InternalsHiderTransform {
 							set = getAnnotationSet(owner);
 						}
 
-						if (set != null && !set.isPermitted(mod)) {
+						if (set != null && !set.isPermitted(modId, modName)) {
 							hasIllegal = true;
 							super.visitLdcInsn(
-								set.generateError(mod, "the method " + owner + "." + name + descriptor, className + "." + mthName + mthDescriptor)
+								set.generateError(modId, modName, "the method " + owner + "." + name + descriptor, className + "." + mthName + mthDescriptor)
 							);
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, METHOD_OWNER, set.getInvokeMethodName(),
@@ -269,7 +268,7 @@ public class InternalsHiderTransform {
 					if (!(value.value instanceof WarnLoaderInternalValue)) {
 						onlyWarn = false;
 					}
-					msg.append(value.generateError(mod, className));
+					msg.append(value.generateError(modId, modName, className));
 				}
 				to.visitLdcInsn(msg.toString());
 				to.visitMethodInsn(
@@ -353,13 +352,13 @@ public class InternalsHiderTransform {
 		return value;
 	}
 
-	private void checkSuper(ModLoadOption mod, String superName, boolean isInterface, List<
+	private void checkSuper(String modId, String modName, String superName, boolean isInterface, List<
 		InternalSuper> illegalSupers) {
 		if (superName == null) {
 			return;
 		}
 		InternalValue annotationSet = getAnnotationSet(superName);
-		if (annotationSet == null || annotationSet.isPermitted(mod)) {
+		if (annotationSet == null || annotationSet.isPermitted(modId, modName)) {
 			return;
 		}
 		illegalSupers.add(new InternalSuper(superName, isInterface, annotationSet));
@@ -423,7 +422,7 @@ public class InternalsHiderTransform {
 
 		final List<String> replacements = new ArrayList<>();
 
-		abstract boolean isPermitted(ModLoadOption mod);
+		abstract boolean isPermitted(String modId, String modName);
 
 		abstract String modFrom();
 
@@ -431,10 +430,10 @@ public class InternalsHiderTransform {
 			return "throwInternalAccess";
 		}
 
-		String generateError(ModLoadOption from, String target, String site) {
+		String generateError(String modId, String modName, String target, String site) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("Found illegal access from ");
-			sb.append(from != null ? from.metadata().name() : "Unknown Mod");
+			sb.append(modName != null ? modName : "Unknown Mod");
 			sb.append(" to ");
 			sb.append(modFrom());
 			sb.append("\n class ");
@@ -465,7 +464,7 @@ public class InternalsHiderTransform {
 
 	static class LoaderInternalValue extends InternalValue {
 		@Override
-		boolean isPermitted(ModLoadOption mod) {
+		boolean isPermitted(String modId, String modName) {
 			return false;
 		}
 
@@ -479,7 +478,7 @@ public class InternalsHiderTransform {
 		static final PermittedLoaderInternalValue INSTANCE = new PermittedLoaderInternalValue();
 
 		@Override
-		boolean isPermitted(ModLoadOption mod) {
+		boolean isPermitted(String modId, String modName) {
 			return true;
 		}
 	}
@@ -494,22 +493,23 @@ public class InternalsHiderTransform {
 	}
 
 	static final class ModInternalValue extends InternalValue {
-		final ModLoadOption inMod;
+		final String inModId, inModName;
 		final Set<String> permitted;
 
-		public ModInternalValue(ModLoadOption inMod, Set<String> permitted) {
-			this.inMod = inMod;
+		public ModInternalValue(String modId, String modName, Set<String> permitted) {
+			this.inModId = modId;
+			this.inModName = modName;
 			this.permitted = permitted;
 		}
 
 		@Override
-		boolean isPermitted(ModLoadOption mod) {
-			return mod != null && permitted.contains(mod.id());
+		boolean isPermitted(String modId, String modName) {
+			return modId != null && permitted.contains(modId);
 		}
 
 		@Override
 		String modFrom() {
-			return inMod == null ? "Unkown Mod" : inMod.metadata().name();
+			return inModId == null ? "Unkown Mod" : inModName;
 		}
 	}
 
@@ -524,8 +524,8 @@ public class InternalsHiderTransform {
 			this.value = value;
 		}
 
-		String generateError(ModLoadOption from, String site) {
-			return value.generateError(from, (isInterface ? "the interface " : "the class ") + superName, site);
+		String generateError(String modId, String modName, String site) {
+			return value.generateError(modId, modName, (isInterface ? "the interface " : "the class ") + superName, site);
 		}
 	}
 
@@ -569,13 +569,13 @@ public class InternalsHiderTransform {
 		@Override
 		public abstract void visitEnd();
 
-		protected final <K> void put(ModLoadOption mod, Map<K, InternalValue> map, K key) {
+		protected final <K> void put(String modId, String modName, Map<K, InternalValue> map, K key) {
 			Set<String> set = new HashSet<>();
-			if (mod != null) {
-				set.add(mod.id());
+			if (modId != null) {
+				set.add(modId);
 			}
 			set.addAll(exceptions);
-			ModInternalValue value = new ModInternalValue(mod, set);
+			ModInternalValue value = new ModInternalValue(modId, modName, set);
 			value.replacements.addAll(classReplacements);
 			value.replacements.addAll(replacements);
 			map.put(key, value);
