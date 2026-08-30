@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -53,7 +54,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -78,11 +81,16 @@ import javax.swing.border.Border;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
 
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
 import org.quiltmc.loader.api.gui.QuiltWarningLevel;
+import org.quiltmc.loader.impl.gui.BasicWindow.BasicWindowChangeListener;
 import org.quiltmc.loader.impl.gui.PluginIconImpl.BlankIcon;
 import org.quiltmc.loader.impl.gui.PluginIconImpl.IconType;
+import org.quiltmc.loader.impl.gui.QuiltStatusNode.TreeNodeListener;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.StringUtil;
@@ -102,23 +110,14 @@ class BasicWindowUI {
 
 	final JFrame swingFrame;
 	final BasicWindow<?> quiltWindow;
-	final IconSet icons;
+	final IconSet icons = new IconSet();
 
 	public BasicWindowUI(BasicWindow<?> quiltWindow) {
 		this.quiltWindow = quiltWindow;
 		swingFrame = new JFrame();
 		swingFrame.setVisible(false);
 		swingFrame.setTitle(quiltWindow.title);
-
-		try {
-			List<BufferedImage> images = new ArrayList<>();
-			images.add(loadImage("/ui/icon/quilt_x16.png"));
-			images.add(loadImage("/ui/icon/quilt_x128.png"));
-			swingFrame.setIconImages(images);
-			setTaskBarImage(images.get(1));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		updateIcon();
 
 		// TODO: change this back to normal after debugging
 		swingFrame.setMinimumSize(new Dimension(1, 1));
@@ -141,8 +140,6 @@ class BasicWindowUI {
 			errorLabel.setFont(font.deriveFont(font.getSize() * 2.0f));
 			contentPane.add(errorLabel, BorderLayout.NORTH);
 		}
-
-		icons = new IconSet();
 
 		final JTabbedPane tabs;
 
@@ -191,6 +188,11 @@ class BasicWindowUI {
 			}
 
 			@Override
+			public void onIconChanged() {
+				SwingUtilities.invokeLater(BasicWindowUI.this::updateIcon);
+			}
+
+			@Override
 			public void onAddTab(AbstractTab tab) {
 				if (tabs != null) {
 					PluginIconImpl icon = tab.icon;
@@ -206,6 +208,23 @@ class BasicWindowUI {
 				}
 			}
 		});
+	}
+
+	private void updateIcon() {
+		PluginIconImpl icon = quiltWindow.icon;
+		try {
+			List<BufferedImage> images = new ArrayList<>();
+			for (int size : icons.getSizes(icon)) {
+				images.add(icons.generateIcon(icon, size));
+			}
+			if (images.isEmpty()) {
+				images.add(icons.generateIcon(icon, 16));
+			}
+			swingFrame.setIconImages(images);
+			setTaskBarImage(images.get(images.size() - 1));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private JComponent createPanel(JTabbedPane tabContainer, AbstractTab tab) {
@@ -719,13 +738,23 @@ class BasicWindowUI {
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-		TreeNode treeNode = new CustomTreeNode(null, rootNode, minimumWarningLevel);
-
-		DefaultTreeModel model = new DefaultTreeModel(treeNode);
-		JTree tree = new JTree(model);
-		tree.setRootVisible(false);
+		JTree tree = new JTree((DefaultTreeModel) null);
+		if (rootNode.childNodesByAddition.isEmpty() && rootNode.childNodesByAlphabetical.isEmpty()) {
+			// Swing doesn't seem to handle updates to an empty root node correctly
+			// I assume this is because an invisible root node is *collapsed* by default?
+			// (And the user has no way to change that)
+			tree.setRootVisible(true);
+		} else {
+			tree.setRootVisible(false);
+		}
 		tree.setShowsRootHandles(true);
 		tree.setRowHeight(0); // Allow rows to be multiple lines tall
+
+		DefaultTreeModel model = new DefaultTreeModel(null);
+		CustomTreeNode treeNode = new CustomTreeNode(tree, model, null, rootNode, minimumWarningLevel);
+		model.setRoot(treeNode);
+
+		tree.setModel(model);
 
 		for (int row = 0; row < tree.getRowCount(); row++) {
 			if (!tree.isVisible(tree.getPathForRow(row))) {
@@ -776,6 +805,9 @@ class BasicWindowUI {
 	}
 
 	static final class IconSet {
+
+		/** The sizes of icons that quilt-loader ships. Stored largest-to-smallest. */
+		private static final int[] ICON_SIZES = { 128, 16, 8 };
 
 		/** Map of IconInfo -> Integer Size -> Real Icon. */
 		private final Map<PluginIconImpl, Map<Integer, Icon>> icons = new HashMap<>();
@@ -841,33 +873,53 @@ class BasicWindowUI {
 			return generateIcon(info, scale);
 		}
 
+		static class IconInfoData {
+			final IconType main;
+			final IconType[] sub;
+
+			IconInfoData(IconType main, IconType[] sub) {
+				this.main = main;
+				this.sub = sub;
+			}
+
+			/** Normalises the icon */
+			IconInfoData(PluginIconImpl icon) {
+				IconType main = icon.icon;
+				sub = Arrays.copyOf(icon.subIcons, 4);
+
+				if (main instanceof BlankIcon) {
+					if (sub[PluginIconImpl.BOTTOM_RIGHT] != null) {
+						main = sub[PluginIconImpl.BOTTOM_RIGHT];
+						sub[PluginIconImpl.BOTTOM_RIGHT] = null;
+					} else if (sub[PluginIconImpl.BOTTOM_LEFT] != null) {
+						main = sub[PluginIconImpl.BOTTOM_LEFT];
+						sub[PluginIconImpl.BOTTOM_LEFT] = null;
+					} else {
+						for (int i = 2; i < 4; i++) {
+							 if (sub[i] != null) {
+								main = sub[i];
+								sub[i] = null;
+								break;
+							 }
+						}
+						if (main instanceof BlankIcon) {
+							main = GuiManagerImpl.ICON_TREE_DOT.icon;
+						}
+					}
+				}
+
+				this.main = main;
+			}
+		}
+
 		BufferedImage generateIcon(PluginIconImpl info, int scale) throws IOException {
 			BufferedImage img = new BufferedImage(scale, scale, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D imgG2d = img.createGraphics();
 
-			IconType main = info.icon;
-			IconType[] sub = Arrays.copyOf(info.subIcons, 4);
+			IconInfoData fixed = new IconInfoData(info);
 
-			if (main instanceof BlankIcon) {
-				if (sub[PluginIconImpl.BOTTOM_RIGHT] != null) {
-					main = sub[PluginIconImpl.BOTTOM_RIGHT];
-					sub[PluginIconImpl.BOTTOM_RIGHT] = null;
-				} else if (sub[PluginIconImpl.BOTTOM_LEFT] != null) {
-					main = sub[PluginIconImpl.BOTTOM_LEFT];
-					sub[PluginIconImpl.BOTTOM_LEFT] = null;
-				} else {
-					for (int i = 2; i < 4; i++) {
-						 if (sub[i] != null) {
-							main = sub[i];
-							sub[i] = null;
-							break;
-						 }
-					}
-					if (main instanceof BlankIcon) {
-						main = GuiManagerImpl.ICON_TREE_DOT.icon;
-					}
-				}
-			}
+			IconType main = fixed.main;
+			IconType[] sub = fixed.sub;
 
 			BufferedImage mainImg = generateIcon(main, scale);
 			if (mainImg != null) {
@@ -891,6 +943,68 @@ class BasicWindowUI {
 			return img;
 		}
 
+		NavigableSet<Integer> getSizes(PluginIconImpl info) {
+			NavigableSet<Integer> sizes = new TreeSet<>();
+			addSizes(info.icon, sizes, 1);
+			for (IconType sub : info.subIcons) {
+				addSizes(sub, sizes, 2);
+			}
+			return sizes;
+		}
+
+		private void addSizes(IconType info, NavigableSet<Integer> sizes, int scale) {
+			if (info == null) {
+				return;
+			}
+
+			if (info instanceof PluginIconImpl.BuiltinIcon) {
+				String path = ((PluginIconImpl.BuiltinIcon) info).path;
+				if (path.startsWith("!")) {
+					int iconId = Integer.parseInt(path.substring(1));
+					for (Integer key : QuiltForkServerMain.getCustomIcon(iconId).keySet()) {
+						sizes.add(scale * key);
+					}
+				}
+
+				for (int size : ICON_SIZES) {
+					String realPath = "/ui/icon/" + path + "_x" + size + ".png";
+					try (InputStream stream = BasicWindowUI.class.getResourceAsStream(realPath)) {
+						if (stream != null) {
+							sizes.add(size * scale);
+						}
+					} catch (IOException e) {
+						// Ignored
+					}
+				}
+			} else if (info instanceof PluginIconImpl.UploadedIcon) {
+				PluginIconImpl.UploadedIcon upl = (PluginIconImpl.UploadedIcon) info;
+
+				NavigableMap<Integer, BufferedImage> map;
+				try {
+					map = loadUploadedIcons(upl);
+				} catch (IOException e) {
+					e.printStackTrace();
+					return;
+				}
+
+				for (Integer key : map.keySet()) {
+					sizes.add(scale * key);
+				}
+
+			} else if (info instanceof PluginIconImpl.LegacyUploadedIcon) {
+				int index = ((PluginIconImpl.LegacyUploadedIcon) info).index;
+
+				NavigableMap<Integer, BufferedImage> iconMap = QuiltForkServerMain.getCustomIcon(index);
+				for (Integer key : iconMap.keySet()) {
+					sizes.add(scale * key);
+				}
+			} else if (info instanceof PluginIconImpl.BlankIcon) {
+				// Don't add sizes
+			} else {
+				throw new IllegalStateException("Unknown / new icon type " + info.getClass());
+			}
+		}
+
 		BufferedImage generateIcon(PluginIconImpl.IconType info, int scale) throws IOException {
 			BufferedImage img = new BufferedImage(scale, scale, BufferedImage.TYPE_INT_ARGB);
 			if (info == null) {
@@ -906,18 +1020,7 @@ class BasicWindowUI {
 				}
 			} else if (info instanceof PluginIconImpl.UploadedIcon) {
 				PluginIconImpl.UploadedIcon upl = (PluginIconImpl.UploadedIcon) info;
-				byte[][] srcImages = upl.imageBytes;
-
-				NavigableMap<Integer, BufferedImage> map = uploadedIcons.computeIfAbsent(upl, u -> new TreeMap<>());
-
-				if (map.isEmpty()) {
-					for (byte[] src : srcImages) {
-						BufferedImage sub = ImageIO.read(new ByteArrayInputStream(src));
-						if (sub != null) {
-							map.put(sub.getWidth(), sub);
-						}
-					}
-				}
+				NavigableMap<Integer, BufferedImage> map = loadUploadedIcons(upl);
 
 				Entry<Integer, BufferedImage> bestSource = map.ceilingEntry(scale);
 				if (bestSource == null) {
@@ -948,6 +1051,24 @@ class BasicWindowUI {
 			return img;
 		}
 
+		private NavigableMap<Integer, BufferedImage> loadUploadedIcons(PluginIconImpl.UploadedIcon upl)
+			throws IOException {
+
+			byte[][] srcImages = upl.imageBytes;
+
+			NavigableMap<Integer, BufferedImage> map = uploadedIcons.computeIfAbsent(upl, u -> new TreeMap<>());
+
+			if (map.isEmpty()) {
+				for (byte[] src : srcImages) {
+					BufferedImage sub = ImageIO.read(new ByteArrayInputStream(src));
+					if (sub != null) {
+						map.put(sub.getWidth(), sub);
+					}
+				}
+			}
+			return map;
+		}
+
 		BufferedImage loadImage(String path, int scale) throws IOException {
 			if (path.startsWith("!")) {
 				int iconId = Integer.parseInt(path.substring(1));
@@ -962,15 +1083,22 @@ class BasicWindowUI {
 				return bestSource.getValue();
 			}
 
-			// Mandate correct scale
-			// since we only ship x16 (main) and x8 (decor) we restrict file scale to that scale
-			final int fileScale;
-			if (scale <= 8) {
-				fileScale = 8;
-			} else {
-				fileScale = 16;
+			// Get the largest image which is either equal to or smaller than the given scale
+
+			for (int size : ICON_SIZES) {
+				if (size > scale) {
+					continue;
+				}
+				String realPath = "/ui/icon/" + path + "_x" + size + ".png";
+				try (InputStream stream = BasicWindowUI.class.getResourceAsStream(realPath)) {
+					if (stream == null) {
+						continue;
+					}
+					return ImageIO.read(stream);
+				}
 			}
-			return BasicWindowUI.loadImage("/ui/icon/" + path + "_x" + fileScale + ".png");
+
+			throw new FileNotFoundException(path  + " at size " + scale);
 		}
 	}
 
@@ -1051,12 +1179,17 @@ class BasicWindowUI {
 	}
 
 	static class CustomTreeNode implements TreeNode {
+		final JTree tree;
+		final DefaultTreeModel model;
 		public final TreeNode parent;
 		public final QuiltStatusNode node;
+		private final Map<QuiltStatusNode, CustomTreeNode> nodeToChild = new HashMap<>();
 		public final List<CustomTreeNode> displayedChildren = new ArrayList<>();
 		private PluginIconImpl iconInfo;
 
-		CustomTreeNode(TreeNode parent, QuiltStatusNode node, QuiltWarningLevel minimumWarningLevel) {
+		CustomTreeNode(JTree tree, DefaultTreeModel model, TreeNode parent, QuiltStatusNode node, QuiltWarningLevel minimumWarningLevel) {
+			this.tree = tree;
+			this.model = model;
 			this.parent = parent;
 			this.node = node;
 
@@ -1065,8 +1198,72 @@ class BasicWindowUI {
 					continue;
 				}
 
-				displayedChildren.add(new CustomTreeNode(this, c, minimumWarningLevel));
+				CustomTreeNode child = new CustomTreeNode(tree, model, this, c, minimumWarningLevel);
+				nodeToChild.put(c, child);
+				displayedChildren.add(child);
 			}
+
+			node.listeners.add(new QuiltStatusNode.TreeNodeListener() {
+				@Override
+				public void onIconChanged() {
+					model.nodeChanged(CustomTreeNode.this);
+				}
+
+				@Override
+				public void onLevelChanged() {
+					model.nodeChanged(CustomTreeNode.this);
+				}
+
+				@Override
+				public void onMaxLevelChanged() {
+					model.nodeChanged(CustomTreeNode.this);
+				}
+
+				@Override
+				public void onTextChanged() {
+					model.nodeChanged(CustomTreeNode.this);
+				}
+
+				@Override
+				public void onChildAdded(QuiltStatusNode child, QuiltTreeNode.SortOrder sortOrder) {
+					// There isn't a one-to-one mapping from TreeNode index to QuiltStatusNode index
+					// due to the minimum warning level filter
+					// So instead we just have to fully iterate the new child list
+					// and get the new index that way
+
+					if (minimumWarningLevel.compareTo(child.maximumLevel() ) < 0) {
+						// It's not actually displayed, so nothing has changed
+						return;
+					}
+
+					displayedChildren.clear();
+
+					int[] index = { -1 };
+					CustomTreeNode added = null;
+
+					for (QuiltStatusNode c : node.childIterable()) {
+						if (minimumWarningLevel.compareTo(c.maximumLevel()) < 0) {
+							continue;
+						}
+
+						CustomTreeNode treeNode = nodeToChild.get(c);
+						if (treeNode == null) {
+							treeNode = new CustomTreeNode(tree, model, CustomTreeNode.this, c, minimumWarningLevel);
+							nodeToChild.put(c, treeNode);
+							added = treeNode;
+							index[0] = displayedChildren.size();
+						}
+						displayedChildren.add(treeNode);
+					}
+
+					System.out.println("model.nodesWereInserted( " + index[0] + " )");
+					model.nodesWereInserted(CustomTreeNode.this, index);
+
+					if (node.parent == null) {
+						tree.expandPath(new TreePath(new Object[] { CustomTreeNode.this, added }));
+					}
+				}
+			});
 		}
 
 		public PluginIconImpl getIcon() {

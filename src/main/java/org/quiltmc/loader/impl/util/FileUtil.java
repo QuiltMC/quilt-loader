@@ -19,6 +19,7 @@ package org.quiltmc.loader.impl.util;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 @MultiReleaseJarCandidate
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
@@ -41,5 +42,25 @@ public final class FileUtil {
 		}
 
 		return baos.toByteArray();
+	}
+
+	/** Transfers all bytes from the given source to the destination stream. On java 9 and above this calls the
+	 * "transferTo" method in the InputStream.
+	 * 
+	 * @return The number of bytes transfered. */
+	public static long transfer(InputStream from, OutputStream to) throws IOException {
+		byte[] buffer = new byte[4096];
+		long count = 0;
+
+		while (true) {
+			int read = from.read(buffer);
+			if (read <= 0) {
+				return count;
+			}
+
+			count += read;
+
+			to.write(buffer, 0, read);
+		}
 	}
 }

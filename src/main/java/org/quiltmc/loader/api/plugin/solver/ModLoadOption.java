@@ -22,6 +22,7 @@ import java.nio.file.Path;
 
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
+import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
@@ -148,7 +149,20 @@ public abstract class ModLoadOption extends LoadOption {
 		populateModsTabInfo((PluginGuiTreeNode) guiNode);
 	}
 
+	/** @return True if this mod should be mounted with an additional modifiable file system overlay at runtime. */
+	public boolean requiresMutableFileOverlay() {
+		return false;
+	}
+
 	public abstract ModContainerExt convertToMod(Path transformedResourceRoot);
+
+	/** Only called if {@link #requiresMutableFileOverlay()} returns true.
+	 * 
+	 * @param modifiableOverlay The modifiable in-memory filesystem, which should be returned by
+	 *            {@link ModContainer#getMutableFileOverlay()} */
+	public ModContainerExt convertToMod(Path transformedResourceRoot, Path modifiableOverlay) {
+		throw new IllegalStateException(this + " doesn't support modifiable overlays?");
+	}
 
 	@Override
 	public String toString() {

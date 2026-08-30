@@ -16,13 +16,15 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class QuiltJoinedPath extends QuiltBasePath<QuiltJoinedFileSystem, QuiltJoinedPath> {
+public final class QuiltJoinedPath extends QuiltBasePath<@NotNull QuiltJoinedFileSystem, @NotNull QuiltJoinedPath> {
 
-	QuiltJoinedPath(QuiltJoinedFileSystem fs, QuiltJoinedPath parent, String name) {
+	QuiltJoinedPath(@NotNull QuiltJoinedFileSystem fs, @Nullable QuiltJoinedPath parent, String name) {
 		super(fs, parent, name);
 	}
 

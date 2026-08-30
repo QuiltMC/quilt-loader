@@ -1,5 +1,6 @@
 Changes:
 
+- [#478] Added Mutable Filesystem Overlays
 - [#503] Make loader plugins no longer require the "loader.experimental.allow_loading_plugins" flag to be set to true to load.
 - [#505] Cleaned up a few parts of the loader plugin API
     - Added `QuiltPluginLogger` for pluggins to perform logging
@@ -9,3 +10,29 @@ Changes:
         - All other files will now correctly be send to "scanUnknownFile"
     - Cleaned up a little bit of documentaion
 - Added an Exit button to the unsupported mods window.
+
+
+
+Mutable Filesystem Overlays:
+
+
+This allows mods to add new files to their own filesystem via a separate "overlay" filesystem.
+
+This filesystem can dynamically generate resources that will be automatically picked up by fabric-api
+or QSL's resource loading system, and they can be used by minecraft. This is somewhat similar to
+mods like ARRP, and QSL's InMemoryPack, except this is independent to the resource loader
+(and minecraft version).
+
+Adding .class files in this way doesn't work, as quilt-loader has optimizations in place to make
+searching for classes faster.
+
+A related new feature this adds to all quilt extended filesystems is dynamic files - these are defined
+as an InputStreamSupplier, or a Supplier<byte[]>, and generate the file contents every time they are accessed.
+
+Mods must opt-in to this feature at the moment, by adding this to their quilt_loader block inside their quilt.mod.json file:
+
+"required_features": [ "modifiable_filesystem_overlay" ]
+
+The file system overlay can be accessed via ModContainer.getMutableFileOverlay(), which throws an
+UnsupportedOperationException if the mod hasn't requested the feature. Attempting to modify the mod
+via ModContainer.rootPath() will not work.

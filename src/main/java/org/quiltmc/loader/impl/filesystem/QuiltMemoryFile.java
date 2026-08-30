@@ -75,12 +75,11 @@ abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 				return new QuiltMemoryFile.ReadOnly(path, false, size, bytes);
 			}
 
-			try {
+			try  {
 				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				GZIPOutputStream gzip = new GZIPOutputStream(baos);
-				gzip.write(bytes);
-				gzip.close();
-
+				try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
+					gzip.write(bytes);
+				}
 				byte[] c = baos.toByteArray();
 
 				if (c.length + 24 < size) {
@@ -288,6 +287,12 @@ abstract class QuiltMemoryFile extends QuiltUnifiedFile {
 			super(path);
 			this.bytes = copy ? Arrays.copyOf(from.bytes, from.bytes.length) : from.bytes;
 			this.length = from.length;
+		}
+
+		ReadWrite(QuiltMapPath<?, ?> path, byte[] array, boolean copy) {
+			super(path);
+			this.bytes = copy ? Arrays.copyOf(array, array.length) : array;
+			this.length = array.length;
 		}
 
 		private ReadWrite sync() {

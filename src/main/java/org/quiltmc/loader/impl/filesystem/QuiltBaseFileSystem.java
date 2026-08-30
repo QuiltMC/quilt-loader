@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.nio.file.ClosedFileSystemException;
 import java.nio.file.FileSystem;
@@ -26,16 +27,19 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>, P extends QuiltBasePath<FS, P>>
+public abstract class QuiltBaseFileSystem<@NotNull FS extends QuiltBaseFileSystem<FS, P>, @NotNull P extends QuiltBasePath<FS, P>>
 	extends FileSystem {
 
 	static {
@@ -49,11 +53,15 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 	 * filesystems at once. */
 	final long syncOrder = SYNC_ASSIGNMENT.getAndIncrement();
 
+	final WeakReference<QuiltBaseFileSystem<?, ?>> thisRef = new WeakReference<>(this);
+
 	final Class<FS> filesystemClass;
 	final Class<P> pathClass;
 
 	final String name;
 	final P root;
+
+	final Set<FileSystemSource> sources = new HashSet<>();
 
 	QuiltBaseFileSystem(Class<FS> filesystemClass, Class<P> pathClass, String name, boolean uniqueify) {
 		this.filesystemClass = filesystemClass;
@@ -175,7 +183,46 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 
 	@Override
 	public Iterable<Path> getRootDirectories() {
-		return Collections.singleton(root);
+		return Collections.<Path>singleton(root);
+	}
+
+	void addSource(FileSystemSource source) {
+		if (!source.needsClosing()) {
+			return;
+		}
+		if (sources.add(source)) {
+			source.open(this);
+		}
+	}
+
+	@Override
+	public boolean isOpen() {
+		for (FileSystemSource source : sources) {
+			if (!source.isOpen()) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	@Override
+	public void close() throws IOException {
+		IOException problem = null;
+		for (FileSystemSource source : sources) {
+			try {
+				source.close(this);
+			} catch (IOException e) {
+				if (problem == null) {
+					problem = e;
+				} else {
+					problem.addSuppressed(e);
+				}
+			}
+		}
+
+		if (problem != null) {
+			throw problem;
+		}
 	}
 
 	void checkOpen() throws ClosedFileSystemException {
@@ -191,6 +238,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 		}
 
 		if (more.length == 0) {
+			@Nullable
 			P path = first.startsWith("/") ? root : null;
 			for (String sub : first.split("/")) {
 				if (path == null) {
@@ -199,7 +247,7 @@ public abstract class QuiltBaseFileSystem<FS extends QuiltBaseFileSystem<FS, P>,
 					path = path.resolve(sub);
 				}
 			}
-			return path;
+			return path != null ? path : root;
 		} else {
 			P path = createPath(null, first);
 			for (String sub : more) {

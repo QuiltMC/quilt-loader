@@ -62,6 +62,7 @@ public class V1ModMetadataBuilder {
 	public final List<String> jars = new ArrayList<>();
 	public final Map<String, String> languageAdapters = new LinkedHashMap<>();
 	public final List<String> repositories = new ArrayList<>();
+	public boolean requiresModifiableFilesystemOverlay;
 	/* TODO: Move to plugins */
 	public final Map<EnvType, List<String>> mixins = new HashMap<>();
 	public final List<String> accessWideners = new ArrayList<>();

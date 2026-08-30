@@ -1,5 +1,5 @@
 /*
- * Copyright 2022, 2023 QuiltMC
+ * Copyright 2025 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,14 @@
  * limitations under the License.
  */
 
-package org.quiltmc.loader.impl.filesystem;
+package org.quiltmc.loader.impl.util;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
-import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-@QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public final class QuiltMemoryPath extends QuiltMapPath<@NotNull QuiltMemoryFileSystem, @NotNull QuiltMemoryPath> {
+@FunctionalInterface
+@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+public interface ExceptionConstructor<T extends Throwable> {
 
-	QuiltMemoryPath(@NotNull QuiltMemoryFileSystem fs, @Nullable QuiltMemoryPath parent, String name) {
-		super(fs, parent, name);
-	}
-
-	@Override
 	@NotNull
-	QuiltMemoryPath getThisPath() {
-		return this;
-	}
+	T construct(String message);
 }

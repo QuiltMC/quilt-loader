@@ -37,7 +37,6 @@ import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
@@ -51,6 +50,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -262,6 +262,7 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 				}
 			}
 
+			@NotNull
 			private QuiltJoinedPath toJoinedPath(Path backing, Path path) {
 				Path relative = backing.relativize(path);
 				QuiltJoinedPath joined;
@@ -454,8 +455,8 @@ public final class QuiltJoinedFileSystemProvider extends FileSystemProvider {
 	@Override
 	public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
 
-		V firstView = null;
-		V firstExistingView = null;
+		@Nullable V firstView = null;
+		@Nullable V firstExistingView = null;
 
 		QuiltJoinedPath quiltPath = toAbsQuiltPath(path);
 		for (int i = 0; i < quiltPath.fs.getBackingPathCount(); i++) {

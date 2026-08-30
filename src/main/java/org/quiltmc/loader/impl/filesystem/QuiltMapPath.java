@@ -16,9 +16,10 @@
 
 package org.quiltmc.loader.impl.filesystem;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class QuiltMapPath<FS extends QuiltMapFileSystem<FS, P>, P extends QuiltMapPath<FS, P>>
+public abstract class QuiltMapPath<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>>
 	extends QuiltBasePath<FS, P> {
 
 	QuiltMapPath(FS fs, @Nullable P parent, String name) {

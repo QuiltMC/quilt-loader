@@ -40,7 +40,7 @@ public final class QuiltFileSystems {
 	 * 
 	 * @param name A name for the file system, used for the URL and in logging. Invalid characters will be sanitized.
 	 * @param zipFile A path to an existing file.
-	 * @return A reference to the file system.
+	 * @return A reference to the file system, which is read-only.
 	 * @throws IOException if reading from the zip file failed. */
 	public static ExtendedFileSystemRef loadZipFile(String name, Path zipFile) throws IOException {
 		return QuiltFileSystemsImpl.loadZipFile(name, zipFile);
@@ -51,10 +51,42 @@ public final class QuiltFileSystems {
 	 * 
 	 * @param name A name for the file system, used for the URL and in logging. Invalid characters will be sanitized.
 	 * @param jarFile A path to an existing file.
-	 * @return A reference to the file system.
+	 * @return A reference to the file system, which is read-only.
 	 * @throws IOException if reading from the jar file failed. */
 	public static ExtendedFileSystemRef loadJarFile(String name, Path jarFile) throws IOException {
 		return QuiltFileSystemsImpl.loadJarFile(name, jarFile);
+	}
+
+	/** Creates a new {@link ExtendedFileSystem} which loads zip file contents directly from the given file. The
+	 * returned file system mounts all zip entries using
+	 * {@link ExtendedFileSystem#copyOnWrite(Path, Path, java.nio.file.CopyOption...)}, which allows the resulting file
+	 * system to be modified safely without affecting the underlying zip file. This is different to
+	 * {@link #loadZipFile(String, Path)}, which returns a read-only file system.
+	 * <p>
+	 * This does NOT handle jar features like multi-release jars - for that you'll want to use
+	 * {@link #loadJarFile(String, Path)} instead.
+	 * 
+	 * @param name A name for the file system, used for the URL and in logging. Invalid characters will be sanitized.
+	 * @param zipFile A path to an existing file.
+	 * @return A reference to the file system.
+	 * @throws IOException if reading from the zip file failed. */
+	public static ExtendedFileSystemRef loadZipFileCopyOnWrite(String name, Path zipFile) throws IOException {
+		return QuiltFileSystemsImpl.loadZipFileCopyOnWrite(name, zipFile);
+	}
+
+	/** Creates a new {@link ExtendedFileSystem} which loads zip file contents directly from the given file, and
+	 * {@link ExtendedFileSystem#mount(Path, Path, MountOption...) mounts} every multi-release jar entry. The returned
+	 * file system mounts all jar entries using
+	 * {@link ExtendedFileSystem#copyOnWrite(Path, Path, java.nio.file.CopyOption...)}, which allows the resulting file
+	 * system to be modified safely without affecting the underlying jar file. This is different to
+	 * {@link #loadJarFile(String, Path)}, which returns a read-only file system.
+	 * 
+	 * @param name A name for the file system, used for the URL and in logging. Invalid characters will be sanitized.
+	 * @param jarFile A path to an existing file.
+	 * @return A reference to the file system.
+	 * @throws IOException if reading from the jar file failed. */
+	public static ExtendedFileSystemRef loadJarFileCopyOnWrite(String name, Path jarFile) throws IOException {
+		return QuiltFileSystemsImpl.loadJarFileCopyOnWrite(name, jarFile);
 	}
 
 	public static abstract class ExtendedFileSystemRef {

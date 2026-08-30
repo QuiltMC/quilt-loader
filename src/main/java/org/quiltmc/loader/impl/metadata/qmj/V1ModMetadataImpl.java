@@ -72,6 +72,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	private final Collection<String> accessWideners;
 	private final ModEnvironment environment;
 	private final @Nullable ModPlugin plugin;
+	private final boolean requiresModifiableFilesystemOverlay;
 	private QuiltModMetadataWrapperFabric cache2fabricNoContainer;
 	private QuiltModMetadataWrapperFabric cache2fabricWithContainer;
 
@@ -130,6 +131,7 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 		this.jars = Collections.unmodifiableCollection(builder.jars);
 		this.languageAdapters = Collections.unmodifiableMap(builder.languageAdapters);
 		this.repositories = Collections.unmodifiableCollection(builder.repositories);
+		this.requiresModifiableFilesystemOverlay = builder.requiresModifiableFilesystemOverlay;
 
 		// Move to plugins
 		this.mixins = Collections.unmodifiableMap(builder.mixins);
@@ -319,6 +321,11 @@ final class V1ModMetadataImpl implements InternalModMetadata {
 	@Override
 	public Collection<String> repositories() {
 		return this.repositories;
+	}
+
+	@Override
+	public boolean requiresModifiableFilesystemOverlay() {
+		return this.requiresModifiableFilesystemOverlay;
 	}
 
 	@Override

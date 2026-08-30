@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.quiltmc.loader.api.QuiltFileSystems.ExtendedFileSystemRef;
-import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.ZipHandling;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -37,6 +36,18 @@ public class QuiltFileSystemsImpl {
 
 	public static ExtendedFileSystemRef loadJarFile(String name, Path jarFile) throws IOException {
 		return new FsRef(new QuiltZipFileSystem(name, jarFile, "", ZipHandling.JAR));
+	}
+
+	public static ExtendedFileSystemRef loadZipFileCopyOnWrite(String name, Path zipFile) throws IOException {
+		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem(name, true);
+		ZipMounter.mountZipAt(zipFile, fs.root, "", ZipHandling.PLAIN);
+		return new FsRef(fs);
+	}
+
+	public static ExtendedFileSystemRef loadJarFileCopyOnWrite(String name, Path jarFile) throws IOException {
+		QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem(name, true);
+		ZipMounter.mountZipAt(jarFile, fs.root, "", ZipHandling.JAR);
+		return new FsRef(fs);
 	}
 
 	private static final class FsRef extends ExtendedFileSystemRef {

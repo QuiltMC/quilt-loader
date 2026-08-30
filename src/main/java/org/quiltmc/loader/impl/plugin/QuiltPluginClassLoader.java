@@ -39,7 +39,7 @@ import org.quiltmc.loader.api.QuiltFileSystems.ExtendedFileSystemRef;
 import org.quiltmc.loader.api.plugin.ModMetadataExt;
 import org.quiltmc.loader.impl.filesystem.QuiltClassPath;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.ZipHandling;
+import org.quiltmc.loader.impl.filesystem.ZipHandling;
 import org.quiltmc.loader.impl.transformer.InternalsHiderTransform;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

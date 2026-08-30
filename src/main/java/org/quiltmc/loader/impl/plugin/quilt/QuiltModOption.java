@@ -18,6 +18,8 @@ package org.quiltmc.loader.impl.plugin.quilt;
 
 import java.nio.file.Path;
 
+import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.LoaderValue.LType;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.plugin.ModContainerExt;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
@@ -30,10 +32,14 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class QuiltModOption extends InternalModOptionBase {
 
+	private final boolean requiresMutableFileOverlay;
+
 	public QuiltModOption(QuiltPluginContext pluginContext, InternalModMetadata meta, Path from, QuiltLoaderIcon fileIcon,
 		Path resourceRoot, boolean mandatory, boolean couldRequireRemap) {
 
 		super(pluginContext, meta, from, fileIcon, resourceRoot, mandatory, couldRequireRemap);
+
+		requiresMutableFileOverlay = meta.requiresModifiableFilesystemOverlay();
 	}
 
 	@Override
@@ -42,8 +48,18 @@ public class QuiltModOption extends InternalModOptionBase {
 	}
 
 	@Override
+	public boolean requiresMutableFileOverlay() {
+		return requiresMutableFileOverlay;
+	}
+
+	@Override
 	public ModContainerExt convertToMod(Path transformedResourceRoot) {
-		return new QuiltModContainer(pluginContext, metadata, from, transformedResourceRoot);
+		return convertToMod(transformedResourceRoot, null);
+	}
+
+	@Override
+	public ModContainerExt convertToMod(Path transformedResourceRoot, Path modifiableOverlay) {
+		return new QuiltModContainer(pluginContext, metadata, from, transformedResourceRoot, modifiableOverlay);
 	}
 
 	@Override

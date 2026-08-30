@@ -18,22 +18,9 @@ package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.AccessMode;
-import java.nio.file.CopyOption;
-import java.nio.file.DirectoryStream;
-import java.nio.file.DirectoryStream.Filter;
-import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
-import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileAttribute;
-import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
 import java.util.Map;
-import java.util.Set;
 
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;

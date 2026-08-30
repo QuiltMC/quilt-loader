@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -58,11 +60,15 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 	}
 
 	/** @return A new entry which has been copied to the new path. Might not be on the same filesystem. */
-	protected abstract QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath);
+	protected abstract QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) throws IOException;
 
 	/** Like {@link #createCopiedTo(QuiltMapPath)}, but used when the original file will be deleted - which allows some entries to
 	 * be shallow copied. */
-	protected QuiltUnifiedEntry createMovedTo(QuiltMapPath<?, ?> newPath) {
+	protected QuiltUnifiedEntry createMovedTo(QuiltMapPath<?, ?> newPath) throws IOException {
+		return createCopiedTo(newPath);
+	}
+
+	protected QuiltUnifiedEntry createCopiedToExt(QuiltMapPath<?, ?> newPath) throws IOException {
 		return createCopiedTo(newPath);
 	}
 
@@ -221,7 +227,6 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		}
 
 		private QuiltUnifiedFile deepCopy(boolean truncate) throws IOException {
-			System.out.println("REMOVED copy-on-write " + path);
 			path.fs.provider().delete(path);
 			QuiltMemoryFile.ReadWrite file = new QuiltMemoryFile.ReadWrite(path);
 			if (!truncate) {
@@ -245,6 +250,53 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 				return deepCopy(truncate).createByteChannel(options);
 			}
 			return super.createByteChannel(options);
+		}
+	}
+
+	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
+	public static class QuiltUnifiedDynamicFile extends QuiltUnifiedFile {
+
+		final InputStreamSupplier supplier;
+
+		public QuiltUnifiedDynamicFile(QuiltMapPath<?, ?> path, InputStreamSupplier supplier) {
+			super(path);
+			this.supplier = supplier;
+		}
+
+		@Override
+		InputStream createInputStream() throws IOException {
+			return supplier.get();
+		}
+
+		@Override
+		OutputStream createOutputStream(boolean append, boolean truncate) throws IOException {
+			// Truncate option handled specifically for this class in QuiltMapFileSystemProvider
+			throw new IOException("Cannot partially overwrite a dynamic file!");
+		}
+
+		@Override
+		SeekableByteChannel createByteChannel(Set<? extends OpenOption> options) throws IOException {
+			for (OpenOption option : options) {
+				if (option != StandardOpenOption.READ) {
+					throw new IOException("Invalid open option " + option + ", only StandardOpenOption.READ is supported!");
+				}
+			}
+			return supplier.createByteChannel();
+		}
+
+		@Override
+		protected BasicFileAttributes createAttributes() throws IOException {
+			return new QuiltFileAttributes(path, supplier.computeLength());
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) throws IOException {
+			return new QuiltMemoryFile.ReadWrite(newPath, FileUtil.readAllBytes(supplier.get()), true);
+		}
+
+		@Override
+		protected QuiltUnifiedEntry createCopiedToExt(QuiltMapPath<?, ?> newPath) {
+			return new QuiltUnifiedDynamicFile(newPath, supplier);
 		}
 	}
 }

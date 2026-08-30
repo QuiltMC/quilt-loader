@@ -48,14 +48,17 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.jetbrains.annotations.NotNull;
+import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedDynamicFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderReadOnly;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
+import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<FS, P>, P extends QuiltMapPath<FS, P>> extends FileSystemProvider {
+public abstract class QuiltMapFileSystemProvider<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> extends FileSystemProvider {
 
 	static final String READ_ONLY_EXCEPTION = "This FileSystem is read-only";
 
@@ -172,18 +175,32 @@ public abstract class QuiltMapFileSystemProvider<FS extends QuiltMapFileSystem<F
 		ensureWriteable(path);
 		QuiltUnifiedFile targetFile = null;
 
-		if (create) {
-			synchronized (path.fs) {
-				QuiltUnifiedEntry current = path.fs.getEntry(path);
-				if (current != null) {
-					delete(path);
+		synchronized (path.fs) {
+			QuiltUnifiedEntry current = path.fs.getEntry(path);
+
+			if (current == null) {
+				if (create) {
+					current = targetFile = new QuiltMemoryFile.ReadWrite(path);
+					path.fs.addEntryRequiringParent(targetFile);
+				} else {
+					throw new IOException("File not present, and CREATE option not specified: " + path);
+				}
+			} else if (current instanceof QuiltUnifiedDynamicFile) {
+				targetFile = new QuiltMemoryFile.ReadWrite(path);
+
+				if (!truncate) {
+					QuiltUnifiedDynamicFile currentDynamic = (QuiltUnifiedDynamicFile) current;
+
+					try (OutputStream os = targetFile.createOutputStream(false, true); //
+						InputStream is = currentDynamic.createInputStream()) {
+
+						FileUtil.transfer(is, os);
+					}
 				}
 
-				path.fs.addEntryRequiringParent(targetFile = new QuiltMemoryFile.ReadWrite(path));
-			}
-		} else {
-			QuiltUnifiedEntry current = path.fs.getEntry(path);
-			if (current instanceof QuiltUnifiedFile) {
+				delete(path);
+				path.fs.addEntryRequiringParent(targetFile);
+			} else if (current instanceof QuiltUnifiedFile) {
 				targetFile = (QuiltUnifiedFile) current;
 			} else {
 				throw new IOException("Cannot open an OutputStream on " + current);
