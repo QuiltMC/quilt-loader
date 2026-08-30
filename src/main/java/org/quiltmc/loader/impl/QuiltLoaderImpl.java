@@ -316,7 +316,9 @@ public final class QuiltLoaderImpl {
 
 	private void setup() throws ModResolutionException {
 
-		ModSolveResult result = runPlugins();
+		PluginResult pair = runPlugins();
+		QuiltPluginManagerImpl plugins = pair.plugins;
+		ModSolveResult result = pair.result;
 		temporaryPluginSolveResult = result;
 
 		SpecificLoadOptionResult<LoadOption> spec = result.getResult(LoadOption.class);
@@ -484,6 +486,8 @@ public final class QuiltLoaderImpl {
 			}
 		}
 
+		plugins.prepareForUnload();
+
 		try {
 			transformedModBundle.getFileSystem().close();
 		} catch (IOException e) {
@@ -620,7 +624,17 @@ public final class QuiltLoaderImpl {
 		}
 	}
 
-	private ModSolveResult runPlugins() {
+	private static class PluginResult {
+		final QuiltPluginManagerImpl plugins;
+		final ModSolveResult result;
+
+		PluginResult(QuiltPluginManagerImpl plugins, ModSolveResult result) {
+			this.plugins = plugins;
+			this.result = result;
+		}
+	}
+
+	private PluginResult runPlugins() {
 		QuiltLoaderConfig config = new QuiltLoaderConfig(getConfigDir().resolve("quilt-loader.txt"));
 		QuiltPluginManagerImpl plugins = new QuiltPluginManagerImpl(getGameDir(), getConfigDir(), getModsDir(), getCacheDir(), provider, config);
 
@@ -628,12 +642,13 @@ public final class QuiltLoaderImpl {
 		String fullCrashText = null;
 
 		try {
-			ModSolveResultImpl result = plugins.run(true);
+			ModSolveResultImpl actualResult = plugins.run(true);
+			PluginResult result = new PluginResult(plugins, actualResult);
 
-			boolean displayedMessage = handleUnknownFiles(plugins, result);
+			boolean displayedMessage = handleUnknownFiles(plugins, actualResult);
 
 			temporarySourcePaths = new HashMap<>();
-			for (ModLoadOption mod : result.directMods().values()) {
+			for (ModLoadOption mod : actualResult.directMods().values()) {
 				temporarySourcePaths.put(mod.from(), plugins.convertToSourcePaths(mod.from()));
 			}
 
@@ -782,11 +797,20 @@ public final class QuiltLoaderImpl {
 			return false;
 		}
 
+		boolean exit = false;
+
 		{
-			QuiltBasicWindow<Void> window = QuiltLoaderGui.createBasicWindow();
+			QuiltBasicWindow<Boolean> window = QuiltLoaderGui.createBasicWindow(false);
 			window.title(QuiltLoaderText.of("Quilt Loader " + QuiltLoaderImpl.VERSION));
 			window.addFolderViewButton(QuiltLoaderText.translate("button.open_mods_folder"), getModsDir());
 			window.addOpenQuiltSupportButton();
+
+			QuiltErrorButton exitButton = window.addContinueButton(() -> {
+				window.returnValue(true);
+			});
+			exitButton.text(QuiltLoaderText.translate("button.exit"));
+			exitButton.icon(QuiltLoaderGui.iconLevelError());
+
 			QuiltErrorButton continueButton = window.addContinueButton();
 			continueButton.text(QuiltLoaderText.translate("button.continue_to", getGameProvider().getGameName()));
 			continueButton.icon(QuiltLoaderGui.iconContinueIgnoring());
@@ -798,7 +822,7 @@ public final class QuiltLoaderImpl {
 			plugins.guiUnknownMods.values().forEach(unknownTab::addMessage);
 
 			try {
-				QuiltLoaderGui.open(window);
+				exit = QuiltLoaderGui.open(window);
 			} catch (LoaderGuiException e) {
 				// Ignored
 			}
@@ -838,6 +862,11 @@ public final class QuiltLoaderImpl {
 
 		if (!table.isEmpty()) {
 			Log.info(LogCategory.DISCOVERY, count + " unknown / unsupported mod files found:\n" + table);
+		}
+
+		if (exit) {
+			Log.info(LogCategory.GENERAL, "Manually pressed 'Exit' button in the unsupported mods window.");
+			System.exit(0);
 		}
 
 		return true;

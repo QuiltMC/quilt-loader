@@ -29,6 +29,7 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.quiltmc.loader.api.FasterFiles;
@@ -47,7 +48,8 @@ import org.quiltmc.loader.impl.util.UrlUtil;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 class QuiltPluginClassLoader extends ClassLoader {
 
-	final QuiltPluginContextImpl context;
+	final String modId, modName;
+	final Map<String, ? extends ClassLoader> classloadersByPackage;
 	final Path from;
 	final Set<String> loadablePackages;
 	final QuiltClassPath<Void> additionalClassPath;
@@ -56,7 +58,9 @@ class QuiltPluginClassLoader extends ClassLoader {
 		ModMetadataExt.ModPlugin plugin) {
 
 		super(parent);
-		this.context = context;
+		this.modId = context.pluginId();
+		this.modName = context.optionFrom.metadata().name();
+		this.classloadersByPackage = context.manager.pluginsByPackage;
 		this.from = from;
 		this.loadablePackages = new HashSet<>(plugin.packages());
 		this.additionalClassPath = new QuiltClassPath<>();
@@ -133,6 +137,8 @@ class QuiltPluginClassLoader extends ClassLoader {
 		}
 		c = loadClassInner(name);
 		if (c == null) {
+			// TODO: We should restrict what classes can be loaded by plugins
+			// similarly to how knot restricts access to minecraft classes and libraries
 			return super.loadClass(name, resolve);
 		}
 		if (resolve) {
@@ -184,7 +190,7 @@ class QuiltPluginClassLoader extends ClassLoader {
 
 			InternalsHiderTransform transform = new InternalsHiderTransform(InternalsHiderTransform.Target.PLUGIN);
 
-			src = transform.run(context.optionFrom, src);
+			src = transform.run(modId, modName, src);
 
 			try {
 				definePackage(pkg, null, null, null, null, null, null, null);
@@ -196,7 +202,11 @@ class QuiltPluginClassLoader extends ClassLoader {
 			return defineClass(name, src, 0, src.length);
 		}
 
-		return context.manager.findClass(name, pkg);
+		ClassLoader cl = classloadersByPackage.get(pkg);
+		if (cl == this || cl == null) {
+			return null;
+		}
+		return cl.loadClass(name);
 	}
 
 	private Path findPath(String name) {

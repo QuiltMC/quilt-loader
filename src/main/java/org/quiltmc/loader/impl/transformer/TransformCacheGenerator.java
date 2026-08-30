@@ -83,7 +83,7 @@ final class TransformCacheGenerator {
 			byte[] classBytes = Files.readAllBytes(file);
 			classes.put(file, mod);
 			try {
-				internalsHider.scanClass(mod, file, classBytes);
+				internalsHider.scanClass(mod.id(), mod.metadata().name(), file, classBytes);
 			} catch (RuntimeException e) {
 				StringBuilder sb = new StringBuilder();
 				sb.append("For class file '").append(file).append("' in mod " + mod.id());
@@ -95,8 +95,9 @@ final class TransformCacheGenerator {
 		});
 
 		for (Map.Entry<Path, ModLoadOption> entry : classes.entrySet()) {
+			ModLoadOption mod = entry.getValue();
 			byte[] classBytes = Files.readAllBytes(entry.getKey());
-			byte[] newBytes = internalsHider.run(entry.getValue(), classBytes);
+			byte[] newBytes = internalsHider.run(mod.id(), mod.metadata().name(), classBytes);
 			if (newBytes != null) {
 				Files.write(entry.getKey(), newBytes);
 			}

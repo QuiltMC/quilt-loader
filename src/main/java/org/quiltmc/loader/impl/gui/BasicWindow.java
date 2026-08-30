@@ -113,6 +113,11 @@ class BasicWindow<R> extends AbstractWindow<R> implements QuiltBasicWindow<R>, B
 	}
 
 	@Override
+	public QuiltErrorButton addContinueButton(Runnable action) {
+		return button(QuiltLoaderText.translate("button.continue"), QuiltBasicButtonAction.RUN_ACTION_AND_CONTINUE, action);
+	}
+
+	@Override
 	public QuiltLoaderText mainText() {
 		return apiMainText;
 	}

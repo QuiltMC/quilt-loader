@@ -68,7 +68,11 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltErro
 		RETURN_SIGNAL_ONCE(null),
 
 		/** Runs a {@link Runnable} in the original application, every time the button is pressed. */
-		RETURN_SIGNAL_MANY(null);
+		RETURN_SIGNAL_MANY(null),
+
+		/** {@link #CONTINUE}, but also does {@link #RETURN_SIGNAL_MANY}. (Technically this can only be pressed once
+		 * since the window closes, but there's no code that handles that) */
+		RUN_ACTION_AND_CONTINUE(QuiltLoaderGui.iconContinue());
 
 		public final QuiltLoaderIcon defaultIcon;
 		private final Set<String> requiredArgs;
@@ -104,13 +108,22 @@ public final class QuiltJsonButton extends QuiltGuiSyncBase implements QuiltErro
 		this.text = text;
 		this.action = action;
 		icon(action.defaultIcon);
-		if (action == QuiltJsonButton.QuiltBasicButtonAction.RETURN_SIGNAL_ONCE || action == QuiltJsonButton.QuiltBasicButtonAction.RETURN_SIGNAL_MANY) {
-			if (returnSignalAction == null) {
-				throw new NullPointerException("returnSignalAction");
+		switch (action) {
+			case RETURN_SIGNAL_ONCE:
+			case RETURN_SIGNAL_MANY:
+			case RUN_ACTION_AND_CONTINUE: {
+				if (returnSignalAction == null) {
+					throw new NullPointerException("returnSignalAction");
+				}
+				this.returnSignalAction = returnSignalAction;
+				break;
 			}
-			this.returnSignalAction = returnSignalAction;
-		} else if (returnSignalAction != null) {
-			throw new IllegalArgumentException("Don't set a return signal action without using QuiltBasicButtonAction.RETURN_SIGNAL!");
+			default: {
+				if (returnSignalAction != null) {
+					throw new IllegalArgumentException("Don't set a return signal action without using QuiltBasicButtonAction.RETURN_SIGNAL!");
+				}
+				break;
+			}
 		}
 	}
 
