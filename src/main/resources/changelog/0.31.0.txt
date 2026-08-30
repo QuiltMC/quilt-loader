@@ -8,3 +8,4 @@ Changes:
     - Changed zip file handling to only treat files as ZIPs if they start with the 4-byte zip header.
         - All other files will now correctly be send to "scanUnknownFile"
     - Cleaned up a little bit of documentaion
+- Added an Exit button to the unsupported mods window.
