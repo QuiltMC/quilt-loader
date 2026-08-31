@@ -25,7 +25,6 @@ import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -66,12 +65,6 @@ abstract class BasePluginContext implements QuiltPluginContext {
 		return "CTX:" + pluginId;
 	}
 
-	@Override
-	@Deprecated
-	public void addFileToScan(Path file, PluginGuiTreeNode guiNode, boolean direct) {
-		// TODO: Log / store / do something to store the plugin
-		manager.scanModFile(file, new ModLocationImpl(false, direct), (QuiltStatusNode) guiNode);
-	}
 
 	@Override
 	public void addFileToScan(Path file, QuiltTreeNode guiNode, boolean direct) {
@@ -103,12 +96,6 @@ abstract class BasePluginContext implements QuiltPluginContext {
 	@Override
 	public RuleContext ruleContext() {
 		return ruleContext;
-	}
-
-	@Override
-	@Deprecated
-	public void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode guiNode) {
-		manager.addSingleModOption(mod, BasePluginContext.this, true, (QuiltStatusNode) guiNode);
 	}
 
 	@Override
