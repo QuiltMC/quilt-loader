@@ -933,6 +933,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 	public void prepareForUnload() {
 		sourcePaths = CLEARED_SOURCE_PATHS;
+
+		for (QuiltLoaderPlugin plugin : plugins.keySet()) {
+			plugin.unlinkContext();
+		}
 	}
 
 	public String createModTable() {

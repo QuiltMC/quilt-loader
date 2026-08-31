@@ -75,6 +75,20 @@ public interface QuiltLoaderPlugin {
 	 * to keep some data from previous runs into the next run, you should put them into the given map. */
 	void unload(Map<String, LoaderValue> data);
 
+	/** Called at the very end, just before the QuiltPluginManager is expected to unload. This plugin should null out
+	 * the {@link QuiltPluginContext}, and clear up any remaining references to {@link ModLoadOption}, {@link Path}, etc
+	 * that came from the plugin manager.
+	 * <p>
+	 * This is a memory-saving measure, since loader will load filesystem metadata for every zip file found in the
+	 * "mods/" folder, but this metadata isn't required for normal runtime operation.
+	 * <p>
+	 * You don't need to override this method if your plugin isn't globally referenced, or none of the output objects
+	 * ({@link ModContainerExt}, {@link ModMetadataExt}, etc) reference the {@link QuiltPluginManager} indirectly. */
+	default void unlinkContext() {
+		// Default method
+		// Not because we couldn't force this on all plugins, but because its not actually required.
+	}
+
 	/** Called once per mod folder that is added - either directly by quilt, or by any plugin calling
 	 * {@link QuiltPluginContext#addFolderToScan(Path)} */
 	default void onModFolderAdded(Path folder) {}
