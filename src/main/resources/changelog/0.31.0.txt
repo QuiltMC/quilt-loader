@@ -10,7 +10,12 @@ Changes:
         - All other files will now correctly be send to "scanUnknownFile"
     - Cleaned up a little bit of documentaion
 - Added an Exit button to the unsupported mods window.
-
+- Allowed the transform cache to reference the original mod files if specific files haven't changed
+    - This can reduce the file size of the transform cache, but will cause minecraft to crash if you modify those files duirng runtime.
+    - This new behaviour can be disabled by adding the command line argument: " -Dloader.transform_cache.disable_external_references=true "
+    - Space saved is printed to the log with this command line argument: " -Dloader.transform_cache.log_storage_stats=true "
+- Added "ExtendedFiles.mountSubFile", which allows files in an ExtendedFileSystem to be loaded from a segment of an external file.
+    - This is similar to the current way that quilt loads zip files.
 
 
 Mutable Filesystem Overlays:

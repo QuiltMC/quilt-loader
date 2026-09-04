@@ -23,6 +23,8 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
+import java.util.Collections;
+import java.util.Map;
 import java.util.zip.ZipInputStream;
 
 import org.jetbrains.annotations.NotNull;
@@ -33,6 +35,7 @@ import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWr
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedMountedFile;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 
 /** A read-only file system that only caches the locations of zip entries rather than their zip contents. This is
  * slightly more flexible than java's zip file system since it can have a different "root" than the real root of a zip
@@ -46,23 +49,32 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFileSystem, @NotNull QuiltZipPath>
 	implements ReadOnlyFileSystem, ExtendedFileSystem {
 
-	static final boolean DEBUG_TEST_READING = false;
+	static final boolean DEBUG_VALIDATE_STREAM = SystemProperties.VALIDATION_LEVEL > 1;
+	static final boolean DEBUG_PRINT_FILE = SystemProperties.VALIDATION_LEVEL > 4;
 
 	public QuiltZipFileSystem(String name, Path zipFrom, String zipPathPrefix) throws IOException {
-		this(name, zipFrom, zipPathPrefix, ZipHandling.PLAIN);
+		this(name, zipFrom, Collections.emptyMap(), zipPathPrefix, ZipHandling.PLAIN);
+	}
+
+	public QuiltZipFileSystem(String name, Path zipFrom, Map<String, Path> referencedFiles, String zipPathPrefix) throws IOException {
+		this(name, zipFrom, referencedFiles, zipPathPrefix, ZipHandling.PLAIN);
 	}
 
 	public QuiltZipFileSystem(String name, Path zipFrom, String zipPathPrefix, ZipHandling zip) throws IOException {
+		this(name, zipFrom, Collections.emptyMap(), zipPathPrefix, zip);
+	}
+
+	public QuiltZipFileSystem(String name, Path zipFrom, Map<String, Path> referencedFiles, String zipPathPrefix, ZipHandling zip) throws IOException {
 		super(QuiltZipFileSystem.class, QuiltZipPath.class, name, true);
 
-		if (DEBUG_TEST_READING) {
+		if (DEBUG_PRINT_FILE) {
 			System.out.println("new QuiltZipFileSystem ( "  + name + ", from " + zipFrom + " )");
 		}
 
 		// Ensure root exists - empty zips wouldn't create this otherwise
 		addEntryAndParents(new QuiltUnifiedFolderWriteable(root));
 
-		ZipMounter.mountZipAt(zipFrom, root, zipPathPrefix, zip);
+		ZipMounter.mountZipAt(zipFrom, referencedFiles, root, zipPathPrefix, zip);
 
 		switchToReadOnly();
 
@@ -116,7 +128,7 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFile
 		} else if (entryFrom instanceof QuiltZipFile) {
 			QuiltZipFile from = (QuiltZipFile) entryFrom;
 			dst.fs.addSource(from.source);
-			dst.fs.addEntryWithoutParentsUnsafe(mountType.create(dst, from.source, from.offset, from.compressedSize, from.uncompressedSize, from.isCompressed));
+			dst.fs.addEntryWithoutParentsUnsafe(mountType.create(dst, from.source, from.offset, from.compressedSize, from.uncompressedSize, from.decompressor));
 		} else if (entryFrom instanceof QuiltUnifiedMountedFile) {
 			// Used for Multi-Release jars
 			// This isn't ideal, as it will continue to point to the original file system
@@ -136,7 +148,20 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFile
 	 * @param dst The destination file to copy to. This must not already exist.
 	 * @throws IOException if anything goes wrong while writing the file or reading the source files. */
 	public static void writeQuiltCompressedFileSystem(Path src, Path dst) throws IOException {
-		new QuiltZipCustomCompressedWriter(src, dst).write();
+		writeQuiltCompressedFileSystem(src, Collections.emptyMap(), dst, null);
+	}
+
+	/** Writes a "Quilt compressed file system" to the given destination, which can be read by
+	 * {@link #QuiltZipFileSystem(String, Path, String)} - likely more quickly than a regular zip file. The source must
+	 * be a folder. The output file will be of similar size to a regular zip of the same contents, except for externally
+	 * referenced files.
+	 * 
+	 * @param src The source folder to copy from.
+	 * @param referenceFiles A map of zip file to what it should be named as in the compressed zip.
+	 * @param dst The destination file to copy to. This must not already exist.
+	 * @throws IOException if anything goes wrong while writing the file or reading the source files. */
+	public static void writeQuiltCompressedFileSystem(Path src, Map<Path, String> referenceFiles, Path dst, QuiltZipCompressionStatistics stats) throws IOException {
+		new QuiltZipCustomCompressedWriter(src, referenceFiles, dst, stats).write();
 	}
 
 	@Override
@@ -191,6 +216,11 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFile
 
 		protected CountingInputStream(InputStream in) {
 			this.stream = in;
+		}
+
+		protected CountingInputStream(InputStream in, long offset) {
+			this.stream = in;
+			this.offset = offset;
 		}
 
 		@Override

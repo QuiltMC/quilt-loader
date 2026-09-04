@@ -103,6 +103,8 @@ public final class SystemProperties {
 	public static final String DEBUG_CLASS_TO_MOD = "loader.debug.dump_class_to_mod";
 	public static final String CACHE_SUFFIX = "loader.cache_suffix";
 	public static final String DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE = "loader.transform_cache.disable_optimised_compression";
+	public static final String DISABLE_TRANSFORM_CACHE_REFERENCES = "loader.transform_cache.disable_external_references";
+	public static final String LOG_TRANSFORM_CACHE_STATS = "loader.transform_cache.log_storage_stats";
 	public static final String DISABLE_PRELOAD_TRANSFORM_CACHE = "loader.transform_cache.disable_preload";
 	public static final String LOG_CACHE_KEY_CHANGES = "loader.transform_cache.log_changed_keys";
 	// enable useTempFile in ZipFileSystem, reduces memory usage when writing transform cache at the cost of speed

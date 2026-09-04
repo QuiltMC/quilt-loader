@@ -38,6 +38,7 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
 import org.quiltmc.loader.api.ModDependency;
 import org.quiltmc.loader.api.ModMetadata.ProvidedMod;
+import org.quiltmc.loader.api.QuiltFileSystems;
 import org.quiltmc.loader.api.gui.LoaderGuiClosed;
 import org.quiltmc.loader.api.gui.LoaderGuiException;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
@@ -226,7 +227,7 @@ public class StandardQuiltPlugin extends BuiltinQuiltPlugin {
 			Path fileName = from.getFileName();
 			if (fileName != null && fileName.toString().endsWith(".jar")) {
 				try {
-					inside = FileSystems.newFileSystem(from, (ClassLoader) null).getPath("/");
+					inside = QuiltFileSystems.loadJarFile(from.getFileName().toString(), from).root;
 				} catch (IOException e) {
 					// A bit odd, but not necessarily a crash-worthy issue
 					e.printStackTrace();

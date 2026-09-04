@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public class AsciiTableGenerator {
 	private final List<AsciiTableColumn> columns = new ArrayList<>();
-	private final List<AsciiTableRow> rows = new ArrayList<>();
+	private final List<RowEntry> rows = new ArrayList<>();
 
 	public static final class AsciiTableColumn {
 		AsciiTableCell name;
@@ -56,12 +56,16 @@ public class AsciiTableGenerator {
 			}
 		}
 
-		void computeWidth(List<AsciiTableRow> rows) {
+		void computeWidth(List<RowEntry> rows) {
 			if (maxWidth >= 0) {
 				return;
 			} else {
 				maxWidth = Math.max(maxWidth, name.asciiWidth);
-				for (AsciiTableRow row : rows) {
+				for (RowEntry rowEntry : rows) {
+					if (!(rowEntry instanceof AsciiTableRow)) {
+						continue;
+					}
+					AsciiTableRow row = (AsciiTableRow) rowEntry;
 					AsciiTableCell value = row.entries.get(this);
 					if (value != null) {
 						maxWidth = Math.max(maxWidth, value.asciiWidth);
@@ -71,7 +75,14 @@ public class AsciiTableGenerator {
 		}
 	}
 
-	public static final class AsciiTableRow {
+	private interface RowEntry {}
+
+	private enum SeparatorRow implements RowEntry {
+		BLANK,
+		BAR;
+	}
+
+	public static final class AsciiTableRow implements RowEntry {
 		private final Map<AsciiTableColumn, AsciiTableCell> entries = new HashMap<>();
 
 		public void put(AsciiTableColumn column, String value) {
@@ -83,35 +94,59 @@ public class AsciiTableGenerator {
 		public void put(AsciiTableColumn column, Object value) {
 			put(column, value.toString());
 		}
+
+		public void put(AsciiTableColumn column, Object beforeGap, Object afterGap) {
+			AsciiTableCell newCell = new AsciiTableCell(beforeGap.toString(), afterGap.toString());
+			AsciiTableCell oldCell = entries.put(column, newCell);
+			column.includeCell(oldCell, newCell);
+		}
 	}
 
 	public static final class AsciiTableCell {
 		public static final AsciiTableCell BLANK = new AsciiTableCell("");
 
 		private final String value;
+		private final String beforeGap, afterGap;
 		private final int asciiWidth;
 
 		public AsciiTableCell(String value) {
-			this.value = value;
+			if (value == null) {
+				this.value = "";
+			} else {
+				this.value = value;
+			}
+			this.beforeGap = null;
+			this.afterGap = null;
 			this.asciiWidth = computeAsciiWidth(value);
+		}
+
+		public AsciiTableCell(String beforeGap, String afterGap) {
+			this.value = null;
+			this.beforeGap = beforeGap;
+			this.afterGap = afterGap;
+			this.asciiWidth = computeAsciiWidth(beforeGap) + computeAsciiWidth(afterGap);
 		}
 
 		@Override
 		public String toString() {
-			return value;
+			return value == null ? (beforeGap + afterGap) : value;
 		}
 
 		public void append(StringBuilder sb, AsciiTableColumn column) {
-			if (column.rightAligned) {
-				for (int i = asciiWidth; i < column.maxWidth; i++) {
-					sb.append(' ');
-				}
+			if (value == null) {
+				sb.append(beforeGap);
+			} else if (!column.rightAligned) {
 				sb.append(value);
-			} else {
+			}
+
+			for (int i = asciiWidth; i < column.maxWidth; i++) {
+				sb.append(' ');
+			}
+
+			if (value == null) {
+				sb.append(afterGap);
+			} else if (column.rightAligned) {
 				sb.append(value);
-				for (int i = asciiWidth; i < column.maxWidth; i++) {
-					sb.append(' ');
-				}
 			}
 		}
 	}
@@ -122,10 +157,30 @@ public class AsciiTableGenerator {
 		return column;
 	}
 
+	public AsciiTableColumn insertColumnBefore(AsciiTableColumn succeding, String name, boolean rightAligned) {
+		AsciiTableColumn column = new AsciiTableColumn(name, rightAligned);
+		columns.add(columns.indexOf(succeding), column);
+		return column;
+	}
+
+	public AsciiTableColumn insertColumnAfter(AsciiTableColumn preceding, String name, boolean rightAligned) {
+		AsciiTableColumn column = new AsciiTableColumn(name, rightAligned);
+		columns.add(columns.indexOf(preceding) + 1, column);
+		return column;
+	}
+
 	public AsciiTableRow addRow() {
 		AsciiTableRow row = new AsciiTableRow();
 		rows.add(row);
 		return row;
+	}
+
+	public void addBlankRow() {
+		rows.add(SeparatorRow.BLANK);
+	}
+
+	public void addBarRow() {
+		rows.add(SeparatorRow.BAR);
 	}
 
 	public boolean isEmpty() {
@@ -168,9 +223,24 @@ public class AsciiTableGenerator {
 		String sep = sbSep.toString();
 		dst.accept(sep);
 
-		for (AsciiTableRow row : rows) {
+		for (RowEntry rowEntry : rows) {
+
+			if (rowEntry == SeparatorRow.BAR) {
+				dst.accept(sep);
+				continue;
+			}
+
+			final AsciiTableRow row;
+
+			if (rowEntry instanceof AsciiTableRow) {
+				row = (AsciiTableRow) rowEntry;
+			} else {
+				assert rowEntry == SeparatorRow.BLANK;
+				row = null;
+			}
+
 			for (AsciiTableColumn column : columns) {
-				AsciiTableCell cell = row.entries.get(column);
+				AsciiTableCell cell = row != null ? row.entries.get(column) : null;
 				if (cell == null) {
 					cell = AsciiTableCell.BLANK;
 				}

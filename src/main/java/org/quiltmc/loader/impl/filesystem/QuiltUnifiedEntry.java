@@ -104,6 +104,11 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
 			return new QuiltUnifiedFolderReadOnly(newPath, new QuiltMapPath[0]);
 		}
+
+		@Override
+		public String toString() {
+			return "FolderReadOnly";
+		}
 	}
 
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
@@ -127,6 +132,11 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		@Override
 		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
 			return new QuiltUnifiedFolderWriteable(newPath);
+		}
+
+		@Override
+		public String toString() {
+			return "FolderWriteable";
 		}
 	}
 
@@ -153,6 +163,16 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 			super(path);
 			this.to = to;
 			this.readOnly = readOnly;
+		}
+
+		@Override
+		public String toString() {
+			if (readOnly) {
+				return "FileMountedReadOnly[" + to + "]";
+			}
+			else {
+				return "FileMounted[" + to + "]";
+			}
 		}
 
 		@Override
@@ -216,6 +236,11 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		}
 
 		@Override
+		public String toString() {
+			return "FileCopyOnWrite[" + to + "]";
+		}
+
+		@Override
 		protected QuiltUnifiedEntry switchToReadOnly() {
 			// If we're still present then we haven't been modified.
 			return new QuiltUnifiedMountedFile(path, to, true);
@@ -261,6 +286,11 @@ public abstract /* sealed */ class QuiltUnifiedEntry /* permits QuiltUnifiedFold
 		public QuiltUnifiedDynamicFile(QuiltMapPath<?, ?> path, InputStreamSupplier supplier) {
 			super(path);
 			this.supplier = supplier;
+		}
+
+		@Override
+		public String toString() {
+			return "DynamicFile[" + supplier + "]";
 		}
 
 		@Override

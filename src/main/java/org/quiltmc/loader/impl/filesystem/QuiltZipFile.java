@@ -26,10 +26,11 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Set;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipEntry;
 
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.api.filesystem.IOFunction;
+import org.quiltmc.loader.api.filesystem.StandardZipDecompressor;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFile;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.CustomZipInputStream;
 import org.quiltmc.loader.impl.util.FileUtil;
@@ -42,7 +43,9 @@ class QuiltZipFile extends QuiltUnifiedFile {
 	final ZipSource source;
 	final long offset;
 	final int compressedSize, uncompressedSize;
-	final boolean isCompressed;
+
+	@Nullable
+	final IOFunction<InputStream, InputStream> decompressor;
 
 	QuiltZipFile(QuiltMapPath<?, ?> path, ZipSource source, ZipEntry entry, CustomZipInputStream zip)
 		throws IOException {
@@ -50,9 +53,9 @@ class QuiltZipFile extends QuiltUnifiedFile {
 		this.offset = zip.getOffset();
 		int method = entry.getMethod();
 		if (method == ZipEntry.DEFLATED) {
-			isCompressed = true;
+			decompressor = StandardZipDecompressor.INSTANCE;
 		} else if (method == ZipEntry.STORED) {
-			isCompressed = false;
+			decompressor = null;
 		} else {
 			throw new IOException("Unsupported zip entry method " + method);
 		}
@@ -107,13 +110,15 @@ class QuiltZipFile extends QuiltUnifiedFile {
 			System.out.println(sb.toString());
 		}
 
-		if (QuiltZipFileSystem.DEBUG_TEST_READING) {
+		if (QuiltZipFileSystem.DEBUG_PRINT_FILE) {
 			testReading(entry.toString());
+		} else if (QuiltZipFileSystem.DEBUG_VALIDATE_STREAM) {
+			testStream();
 		}
 	}
 
 	QuiltZipFile(QuiltMapPath<?, ?> path, ZipSource source, long offset, int compressedSize, int uncompressedSize,
-		boolean isCompressed) {
+		IOFunction<InputStream, InputStream> decompressor) {
 
 		super(path);
 
@@ -121,10 +126,12 @@ class QuiltZipFile extends QuiltUnifiedFile {
 		this.offset = offset;
 		this.compressedSize = compressedSize;
 		this.uncompressedSize = uncompressedSize;
-		this.isCompressed = isCompressed;
+		this.decompressor = decompressor;
 
-		if (QuiltZipFileSystem.DEBUG_TEST_READING) {
+		if (QuiltZipFileSystem.DEBUG_PRINT_FILE) {
 			testReading(path.toString());
+		} else if (QuiltZipFileSystem.DEBUG_VALIDATE_STREAM) {
+			testStream();
 		}
 	}
 
@@ -141,6 +148,12 @@ class QuiltZipFile extends QuiltUnifiedFile {
 			e2 = new Error(e);
 		}
 
+		StringBuilder sb = convertByteArrayToLogLines(bytes);
+		System.out.println(sb.toString());
+		if (e2 != null) throw e2;
+	}
+
+	private static StringBuilder convertByteArrayToLogLines(byte[] bytes) {
 		StringBuilder sb = new StringBuilder();
 
 		for (int i = 0; true; i++) {
@@ -175,13 +188,31 @@ class QuiltZipFile extends QuiltUnifiedFile {
 				sb.append(c);
 			}
 		}
-		System.out.println(sb.toString());
-		if (e2 != null) throw e2;
+		return sb;
+	}
+
+	private void testStream() {
+		try (InputStream stream = createInputStream()) {
+			byte[] content = FileUtil.readAllBytes(stream);
+			if (content.length != uncompressedSize) {
+				throw new Error(
+					"Read data is a different length than expected! (Read " + content.length + " bytes, expected "
+						+ uncompressedSize + " bytes)\n" + convertByteArrayToLogLines(content)
+				);
+			}
+		} catch (IOException e) {
+			throw new Error(e);
+		}
+	}
+
+	@Override
+	public String toString() {
+		return "ZipFile[" + source + " @" + offset + "]";
 	}
 
 	@Override
 	protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
-		return new QuiltZipFile(newPath, source, offset, compressedSize, uncompressedSize, isCompressed);
+		return new QuiltZipFile(newPath, source, offset, compressedSize, uncompressedSize, decompressor);
 	}
 
 	@Override
@@ -192,8 +223,8 @@ class QuiltZipFile extends QuiltUnifiedFile {
 	@Override
 	InputStream createInputStream() throws IOException {
 		InputStream stream = createUncompressingInputStream();
-		if (isCompressed) {
-			stream = new InflaterInputStream(stream, new Inflater(true));
+		if (decompressor != null) {
+			stream = decompressor.apply(stream);
 			// Make InputStream.available work
 			// older versions of FerriteCore used this to allocate a byte array to read into
 			// - newer versions are fixed, but we still want to keep backwards compatibility
@@ -226,7 +257,7 @@ class QuiltZipFile extends QuiltUnifiedFile {
 	}
 
 	SeekableByteChannel createByteChannel() throws IOException {
-		if (!isCompressed) {
+		if (decompressor == null) {
 			return source.channel(offset, uncompressedSize);
 		} else {
 			return new InflaterSeekableByteChannel();
@@ -236,9 +267,9 @@ class QuiltZipFile extends QuiltUnifiedFile {
 	static class CopyOnWriteZipFile extends QuiltZipFile {
 
 		CopyOnWriteZipFile(QuiltMapPath<?, ?> path, ZipSource source, long offset, int compressedSize,
-			int uncompressedSize, boolean isCompressed) {
+			int uncompressedSize, IOFunction<InputStream, InputStream> decompressor) {
 
-			super(path, source, offset, compressedSize, uncompressedSize, isCompressed);
+			super(path, source, offset, compressedSize, uncompressedSize, decompressor);
 		}
 
 		CopyOnWriteZipFile(QuiltMapPath<?, ?> path, ZipSource source, ZipEntry entry, CustomZipInputStream zip)
@@ -254,7 +285,7 @@ class QuiltZipFile extends QuiltUnifiedFile {
 
 		@Override
 		protected QuiltUnifiedEntry createCopiedTo(QuiltMapPath<?, ?> newPath) {
-			return new CopyOnWriteZipFile(newPath, source, offset, compressedSize, uncompressedSize, isCompressed);
+			return new CopyOnWriteZipFile(newPath, source, offset, compressedSize, uncompressedSize, decompressor);
 		}
 
 		private QuiltUnifiedFile deepCopy(boolean truncate) throws IOException {
@@ -355,7 +386,7 @@ class QuiltZipFile extends QuiltUnifiedFile {
 	}
 
 	class InflaterSeekableByteChannel implements SeekableByteChannel {
-		final InflaterInputStream infl;
+		final InputStream stream;
 
 		boolean open = true;
 		volatile long position = 0;
@@ -363,7 +394,7 @@ class QuiltZipFile extends QuiltUnifiedFile {
 		int bufferPosition = 0;
 
 		public InflaterSeekableByteChannel() throws IOException {
-			infl = new InflaterInputStream(createUncompressingInputStream(), new Inflater(true));
+			stream = decompressor.apply(createUncompressingInputStream());
 		}
 
 		@Override
@@ -374,7 +405,7 @@ class QuiltZipFile extends QuiltUnifiedFile {
 		@Override
 		public void close() throws IOException {
 			open = false;
-			infl.close();
+			stream.close();
 		}
 
 		@Override
@@ -387,7 +418,7 @@ class QuiltZipFile extends QuiltUnifiedFile {
 
 			int targetPos = toRead + pos;
 			while (bufferPosition < targetPos) {
-				int read = infl.read(buffer, bufferPosition, buffer.length - bufferPosition);
+				int read = stream.read(buffer, bufferPosition, buffer.length - bufferPosition);
 				if (read < 0) {
 					throw new IOException("Unable to read enough bytes from the gzip stream!");
 				} else {

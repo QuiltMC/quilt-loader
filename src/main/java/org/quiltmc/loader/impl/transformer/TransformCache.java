@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.LoaderValue;
+import org.quiltmc.loader.api.MountOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.QuiltLoaderImpl;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
@@ -199,7 +200,12 @@ class TransformCache {
 		try {
 			FasterFiles.createDirectories(dst.getParent());
 			if (COPY_ON_WRITE) {
-				ExtendedFiles.copyOnWrite(path, dst, copyOptions);
+				// ExtendedFiles.copyOnWrite only works if the source file system is read-only
+				// but that assumption isn't true for loader plugins!
+				// So we always mount to ensure the transform cache can reference the actual file
+				// if the actual file is read-only indirectly.
+				// (Default FileSystem > Zip[ReadOnly] > Loaded By Plugin[Modifiable])
+				ExtendedFiles.mount(path, dst, MountOption.COPY_ON_WRITE);
 			} else {
 				FasterFiles.copy(path, dst, copyOptions);
 			}

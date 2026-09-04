@@ -150,6 +150,7 @@ public class InternalsHiderTransform {
 		}
 
 		boolean[] hasClassInit = { false };
+		boolean[] modified = { false };
 		ClassVisitor visitor = new ClassVisitor(QuiltLoaderImpl.ASM_VERSION, writer) {
 			@Override
 			public MethodVisitor visitMethod(int access, String mthName, String mthDescriptor, String signature,
@@ -196,6 +197,7 @@ public class InternalsHiderTransform {
 						}
 
 						if (set != null && !set.isPermitted(modId, modName)) {
+							modified[0] = true;
 							hasIllegal = true;
 							super.visitLdcInsn(set.generateError(modId, modName, "the field " + owner + "." + name, className + "." + mthName + mthDescriptor));
 							super.visitMethodInsn(
@@ -224,6 +226,7 @@ public class InternalsHiderTransform {
 						}
 
 						if (set != null && !set.isPermitted(modId, modName)) {
+							modified[0] = true;
 							hasIllegal = true;
 							super.visitLdcInsn(
 								set.generateError(modId, modName, "the method " + owner + "." + name + descriptor, className + "." + mthName + mthDescriptor)
@@ -262,6 +265,7 @@ public class InternalsHiderTransform {
 			}
 
 			private void prefixClassInitErrors(MethodVisitor to) {
+				modified[0] = true;
 				boolean onlyWarn = true;
 				StringBuilder msg = new StringBuilder();
 				for (InternalSuper value : illegalSupers) {
@@ -277,6 +281,9 @@ public class InternalsHiderTransform {
 			}
 		};
 		reader.accept(visitor, 0);
+		if (!modified[0]) {
+			return classBytes;
+		}
 		return writer.toByteArray();
 	}
 

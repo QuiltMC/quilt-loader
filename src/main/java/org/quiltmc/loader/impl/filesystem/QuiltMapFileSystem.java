@@ -88,7 +88,7 @@ public abstract class QuiltMapFileSystem<@NotNull FS extends QuiltMapFileSystem<
 		try (BufferedWriter bw = Files.newBufferedWriter(Paths.get("dbg-map-fs-" + name + ".txt"))) {
 			Set<String> paths = new TreeSet<>();
 			for (Map.Entry<P, QuiltUnifiedEntry> entry : entries.entrySet()) {
-				paths.add(entry.getKey().toString() + "  = " + entry.getValue().getClass());
+				paths.add(entry.getKey().toString() + "  = " + entry.getValue());
 			}
 			for (String key : paths) {
 				bw.append(key);

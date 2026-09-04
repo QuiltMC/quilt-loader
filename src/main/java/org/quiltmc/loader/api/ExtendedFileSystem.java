@@ -17,6 +17,7 @@
 package org.quiltmc.loader.api;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.CopyOption;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -24,7 +25,9 @@ import java.nio.file.NotLinkException;
 import java.nio.file.Path;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.filesystem.ByteArrayInputStreamSupplier;
+import org.quiltmc.loader.api.filesystem.IOFunction;
 import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
 import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
 
@@ -69,6 +72,26 @@ public interface ExtendedFileSystem extends FasterFileSystem {
 	 * @throws UnsupportedOperationException if this filesystem doesn't support file mounts. */
 	default Path mount(Path source, Path target, MountOption... options) throws IOException {
 		throw new UnsupportedOperationException(getClass() + " doesn't support ExtendedFileSystem.mount");
+	}
+
+	/** Mounts a sub-file of a source file onto the target file, such that all reads to the target file actually read
+	 * from a sub-section of the source file, optionally decompressed. This method does not support modifying the source
+	 * file - you must either specify the option {@link MountOption#READ_ONLY} or {@link MountOption#COPY_ON_WRITE}.
+	 * <p>
+	 * Unlike {@link #mount(Path, Path, MountOption...)}, there is explicitly no way to retrieve the original source
+	 * file later, as this allows quilt to optimise recursive sub-file mounts.
+	 * 
+	 * @param source The file to mount from.
+	 * @param offset Where the sub-file begins
+	 * @param length The maximum length to read from the source file.
+	 * @param decompressor Optional decompressor. This function will be called when the file is opened for reading
+	 * @param decompressedLength The length of the output after decompression.
+	 * @param target The destination path to mount.
+	 * @throws UnsupportedOperationException if the filesystem doesn't support this operation.
+	 * @throws IOException if anything goes wrong while mounting the file. */
+	default Path mountSubFile(Path source, long offset, int length, @Nullable IOFunction<InputStream,
+		InputStream> decompressor, int decompressedLength, Path target, MountOption... options) throws IOException {
+		throw new UnsupportedOperationException(getClass() + " doesn't support ExtendedFileSystem.mountSubFile");
 	}
 
 	/** @return True if the file has been mounted with {@link #mount(Path, Path, MountOption...)}. */

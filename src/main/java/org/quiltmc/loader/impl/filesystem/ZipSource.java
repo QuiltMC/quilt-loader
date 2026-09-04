@@ -23,10 +23,13 @@ import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -42,6 +45,38 @@ import org.quiltmc.loader.impl.util.ReadOnlyByteArrayChannel;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 abstract class ZipSource implements FileSystemSource {
+
+	static final class ZipSourceResult {
+		final ZipSource source;
+		final long zipInZipOffset;
+		final int zipInZipLength;
+
+		ZipSourceResult(ZipSource source, long zipInZipOffset, int zipInZipLength) {
+			this.source = source;
+			this.zipInZipOffset = zipInZipOffset;
+			this.zipInZipLength = zipInZipLength;
+		}
+	}
+
+	static ZipSourceResult create(Path src, QuiltBaseFileSystem<?, ?> fs) throws IOException {
+		FileSystem srcFS = src.getFileSystem();
+
+		if (srcFS == FileSystems.getDefault()) {
+			return new ZipSourceResult(ZipSource.SharedByteChannels.get(src, fs), 0, -1);
+		}
+
+		if (srcFS instanceof QuiltMapFileSystem<?, ?>) {
+			QuiltUnifiedEntry entry = ((QuiltMapFileSystem<?, ?>) srcFS).getEntry(src);
+			if (entry instanceof QuiltZipFile) {
+				QuiltZipFile zip = (QuiltZipFile) entry;
+				if (zip.decompressor == null && zip.source instanceof SharedByteChannels) {
+					SharedByteChannels sharedSrc = (SharedByteChannels) zip.source;
+					return new ZipSourceResult(sharedSrc, zip.offset, zip.uncompressedSize);
+				}
+			}
+		}
+		return new ZipSourceResult(new ZipSource.InputStreamSource(Files.newInputStream(src)), 0, -1);
+	}
 
 	abstract InputStream openConstructingStream() throws IOException;
 
@@ -178,6 +213,8 @@ abstract class ZipSource implements FileSystemSource {
 	@QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 	static final class SharedByteChannels extends ZipSource {
 
+		private static final Map<Path, SharedByteChannels> allChannels = new HashMap<>();
+
 		final Path zipFrom;
 		final Set<WeakReference<QuiltBaseFileSystem<?, ?>>> fileSystems = new HashSet<>();
 
@@ -186,10 +223,28 @@ abstract class ZipSource implements FileSystemSource {
 		final Map<Thread, SeekableByteChannel> channels;
 		volatile boolean isOpen = true;
 
-		SharedByteChannels(Path zipFrom) {
+		static SharedByteChannels get(Path zipFrom, QuiltBaseFileSystem<?, ?> fs) {
+			synchronized (allChannels) {
+				SharedByteChannels channels = allChannels.get(zipFrom);
+				if (channels != null) {
+					return channels;
+				}
+				channels = new SharedByteChannels(zipFrom, fs);
+				allChannels.put(zipFrom, channels);
+				return channels;
+			}
+		}
+
+		private SharedByteChannels(Path zipFrom, QuiltBaseFileSystem<?, ?> fs) {
 			this.zipFrom = zipFrom;
 			channels = new ConcurrentHashMap<>();
+			fs.addSource(this);
 			QuiltLoaderCleanupTasks.addCleanupTask(this, this::removeDeadThreads);
+		}
+
+		@Override
+		public String toString() {
+			return zipFrom.toString();
 		}
 
 		@Override
@@ -224,15 +279,21 @@ abstract class ZipSource implements FileSystemSource {
 
 		@Override
 		public synchronized void close(QuiltBaseFileSystem<?, ?> fs) throws IOException {
-			fileSystems.remove(fs.thisRef);
-			if (fileSystems.isEmpty()) {
-				isOpen = false;
-				for (SeekableByteChannel channel : channels.values()) {
-					channel.close();
+			synchronized (allChannels) {
+				if (fs != null) {
+					fileSystems.remove(fs.thisRef);
 				}
-				channels.clear();
-				QuiltLoaderCleanupTasks.removeCleanupTask(this);
+				if (!fileSystems.isEmpty()) {
+					return;
+				}
+				isOpen = false;
+				allChannels.remove(zipFrom, this);
 			}
+			for (SeekableByteChannel channel : channels.values()) {
+				channel.close();
+			}
+			channels.clear();
+			QuiltLoaderCleanupTasks.removeCleanupTask(this);
 		}
 
 		@Override
@@ -279,6 +340,11 @@ abstract class ZipSource implements FileSystemSource {
 			}
 
 			if (fileSystems.isEmpty()) {
+				try {
+					close(null);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 				QuiltLoaderCleanupTasks.removeCleanupTask(this);
 			}
 		}

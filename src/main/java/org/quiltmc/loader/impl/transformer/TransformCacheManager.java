@@ -17,7 +17,6 @@
 package org.quiltmc.loader.impl.transformer;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOError;
 import java.io.IOException;
 import java.net.URI;
@@ -28,13 +27,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.QuiltLoader;
@@ -44,9 +46,12 @@ import org.quiltmc.loader.impl.discovery.ModResolutionException;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
 import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
-import org.quiltmc.loader.impl.filesystem.QuiltUnifiedPath;
+import org.quiltmc.loader.impl.filesystem.QuiltZipCompressionStatistics;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltZipPath;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableColumn;
+import org.quiltmc.loader.impl.util.AsciiTableGenerator.AsciiTableRow;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.FileSystemUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -99,10 +104,30 @@ public class TransformCacheManager {
 			throw new ModResolutionException("Failed to create parent directories of the transform cache file!", e);
 		}
 
-		QuiltZipPath existing = checkTransformCache(transformCacheFolder, map);
+		final Map<Path, String> referencedFiles;
+
+		if (Boolean.getBoolean(SystemProperties.DISABLE_TRANSFORM_CACHE_REFERENCES)) {
+			referencedFiles = Collections.emptyMap();
+			map.put("system-property:" + SystemProperties.DISABLE_TRANSFORM_CACHE_REFERENCES, "true");
+		} else {
+			referencedFiles = new HashMap<>();
+
+			for (ModLoadOption option : modList) {
+				Path from = option.from();
+				List<List<Path>> srcPaths = option.loader().manager().convertToSourcePaths(from);
+				if (srcPaths.size() > 1) {
+					// We don't handle joined paths
+					continue;
+				}
+				List<Path> fullPath = srcPaths.get(0);
+				referencedFiles.put(fullPath.get(0), option.id());
+			}
+		}
+
+		QuiltZipPath existing = checkTransformCache(transformCacheFolder, map, referencedFiles);
 		boolean isNewlyGenerated = false;
 		if (existing == null) {
-			existing = createTransformCache(transformCacheFolder.resolve(CACHE_FILE), toString(map), modList);
+			existing = createTransformCache(transformCacheFolder.resolve(CACHE_FILE), toString(map), modList, referencedFiles);
 			isNewlyGenerated = true;
 		} else if (!Boolean.getBoolean(SystemProperties.DISABLE_PRELOAD_TRANSFORM_CACHE)) {
 			FilePreloadHelper.preLoad(transformCacheFolder.resolve(CACHE_FILE));
@@ -137,27 +162,28 @@ public class TransformCacheManager {
 		return options;
 	}
 
-	private static QuiltZipPath checkTransformCache(Path transformCacheFolder, Map<String, String> options)
+	private static QuiltZipPath checkTransformCache(Path transformCacheFolder, Map<String, String> options, Map<Path, String> referencedFiles)
 		throws ModResolutionException {
 
 		Path cacheFile = transformCacheFolder.resolve(CACHE_FILE);
 
 		if (!FasterFiles.exists(cacheFile)) {
-			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's missing");
+			log("Not reusing previous transform cache since it's missing");
 			erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 			return null;
 		}
 
 		if (QuiltLoader.isDevelopmentEnvironment()) {
-			Log.info(LogCategory.CACHE, "Not reusing previous transform cache since we're in a development environment");
+			log("Not reusing previous transform cache since we're in a development environment");
 			erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 			return null;
 		}
 
-		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", cacheFile, "")) {
+		Map<String, Path> fileReferences = flipMap(referencedFiles);
+		try (QuiltZipFileSystem fs = new QuiltZipFileSystem("transform-cache", cacheFile, fileReferences, "")) {
 			QuiltZipPath inner = fs.getRoot();
 			if (!FasterFiles.isRegularFile(inner.resolve(FILE_TRANSFORM_COMPLETE))) {
-				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
+				log("Not reusing previous transform cache since it's incomplete!");
 				erasePreviousTransformCache(transformCacheFolder, cacheFile, null);
 				return null;
 			}
@@ -187,26 +213,24 @@ public class TransformCacheManager {
 
 				if (!oldOptions.isEmpty() || !newOptions.isEmpty() || !differingOptions.isEmpty()) {
 					if (SHOW_KEY_DIFFERENCE) {
-						Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it has different keys:");
+						log("Not reusing previous transform cache since it has different keys:");
 
 						for (Map.Entry<String, String> old : oldOptions.entrySet()) {
-							Log.info(LogCategory.CACHE, "  Missing: '" + old.getKey() + "': '" + old.getValue() + "'");
+							log("  Missing: '" + old.getKey() + "': '" + old.getValue() + "'");
 						}
 
 						for (Map.Entry<String, String> added : newOptions.entrySet()) {
-							Log.info(LogCategory.CACHE, "  Included: '" + added.getKey() + "': '" + added.getValue() + "'");
+							log("  Included: '" + added.getKey() + "': '" + added.getValue() + "'");
 						}
 
 						for (Map.Entry<String, String> diff : differingOptions.entrySet()) {
 							String key = diff.getKey();
 							String oldValue = diff.getValue();
 							String newValue = options.get(key);
-							Log.info(
-								LogCategory.CACHE, "  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'"
-							);
+							log("  Different: '" + key + "': '" + oldValue + "' -> '" + newValue + "'");
 						}
 					} else {
-						Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it has "
+						log("Not reusing previous transform cache since it has "
 							+ (oldOptions.size() + newOptions.size() + differingOptions.size())
 							+ " different keys."
 							+ " (Add '-Dloader.transform_cache.log_changed_keys=true' to see all changes).");
@@ -218,18 +242,26 @@ public class TransformCacheManager {
 			return inner;
 		} catch (IOException | IOError io) {
 			if (io instanceof PartiallyWrittenIOException) {
-				Log.info(LogCategory.CACHE, "Not reusing previous transform cache since it's incomplete!");
+				log("Not reusing previous transform cache since it's incomplete!");
 			} else {
-				Log.info(
-					LogCategory.CACHE,
-					"Not reusing previous transform cache since something went wrong while reading it!"
-				);
+				log("Not reusing previous transform cache since something went wrong while reading it!");
 			}
 
 			erasePreviousTransformCache(transformCacheFolder, cacheFile, io);
 
 			return null;
 		}
+	}
+
+	private static <OldKey, NewKey> Map<NewKey, OldKey> flipMap(Map<OldKey, NewKey> old) {
+		Map<NewKey, OldKey> fileReferences = new HashMap<>();
+		for (Entry<OldKey, NewKey> entry : old.entrySet()) {
+			OldKey previous = fileReferences.put(entry.getValue(), entry.getKey());
+			if (previous != null) {
+				throw new IllegalStateException("Duplicate " + entry.getValue() + " mapping " + previous + " and " + entry.getKey());
+			}
+		}
+		return fileReferences;
 	}
 
 	private static void erasePreviousTransformCache(Path transformCacheFolder, Path cacheFile, Throwable suppressed)
@@ -261,7 +293,7 @@ public class TransformCacheManager {
 	static final boolean WRITE_CUSTOM = true;
 
 	private static QuiltZipPath createTransformCache(Path transformCacheFile, String options, List<
-		ModLoadOption> modList) throws ModResolutionException {
+		ModLoadOption> modList, Map<Path, String> referencedFiles) throws ModResolutionException {
 
 		try {
 			Files.createDirectories(transformCacheFile.getParent());
@@ -269,13 +301,18 @@ public class TransformCacheManager {
 			throw new ModResolutionException("Failed to create the transform cache parent directory!", e);
 		}
 
+		boolean logStats = Boolean.getBoolean(SystemProperties.LOG_TRANSFORM_CACHE_STATS);
+
 		if (!Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE)) {
 			try (QuiltUnifiedFileSystem fs = new QuiltUnifiedFileSystem("transform-cache", true)) {
 				Path root = fs.getRoot();
 				writeTransformCache(options, modList, root);
-				QuiltZipFileSystem.writeQuiltCompressedFileSystem(root, transformCacheFile);
 
-				return openCache(transformCacheFile);
+				QuiltZipFileSystem.writeQuiltCompressedFileSystem(
+					root, referencedFiles, transformCacheFile, logStats ? new TransformCacheStorageStats() : null
+				);
+
+				return openCache(transformCacheFile, referencedFiles);
 			} catch (IOException e) {
 				throw new ModResolutionException("Failed to create the transform bundle!", e);
 			}
@@ -295,7 +332,15 @@ public class TransformCacheManager {
 			throw new ModResolutionException(e);
 		}
 
-		return openCache(transformCacheFile);
+		if (logStats) {
+			try {
+				log("Zip transform cache size: " + NumberFormat.getIntegerInstance().format(Files.size(transformCacheFile)));
+			} catch (IOException e) {
+				Log.warn(LogCategory.CACHE, "Zip transform cache size: Unknown (an exception was thrown!)", e);
+			}
+		}
+
+		return openCache(transformCacheFile, referencedFiles);
 	}
 
 	private static void writeTransformCache(String options, List<ModLoadOption> modList, Path root) throws ModResolutionException, IOException {
@@ -316,13 +361,101 @@ public class TransformCacheManager {
 		Files.createFile(root.resolve(FILE_TRANSFORM_COMPLETE));
 	}
 
-	private static QuiltZipPath openCache(Path transformCacheFile) throws ModResolutionException {
+	private static QuiltZipPath openCache(Path transformCacheFile, Map<Path, String> referencedFiles) throws ModResolutionException {
 		try {
-			QuiltZipPath path = new QuiltZipFileSystem("transform-cache", transformCacheFile, "").getRoot();
+			Map<String, Path> files = flipMap(referencedFiles);
+			QuiltZipPath path = new QuiltZipFileSystem("transform-cache", transformCacheFile, files, "").getRoot();
 			return path;
 		} catch (IOException e) {
 			// TODO: Better error message for the gui!
 			throw new ModResolutionException("Failed to read the newly written transform cache!", e);
+		}
+	}
+
+	private static void log(String message) {
+		Log.info(LogCategory.CACHE, message);
+	}
+
+	private static final class TransformCacheStorageStats implements QuiltZipCompressionStatistics {
+		static final class PerModStats {
+			final AtomicLong internal = new AtomicLong(), external = new AtomicLong();
+			Path jarFile;
+		}
+
+		final AtomicLong totalInternal = new AtomicLong(), totalExternal = new AtomicLong();
+		final Map<String, PerModStats> perModStats = new ConcurrentHashMap<>();
+
+		@Override
+		public void onStoreReference(Path file, Path external, int rawSize, int storedSize, boolean isCompressed) {
+			totalExternal.addAndGet(storedSize);
+			if (file.getNameCount() >= 2) {
+				String mod = file.getName(0).toString();
+				PerModStats stats = perModStats.computeIfAbsent(mod, m -> new PerModStats());
+				stats.external.getAndAdd(storedSize);
+				stats.jarFile = external;
+			}
+		}
+
+		@Override
+		public void onStoreInternal(Path file, int rawSize, int storedSize, boolean isCompressed) {
+			totalInternal.addAndGet(storedSize);
+			if (file.getNameCount() >= 2) {
+				String mod = file.getName(0).toString();
+				perModStats.computeIfAbsent(mod, m -> new PerModStats()).internal.getAndAdd(storedSize);
+			}
+		}
+
+		@Override
+		public void finish(long totalSize) {
+			final NumberFormat f = NumberFormat.getIntegerInstance();
+
+			log("Transform cache storage statistics:");
+			log("  - Final cache file size: " + f.format(totalSize) + " bytes");
+
+			List<String> sortedMods = new ArrayList<>(perModStats.keySet());
+			sortedMods.sort(null);
+			AsciiTableGenerator table = new AsciiTableGenerator();
+			AsciiTableColumn columnMod = table.addColumn("Mod", false);
+			AsciiTableColumn columnOriginal = table.addColumn("Original Jar", true);
+			AsciiTableColumn columnModified = table.addColumn("Modified", true);
+			AsciiTableColumn columnRef = table.addColumn("Referenced", true);
+			AsciiTableColumn columnPercent = table.addColumn("Percent Modified", true);
+			for (String mod : sortedMods) {
+				PerModStats stats = perModStats.get(mod);
+				long original = stats.external.get();
+				long modified = stats.internal.get();
+				AsciiTableRow row = table.addRow();
+				row.put(columnMod, mod);
+				if (stats.jarFile == null) {
+					row.put(columnOriginal, "Unused");
+				} else {
+					try {
+						row.put(columnOriginal, f.format(Files.size(stats.jarFile)));
+					} catch (IOException e) {
+						e.printStackTrace();
+						row.put(columnOriginal, "?!?");
+					}
+				}
+				row.put(columnModified, f.format(modified));
+				row.put(columnRef, f.format(original));
+				row.put(columnPercent, ((modified * 1000) / (original + modified) / 10.0) + "%");
+			}
+
+			table.addBarRow();
+			AsciiTableRow totals = table.addRow();
+			totals.put(columnMod, "Total");
+			long modified = totalInternal.get();
+			long original = totalExternal.get();
+			totals.put(columnModified, f.format(modified));
+			totals.put(columnRef, f.format(original));
+			totals.put(columnPercent, ((modified * 1000) / (original + modified) / 10.0) + "%");
+
+			StringBuilder sb = new StringBuilder("Per-mod statistics:\n");
+			table.appendTable(line -> {
+				sb.append(line);
+				sb.append("\n");
+			});
+			log(sb.toString());
 		}
 	}
 }

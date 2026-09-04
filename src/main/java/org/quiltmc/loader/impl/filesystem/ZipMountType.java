@@ -17,8 +17,10 @@
 package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.zip.ZipEntry;
 
+import org.quiltmc.loader.api.filesystem.IOFunction;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFile.CopyOnWriteZipFile;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.CustomZipInputStream;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
@@ -35,8 +37,8 @@ public enum ZipMountType {
 
 		@Override
 		QuiltZipFile create(QuiltMapPath<?, ?> path, ZipSource source, long offset, int compressedSize,
-			int uncompressedSize, boolean isCompressed) {
-			return new QuiltZipFile(path, source, offset, compressedSize, uncompressedSize, isCompressed);
+			int uncompressedSize, IOFunction<InputStream, InputStream> decompressor) {
+			return new QuiltZipFile(path, source, offset, compressedSize, uncompressedSize, decompressor);
 		}
 	},
 	COPY_ON_WRITE {
@@ -48,15 +50,15 @@ public enum ZipMountType {
 
 		@Override
 		QuiltZipFile create(QuiltMapPath<?, ?> path, ZipSource source, long offset, int compressedSize,
-			int uncompressedSize, boolean isCompressed) {
+			int uncompressedSize, IOFunction<InputStream, InputStream> decompressor) {
 
-			return new CopyOnWriteZipFile(path, source, offset, compressedSize, uncompressedSize, isCompressed);
+			return new CopyOnWriteZipFile(path, source, offset, compressedSize, uncompressedSize, decompressor);
 		}
 	};
 
-	abstract QuiltZipFile create(QuiltMapPath<?, ?> path, ZipSource source, ZipEntry entry,
-		CustomZipInputStream zip) throws IOException;
+	abstract QuiltZipFile create(QuiltMapPath<?, ?> path, ZipSource source, ZipEntry entry, CustomZipInputStream zip)
+		throws IOException;
 
 	abstract QuiltZipFile create(QuiltMapPath<?, ?> path, ZipSource source, long offset, int compressedSize,
-		int uncompressedSize, boolean isCompressed);
+		int uncompressedSize, IOFunction<InputStream, InputStream> decompressor);
 }

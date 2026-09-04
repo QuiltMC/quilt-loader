@@ -28,7 +28,7 @@ import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-class ReflectiveFixer extends ClassVisitor {
+class ReflectiveFixer extends FilterClassVisitor {
 
 	private static final String OWNER_CLASS = Type.getInternalName(Class.class);
 	private static final String OWNER_LOOKUP = Type.getInternalName(Lookup.class);
@@ -62,6 +62,7 @@ class ReflectiveFixer extends ClassVisitor {
 						switch (descriptor) {
 							case "(Ljava/lang/String;)Ljava/lang/Class;":// (String)
 							case "(Ljava/lang/Module;Ljava/lang/String;)Ljava/lang/String;": {// (Module, String)
+								onModify();
 								super.visitMethodInsn(
 									Opcodes.INVOKESTATIC, OWNER_REFLECTIVE_UTIL, "fixClassName",
 									"(Ljava/lang/String;)Ljava/lang/String;", false
@@ -69,6 +70,7 @@ class ReflectiveFixer extends ClassVisitor {
 								break;
 							}
 							case "(Ljava/lang/String;ZLjava/lang/ClassLoader;)Ljava/lang/Class;": {
+								onModify();
 								// (String, boolean, ClassLoader)
 
 								// A fun dance
@@ -103,6 +105,7 @@ class ReflectiveFixer extends ClassVisitor {
 							}
 						}
 					} else if ("getDeclaredField".equals(name)) {
+						onModify();
 						// [..., Class, String]
 						super.visitInsn(Opcodes.SWAP);
 						// [..., String, Class]
@@ -115,6 +118,7 @@ class ReflectiveFixer extends ClassVisitor {
 						// [..., Class, String]
 						stackIncrease = Math.max(stackIncrease, 1);
 					} else if ("getField".equals(name)) {
+						onModify();
 						// [..., Class, String]
 						super.visitInsn(Opcodes.SWAP);
 						// [..., String, Class]
@@ -127,6 +131,7 @@ class ReflectiveFixer extends ClassVisitor {
 						// [..., Class, String]
 						stackIncrease = Math.max(stackIncrease, 1);
 					} else if ("getDeclaredMethod".equals(name)) {
+						onModify();
 						// ... , Class, String, Class[]
 						super.visitMethodInsn(
 							Opcodes.INVOKESTATIC, OWNER_REFLECTIVE_UTIL, "fixDeclaredMethodName",
@@ -156,6 +161,7 @@ class ReflectiveFixer extends ClassVisitor {
 						);
 						// ... , Class, String, Class[]
 					} else if ("getMethod".equals(name)) {
+						onModify();
 						// ... , Class, String, Class[]
 						super.visitMethodInsn(
 							Opcodes.INVOKESTATIC, OWNER_REFLECTIVE_UTIL, "fixMethodName",
@@ -189,6 +195,7 @@ class ReflectiveFixer extends ClassVisitor {
 
 					switch (name) {
 						case "findClass": {
+							onModify();
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, OWNER_REFLECTIVE_UTIL, "fixClassName",
 								"(Ljava/lang/String;)Ljava/lang/String;", false
@@ -203,6 +210,7 @@ class ReflectiveFixer extends ClassVisitor {
 						case "findStaticGetter":
 						case "findStaticSetter":
 						case "findStaticVarHandle": {
+							onModify();
 							// All of these methods have the same args
 							// [..., Lookup, Class(owner), String(name), Class(type) ]
 							super.visitMethodInsn(
@@ -244,6 +252,7 @@ class ReflectiveFixer extends ClassVisitor {
 						}
 						case "findStatic":
 						case "findVirtual": {
+							onModify();
 							// [..., Lookup, Class(owner), String(name), MethodType]
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, OWNER_REFLECTIVE_UTIL, "fixLookupFindMethod",
@@ -283,6 +292,7 @@ class ReflectiveFixer extends ClassVisitor {
 							break;
 						}
 						case "findSpecial": {
+							onModify();
 							// [..., Lookup, Class(owner), String(name), MethodType, Class(special)]
 							super.visitMethodInsn(
 								Opcodes.INVOKESTATIC, OWNER_REFLECTIVE_UTIL, "fixLookupFindMethodSpecial",

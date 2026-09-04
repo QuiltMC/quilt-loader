@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,10 +32,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -44,20 +48,57 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.quiltmc.loader.api.ExtendedFiles;
+import org.quiltmc.loader.api.filesystem.StandardZipDecompressor;
+import org.quiltmc.loader.impl.filesystem.ZipSource.SharedByteChannels;
 import org.quiltmc.loader.impl.util.ExposedByteArrayOutputStream;
 
 /** Writer class that implements
  * {@link QuiltZipFileSystem#writeQuiltCompressedFileSystem(java.nio.file.Path, java.nio.file.Path)}. */
 final class QuiltZipCustomCompressedWriter {
 
-	static final Charset UTF8 = StandardCharsets.UTF_8;
-	static final byte[] HEADER = "quiltmczipcmpv2".getBytes(UTF8);
-	static final byte[] PARTIAL_HEADER = Arrays.copyOf("PARTIAL!PARTIAL!PARTIAL!".getBytes(UTF8), HEADER.length);
+	enum FileVersion {
+		V2("quiltmczipcmpv2"),
+		/** V3 can store files directly without compression by setting the "compressed size" to -1. */
+		V3("quiltmczipcmpv3"),
+		/** V3, but also stores a list of referenced files. */
+		V3_REF("quiltmczipexref"),
+		PARTIAL(Arrays.copyOf("PARTIAL!PARTIAL!PARTIAL!".getBytes(StandardCharsets.UTF_8), V2.header.length));
+
+		static final int HEADER_LENGTH = V2.header.length;
+
+		final byte[] header;
+
+		private FileVersion(String headerStr) {
+			this.header = headerStr.getBytes(StandardCharsets.UTF_8);
+		}
+
+		private FileVersion(byte[] raw) {
+			this.header = raw;
+		}
+
+		static {
+			int len = V2.header.length;
+			for (FileVersion ver : values()) {
+				if (ver.header.length != len) {
+					throw new Error("Header lengths should be identical!");
+				}
+			}
+		}
+
+		boolean matches(byte[] readHeader) {
+			return Arrays.equals(header, readHeader);
+		}
+	}
+
+	static final int NOT_REFERENCED_INDEX = 0xFFFF;
 
 	private static final AtomicInteger WRITER_THREAD_INDEX = new AtomicInteger();
 	private static final StopThreadsPath THREAD_STOPPER = new StopThreadsPath();
 
 	final Path src, dst;
+	final Map<Path, String> referenceFiles;
+	final QuiltZipCompressionStatistics stats;
 	final LinkedBlockingQueue<Path> sourceFiles = new LinkedBlockingQueue<>();
 	final Map<Path, FileEntry> files = new ConcurrentHashMap<>();
 	final AtomicInteger currentOffset = new AtomicInteger();
@@ -66,9 +107,11 @@ final class QuiltZipCustomCompressedWriter {
 	volatile boolean aborted = false;
 	volatile Exception exception;
 
-	QuiltZipCustomCompressedWriter(Path src, Path dst) {
+	QuiltZipCustomCompressedWriter(Path src, Map<Path, String> referenceFiles, Path dst, QuiltZipCompressionStatistics stats) {
 		this.src = src;
+		this.referenceFiles = referenceFiles;
 		this.dst = dst;
+		this.stats = stats;
 	}
 
 	/** @see QuiltZipFileSystem#writeQuiltCompressedFileSystem(Path, Path) */
@@ -92,7 +135,7 @@ final class QuiltZipCustomCompressedWriter {
 		// Spin up the other threads now
 		int mainIndex = WRITER_THREAD_INDEX.incrementAndGet();
 
-		channel.write(ByteBuffer.wrap(PARTIAL_HEADER));
+		channel.write(ByteBuffer.wrap(FileVersion.PARTIAL.header));
 		// 4 bytes: Directory pointer
 		channel.write(ByteBuffer.allocate(4));
 		currentOffset.set((int) channel.position());
@@ -250,44 +293,97 @@ final class QuiltZipCustomCompressedWriter {
 			}
 		}
 
+		Set<Path> externalFiles = new HashSet<>();
+		for (FileEntry entry : files.values()) {
+			if (entry instanceof ReferencedFileEntry) {
+				externalFiles.add(((ReferencedFileEntry) entry).referenced);
+			}
+		}
+		Map<Path, Integer> referenceIndex = externalFiles.isEmpty() ? null : new HashMap<>();
+
 		// Write the directory
 		int directoryOffset = currentOffset.get();
 		ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
 		GZIPOutputStream gzip = new GZIPOutputStream(baos);
-		writeDirectory(stack.pop(), files, new DataOutputStream(gzip));
+		DataOutputStream dos = new DataOutputStream(gzip);
+		if (referenceIndex != null) {
+			List<Path> sorted = new ArrayList<>(externalFiles);
+			sorted.sort(Comparator.comparing(referenceFiles::get));
+			writeUnsignedShort(sorted.size(), dos);
+			for (int index = 0; index < sorted.size(); index++) {
+				Path file = sorted.get(index);
+				String refname = referenceFiles.get(file);
+				if (refname == null) {
+					throw new IllegalStateException("Unknown referenced file '" + file + "'\nNot in " + referenceFiles);
+				}
+				byte[] strBytes = refname.getBytes(StandardCharsets.UTF_8);
+				writeUnsignedShort(strBytes.length, dos);
+				dos.write(strBytes);
+				referenceIndex.put(file, index);
+			}
+		}
+		writeDirectory(stack.pop(), files, referenceIndex, dos);
 		gzip.finish();
 		channel.write(baos.wrapIntoBuffer(), directoryOffset);
 
 		// Write the directory offset
 		baos = new ExposedByteArrayOutputStream();
-		DataOutputStream dos = new DataOutputStream(baos);
+		dos = new DataOutputStream(baos);
 		dos.writeInt(directoryOffset);
-		channel.write(baos.wrapIntoBuffer(), HEADER.length);
+		channel.write(baos.wrapIntoBuffer(), FileVersion.HEADER_LENGTH);
 		channel.force(false);
 
 		// and the finished header
-		channel.write(ByteBuffer.wrap(HEADER), 0);
+		channel.write(ByteBuffer.wrap((referenceIndex == null ? FileVersion.V3 : FileVersion.V3_REF).header), 0);
+
+		if (stats != null) {
+			stats.finish(channel.size());
+		}
 	}
 
-	private void writeDirectory(Directory directory, Map<Path, FileEntry> fileMap, DataOutputStream to)
-		throws IOException {
+	private void writeUnsignedShort(int value, DataOutputStream to) throws IOException {
+		if (value < 0 || value > 0xFFFF) {
+			throw new IOException("Value out-of-range: " + value);
+		}
+		to.writeShort(value);
+	}
+
+	private void writeDirectory(Directory directory, Map<Path, FileEntry> fileMap, Map<Path, Integer> referenceIndex,
+		DataOutputStream to) throws IOException {
+
 		// Some directories might have thousands of files, but it's not common
 		to.writeShort(directory.childFiles.size());
 		for (Path file : directory.childFiles) {
-			byte[] nameBytes = file.getFileName().toString().getBytes(UTF8);
+			byte[] nameBytes = file.getFileName().toString().getBytes(StandardCharsets.UTF_8);
 			to.writeByte(nameBytes.length);
 			to.write(nameBytes);
 			FileEntry entry = fileMap.get(file);
+			if (referenceIndex != null) {
+				if (entry instanceof ReferencedFileEntry) {
+					ReferencedFileEntry ref = (ReferencedFileEntry) entry;
+					Integer index = referenceIndex.get(ref.referenced);
+					if (index == null) {
+						throw new IllegalStateException(
+							"Missing index for referenced file " + ref.referenced + " in " + referenceIndex
+						);
+					}
+					writeUnsignedShort(index, to);
+				} else {
+					writeUnsignedShort(NOT_REFERENCED_INDEX, to);
+				}
+			} else if (entry instanceof ReferencedFileEntry) {
+				throw new IllegalStateException("Encountered a ReferencedFileEntry but there's no referenceIndex?");
+			}
 			to.writeInt(entry.offset);
 			to.writeInt(entry.uncompressedLength);
-			to.writeInt(entry.compressedLength);
+			to.writeInt(entry.isCompressed ? entry.compressedLength : -1);
 		}
 		to.writeShort(directory.childDirectories.size());
 		for (Directory sub : directory.childDirectories) {
-			byte[] nameBytes = sub.folderName.getBytes(UTF8);
+			byte[] nameBytes = sub.folderName.getBytes(StandardCharsets.UTF_8);
 			to.writeByte(nameBytes.length);
 			to.write(nameBytes);
-			writeDirectory(sub, fileMap, to);
+			writeDirectory(sub, fileMap, referenceIndex, to);
 		}
 	}
 
@@ -325,13 +421,17 @@ final class QuiltZipCustomCompressedWriter {
 					break;
 				}
 
-				if (deflater == null) {
-					deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
-				} else {
-					deflater.reset();
-				}
-
 				try {
+					if (checkAndWriteReference(next)) {
+						continue;
+					}
+
+					if (deflater == null) {
+						deflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
+					} else {
+						deflater.reset();
+					}
+
 					int uncompressedLength;
 					ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
 					try (DeflaterOutputStream compressor = new DeflaterOutputStream(baos, deflater)) {
@@ -340,7 +440,10 @@ final class QuiltZipCustomCompressedWriter {
 					int offset = currentOffset.getAndAdd(baos.size());
 					int length = baos.size();
 					channel.write(ByteBuffer.wrap(baos.getArray(), 0, length), offset);
-					files.put(next, new FileEntry(offset, uncompressedLength, length));
+					files.put(next, new FileEntry(offset, uncompressedLength, length, true));
+					if (stats != null) {
+						stats.onStoreInternal(next, uncompressedLength, length, true);
+					}
 				} catch (IOException e) {
 					e = new IOException("Failed to copy " + next, e);
 					synchronized (QuiltZipCustomCompressedWriter.this) {
@@ -363,16 +466,85 @@ final class QuiltZipCustomCompressedWriter {
 				deflater.end();
 			}
 		}
+
+		private boolean checkAndWriteReference(Path path) throws IOException {
+
+			Path target = path;
+			while (ExtendedFiles.isMountedFile(target)) {
+				Path next = ExtendedFiles.readMountTarget(target);
+				if (next == null) {
+					break;
+				} else {
+					target = next;
+				}
+			}
+
+			// In theory we could expose this from the API
+			// but we don't so hardcode this
+			FileSystem fs = target.getFileSystem();
+			if (fs instanceof QuiltMapFileSystem<?, ?>) {
+				QuiltMapFileSystem<?, ?> qfs = (QuiltMapFileSystem<?, ?>) fs;
+				QuiltUnifiedEntry entry = qfs.getEntry(target);
+				if (entry instanceof QuiltZipFile) {
+					QuiltZipFile zip = (QuiltZipFile) entry;
+
+					int offset = (int) zip.offset;
+					if (offset != zip.offset) {
+						// TODO: Implement reading from offsets >2GB from start!
+						return false;
+					}
+
+					if (zip.decompressor != null && zip.decompressor != StandardZipDecompressor.INSTANCE) {
+						return false;
+					}
+
+					ZipSource source = zip.source;
+					if (source instanceof SharedByteChannels) {
+						SharedByteChannels channels = (SharedByteChannels) source;
+						Path zipFile = channels.zipFrom;
+						if (referenceFiles.containsKey(zipFile)) {
+							files.put(
+								path, new ReferencedFileEntry(
+									offset, zip.uncompressedSize, zip.compressedSize, zip.decompressor != null, zipFile
+								)
+							);
+							if (stats != null) {
+								stats.onStoreReference(
+									path, zipFile, zip.uncompressedSize, zip.compressedSize, zip.decompressor!=null
+								);
+							}
+							return true;
+						}
+					}
+				} else {
+					return false;
+				}
+			}
+
+			return false;
+		}
 	}
 
-	static final class FileEntry {
+	static class FileEntry {
 		final int offset;
 		final int uncompressedLength, compressedLength;
+		final boolean isCompressed;
 
-		FileEntry(int offset, int uncompressedLength, int compressedLength) {
+		FileEntry(int offset, int uncompressedLength, int compressedLength, boolean isCompressed) {
 			this.offset = offset;
 			this.uncompressedLength = uncompressedLength;
 			this.compressedLength = compressedLength;
+			this.isCompressed = isCompressed;
+		}
+	}
+
+	static final class ReferencedFileEntry extends FileEntry {
+		final Path referenced;
+
+		ReferencedFileEntry(int offset, int uncompressedLength, int compressedLength, boolean isCompressed,
+			Path referenced) {
+			super(offset, uncompressedLength, compressedLength, isCompressed);
+			this.referenced = referenced;
 		}
 	}
 

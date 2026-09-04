@@ -52,13 +52,16 @@ final class TransformCacheGenerator {
 		// game provider transformer and QuiltTransformer
 		cache.forEachClassFile((mod, name, file) -> {
 
+			boolean patched = false;
 			byte[] classBytes = QuiltLauncherBase.getLauncher().getEntrypointTransformer().transform(name);
 
 			if (classBytes == null) {
 				classBytes = Files.readAllBytes(file);
+			} else {
+				patched = true;
 			}
 
-			return QuiltTransformer.transform(
+			byte[] transformed = QuiltTransformer.transform(
 					QuiltLoader.isDevelopmentEnvironment(),
 					QuiltLauncherBase.getLauncher().getEnvironmentType(),
 					cache,
@@ -67,6 +70,16 @@ final class TransformCacheGenerator {
 					mod,
 					classBytes
 			);
+
+			if (transformed == null) {
+				transformed = classBytes;
+			}
+
+			if (patched || transformed != classBytes) {
+				return transformed;
+			} else {
+				return null;
+			}
 		});
 
 		// chasm
@@ -98,7 +111,7 @@ final class TransformCacheGenerator {
 			ModLoadOption mod = entry.getValue();
 			byte[] classBytes = Files.readAllBytes(entry.getKey());
 			byte[] newBytes = internalsHider.run(mod.id(), mod.metadata().name(), classBytes);
-			if (newBytes != null) {
+			if (newBytes != null && newBytes != classBytes) {
 				Files.write(entry.getKey(), newBytes);
 			}
 		}

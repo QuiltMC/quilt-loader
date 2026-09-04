@@ -402,4 +402,19 @@ public class ClassStrippingData extends AbstractStripData {
 	public boolean isEmpty() {
 		return this.stripInterfaces.isEmpty() && this.stripFields.isEmpty() && this.stripMethods.isEmpty();
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("ClassStrippingData [stripInterfaces=");
+		builder.append(stripInterfaces);
+		builder.append(", stripFields=");
+		builder.append(stripFields);
+		builder.append(", stripMethods=");
+		builder.append(stripMethods);
+		builder.append(", stripMethodLambdas=");
+		builder.append(stripMethodLambdas);
+		builder.append("]");
+		return builder.toString();
+	}
 }

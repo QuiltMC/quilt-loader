@@ -16,8 +16,10 @@
 
 package org.quiltmc.loader.impl.transformer;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
@@ -53,6 +55,7 @@ final class QuiltTransformer {
 		ClassWriter classWriter = null;
 		ClassVisitor visitor = null;
 		int visitorCount = 0;
+		boolean anyActualChanges = false;
 
 		if (strip) {
 			ClassStrippingData data = new ClassStrippingData(QuiltLoaderImpl.ASM_VERSION, envType, cache.getAllMods());
@@ -82,6 +85,8 @@ final class QuiltTransformer {
 
 			if (!data.isEmpty()) {
 
+				anyActualChanges = true;
+
 				if (stripAnyLambdas) {
 					// ClassWriter has a (useful) optimisation that copies over the
 					// entire constant pool and bootstrap methods from the original one,
@@ -106,15 +111,22 @@ final class QuiltTransformer {
 		if (applyClassTweaker) {
 			visitor = classTweaker.createClassVisitor(QuiltLoaderImpl.ASM_VERSION, visitor, null);
 			visitorCount++;
+			anyActualChanges = true;
 		}
 
+		List<FilterClassVisitor> filters = new ArrayList<>();
+
 		if (transformAccess) {
-			visitor = new PackageAccessFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
+			FilterClassVisitor fixer = new PackageAccessFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
+			visitor = fixer;
+			filters.add(fixer);
 			visitorCount++;
 		}
 
 		if (reflectiveFixes) {
-			visitor = new ReflectiveFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
+			FilterClassVisitor fixer = new ReflectiveFixer(QuiltLoaderImpl.ASM_VERSION, visitor);
+			visitor = fixer;
+			filters.add(fixer);
 			visitorCount++;
 		}
 
@@ -123,6 +135,11 @@ final class QuiltTransformer {
 		}
 
 		classReader.accept(visitor, 0);
-		return classWriter.toByteArray();
+		for (FilterClassVisitor filter : filters) {
+			if (filter.hasModified()) {
+				return classWriter.toByteArray();
+			}
+		}
+		return anyActualChanges ? classWriter.toByteArray() : null;
 	}
 }

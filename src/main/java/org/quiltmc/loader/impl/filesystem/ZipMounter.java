@@ -24,71 +24,144 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.jar.Manifest;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 
 import org.jetbrains.annotations.NotNull;
+import org.quiltmc.loader.api.filesystem.IOFunction;
+import org.quiltmc.loader.api.filesystem.StandardZipDecompressor;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolder;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedMountedFile;
+import org.quiltmc.loader.impl.filesystem.QuiltZipCustomCompressedWriter.FileVersion;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.CountingInputStream;
 import org.quiltmc.loader.impl.filesystem.QuiltZipFileSystem.CustomZipInputStream;
+import org.quiltmc.loader.impl.filesystem.ZipSource.ZipSourceResult;
 import org.quiltmc.loader.impl.util.HashUtil;
 import org.quiltmc.loader.impl.util.JavaVersionUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-class ZipMounter <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> {
+class ZipMounter<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> {
 
 	private final FS fs;
 	private final P dst;
 	private final ZipSource source;
 	private final ZipMountType mountType;
+	private final long zipInZipOffset;
+	private final int zipInZipLength;
 
 	private ZipMounter(Path src, P dst, ZipMountType mountType) throws IOException {
 		this.fs = dst.fs;
 		this.dst = dst;
 		this.mountType = mountType;
-		if (src.getFileSystem() == FileSystems.getDefault()) {
-			source = new ZipSource.SharedByteChannels(src);
-		} else {
-			source = new ZipSource.InputStreamSource(Files.newInputStream(src));
-		}
+
+		ZipSourceResult result = ZipSource.create(src, dst.fs);
+		source = result.source;
+		zipInZipOffset = result.zipInZipOffset;
+		zipInZipLength = result.zipInZipLength;
 	}
 
-	static <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>>
-	void mountZipAt(Path zip, P dst, String zipPathPrefix, ZipHandling type) throws IOException {
+	static <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> void mountZipAt(
+		Path zip, P dst, String zipPathPrefix, ZipHandling type) throws IOException {
+		mountZipAt(zip, Collections.emptyMap(), dst, zipPathPrefix, type);
+	}
+
+	/** @param referencedFiles A complete map of {@link ReferencedFile}, where {@link ReferencedFile#referenceName} is
+	 *            the key and {@link ReferencedFile#file} is the value. */
+	static <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> void mountZipAt(
+		Path zip, Map<String, Path> referencedFiles, P dst, String zipPathPrefix, ZipHandling type) throws IOException {
 
 		ZipMountType mountType = dst.fs.isReadOnly() ? ZipMountType.READ_ONLY : ZipMountType.COPY_ON_WRITE;
 
-		new ZipMounter<>(zip, dst, mountType).mount(zipPathPrefix, type);
+		new ZipMounter<>(zip, dst, mountType).mount(referencedFiles, zipPathPrefix, type);
 	}
 
-	private void mount(String zipPathPrefix, ZipHandling type) throws IOException {
+	private InputStream openZip() throws IOException {
+		if (zipInZipOffset == 0) {
+			return source.openConstructingStream();
+		} else {
+			return source.stream(zipInZipOffset, zipInZipLength);
+		}
+	}
+
+	private void mount(Map<String, Path> referencedFiles, String zipPathPrefix, ZipHandling type) throws IOException {
 		dst.fs.addSource(source);
 
 		// Check for our header
-		byte[] header = new byte[QuiltZipCustomCompressedWriter.HEADER.length];
-		try (InputStream fileStream = source.openConstructingStream()) {
+		byte[] header = new byte[QuiltZipCustomCompressedWriter.FileVersion.HEADER_LENGTH];
+		try (InputStream fileStream = openZip()) {
 			BufferedInputStream pushback = new BufferedInputStream(fileStream);
 			pushback.mark(header.length);
 			int readLength = pushback.read(header);
 			if (readLength == 0 || readLength == -1) {
 				throw new ZeroByteFileException("Zip start header not found - 0 byte file!");
 			}
-			if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.HEADER)) {
+
+			if (readLength == header.length && FileVersion.PARTIAL.matches(header)) {
+				throw new PartiallyWrittenIOException();
+			} else if (readLength == header.length && FileVersion.V2.matches(header)) {
 				if (!(source instanceof ZipSource.SharedByteChannels)) {
-					throw new IOException("Cannot read a custom compressed stream that isn't on the default file system!");
+					throw new IOException(
+						"Cannot read a custom compressed stream that isn't on the default file system!"
+					);
 				}
 				int directoryStart = new DataInputStream(pushback).readInt();
 				try (GZIPInputStream src = new GZIPInputStream(source.stream(directoryStart, -1))) {
-					readDirectory(dst, new DataInputStream(src), zipPathPrefix);
+					readDirectory(null, dst, new DataInputStream(src), zipPathPrefix, FileVersion.V2);
 				}
-			} else if (readLength == header.length && Arrays.equals(header, QuiltZipCustomCompressedWriter.PARTIAL_HEADER)) {
-				throw new PartiallyWrittenIOException();
+			} else if (readLength == header.length && FileVersion.V3.matches(header)) {
+				if (!(source instanceof ZipSource.SharedByteChannels)) {
+					throw new IOException(
+						"Cannot read a custom compressed stream that isn't on the default file system!"
+					);
+				}
+				int directoryStart = new DataInputStream(pushback).readInt();
+				try (GZIPInputStream src = new GZIPInputStream(source.stream(directoryStart, -1))) {
+					readDirectory(null, dst, new DataInputStream(src), zipPathPrefix, FileVersion.V3);
+				}
+			} else if (readLength == header.length && FileVersion.V3_REF.matches(header)) {
+				if (!(source instanceof ZipSource.SharedByteChannels)) {
+					throw new IOException(
+						"Cannot read a custom compressed stream that isn't on the default file system!"
+					);
+				}
+				int directoryStart = new DataInputStream(pushback).readInt();
+				try (GZIPInputStream src = new GZIPInputStream(source.stream(directoryStart, -1))) {
+					DataInputStream dataStream = new DataInputStream(src);
+
+					List<ZipSource> refFileSources = new ArrayList<>();
+					int refFileCount = dataStream.readUnsignedShort();
+
+					for (int index = 0; index < refFileCount; index++) {
+						int strByteLength = dataStream.readUnsignedShort();
+						byte[] strBytes = new byte[strByteLength];
+						dataStream.readFully(strBytes);
+						String name = new String(strBytes, StandardCharsets.UTF_8);
+						Path refFile = referencedFiles.get(name);
+						if (refFile == null) {
+							throw new IOException(
+								"Cannot reference a file that hasn't been passed in: " + name + "\nNot in "
+									+ referencedFiles
+							);
+						}
+						final ZipSource refSrc;
+						if (refFile.getFileSystem() == FileSystems.getDefault()) {
+							refSrc = ZipSource.SharedByteChannels.get(refFile, dst.fs);
+						} else {
+							throw new IOException("Cannot reference a file that isn't on the default file system!");
+						}
+						refFileSources.add(refSrc);
+					}
+
+					readDirectory(refFileSources, dst, dataStream, zipPathPrefix, FileVersion.V3_REF);
+				}
 			} else if (readLength <= 3) {
 				throw new IOException("File is too small to contain a ZIP header! (" + readLength + " bytes)");
 			} else if (header[0] != 0x50 || header[1] != 0x4b || header[2] != 0x03 || header[3] != 0x04) {
@@ -172,7 +245,7 @@ class ZipMounter <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exte
 	}
 
 	private void initializeFromZip(InputStream fileStream, String zipPathPrefix) throws IOException {
-		try (CountingInputStream counter = new CountingInputStream(fileStream); //
+		try (CountingInputStream counter = new CountingInputStream(fileStream, zipInZipOffset); //
 			CustomZipInputStream zip = new CustomZipInputStream(counter)//
 		) {
 			ZipEntry entry;
@@ -200,7 +273,9 @@ class ZipMounter <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exte
 		}
 	}
 
-	private void readDirectory(P path, DataInputStream stream, String zipPathPrefix) throws IOException {
+	private void readDirectory(List<ZipSource> refFileSources, P path, DataInputStream stream, String zipPathPrefix,
+		FileVersion version) throws IOException {
+
 		String pathString = path.toString();
 		if (pathString.startsWith(zipPathPrefix) || zipPathPrefix.startsWith(pathString)) {
 			fs.createDirectories(path);
@@ -211,11 +286,53 @@ class ZipMounter <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exte
 			byte[] nameBytes = new byte[length];
 			stream.readFully(nameBytes);
 			P filePath = path.resolve(new String(nameBytes, StandardCharsets.UTF_8));
-			int offset = stream.readInt();
-			int uncompressedSize = stream.readInt();
-			int compressedSize = stream.readInt();
+
+			final int refIndex;
+			if (refFileSources != null) {
+				refIndex = stream.readUnsignedShort();
+			} else {
+				refIndex = QuiltZipCustomCompressedWriter.NOT_REFERENCED_INDEX;
+			}
+
+			long offset = zipInZipOffset + stream.readInt();
+			int rawSize = stream.readInt();
+			int storedSize = stream.readInt();
 			if (filePath.toString().startsWith(zipPathPrefix)) {
-				fs.addEntryAndParents(mountType.create(filePath, source, offset, compressedSize, uncompressedSize, true));
+				ZipSource actualSource = source;
+				if (refFileSources != null && refIndex != QuiltZipCustomCompressedWriter.NOT_REFERENCED_INDEX) {
+					if (refIndex >= refFileSources.size()) {
+						throw new IOException(
+							"Invalid referenced file index - there's only " + refFileSources.size()
+								+ ", but asked for [" + refIndex + "]"
+						);
+					}
+					actualSource = refFileSources.get(refIndex);
+				}
+
+				if (rawSize < 0) {
+					throw new IOException("Raw Size cannot be negative! (was " + rawSize + ")");
+				}
+
+				final IOFunction<InputStream, InputStream> decompressor;
+
+				check_sizes: {
+					if (storedSize < 0) {
+						if (storedSize == -1) {
+							if (version != FileVersion.V2) {
+								decompressor = null;
+								storedSize = rawSize;
+								break check_sizes;
+							}
+						}
+						throw new IOException("Stored size cannot be negative (was " + rawSize + ")");
+					}
+
+					decompressor = StandardZipDecompressor.INSTANCE;
+				}
+
+				fs.addEntryAndParents(
+					mountType.create(filePath, actualSource, offset, storedSize, rawSize, decompressor)
+				);
 			}
 		}
 
@@ -225,7 +342,7 @@ class ZipMounter <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exte
 			byte[] nameBytes = new byte[length];
 			stream.readFully(nameBytes);
 			String name = new String(nameBytes, StandardCharsets.UTF_8);
-			readDirectory(path.resolve(name), stream, zipPathPrefix);
+			readDirectory(refFileSources, path.resolve(name), stream, zipPathPrefix, version);
 		}
 	}
 }

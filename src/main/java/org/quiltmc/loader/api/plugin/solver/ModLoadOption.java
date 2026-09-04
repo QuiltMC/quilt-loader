@@ -68,9 +68,9 @@ public abstract class ModLoadOption extends LoadOption {
 	/** @return The metadata that this mod either (a) is, or (b) points to, if this is an {@link AliasedLoadOption}. */
 	public abstract ModMetadataExt metadata();
 
-	/** @return The {@link Path} where this is loaded from. This should be either the Path that was passed to
-	 *         {@link QuiltLoaderPlugin#scanZip(Path, Path, ModLocation, QuiltTreeNode)} or the Path that was passed to
-	 *         {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)}. */
+	/** @return The {@link Path} where this is loaded from. This should be either the root Path (inside the zip) that
+	 *         was passed to {@link QuiltLoaderPlugin#scanZip(Path, Path, ModLocation, QuiltTreeNode)} or the Path that
+	 *         was passed to {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)}. */
 	public abstract Path from();
 
 	/** @return The {@link Path} where this mod's classes and resources can be loaded from. */

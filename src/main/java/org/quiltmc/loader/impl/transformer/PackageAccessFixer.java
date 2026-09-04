@@ -29,9 +29,10 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * packages. The class verifier will complain unless we simply change package-private and protected to public.
  */
 @QuiltLoaderInternal(QuiltLoaderInternalType.LEGACY_EXPOSED)
-public class PackageAccessFixer extends ClassVisitor {
-	private static int modAccess(int access) {
-		if ((access & 0x7) != Opcodes.ACC_PRIVATE) {
+public class PackageAccessFixer extends FilterClassVisitor {
+	private int modAccess(int access) {
+		if ((access & 0x7) != Opcodes.ACC_PUBLIC && (access & 0x7) != Opcodes.ACC_PRIVATE) {
+			onModify();
 			return (access & (~0x7)) | Opcodes.ACC_PUBLIC;
 		} else {
 			return access;

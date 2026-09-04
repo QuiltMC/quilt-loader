@@ -17,6 +17,7 @@
 package org.quiltmc.loader.impl.filesystem;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystem;
@@ -31,12 +32,15 @@ import org.jetbrains.annotations.Nullable;
 import org.quiltmc.loader.api.CachedFileSystem;
 import org.quiltmc.loader.api.ExtendedFileSystem;
 import org.quiltmc.loader.api.MountOption;
+import org.quiltmc.loader.api.filesystem.IOFunction;
 import org.quiltmc.loader.api.filesystem.InputStreamSupplier;
 import org.quiltmc.loader.api.filesystem.NotDynamicFileException;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedCopyOnWriteFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedDynamicFile;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedFolderWriteable;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedEntry.QuiltUnifiedMountedFile;
+import org.quiltmc.loader.impl.filesystem.QuiltZipFile.CopyOnWriteZipFile;
+import org.quiltmc.loader.impl.filesystem.ZipSource.ZipSourceResult;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
@@ -239,6 +243,68 @@ public class QuiltUnifiedFileSystem extends QuiltMapFileSystem<@NotNull QuiltUni
 				dstEntry = new QuiltUnifiedCopyOnWriteFile(dst, source);
 			} else {
 				dstEntry = new QuiltUnifiedMountedFile(dst, source, readOnly);
+			}
+			addEntryRequiringParent(dstEntry);
+			return dst;
+		}
+	}
+
+	@Override
+	public Path mountSubFile(Path source, long offset, int length, //
+		@Nullable IOFunction<InputStream, InputStream> decompressor, int decompressedLength, Path target,
+		MountOption... options) throws IOException {
+
+		QuiltUnifiedPath dst = provider().toAbsolutePath(target);
+
+		boolean canExist = false;
+		boolean readOnly = false;
+		boolean copyOnWrite = false;
+
+		for (MountOption option : options) {
+			switch (option) {
+				case REPLACE_EXISTING: {
+					canExist = true;
+					break;
+				}
+				case COPY_ON_WRITE: {
+					copyOnWrite = true;
+					break;
+				}
+				case READ_ONLY: {
+					readOnly = true;
+					break;
+				}
+				default: {
+					throw new IllegalStateException("Unknown MountOption " + option);
+				}
+			}
+		}
+
+		if (copyOnWrite && readOnly) {
+			throw new IllegalArgumentException("Can't specify both READ_ONLY and COPY_ON_WRITE : " + Arrays.toString(options));
+		}
+
+		if (!copyOnWrite && !readOnly) {
+			throw new IllegalArgumentException("Must specify either READ_ONLY or COPY_ON_WRITE : " + Arrays.toString(options));
+		}
+
+		synchronized (this) {
+			QuiltUnifiedEntry dstEntry = getEntry(dst);
+
+			if (canExist) {
+				provider().deleteIfExists(dst);
+			} else if (dstEntry != null) {
+				throw new FileAlreadyExistsException(dst.toString());
+			}
+
+			ZipSourceResult zipSrcInfo = ZipSource.create(source, this);
+			ZipSource zipSrc = zipSrcInfo.source;
+			offset += zipSrcInfo.zipInZipOffset;
+
+			if (copyOnWrite) {
+				dstEntry = new CopyOnWriteZipFile(dst, zipSrc, offset, decompressedLength, length, decompressor);
+			} else {
+				dstEntry = new QuiltZipFile(dst, zipSrc, offset, decompressedLength, length, decompressor);
 			}
 			addEntryRequiringParent(dstEntry);
 			return dst;
