@@ -95,4 +95,10 @@ public class FabricEntrypointTest implements ModInitializer {
 			throw new Error(e);
 		}
 	}
+
+	public static final class EntrypointCtorTest {
+		public EntrypointCtorTest() {
+			System.out.println("EntrypointCtorTest instance created! This runs at main");
+		}
+	}
 }
