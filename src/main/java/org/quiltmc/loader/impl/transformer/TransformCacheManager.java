@@ -318,7 +318,7 @@ public class TransformCacheManager {
 			}
 		}
 
-		try (FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, true)) {
+		try (FileSystemUtil.FileSystemDelegate fs = FileSystemUtil.getJarFileSystem(transformCacheFile, FileSystemUtil.AccessMode.READ_WRITE_CREATE)) {
 			URI fileUri = transformCacheFile.toUri();
 			URI zipUri = new URI("jar:" + fileUri.getScheme(), fileUri.getPath(), null);
 
