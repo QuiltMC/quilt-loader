@@ -39,7 +39,7 @@ public class QuiltMixinVersions {
 		// loader versions with new mixin versions need to be added here
 
 		// TODO replace with proper quilt version upon version being chosen
-		addVersion("0.20.0", "", FabricUtil.COMPATIBILITY_0_17_5);
+		addVersion("0.20.0", "0.31.0-beta.5", FabricUtil.COMPATIBILITY_0_17_5);
 		addVersion("0.19.4", "0.30.2-beta.1", FabricUtil.COMPATIBILITY_0_17_4);
 		addVersion("0.19.0", "0.30.0-beta.8", FabricUtil.COMPATIBILITY_0_17_1);
 		addVersion("0.18.4", "0.30.0-beta.2", FabricUtil.COMPATIBILITY_0_17_0);
