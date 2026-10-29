@@ -28,19 +28,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.quiltmc.loader.api.ModContainer;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
 import org.quiltmc.loader.impl.util.FileUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
-public class GuiManagerImpl implements PluginGuiManager {
-	private GuiManagerImpl(boolean unused) {}
-
-	@Deprecated
-	public GuiManagerImpl() {}
-
-	public static final GuiManagerImpl MANAGER = new GuiManagerImpl(true);
+public class GuiManagerImpl {
 
 	public static final PluginIconImpl ICON_NULL = new PluginIconImpl("null");
 
@@ -75,12 +68,6 @@ public class GuiManagerImpl implements PluginGuiManager {
 	private static final Map<String, QuiltLoaderIcon> MOD_ICON_CACHE = new ConcurrentHashMap<>();
 
 	// Icons
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon allocateIcon(Map<Integer, BufferedImage> image) {
-		return allocateIcons(image);
-	}
 
 	public static QuiltLoaderIcon allocateIcons(Map<Integer, BufferedImage> imageSizeMap) {
 		int index = NEXT_ICON_KEY.incrementAndGet();
@@ -121,121 +108,5 @@ public class GuiManagerImpl implements PluginGuiManager {
 			return ICON_GENERIC_FILE;
 		}
 		return allocateIcons(images.values().toArray(new byte[0][]));
-	}
-
-	// Builtin
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconFolder() {
-		return ICON_FOLDER;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconUnknownFile() {
-		return ICON_GENERIC_FILE;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconTextFile() {
-		return ICON_TEXT_FILE;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconZipFile() {
-		return ICON_ZIP;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconJarFile() {
-		return ICON_JAR;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconJsonFile() {
-		return ICON_JSON;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconJavaClassFile() {
-		return ICON_JAVA_CLASS;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconPackage() {
-		return ICON_PACKAGE;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconJavaPackage() {
-		return ICON_JAVA_PACKAGE;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconDisabled() {
-		return ICON_DISABLED;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconQuilt() {
-		return ICON_QUILT;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconFabric() {
-		return ICON_FABRIC;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconTick() {
-		return ICON_TICK;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconCross() {
-		return ICON_CROSS;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconLevelFatal() {
-		return ICON_LEVEL_FATAL;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconLevelError() {
-		return ICON_LEVEL_ERROR;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconLevelWarn() {
-		return ICON_LEVEL_WARN;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconLevelConcern() {
-		return ICON_LEVEL_CONCERN;
-	}
-
-	@Override
-	@Deprecated
-	public QuiltLoaderIcon iconLevelInfo() {
-		return ICON_LEVEL_INFO;
 	}
 }

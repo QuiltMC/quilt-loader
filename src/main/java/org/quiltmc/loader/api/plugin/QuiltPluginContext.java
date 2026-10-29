@@ -24,7 +24,6 @@ import org.quiltmc.loader.api.ExtendedFiles;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.Rule;
@@ -65,18 +64,6 @@ public interface QuiltPluginContext {
 	// ##############
 	// # Operations #
 	// ##############
-
-	/** Adds an additional file to scan for mods, which will go through the same steps as files found in mod folders.
-	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
-	 * or vice versa. Or any mod type of which a loader plugin can load).
-	 * 
-	 * @param guiNode The GUI node to display the loaded mod details under
-	 * @param direct True if the file is directly loaded rather than being included in another mod (see
-	 *            {@link ModLocation#isDirect()})
-	 * @deprecated {@link PluginGuiTreeNode} has moved to public API: {@link QuiltTreeNode}. As such please call
-	 *             {@link #addFileToScan(Path, QuiltTreeNode, boolean)} instead. */
-	@Deprecated
-	void addFileToScan(Path file, PluginGuiTreeNode guiNode, boolean direct);
 
 	/** Adds an additional file to scan for mods, which will go through the same steps as files found in mod folders.
 	 * (This is more flexible than loading files manually, since it allows fabric mods to be jar-in-jar'd in quilt mods,
@@ -133,18 +120,6 @@ public interface QuiltPluginContext {
 	/** Retrieves a context for directly adding {@link LoadOption}s and {@link Rule}s. Note that you shouldn't use this
 	 * to add mods. */
 	RuleContext ruleContext();
-
-	/** Adds a {@link ModLoadOption} to the {@link RuleContext}, using the specified gui node for all it's location
-	 * information.
-	 * <p>
-	 * This is preferable to calling {@link RuleContext#addOption(LoadOption)} since that adds a "floating" parent node
-	 * associated with the plugin itself, not where it might have been loaded from.
-	 * 
-	 * @param fileNode The {@link PluginGuiTreeNode} which is shown in the 'Files' tab of the error window.
-	 * @deprecated {@link PluginGuiTreeNode} has moved to public API: {@link QuiltTreeNode}. As such please call
-	 *             {@link #addModLoadOption(ModLoadOption, QuiltTreeNode)} instead. */
-	@Deprecated
-	void addModLoadOption(ModLoadOption mod, PluginGuiTreeNode fileNode);
 
 	/** Adds a {@link ModLoadOption} to the {@link RuleContext}, using the specified gui node for all it's location
 	 * information.

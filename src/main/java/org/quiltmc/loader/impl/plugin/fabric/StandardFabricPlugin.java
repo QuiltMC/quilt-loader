@@ -25,10 +25,10 @@ import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltLoaderIcon;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
+import org.quiltmc.loader.api.gui.QuiltTreeNode.SortOrder;
+import org.quiltmc.loader.api.gui.QuiltWarningLevel;
 import org.quiltmc.loader.api.plugin.ModLocation;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.SortOrder;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.fabric.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
@@ -45,7 +45,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
 	@Override
-	public ModLoadOption[] scanZip(Path root, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanZip(Path zipFile, Path root, ModLocation location, QuiltTreeNode guiNode) throws IOException {
 
 		Path parent = context().manager().getParent(root);
 
@@ -57,11 +57,11 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 	}
 
 	@Override
-	public ModLoadOption[] scanFolder(Path folder, ModLocation location, PluginGuiTreeNode guiNode) throws IOException {
+	public ModLoadOption[] scanFolder(Path folder, ModLocation location, QuiltTreeNode guiNode) throws IOException {
 		return scan0(folder, QuiltLoaderGui.iconFolder(), location, false, guiNode);
 	}
 
-	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip, PluginGuiTreeNode guiNode) throws IOException {
+	private ModLoadOption[] scan0(Path root, QuiltLoaderIcon fileIcon, ModLocation location, boolean isZip, QuiltTreeNode guiNode) throws IOException {
 		Path fmj = root.resolve("fabric.mod.json");
 		if (!FasterFiles.isRegularFile(fmj)) {
 			return null;
@@ -91,14 +91,14 @@ public class StandardFabricPlugin extends BuiltinQuiltPlugin {
 
 				if (!FasterFiles.exists(inner)) {
 					Log.warn(LogCategory.DISCOVERY, "Didn't find nested jar " + inner + " in " + context().manager().describePath(from));
-					PluginGuiTreeNode missingJij = guiNode.addChild(QuiltLoaderText.of(inner.toString()), SortOrder.ALPHABETICAL_ORDER);
-					missingJij.mainIcon(QuiltLoaderGui.iconJarFile());
+					QuiltTreeNode missingJij = guiNode.addChild(QuiltLoaderText.of(inner.toString()), SortOrder.ALPHABETICAL_ORDER);
+					missingJij.icon(QuiltLoaderGui.iconJarFile());
 					missingJij.addChild(QuiltLoaderText.translate("fabric.jar_in_jar.missing"))//
-						.setDirectLevel(WarningLevel.CONCERN);
+						.level(QuiltWarningLevel.CONCERN);
 					continue;
 				}
 
-				PluginGuiTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
+				QuiltTreeNode jarNode = guiNode.addChild(QuiltLoaderText.of(jar), SortOrder.ALPHABETICAL_ORDER);
 				context().addFileToScan(inner, jarNode, false);
 			}
 

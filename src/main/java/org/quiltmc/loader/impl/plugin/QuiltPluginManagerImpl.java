@@ -72,9 +72,6 @@ import org.quiltmc.loader.api.plugin.NonZipException;
 import org.quiltmc.loader.api.plugin.QuiltLoaderPlugin;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
 import org.quiltmc.loader.api.plugin.QuiltPluginManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode.WarningLevel;
 import org.quiltmc.loader.api.plugin.solver.AliasedLoadOption;
 import org.quiltmc.loader.api.plugin.solver.LoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -704,26 +701,8 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 	}
 
 	@Override
-	@Deprecated
-	public PluginGuiTreeNode getGuiNode(ModLoadOption mod) {
-		return modGuiNodes.get(mod);
-	}
-
-	@Override
 	public QuiltTreeNode getFilesTreeNode() {
 		return guiFileRoot;
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiTreeNode getRootGuiNode() {
-		return guiFileRoot;
-	}
-
-	@Override
-	@Deprecated
-	public PluginGuiManager getGuiManager() {
-		return GuiManagerImpl.MANAGER;
 	}
 
 	public QuiltDisplayedError reportError(BasePluginContext reporter, QuiltLoaderText title) {

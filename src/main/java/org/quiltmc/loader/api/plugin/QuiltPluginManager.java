@@ -33,8 +33,6 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.gui.QuiltLoaderGui;
 import org.quiltmc.loader.api.gui.QuiltTreeNode;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiManager;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
@@ -108,10 +106,10 @@ public interface QuiltPluginManager {
 	 * 
 	 * @param path The "load source" path that a mod was loaded from. This must be the "source" path as passed in to:
 	 *            <ul>
-	 *            <li>{@link QuiltLoaderPlugin#scanFolder(Path, ModLocation, PluginGuiTreeNode)}</li>
-	 *            <li>{@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)}</li>
+	 *            <li>{@link QuiltLoaderPlugin#scanFolder(Path, ModLocation, QuiltTreeNode)}</li>
+	 *            <li>{@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)}</li>
 	 *            <li>{@link #getParent(Path)} of the path passed into
-	 *            {@link QuiltLoaderPlugin#scanZip(Path, ModLocation, PluginGuiTreeNode)}.</li>
+	 *            {@link QuiltLoaderPlugin#scanZip(Path, ModLocation, QuiltTreeNode)}.</li>
 	 *            </ul>
 	 * @throws IllegalStateException if called outside of a {@link ModLoadOption#convertToMod(Path)} call. (Loader must
 	 *             intern all paths for consistencies sake, which doesn't work very well if you call this too late or
@@ -185,16 +183,16 @@ public interface QuiltPluginManager {
 	Set<Path> getModPaths();
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
-	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, QuiltTreeNode)} or the {@link #getParent(Path)} of
+	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, QuiltTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
 	 * @return The mod id of the loader plugin that is currently loading the given mod. */
 	@Nullable
 	String getModProvider(Path mod);
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
-	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, QuiltTreeNode)} or the {@link #getParent(Path)} of
+	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, QuiltTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
 	 * @return The mod load option that is loaded from the given path.
 	 * @deprecated Replaced by {@link #getModLoadOptions(Path)}, since this only returns a single load option! */
@@ -203,9 +201,9 @@ public interface QuiltPluginManager {
 	ModLoadOption getModLoadOption(Path mod);
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, PluginGuiTreeNode)}, or the
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)}, or the
 	 *            {@link #getParent(Path)} of a path passed to
-	 *            {@link QuiltLoaderPlugin#scanZip(Path, ModLocation, PluginGuiTreeNode)}. Alternatively you can pass in
+	 *            {@link QuiltLoaderPlugin#scanZip(Path, ModLocation, QuiltTreeNode)}. Alternatively you can pass in
 	 *            a path returned by {@link #getModPaths()}.
 	 * @return A map of potential mod load options, keyed by the {@link QuiltPluginContext#pluginId()}. */
 	@Nullable
@@ -257,16 +255,4 @@ public interface QuiltPluginManager {
 
 	/** @return The {@link QuiltTreeNode} that is the root of the "Files" tab. */
 	QuiltTreeNode getFilesTreeNode();
-
-	/** @deprecated Use {@link #getTreeNode(ModLoadOption)} instead. */
-	@Deprecated
-	PluginGuiTreeNode getGuiNode(ModLoadOption mod);
-
-	/** @deprecated Use {@link #getFilesTreeNode()} instead. */
-	@Deprecated
-	PluginGuiTreeNode getRootGuiNode();
-
-	/** @deprecated Since {@link PluginGuiManager} is deprecated. Use {@link QuiltLoaderGui} directly instead. */
-	@Deprecated
-	PluginGuiManager getGuiManager();
 }
