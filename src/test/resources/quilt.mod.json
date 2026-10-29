@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "quilt_loader": {
+    "group": "net.fabricmc",
+    "id": "fabric_test",
+    "version": "1.0.0",
+    "entrypoints": {
+      "preLaunch": "net.fabricmc.test.FabricTestMod",
+      "main": "net.fabricmc.test.FabricTestMod",
+      "test:testing": [
+        "net.fabricmc.test.EntrypointTest::instanceEntry",
+        "net.fabricmc.test.EntrypointTest::staticEntry",
+        "net.fabricmc.test.EntrypointTest::FIELD_ENTRY"
+      ]
+    },
+    "metadata": {
+      "name": "Test Mod"
+    }
+  },
+  "minecraft": {
+    "environment": "client"
+  }
+}
