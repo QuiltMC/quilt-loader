@@ -47,6 +47,13 @@ public interface MappingResolver {
 	String getCurrentRuntimeNamespace();
 
 	/**
+	 * Get the default mod distribution namespace.
+	 *
+	 * @return the namespace mods are distributed in
+	 */
+	String getDefaultModDistributionNamespace();
+
+	/**
 	 * Map a class name to the mapping currently used at runtime.
 	 *
 	 * @param fromNamespace the namespace of the provided class name

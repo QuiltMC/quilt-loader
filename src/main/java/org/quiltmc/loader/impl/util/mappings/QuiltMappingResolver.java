@@ -40,9 +40,11 @@ public class QuiltMappingResolver implements MappingResolver {
 	private final MappingTreeView tree;
 	private final String targetNamespace;
 	private final int targetNamespaceId;
+	private final String modDistributionNamespace;
 	private final List<String> namespaces;
 
-	public QuiltMappingResolver(@Nullable MappingTreeView tree, String targetNamespace) {
+	public QuiltMappingResolver(@Nullable MappingTreeView tree, String targetNamespace,
+								String modDistributionNamespace) {
 		if (tree == null) {
 			// Will return null (and therefore identity) if namespace == targetNamespace, and otherwise
 			// throw an exception in safeGetId
@@ -53,6 +55,7 @@ public class QuiltMappingResolver implements MappingResolver {
 		this.tree = tree;
 		this.targetNamespace = targetNamespace;
 		this.targetNamespaceId = tree.getNamespaceId(targetNamespace);
+		this.modDistributionNamespace = modDistributionNamespace;
 		List<String> namespaces = new ArrayList<>();
 		namespaces.add(tree.getSrcNamespace());
 		namespaces.addAll(tree.getDstNamespaces());
@@ -84,6 +87,11 @@ public class QuiltMappingResolver implements MappingResolver {
 	@Override
 	public String getCurrentRuntimeNamespace() {
 		return targetNamespace;
+	}
+
+	@Override
+	public String getDefaultModDistributionNamespace() {
+		return modDistributionNamespace;
 	}
 
 	@Override

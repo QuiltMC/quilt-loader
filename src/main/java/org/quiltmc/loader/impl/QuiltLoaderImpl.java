@@ -1159,8 +1159,10 @@ public final class QuiltLoaderImpl {
 		if (mappingResolver == null) {
 			mappingResolver = new LazyMappingResolver(() -> new QuiltMappingResolver(
 				QuiltLauncherBase.getLauncher().getMappingConfiguration().getMappings(),
-				QuiltLauncherBase.getLauncher().getTargetNamespace()
-			), QuiltLauncherBase.getLauncher().getTargetNamespace());
+				QuiltLauncherBase.getLauncher().getTargetNamespace(),
+				QuiltLauncherBase.getLauncher().getModDistributionNamespace()
+			), QuiltLauncherBase.getLauncher().getTargetNamespace(),
+				QuiltLauncherBase.getLauncher().getModDistributionNamespace());
 		}
 
 		return mappingResolver;
