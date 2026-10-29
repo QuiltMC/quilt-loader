@@ -44,6 +44,7 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
+import org.quiltmc.loader.impl.util.SystemProperties;
 import org.quiltmc.loader.impl.util.log.Log;
 import org.quiltmc.loader.impl.util.log.LogCategory;
 import org.quiltmc.parsers.json.JsonReader;
@@ -59,7 +60,7 @@ class TransformCache {
 	private final List<ModLoadOption> allMods;
 	private final List<ModLoadOption> modsInCache;
 	private final Map<String, String> hiddenClasses = new HashMap<>();
-	private static final boolean COPY_ON_WRITE = true;
+	private static final boolean COPY_ON_WRITE = !Boolean.getBoolean(SystemProperties.DISABLE_OPTIMIZED_COMPRESSED_TRANSFORM_CACHE);
 
 	public TransformCache(Path root, List<ModLoadOption> orderedMods) {
 		this.root = root;
