@@ -12,7 +12,7 @@ plugins {
 	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
-	id 'org.quiltmc.gradle.licenser' version '2.0.2'
+	id 'dev.yumi.gradle.licenser' version '4.0.+'
 	id 'org.quiltmc.loom' version '1.11.1' apply false
 	id 'com.gradleup.shadow' version '8.3.10'
 }
@@ -311,7 +311,6 @@ javadoc {
 
 allprojects {
 	license {
-		rule project.rootProject.file("codeformat/FABRIC_MODIFIED_HEADER")
 		rule project.rootProject.file("codeformat/HEADER")
 		include '**/*.java'
 
