@@ -47,6 +47,8 @@ public final class SystemProperties {
 	public static final String DEFAULT_MIXIN_REMAP_TYPE = "loader.defaultMixinRemapType";
 	public static final String UNIT_TEST = "loader.unitTest";
 	public static final String DEBUG_MOD_SOLVING = "loader.debug.mod_solving";
+	/** Logs mods that no other loaded mod depends on. Useful for finding unused libraries in modpacks. */
+	public static final String DEBUG_LOG_MODS_WITHOUT_DEPENDENTS = "loader.debug.log_mods_without_dependents";
 	public static final String PRINT_MOD_SOLVING_RESULTS = "loader.mod_solving.print_results";
 	public static final String DISABLE_MOD_SOLVING_PRE_PROCESSING = "loader.mod_solving.disable_pre_processor";
 	public static final String MODS_DIRECTORY = "loader.modsDir";

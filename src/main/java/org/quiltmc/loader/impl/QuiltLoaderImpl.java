@@ -344,6 +344,7 @@ public final class QuiltLoaderImpl {
 		}
 
 		modList.sort(Comparator.comparing(ModLoadOption::id));
+		ModDependentsDebug.logModsWithoutDependents(modList);
 		int seed = modIds.hashCode();
 		Collections.shuffle(modList, new Random(seed));
 
