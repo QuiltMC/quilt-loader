@@ -122,7 +122,7 @@ public class QuiltRuleBreakOnly extends QuiltRuleBreak {
 		options[1] = definer.negate(source);
 
 		if (unless != null) {
-			options[2] = definer.negate(unless.source);
+			options[2] = unless.source;
 		}
 
 		for (ModLoadOption conflict : conficts) {

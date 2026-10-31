@@ -470,6 +470,7 @@ class SolverErrorHelper {
 		error.appendReportText("Duplicate mandatory mod ids " + commonIds);
 		setIconFromMod(manager, firstMandatory, error);
 
+		mandatories.sort(Comparator.comparing(option -> manager.describePath(option.from()), String::compareTo));
 		for (ModLoadOption option : mandatories) {
 			String path = manager.describePath(option.from());
 			// Just in case
@@ -594,7 +595,12 @@ class SolverErrorHelper {
 			StringBuilder sb = new StringBuilder();
 			int number = 1;
 			ArrayList<Rule> rules = new ArrayList<>(this.rules);
-			rules.sort(Comparator.comparing(Rule::toString));
+			rules.sort(Comparator.comparing(rule -> {
+				rule.fallbackErrorDescription(sb);
+				String result = sb.toString();
+				sb.setLength(0);
+				return result;
+			}));
 			for (Rule rule : rules) {
 				error.appendDescription(QuiltLoaderText.translate("error.unhandled_solver.desc.rule_n", number, rule.getClass()));
 				rule.appendRuleDescription(error::appendDescription);

@@ -1,0 +1,57 @@
+---- Quilt Loader: Failed to load ----
+Date/Time: 0001/01/01 00:00:00.0000 [+0000]
+Quilt Loader Version: Internal Tests
+
+-- Error 1 --
+
+mod_a breaks all versions of mod_b, which is present!
+
+- <mods>/mod_a.jar
+
+
+-- Plugin State --
+
+Cycle number = 1
+Cycle Step = SOLVE
+
+Loaded Plugins (2):
+ - 'quilt_loader' (Builtin)
+ - 'quilted_fabric_loader' (Builtin)
+
+
+
+
+-- Mod Table --
+
+| Mod          | ID           | Version       | Plugin       | Flags | File Hash (SHA-1) | File(s)          |
+|--------------|--------------|---------------|--------------|-------|-------------------|------------------|
+| Quilt Loader | quilt_loader | 0.31.0-beta.5 | !missing!    |       |                   |                  |
+| mod_a        | mod_a        | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod_a.jar |
+| mod_b        | mod_b        | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod_b.jar |
+|--------------|--------------|---------------|--------------|-------|-------------------|------------------|
+
+
+-- Mod Details --
+
+<mods>/mod_a.jar:
+################################
+#  Loaded by  'quilt_loader'   #
+#  Name     = 'mod_a'          #
+#  ID       = 'mod_a'          #
+#  Version  = '1.0.0'          #
+#  LoadType = IF_REQUIRED      #
+#  Breaks  on 'mod_b' (-∞, ∞)  #
+################################
+
+<mods>/mod_b.jar:
+###############################
+#  Loaded by  'quilt_loader'  #
+#  Name     = 'mod_b'         #
+#  ID       = 'mod_b'         #
+#  Version  = '1.0.0'         #
+#  LoadType = IF_REQUIRED     #
+###############################
+
+
+
+---- end of report ----

@@ -987,7 +987,10 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			mods.addAll(set.all);
 		}
 
-		for (ModLoadOption mod : mods.stream().sorted(Comparator.comparing(i -> i.metadata().name())).collect(Collectors.toList())) {
+		for (ModLoadOption mod : mods.stream().sorted(
+				Comparator.<ModLoadOption, String>comparing(i -> i.metadata().name())
+						.thenComparing(ModLoadOption::version, Version::compareTo)
+		).collect(Collectors.toList())) {
 			AsciiTableRow row = table.addRow();
 			// - Name
 			// - ID
