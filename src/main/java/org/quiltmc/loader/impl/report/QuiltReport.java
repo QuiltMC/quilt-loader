@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -83,10 +84,22 @@ public class QuiltReport {
 		writeInternal(to, false);
 	}
 
+	private static boolean isJUnitTest() {
+		for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+			if (element.getClassName().startsWith("org.junit.")) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void writeInternal(PrintWriter to, boolean toLog) {
 		to.println("---- " + header + " ----");
 
 		ZonedDateTime now = ZonedDateTime.now();
+		if (isJUnitTest()) {
+			now = ZonedDateTime.of(0, 1, 1,0,0,0,0, ZoneId.of("UTC"));
+		}
 		to.println("Date/Time: " + now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSSS '['Z']'")));
 
 		for (String line : overview) {

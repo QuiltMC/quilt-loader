@@ -1,0 +1,62 @@
+Warnings for quilt.mod.json at: '<mods>/mod.jar/quilt.mod.json'
+- Deprecated array format for dependencies: see https://github.com/QuiltMC/rfcs/pull/56 for more information.
+- Unnecessary dependency range 1.19 at line 7 column 58 path $.quilt_loader.depends[0].versions[0] (resolves as [1.19, 2)), since it doesn't affect the result [1.19-alpha.22.24.a, 2)
+---- Quilt Loader: Failed to load ----
+Date/Time: 0001/01/01 00:00:00.0000 [+0000]
+Quilt Loader Version: 0.31.0-beta.5
+
+-- Error 1 --
+
+mod-resolving-tests-main requires version [1.19-alpha.22.24.a, 2) of minecraft, but only wrong versions are present:
+
+- version 1.18.2 from <mods>/minecraft.jar
+
+mod-resolving-tests-main is loaded from <mods>/mod.jar
+
+
+-- Plugin State --
+
+Cycle number = 1
+Cycle Step = SOLVE
+
+Loaded Plugins (2):
+ - 'quilt_loader' (Builtin)
+ - 'quilted_fabric_loader' (Builtin)
+
+
+
+
+-- Mod Table --
+
+| Mod                      | ID                       | Version       | Plugin       | Flags | File Hash (SHA-1) | File(s)              |
+|--------------------------|--------------------------|---------------|--------------|-------|-------------------|----------------------|
+| Quilt Loader             | quilt_loader             | 0.31.0-beta.5 | !missing!    |       |                   |                      |
+| minecraft                | minecraft                | 1.18.2        | quilt_loader | ..    |                   | <mods>\minecraft.jar |
+| mod-resolving-tests-main | mod-resolving-tests-main | 1.0.0         | quilt_loader | ..    |                   | <mods>\mod.jar       |
+|--------------------------|--------------------------|---------------|--------------|-------|-------------------|----------------------|
+
+
+-- Mod Details --
+
+<mods>\minecraft.jar:
+###############################
+#  Loaded by  'quilt_loader'  #
+#  Name     = 'minecraft'     #
+#  ID       = 'minecraft'     #
+#  Version  = '1.18.2'        #
+#  LoadType = IF_REQUIRED     #
+###############################
+
+<mods>\mod.jar:
+####################################################
+#  Loaded by  'quilt_loader'                       #
+#  Name     = 'mod-resolving-tests-main'           #
+#  ID       = 'mod-resolving-tests-main'           #
+#  Version  = '1.0.0'                              #
+#  LoadType = IF_REQUIRED                          #
+#  Depends on 'minecraft' [1.19-alpha.22.24.a, 2)  #
+####################################################
+
+
+
+---- end of report ----

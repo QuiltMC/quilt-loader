@@ -17,7 +17,10 @@
 package org.quiltmc.test;
 
 import org.junit.jupiter.api.*;
+import org.quiltmc.LogComparableTest;
 import org.quiltmc.loader.impl.metadata.qmj.ModMetadataReader;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
-public class ModJsonParsingTests {
+public class ModJsonParsingTests extends LogComparableTest {
 	private static Path testLocation;
 	private static Path specPath;
 	private static Path errorPath;
@@ -49,17 +52,23 @@ public class ModJsonParsingTests {
 	@TestFactory
 	Stream<DynamicTest> autoTests() throws IOException {
 		Path loc = testLocation.resolve("auto");
-		Stream<DynamicTest> spec = DynamicTest.stream(Files.walk(loc.resolve("spec")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
-				p -> p.getFileName().toString(), p -> ModMetadataReader.read(p));
-		Stream<DynamicTest> error =	DynamicTest.stream(Files.walk(loc.resolve("error")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
-				p -> p.getFileName().toString(), p -> {
+		Stream<DynamicTest> spec = streamDynamic(
+				Files.walk(loc.resolve("spec")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
+				p -> p.getFileName().toString(),
+				p -> ModMetadataReader.read(p)
+		);
+		Stream<DynamicTest> error =	streamDynamic(
+				Files.walk(loc.resolve("error")).filter(path -> !Files.isDirectory(path) && path.toString().endsWith(".json")),
+				p -> p.getFileName().toString(),
+				p -> {
 					try {
 						ModMetadataReader.read(p);
 						Assertions.fail("Erroneous quilt.mod.json was parsed successfully (" + p + ")");
 					} catch (Exception ex) {
-						// do nothing
+						Log.error(LogCategory.TEST, ex.getMessage());
 					}
-				});
+				}
+		);
 		return Stream.concat(spec, error);
 	}
 }

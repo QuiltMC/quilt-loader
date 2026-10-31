@@ -1,0 +1,57 @@
+---- Quilt Loader: Failed to load ----
+Date/Time: 0001/01/01 00:00:00.0000 [+0000]
+Quilt Loader Version: 0.31.0-beta.5
+
+-- Error 1 --
+
+mod-resolving-tests-normal breaks all versions of mod-resolving-tests-broken, which is present!
+
+- <mods>/normal.jar
+
+
+-- Plugin State --
+
+Cycle number = 1
+Cycle Step = SOLVE
+
+Loaded Plugins (2):
+ - 'quilt_loader' (Builtin)
+ - 'quilted_fabric_loader' (Builtin)
+
+
+
+
+-- Mod Table --
+
+| Mod                        | ID                         | Version       | Plugin                | Flags | File Hash (SHA-1) | File(s)           |
+|----------------------------|----------------------------|---------------|-----------------------|-------|-------------------|-------------------|
+| Quilt Loader               | quilt_loader               | 0.31.0-beta.5 | !missing!             |       |                   |                   |
+| mod-resolving-tests-broken | mod-resolving-tests-broken | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>\broken.jar |
+| mod-resolving-tests-normal | mod-resolving-tests-normal | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>\normal.jar |
+|----------------------------|----------------------------|---------------|-----------------------|-------|-------------------|-------------------|
+
+
+-- Mod Details --
+
+<mods>\broken.jar:
+#############################################
+#  Loaded by  'quilted_fabric_loader'       #
+#  Name     = 'mod-resolving-tests-broken'  #
+#  ID       = 'mod-resolving-tests-broken'  #
+#  Version  = '1.0.0'                       #
+#  LoadType = IF_POSSIBLE                   #
+#############################################
+
+<mods>\normal.jar:
+#####################################################
+#  Loaded by  'quilted_fabric_loader'               #
+#  Name     = 'mod-resolving-tests-normal'          #
+#  ID       = 'mod-resolving-tests-normal'          #
+#  Version  = '1.0.0'                               #
+#  LoadType = IF_POSSIBLE                           #
+#  Breaks  on 'mod-resolving-tests-broken' (-∞, ∞)  #
+#####################################################
+
+
+
+---- end of report ----
