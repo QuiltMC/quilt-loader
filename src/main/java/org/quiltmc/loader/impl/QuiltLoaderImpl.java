@@ -1022,13 +1022,13 @@ public final class QuiltLoaderImpl {
 		}
 		path = path.toAbsolutePath().normalize();
 		if (modsDir != null && path.startsWith(modsDir)) {
-			return "<mods>" + fsSep + modsDir.relativize(path);
+			return "<mods>" + fsSep + modsDir.relativize(path).toString().replace("\\", fsSep);
 		}
 		if (gameDir != null && path.startsWith(gameDir)) {
-			return "<game>" + fsSep + gameDir.relativize(path);
+			return "<game>" + fsSep + gameDir.relativize(path).toString().replace("\\", fsSep);
 		}
-		String pathStr = path.toString();
-		String userHome = System.getProperty("user.home");
+		String pathStr = path.toString().replace("\\", fsSep);
+		String userHome = System.getProperty("user.home").replace("\\", fsSep);
 		if (userHome.isEmpty()) {
 			return pathStr;
 		}
