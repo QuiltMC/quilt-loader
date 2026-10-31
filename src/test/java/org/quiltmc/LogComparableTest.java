@@ -85,7 +85,7 @@ public abstract class LogComparableTest {
 		System.err.close();
 		System.setErr(systemErr);
 
-		String result = output.toString();
+		String result = output.toString().replace("\r", "");
 
 		String displayName = info
 				.getDisplayName()

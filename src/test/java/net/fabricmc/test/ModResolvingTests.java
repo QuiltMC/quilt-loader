@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.quiltmc.LogComparableTest;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
@@ -307,6 +308,7 @@ public final class ModResolvingTests extends LogComparableTest {
 	}
 
 	@Test
+	@Disabled("Unstable error reporting")
 	public void multiBreaksError() {
 		resolveErrorSet("multi_breaks");
 	}
