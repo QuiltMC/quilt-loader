@@ -31,14 +31,14 @@ Loaded Plugins (2):
 | Mod                      | ID                       | Version       | Plugin       | Flags | File Hash (SHA-1) | File(s)              |
 |--------------------------|--------------------------|---------------|--------------|-------|-------------------|----------------------|
 | Quilt Loader             | quilt_loader             | 0.31.0-beta.5 | !missing!    |       |                   |                      |
-| minecraft                | minecraft                | 1.18.2        | quilt_loader | ..    |                   | <mods>\minecraft.jar |
-| mod-resolving-tests-main | mod-resolving-tests-main | 1.0.0         | quilt_loader | ..    |                   | <mods>\mod.jar       |
+| minecraft                | minecraft                | 1.18.2        | quilt_loader | ..    |                   | <mods>/minecraft.jar |
+| mod-resolving-tests-main | mod-resolving-tests-main | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod.jar       |
 |--------------------------|--------------------------|---------------|--------------|-------|-------------------|----------------------|
 
 
 -- Mod Details --
 
-<mods>\minecraft.jar:
+<mods>/minecraft.jar:
 ###############################
 #  Loaded by  'quilt_loader'  #
 #  Name     = 'minecraft'     #
@@ -47,7 +47,7 @@ Loaded Plugins (2):
 #  LoadType = IF_REQUIRED     #
 ###############################
 
-<mods>\mod.jar:
+<mods>/mod.jar:
 ####################################################
 #  Loaded by  'quilt_loader'                       #
 #  Name     = 'mod-resolving-tests-main'           #

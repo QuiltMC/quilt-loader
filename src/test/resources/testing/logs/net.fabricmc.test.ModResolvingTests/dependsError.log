@@ -26,13 +26,13 @@ Loaded Plugins (2):
 | Mod                      | ID                       | Version       | Plugin                | Flags | File Hash (SHA-1) | File(s)         |
 |--------------------------|--------------------------|---------------|-----------------------|-------|-------------------|-----------------|
 | Quilt Loader             | quilt_loader             | 0.31.0-beta.5 | !missing!             |       |                   |                 |
-| mod-resolving-tests-main | mod-resolving-tests-main | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>\main.jar |
+| mod-resolving-tests-main | mod-resolving-tests-main | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>/main.jar |
 |--------------------------|--------------------------|---------------|-----------------------|-------|-------------------|-----------------|
 
 
 -- Mod Details --
 
-<mods>\main.jar:
+<mods>/main.jar:
 ######################################################
 #  Loaded by  'quilted_fabric_loader'                #
 #  Name     = 'mod-resolving-tests-main'             #

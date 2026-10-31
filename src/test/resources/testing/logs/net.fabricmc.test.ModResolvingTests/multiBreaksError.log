@@ -41,15 +41,15 @@ Loaded Plugins (2):
 | Mod          | ID           | Version       | Plugin       | Flags | File Hash (SHA-1) | File(s)           |
 |--------------|--------------|---------------|--------------|-------|-------------------|-------------------|
 | Quilt Loader | quilt_loader | 0.31.0-beta.5 | !missing!    |       |                   |                   |
-| normal       | normal       | 1.0.0         | quilt_loader | ..    |                   | <mods>\normal.jar |
-| part_1       | part_1       | 1.0.0         | quilt_loader | ..    |                   | <mods>\part_1.jar |
-| part_2       | part_2       | 1.0.0         | quilt_loader | ..    |                   | <mods>\part_2.jar |
+| normal       | normal       | 1.0.0         | quilt_loader | ..    |                   | <mods>/normal.jar |
+| part_1       | part_1       | 1.0.0         | quilt_loader | ..    |                   | <mods>/part_1.jar |
+| part_2       | part_2       | 1.0.0         | quilt_loader | ..    |                   | <mods>/part_2.jar |
 |--------------|--------------|---------------|--------------|-------|-------------------|-------------------|
 
 
 -- Mod Details --
 
-<mods>\normal.jar:
+<mods>/normal.jar:
 #####################################
 #  Loaded by  'quilt_loader'        #
 #  Name     = 'normal'              #
@@ -61,7 +61,7 @@ Loaded Plugins (2):
 #               - 'part_2' (-∞, ∞)  #
 #####################################
 
-<mods>\part_1.jar:
+<mods>/part_1.jar:
 ###############################
 #  Loaded by  'quilt_loader'  #
 #  Name     = 'part_1'        #
@@ -70,7 +70,7 @@ Loaded Plugins (2):
 #  LoadType = IF_REQUIRED     #
 ###############################
 
-<mods>\part_2.jar:
+<mods>/part_2.jar:
 ###############################
 #  Loaded by  'quilt_loader'  #
 #  Name     = 'part_2'        #

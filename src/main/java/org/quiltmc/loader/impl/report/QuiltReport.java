@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -84,20 +85,12 @@ public class QuiltReport {
 		writeInternal(to, false);
 	}
 
-	private static boolean isJUnitTest() {
-		for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-			if (element.getClassName().startsWith("org.junit.")) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	private void writeInternal(PrintWriter to, boolean toLog) {
 		to.println("---- " + header + " ----");
 
 		ZonedDateTime now = ZonedDateTime.now();
-		if (isJUnitTest()) {
+		//noinspection deprecation
+		if (LoaderUtil.isJUnitTest()) {
 			now = ZonedDateTime.of(0, 1, 1,0,0,0,0, ZoneId.of("UTC"));
 		}
 		to.println("Date/Time: " + now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSSS '['Z']'")));

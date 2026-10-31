@@ -26,14 +26,14 @@ Loaded Plugins (2):
 | Mod                        | ID                         | Version       | Plugin                | Flags | File Hash (SHA-1) | File(s)           |
 |----------------------------|----------------------------|---------------|-----------------------|-------|-------------------|-------------------|
 | Quilt Loader               | quilt_loader               | 0.31.0-beta.5 | !missing!             |       |                   |                   |
-| mod-resolving-tests-broken | mod-resolving-tests-broken | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>\broken.jar |
-| mod-resolving-tests-normal | mod-resolving-tests-normal | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>\normal.jar |
+| mod-resolving-tests-broken | mod-resolving-tests-broken | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>/broken.jar |
+| mod-resolving-tests-normal | mod-resolving-tests-normal | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>/normal.jar |
 |----------------------------|----------------------------|---------------|-----------------------|-------|-------------------|-------------------|
 
 
 -- Mod Details --
 
-<mods>\broken.jar:
+<mods>/broken.jar:
 #############################################
 #  Loaded by  'quilted_fabric_loader'       #
 #  Name     = 'mod-resolving-tests-broken'  #
@@ -42,7 +42,7 @@ Loaded Plugins (2):
 #  LoadType = IF_POSSIBLE                   #
 #############################################
 
-<mods>\normal.jar:
+<mods>/normal.jar:
 #####################################################
 #  Loaded by  'quilted_fabric_loader'               #
 #  Name     = 'mod-resolving-tests-normal'          #

@@ -116,6 +116,7 @@ import org.quiltmc.loader.impl.util.DefaultLanguageAdapter;
 import org.quiltmc.loader.impl.util.FileHasherImpl;
 import org.quiltmc.loader.impl.util.FilePreloadHelper;
 import org.quiltmc.loader.impl.util.HashUtil;
+import org.quiltmc.loader.impl.util.LoaderUtil;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
@@ -1015,6 +1016,10 @@ public final class QuiltLoaderImpl {
 
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
 		String fsSep = path.getFileSystem().getSeparator();
+		//noinspection deprecation
+		if (LoaderUtil.isJUnitTest()) {
+			fsSep = "/";
+		}
 		path = path.toAbsolutePath().normalize();
 		if (modsDir != null && path.startsWith(modsDir)) {
 			return "<mods>" + fsSep + modsDir.relativize(path);
