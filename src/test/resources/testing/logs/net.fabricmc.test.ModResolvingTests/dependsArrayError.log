@@ -3,7 +3,7 @@ Warnings for quilt.mod.json at: '<mods>/mod.jar/quilt.mod.json'
 - Unnecessary dependency range 1.19 at line 7 column 58 path $.quilt_loader.depends[0].versions[0] (resolves as [1.19, 2)), since it doesn't affect the result [1.19-alpha.22.24.a, 2)
 ---- Quilt Loader: Failed to load ----
 Date/Time: 0001/01/01 00:00:00.0000 [+0000]
-Quilt Loader Version: 0.31.0-beta.5
+Quilt Loader Version: Internal Tests
 
 -- Error 1 --
 

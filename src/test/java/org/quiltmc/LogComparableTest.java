@@ -22,9 +22,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -85,7 +88,13 @@ public abstract class LogComparableTest {
 		System.err.close();
 		System.setErr(systemErr);
 
-		String result = output.toString().replace("\r", "");
+		String rawResult = output.toString().trim();
+		List<String> result;
+		if (rawResult.isEmpty()) {
+			result = Collections.emptyList();
+		} else {
+			result = Arrays.asList(rawResult.split("\r?\n"));
+		}
 
 		String displayName = info
 				.getDisplayName()
@@ -106,11 +115,11 @@ public abstract class LogComparableTest {
 		if (!Files.exists(outputFile)) {
 			if (!result.isEmpty()) {
 				Files.createDirectories(outputFile.getParent());
-				Files.write(outputFile, result.getBytes());
+				Files.write(outputFile, result);
 			}
 		} else {
-			String original = new String(Files.readAllBytes(outputFile));
-			Assertions.assertEquals(original, result);
+			List<String> original = Files.readAllLines(outputFile, StandardCharsets.UTF_8);
+			Assertions.assertEquals(String.join("\n", original), String.join("\n", result));
 		}
 	}
 

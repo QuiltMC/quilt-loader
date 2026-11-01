@@ -1015,28 +1015,29 @@ public final class QuiltLoaderImpl {
 	}
 
 	public static String prefixPath(Path gameDir, Path modsDir, Path path) {
+		return prefixPath(gameDir, modsDir, path, false);
+	}
+
+	public static String prefixPath(Path gameDir, Path modsDir, Path path, boolean normalize) {
 		String fsSep = path.getFileSystem().getSeparator();
-		//noinspection deprecation
-		if (LoaderUtil.isJUnitTest()) {
-			fsSep = "/";
-		}
+		String outSep = normalize ? "/" : fsSep;
 		path = path.toAbsolutePath().normalize();
 		if (modsDir != null && path.startsWith(modsDir)) {
-			return "<mods>" + fsSep + modsDir.relativize(path).toString().replace("\\", fsSep);
+			return "<mods>" + outSep + modsDir.relativize(path).toString().replace(fsSep, outSep);
 		}
 		if (gameDir != null && path.startsWith(gameDir)) {
-			return "<game>" + fsSep + gameDir.relativize(path).toString().replace("\\", fsSep);
+			return "<game>" + outSep + gameDir.relativize(path).toString().replace(fsSep, outSep);
 		}
-		String pathStr = path.toString().replace("\\", fsSep);
-		String userHome = System.getProperty("user.home").replace("\\", fsSep);
+		String pathStr = path.toString().replace(fsSep, outSep);
+		String userHome = System.getProperty("user.home").replace(fsSep, outSep);
 		if (userHome.isEmpty()) {
 			return pathStr;
 		}
-		if (!userHome.endsWith(fsSep)) {
-			userHome += fsSep;
+		if (!userHome.endsWith(outSep)) {
+			userHome += outSep;
 		}
 		if (pathStr.startsWith(userHome)) {
-			return "<user>" + fsSep + pathStr.substring(userHome.length());
+			return "<user>" + outSep + pathStr.substring(userHome.length());
 		}
 		return pathStr;
 	}

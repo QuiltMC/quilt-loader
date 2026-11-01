@@ -32,7 +32,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.quiltmc.loader.impl.util.LoaderUtil;
+import org.jetbrains.annotations.Nullable;
+import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -47,8 +48,16 @@ public class QuiltReport {
 	private final List<String> overview = new ArrayList<>();
 	private final List<QuiltReportSection> sections = new ArrayList<>();
 
+	@Nullable
+	private final QuiltPluginManagerImpl pluginManager;
+
 	public QuiltReport(String header) {
+		this(header, null);
+	}
+
+	public QuiltReport(String header, @Nullable QuiltPluginManagerImpl pluginManager) {
 		this.header = header;
+		this.pluginManager = pluginManager;
 	}
 
 	public void overview(String... lines) {
@@ -89,8 +98,7 @@ public class QuiltReport {
 		to.println("---- " + header + " ----");
 
 		ZonedDateTime now = ZonedDateTime.now();
-		//noinspection deprecation
-		if (LoaderUtil.isJUnitTest()) {
+		if (this.pluginManager != null && this.pluginManager.isTest()) {
 			now = ZonedDateTime.of(0, 1, 1,0,0,0,0, ZoneId.of("UTC"));
 		}
 		to.println("Date/Time: " + now.format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSSS '['Z']'")));
