@@ -27,5 +27,5 @@ bin/
 
 # Testing
 run/
-logs/
+./logs/
 quiltloader.log

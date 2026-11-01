@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -592,6 +593,8 @@ class SolverErrorHelper {
 
 			StringBuilder sb = new StringBuilder();
 			int number = 1;
+			ArrayList<Rule> rules = new ArrayList<>(this.rules);
+			rules.sort(Comparator.comparing(Rule::toString));
 			for (Rule rule : rules) {
 				error.appendDescription(QuiltLoaderText.translate("error.unhandled_solver.desc.rule_n", number, rule.getClass()));
 				rule.appendRuleDescription(error::appendDescription);

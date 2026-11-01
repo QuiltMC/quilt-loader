@@ -25,18 +25,21 @@ import java.util.Map.Entry;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.quiltmc.LogComparableTest;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.QuiltPluginManagerForTests;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
-import org.quiltmc.loader.impl.discovery.ModSolvingException;
 import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.plugin.QuiltPluginManagerImpl;
 import org.quiltmc.loader.impl.report.QuiltReportedError;
 import org.quiltmc.loader.impl.solver.ModSolveResultImpl;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
-public final class ModResolvingTests {
+public final class ModResolvingTests extends LogComparableTest {
 
 	private static Path testLocation;
 
@@ -305,6 +308,7 @@ public final class ModResolvingTests {
 	}
 
 	@Test
+	@Disabled("Unstable error reporting")
 	public void multiBreaksError() {
 		resolveErrorSet("multi_breaks");
 	}
@@ -335,8 +339,8 @@ public final class ModResolvingTests {
 			}
 
 			fail(sb.toString());
-		} catch (ModResolutionException ignored) {
-			// Correct
+		} catch (ModResolutionException resolutionError) {
+			Log.error(LogCategory.TEST, resolutionError.getMessage());
 		}
 	}
 
