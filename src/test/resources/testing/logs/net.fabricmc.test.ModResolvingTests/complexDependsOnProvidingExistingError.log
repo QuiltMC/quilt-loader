@@ -1,0 +1,79 @@
+---- Quilt Loader: Failed to load ----
+Date/Time: 0001/01/01 00:00:00.0000 [+0000]
+Quilt Loader Version: Internal Tests
+
+-- Error 1 --
+
+Unhandled solver error involving the following rules:
+Rule 1:
+Dependency for {org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'mod_a' from <mods>/mod_a.jar} on mod_b versions [*] (1 valid options, 0 invalid options)
+	+ {org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'mod_b' from <mods>/mod_a.jar/mod_b.jar} {org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'mod_b' from <mods>/mod_a.jar/mod_b.jar}
+Rule 2:
+Mandatory mod Mod A (mod_a) v1.0.0
+Rule 3:
+Mandatory mod Mod C (mod_c) v1.0.0
+Rule 4:
+optional mod 'mod_c' (2 sources)
+	 - {org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'mod_b' from <mods>/mod_a.jar/mod_b.jar}
+	 - {org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'mod_c' from <mods>/mod_c.jar}
+
+
+
+-- Plugin State --
+
+Cycle number = 1
+Cycle Step = SOLVE
+
+Loaded Plugins (2):
+ - 'quilt_loader' (Builtin)
+ - 'quilted_fabric_loader' (Builtin)
+
+
+
+
+-- Mod Table --
+
+| Mod          | ID           | Version       | Plugin       | Flags | File Hash (SHA-1) | File(s)                    |
+|--------------|--------------|---------------|--------------|-------|-------------------|----------------------------|
+| Quilt Loader | quilt_loader | 0.31.0-beta.5 | !missing!    |       |                   |                            |
+| Mod A        | mod_a        | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod_a.jar           |
+| Mod B        | mod_b        | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod_a.jar/mod_b.jar |
+| Mod B        | mod_b        | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod_a.jar/mod_b.jar |
+| Mod C        | mod_c        | 1.0.0         | quilt_loader | ..    |                   | <mods>/mod_c.jar           |
+|--------------|--------------|---------------|--------------|-------|-------------------|----------------------------|
+
+
+-- Mod Details --
+
+<mods>/mod_a.jar:
+################################
+#  Loaded by  'quilt_loader'   #
+#  Name     = 'Mod A'          #
+#  ID       = 'mod_a'          #
+#  Version  = '1.0.0'          #
+#  LoadType = IF_REQUIRED      #
+#  Depends on 'mod_b' (-∞, ∞)  #
+################################
+
+<mods>/mod_a.jar/mod_b.jar:
+###############################
+#  Loaded by  'quilt_loader'  #
+#  Name     = 'Mod B'         #
+#  ID       = 'mod_b'         #
+#  Version  = '1.0.0'         #
+#  LoadType = IF_REQUIRED     #
+#  Provides   'mod_c' 1.0.0   #
+###############################
+
+<mods>/mod_c.jar:
+###############################
+#  Loaded by  'quilt_loader'  #
+#  Name     = 'Mod C'         #
+#  ID       = 'mod_c'         #
+#  Version  = '1.0.0'         #
+#  LoadType = IF_REQUIRED     #
+###############################
+
+
+
+---- end of report ----

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "quilt_loader": {
+    "group": "org.example",
+    "id": "mod_b",
+    "version": "1.0.0",
+    "intermediate_mappings": "net.fabricmc:intermediary",
+    "load_type": "if_required",
+    "provides": [ "mod_c" ]
+  }
+}
