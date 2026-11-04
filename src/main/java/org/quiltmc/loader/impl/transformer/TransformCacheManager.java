@@ -43,6 +43,7 @@ import org.quiltmc.loader.api.QuiltLoader;
 import org.quiltmc.loader.api.plugin.solver.ModLoadOption;
 import org.quiltmc.loader.api.plugin.solver.ModSolveResult;
 import org.quiltmc.loader.impl.discovery.ModResolutionException;
+import org.quiltmc.loader.impl.filesystem.MissingFileReferenceException;
 import org.quiltmc.loader.impl.filesystem.PartiallyWrittenIOException;
 import org.quiltmc.loader.impl.filesystem.QuiltMapFileSystem;
 import org.quiltmc.loader.impl.filesystem.QuiltUnifiedFileSystem;
@@ -240,11 +241,18 @@ public class TransformCacheManager {
 				}
 			}
 			return inner;
+		} catch (MissingFileReferenceException e) {
+
+			log("Not reusing previous transform cache since it contains removed mods: " + e.missing);
+
+			erasePreviousTransformCache(transformCacheFolder, cacheFile, e);
+
+			return null;
 		} catch (IOException | IOError io) {
 			if (io instanceof PartiallyWrittenIOException) {
 				log("Not reusing previous transform cache since it's incomplete!");
 			} else {
-				log("Not reusing previous transform cache since something went wrong while reading it!");
+				Log.warn(LogCategory.CACHE, "Not reusing previous transform cache since something went wrong while reading it!", io);
 			}
 
 			erasePreviousTransformCache(transformCacheFolder, cacheFile, io);

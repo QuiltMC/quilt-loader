@@ -56,6 +56,11 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFile
 		this(name, zipFrom, Collections.emptyMap(), zipPathPrefix, ZipHandling.PLAIN);
 	}
 
+	/** @param referencedFiles A complete map of external files which may be referenced instead of reading the zip. (The
+	 *            zip must have been written with
+	 *            {@link #writeQuiltCompressedFileSystem(Path, Map, Path, QuiltZipCompressionStatistics)})
+	 * @throws MissingFileReferenceException if the given zip references a file which isn't present in the reference
+	 *             map. */
 	public QuiltZipFileSystem(String name, Path zipFrom, Map<String, Path> referencedFiles, String zipPathPrefix) throws IOException {
 		this(name, zipFrom, referencedFiles, zipPathPrefix, ZipHandling.PLAIN);
 	}
@@ -64,6 +69,11 @@ public class QuiltZipFileSystem extends QuiltMapFileSystem<@NotNull QuiltZipFile
 		this(name, zipFrom, Collections.emptyMap(), zipPathPrefix, zip);
 	}
 
+	/** @param referencedFiles A complete map of external files which may be referenced instead of reading the zip. (The
+	 *            zip must have been written with
+	 *            {@link #writeQuiltCompressedFileSystem(Path, Map, Path, QuiltZipCompressionStatistics)})
+	 * @throws MissingFileReferenceException if the given zip references a file which isn't present in the reference
+	 *             map. */
 	public QuiltZipFileSystem(String name, Path zipFrom, Map<String, Path> referencedFiles, String zipPathPrefix, ZipHandling zip) throws IOException {
 		super(QuiltZipFileSystem.class, QuiltZipPath.class, name, true);
 

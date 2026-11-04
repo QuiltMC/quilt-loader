@@ -26,8 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.jar.Manifest;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -73,8 +75,11 @@ class ZipMounter<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exten
 		mountZipAt(zip, Collections.emptyMap(), dst, zipPathPrefix, type);
 	}
 
-	/** @param referencedFiles A complete map of {@link ReferencedFile}, where {@link ReferencedFile#referenceName} is
-	 *            the key and {@link ReferencedFile#file} is the value. */
+	/** @param referencedFiles A complete map of external files which may be referenced instead of reading the zip. (The
+	 *            zip must have been written with
+	 *            {@link QuiltZipFileSystem#writeQuiltCompressedFileSystem(Path, Map, Path, QuiltZipCompressionStatistics)})
+	 * @throws MissingFileReferenceException if the given zip references a file which isn't present in the reference
+	 *             map. */
 	static <@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P extends QuiltMapPath<FS, P>> void mountZipAt(
 		Path zip, Map<String, Path> referencedFiles, P dst, String zipPathPrefix, ZipHandling type) throws IOException {
 
@@ -139,6 +144,8 @@ class ZipMounter<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exten
 					List<ZipSource> refFileSources = new ArrayList<>();
 					int refFileCount = dataStream.readUnsignedShort();
 
+					Set<String> missingFiles = null;
+
 					for (int index = 0; index < refFileCount; index++) {
 						int strByteLength = dataStream.readUnsignedShort();
 						byte[] strBytes = new byte[strByteLength];
@@ -146,10 +153,11 @@ class ZipMounter<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exten
 						String name = new String(strBytes, StandardCharsets.UTF_8);
 						Path refFile = referencedFiles.get(name);
 						if (refFile == null) {
-							throw new IOException(
-								"Cannot reference a file that hasn't been passed in: " + name + "\nNot in "
-									+ referencedFiles
-							);
+							if (missingFiles == null) {
+								missingFiles = new HashSet<>();
+							}
+							missingFiles.add(name);
+							continue;
 						}
 						final ZipSource refSrc;
 						if (refFile.getFileSystem() == FileSystems.getDefault()) {
@@ -158,6 +166,10 @@ class ZipMounter<@NotNull FS extends QuiltMapFileSystem<FS, P>, @NotNull P exten
 							throw new IOException("Cannot reference a file that isn't on the default file system!");
 						}
 						refFileSources.add(refSrc);
+					}
+
+					if (missingFiles != null) {
+						throw new MissingFileReferenceException(missingFiles, referencedFiles.keySet());
 					}
 
 					readDirectory(refFileSources, dst, dataStream, zipPathPrefix, FileVersion.V3_REF);
