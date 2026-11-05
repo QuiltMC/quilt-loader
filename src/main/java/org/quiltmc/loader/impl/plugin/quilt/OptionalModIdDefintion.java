@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.quiltmc.loader.api.Version;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
@@ -171,7 +172,10 @@ public final class OptionalModIdDefintion extends ModIdDefinition {
 	@Override
 	public void fallbackErrorDescription(StringBuilder errors) {
 		errors.append(toString());
-		for (ModLoadOption option : sources) {
+		List<ModLoadOption> sortedSources = sources.stream()
+				.sorted(Comparator.comparing(ModLoadOption::id, String::compareTo).thenComparing(option -> manager.describePath(option.from()), String::compareTo))
+				.collect(Collectors.toList());
+		for (ModLoadOption option : sortedSources) {
 			errors.append("\n\t - ");
 			errors.append(option.getSpecificInfo());
 		}

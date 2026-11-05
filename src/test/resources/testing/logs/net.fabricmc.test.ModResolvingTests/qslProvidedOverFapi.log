@@ -1,0 +1,4 @@
+quilt-crash-handler={org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'quilt-crash-handler' from <mods>/qsl.jar/quilt-crash-handler.jar}
+a_mod={org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'a_mod' from <mods>/mod.jar}
+quilt-standard-libraries={org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'quilt-standard-libraries' from <mods>/qsl.jar}
+fabric-crash-handler={org.quiltmc.loader.impl.plugin.quilt.QuiltModOption 'quilt-crash-handler' from <mods>/qsl.jar/quilt-crash-handler.jar}

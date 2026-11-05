@@ -1,0 +1,47 @@
+---- Quilt Loader: Failed to load ----
+Date/Time: 0001/01/01 00:00:00.0000 [+0000]
+Quilt Loader Version: Internal Tests
+
+-- Error 1 --
+
+mod-resolving-tests-main requires any version of mod-resolving-tests-library, which is missing!
+
+mod-resolving-tests-main is loaded from <mods>/main.jar
+
+
+-- Plugin State --
+
+Cycle number = 1
+Cycle Step = SOLVE
+
+Loaded Plugins (2):
+ - 'quilt_loader' (Builtin)
+ - 'quilted_fabric_loader' (Builtin)
+
+
+
+
+-- Mod Table --
+
+| Mod                      | ID                       | Version       | Plugin                | Flags | File Hash (SHA-1) | File(s)         |
+|--------------------------|--------------------------|---------------|-----------------------|-------|-------------------|-----------------|
+| Quilt Loader             | quilt_loader             | 0.31.0-beta.5 | !missing!             |       |                   |                 |
+| mod-resolving-tests-main | mod-resolving-tests-main | 1.0.0         | quilted_fabric_loader | ..    |                   | <mods>/main.jar |
+|--------------------------|--------------------------|---------------|-----------------------|-------|-------------------|-----------------|
+
+
+-- Mod Details --
+
+<mods>/main.jar:
+######################################################
+#  Loaded by  'quilted_fabric_loader'                #
+#  Name     = 'mod-resolving-tests-main'             #
+#  ID       = 'mod-resolving-tests-main'             #
+#  Version  = '1.0.0'                                #
+#  LoadType = IF_POSSIBLE                            #
+#  Depends on 'mod-resolving-tests-library' (-∞, ∞)  #
+######################################################
+
+
+
+---- end of report ----

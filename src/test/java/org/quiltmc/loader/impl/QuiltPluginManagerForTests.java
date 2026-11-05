@@ -27,7 +27,7 @@ public class QuiltPluginManagerForTests extends QuiltPluginManagerImpl {
 	}
 
 	@Override
-	protected boolean isTest() {
+	public boolean isTest() {
 		return true;
 	}
 }
