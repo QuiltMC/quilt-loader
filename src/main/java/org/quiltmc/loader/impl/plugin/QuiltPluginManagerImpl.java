@@ -784,7 +784,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			return runInternal(scanClasspath);
 		} catch (ModSolvingError e) {
 			e.printStackTrace();
-			report = new QuiltReport("Quilt Loader: Crash Report");
+			report = new QuiltReport("Quilt Loader: Crash Report", this);
 			reportError(theQuiltPluginContext, QuiltLoaderText.translate("error.unhandled"))
 				.appendDescription(QuiltLoaderText.translate("error.unhandled.desc"))
 				.appendReportText("Unhandled ModSolvingError!")
@@ -794,11 +794,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 			break outer;
 		} catch (TreeContainsModError | HaltLoadingError e) {
-			report = new QuiltReport("Quilt Loader: Load Error Report");
+			report = new QuiltReport("Quilt Loader: Load Error Report", this);
 			break outer;
 		} catch (TimeoutException e) {
 			e.printStackTrace();
-			report = new QuiltReport("Quilt Loader: Load Timeout Report");
+			report = new QuiltReport("Quilt Loader: Load Timeout Report", this);
 			reportError(theQuiltPluginContext, QuiltLoaderText.translate("error.unhandled"))
 				.appendDescription(QuiltLoaderText.translate("error.unhandled.desc"))
 				.appendReportText("Load timeout!")
@@ -811,7 +811,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 			break outer;
 		} catch (Throwable t) {
 			t.printStackTrace();
-			report = new QuiltReport("Quilt Loader: Critial Error Report");
+			report = new QuiltReport("Quilt Loader: Critial Error Report", this);
 			reportError(theQuiltPluginContext, QuiltLoaderText.translate("error.unhandled"))
 				.appendDescription(QuiltLoaderText.translate("error.unhandled.desc"))
 				.appendReportText("Unhandled Throwable!")
@@ -823,7 +823,12 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 
 		// It's arguably the most important version - if anything goes wrong while writing this report
 		// at least we know what code was used to generate it.
-		report.overview("Quilt Loader Version: " + QuiltLoaderImpl.VERSION);
+		if (!this.isTest()) {
+			report.overview("Quilt Loader Version: " + QuiltLoaderImpl.VERSION);
+		} else {
+			report.overview("Quilt Loader Version: Internal Tests");
+		}
+
 
 		if (!errors.isEmpty()) {
 			int number = 1;
@@ -1018,7 +1023,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					row = table.addRow();
 				}
 
-				row.put(file, QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(0)));
+				row.put(file, QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, paths.get(0), this.isTest()));
 
 				if (paths.size() > 1) {
 					if (subFile == null) {
@@ -1028,7 +1033,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 					Iterator<Path> pathsIter = paths.iterator();
 					pathsIter.next(); // skip first element
 					while (pathsIter.hasNext()) {
-						subPathStr.append(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, pathsIter.next()));
+						subPathStr.append(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, pathsIter.next(), this.isTest()));
 						if (pathsIter.hasNext()) {
 							subPathStr.append("!");
 						}
@@ -1137,11 +1142,11 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 				Collection<Path> roots = getJoinedPaths(root);
 				to.accept("Joined path [" + roots.size() + "]:");
 				for (Path in : roots) {
-					to.accept(" - '" + QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, in) + "'");
+					to.accept(" - '" + QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, in, this.isTest()) + "'");
 				}
 				to.accept("mod:");
 			} else {
-				to.accept(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, root) + ":");
+				to.accept(QuiltLoaderImpl.prefixPath(absGameDir, absModsDir, root, this.isTest()) + ":");
 			}
 
 			for (String line : processDetail(pathMap, insideBox, root, 0)) {
@@ -1510,7 +1515,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 
 		if (!errors.isEmpty()) {
-			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load"));
+			throw new QuiltReportedError(new QuiltReport("Quilt Loader: Failed to load", this));
 		}
 
 		QuiltWarningLevel maximumLevel = guiFileRoot.maximumLevel();
@@ -1859,7 +1864,7 @@ public class QuiltPluginManagerImpl implements QuiltPluginManager {
 		}
 	}
 
-	protected boolean isTest() {
+	public boolean isTest() {
 		return false;
 	}
 
