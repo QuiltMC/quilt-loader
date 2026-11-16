@@ -59,7 +59,7 @@ public final class ManifestUtil {
 				return ((JarURLConnection) connection).getManifest();
 			}
 
-			try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(path, false)) {
+			try (FileSystemUtil.FileSystemDelegate jarFs = FileSystemUtil.getJarFileSystem(path, FileSystemUtil.AccessMode.READ_ONLY)) {
 				return readManifest(jarFs.get().getRootDirectories().iterator().next());
 			}
 		}

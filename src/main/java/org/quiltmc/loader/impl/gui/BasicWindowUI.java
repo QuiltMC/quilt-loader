@@ -738,7 +738,17 @@ class BasicWindowUI {
 		JPanel panel = new JPanel();
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-		JTree tree = new JTree((DefaultTreeModel) null);
+		JTree tree = new JTree((DefaultTreeModel) null)  {
+			@Override
+			public String convertValueToText(Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+				if (value instanceof CustomTreeNode) {
+					return applyWrapping(StringUtil.wrapLines(((CustomTreeNode) value).node.text, 120));
+				}
+
+				return super.convertValueToText(value, selected, expanded, leaf, row, hasFocus);
+			}
+		};
+
 		if (rootNode.childNodesByAddition.isEmpty() && rootNode.childNodesByAlphabetical.isEmpty()) {
 			// Swing doesn't seem to handle updates to an empty root node correctly
 			// I assume this is because an invisible root node is *collapsed* by default?
@@ -1284,7 +1294,7 @@ class BasicWindowUI {
 
 		@Override
 		public String toString() {
-			return applyWrapping(StringUtil.wrapLines(node.text, 120));
+			return node.text;
 		}
 
 		@Override
