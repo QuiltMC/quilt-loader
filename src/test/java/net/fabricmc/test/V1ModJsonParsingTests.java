@@ -1,6 +1,6 @@
 /*
  * Copyright 2016 FabricMC
- * Copyright 2022-2023 QuiltMC
+ * Copyright 2022-2023, 2025 QuiltMC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +38,6 @@ import org.quiltmc.loader.impl.fabric.metadata.FabricModMetadataReader;
 import org.quiltmc.loader.impl.fabric.metadata.ParseMetadataException;
 import org.quiltmc.loader.impl.metadata.FabricLoaderModMetadata;
 
-@Disabled // TODO needs fixing.
 final class V1ModJsonParsingTests {
 	private static Path testLocation;
 	private static Path specPath;

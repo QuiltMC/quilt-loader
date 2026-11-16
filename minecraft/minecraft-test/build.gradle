@@ -1,7 +1,7 @@
 apply plugin: "org.quiltmc.loom"
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+sourceCompatibility = JavaVersion.VERSION_21
+targetCompatibility = JavaVersion.VERSION_21
 
 loom {
 	runConfigs.configureEach {
@@ -57,7 +57,7 @@ test {
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.encoding = "UTF-8"
-	it.options.release.set(17)
+	it.options.release.set(21)
 }
 
 runClient {
