@@ -119,4 +119,21 @@ public interface QuiltTreeNode {
 	 *            {@link SortOrder#ALPHABETICAL_ORDER}.
 	 * @return this */
 	QuiltTreeNode sortPrefix(String sortPrefix);
+
+	/** @return This node's parent if it exists, else null. */
+	QuiltTreeNode parent();
+
+	/** Sets the {@link QuiltWarningLevel} of this node to {@link QuiltWarningLevel#ERROR}, and associates it with the given
+	 * {@link QuiltDisplayedError}. */
+	default QuiltTreeNode setError(Throwable exception, QuiltDisplayedError reportedError) {
+		level(QuiltWarningLevel.ERROR);
+		setException(exception);
+		assert reportedError != null;
+		return this;
+	}
+
+	/** @return this */
+	default QuiltTreeNode setException(Throwable exception) {
+		return this;
+	}
 }

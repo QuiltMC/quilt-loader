@@ -28,7 +28,7 @@ import org.quiltmc.loader.api.FasterFiles;
 import org.quiltmc.loader.api.gui.QuiltDisplayedError;
 import org.quiltmc.loader.api.gui.QuiltLoaderText;
 import org.quiltmc.loader.api.plugin.QuiltPluginContext;
-import org.quiltmc.loader.api.plugin.gui.PluginGuiTreeNode;
+import org.quiltmc.loader.api.gui.QuiltTreeNode;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.log.Log;
@@ -38,7 +38,7 @@ import org.quiltmc.loader.impl.util.log.LogCategory;
 public class ArgumentModCandidateFinder {
 
 	public static void addMods(QuiltPluginContext ctx, String list, String source) {
-		PluginGuiTreeNode argModsNode = ctx.manager().getRootGuiNode().addChild(QuiltLoaderText.translate("gui.text.arg_mods"));
+		QuiltTreeNode argModsNode = ctx.manager().getFilesTreeNode().addChild(QuiltLoaderText.translate("gui.text.arg_mods"));
 		for (String pathStr : list.split(File.pathSeparator)) {
 			if (pathStr.isEmpty()) continue;
 
@@ -73,7 +73,7 @@ public class ArgumentModCandidateFinder {
 		}
 	}
 
-	private static void addMod(QuiltPluginContext ctx, String pathStr, String original, String source, PluginGuiTreeNode argModsNode) {
+	private static void addMod(QuiltPluginContext ctx, String pathStr, String original, String source, QuiltTreeNode argModsNode) {
 
 		final boolean folder = pathStr.endsWith(File.separator + "*") || pathStr.endsWith("/*");
 
