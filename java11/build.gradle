@@ -1,0 +1,27 @@
+java {
+	toolchain {
+		languageVersion.set(JavaLanguageVersion.of(11))
+	}
+}
+
+dependencies {
+	implementation project(':dependencies')
+	implementation project(path: ':dependencies', configuration: 'include')
+	implementation project(":")
+}
+
+sourceSets {
+	main {
+		java {
+
+		}
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.encoding = "UTF-8"
+}
+
+jar {
+	enabled = false
+}

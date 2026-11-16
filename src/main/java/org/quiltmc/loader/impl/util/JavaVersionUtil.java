@@ -16,7 +16,7 @@
 
 package org.quiltmc.loader.impl.util;
 
-@MultiReleaseJarCandidate
+@MultiReleaseJarModified
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 public final class JavaVersionUtil {
 
