@@ -41,6 +41,7 @@ public final class SystemProperties {
 
 	public static final String MOJMAP_PATH = "loader.experimental.minecraft.mojmapPath"; // EXPERIMENTAL: you probably don't need to provide this just yet
 	public static final String TARGET_NAMESPACE = "loader.experimental.minecraft.targetNamespace";
+	public static final String DEFAULT_MOD_DISTRIBUTION_NAMESPACE = "loader.experimental.minecraft.defaultModDistributionNamespace";
 	public static final String GAME_VERSION = "loader.gameVersion";
 	public static final String REMAP_CLASSPATH_FILE = "loader.remapClasspathFile";
 	// mixin remap type to assume mods are using when not explicit stated, defaults to mixin

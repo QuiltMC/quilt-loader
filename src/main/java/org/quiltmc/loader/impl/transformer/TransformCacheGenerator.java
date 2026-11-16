@@ -37,6 +37,8 @@ import org.quiltmc.loader.impl.launch.common.QuiltLauncherBase;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 import org.quiltmc.loader.impl.util.SystemProperties;
+import org.quiltmc.loader.impl.util.log.Log;
+import org.quiltmc.loader.impl.util.log.LogCategory;
 
 @QuiltLoaderInternal(QuiltLoaderInternalType.NEW_INTERNAL)
 final class TransformCacheGenerator {
@@ -123,6 +125,7 @@ final class TransformCacheGenerator {
 
 	private static ClassTweaker loadClassTweakers(TransformCache cache) {
 		ClassTweaker ret = ClassTweaker.newInstance();
+		ret.visitHeader(QuiltLoader.getMappingResolver().getDefaultModDistributionNamespace());
 		ClassTweakerReader classTweakerReader = ClassTweakerReader.create(ret);
 
 		for (ModLoadOption mod : cache.getModsInCache()) {
@@ -135,7 +138,8 @@ final class TransformCacheGenerator {
 				}
 
 				try (BufferedReader reader = Files.newBufferedReader(path)) {
-					classTweakerReader.read(reader, QuiltLoader.getMappingResolver().getCurrentRuntimeNamespace());
+					Log.info(LogCategory.CACHE, "Using " + QuiltLoader.getMappingResolver().getDefaultModDistributionNamespace() + " with " + path);
+					classTweakerReader.read(reader, QuiltLoader.getMappingResolver().getDefaultModDistributionNamespace());
 				} catch (Exception e) {
 					throw new RuntimeException("Failed to read classTweaker from mod " + mod.metadata().id(), e);
 				}

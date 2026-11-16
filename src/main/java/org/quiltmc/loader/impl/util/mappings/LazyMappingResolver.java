@@ -30,12 +30,15 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 public class LazyMappingResolver implements MappingResolver {
 	private final Supplier<MappingResolver> delegateSupplier;
 	private final String currentRuntimeNamespace;
+	private final String defaultModDistributionNamespace;
 
 	private MappingResolver delegate = null;
 
-	public LazyMappingResolver(Supplier<MappingResolver> delegateSupplier, String currentRuntimeNamespace) {
+	public LazyMappingResolver(Supplier<MappingResolver> delegateSupplier, String currentRuntimeNamespace,
+							   String defaultModDistributionNamespace) {
 		this.delegateSupplier = delegateSupplier;
 		this.currentRuntimeNamespace = currentRuntimeNamespace;
+		this.defaultModDistributionNamespace = defaultModDistributionNamespace;
 	}
 
 	private MappingResolver getDelegate() {
@@ -54,6 +57,11 @@ public class LazyMappingResolver implements MappingResolver {
 	@Override
 	public String getCurrentRuntimeNamespace() {
 		return currentRuntimeNamespace;
+	}
+
+	@Override
+	public String getDefaultModDistributionNamespace() {
+		return defaultModDistributionNamespace;
 	}
 
 	@Override

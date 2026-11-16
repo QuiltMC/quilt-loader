@@ -83,6 +83,10 @@ public interface QuiltLauncher {
 		return getMappingConfiguration().getTargetNamespace();
 	}
 
+	default String getModDistributionNamespace() {
+		return getMappingConfiguration().getModDistributionNamespace();
+	}
+
 	List<Path> getClassPath();
 
 	GameTransformer getEntrypointTransformer();
