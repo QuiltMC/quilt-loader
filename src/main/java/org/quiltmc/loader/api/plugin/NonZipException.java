@@ -19,7 +19,7 @@ package org.quiltmc.loader.api.plugin;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternal;
 import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
 
-/** Thrown by {@link QuiltPluginManager#loadZip(java.nio.file.Path)} if a file couldn't be opened as a zip. */
+/** Thrown by {@link QuiltPluginManager#loadZipNow(java.nio.file.Path)} if a file couldn't be opened as a zip. */
 @QuiltLoaderInternal(QuiltLoaderInternalType.PLUGIN_API)
 public class NonZipException extends Exception {
 

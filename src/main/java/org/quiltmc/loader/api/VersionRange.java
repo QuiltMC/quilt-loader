@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 /**
  * A collection of {@link VersionInterval}s, which are part of one range of versions.
- * For example, a range of versions could be 2.0.0 < x < 3.0.0 OR 4.0.0 < x < 5.0.0.
+ * For example, a range of versions could be {@literal 2.0.0 < x < 3.0.0 OR 4.0.0 < x < 5.0.0}.
  * For simplicities sake this is always sorted, and never contains overlapping intervals.
  */
 @ApiStatus.NonExtendable

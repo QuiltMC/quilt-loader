@@ -60,20 +60,22 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a 
+	 *             {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. 
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with 
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -83,7 +85,7 @@ public final class QuiltConfig {
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Path path, Config.Creator before, Class<C> configCreatorClass, Config.Creator after) {
 		return Config.create(QuiltConfigImpl.getConfigEnvironment(), family, id, path, before, configCreatorClass, after);
@@ -92,20 +94,22 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or
+	 *             a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them.
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with 
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.</p>
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -114,7 +118,7 @@ public final class QuiltConfig {
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Path path, Config.Creator before, Class<C> configCreatorClass) {
 		return create(family, id, path, before, configCreatorClass, builder -> {});
@@ -123,20 +127,22 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or
+	 *             a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them.
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.</p>
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the configs id
@@ -145,7 +151,7 @@ public final class QuiltConfig {
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Path path, Class<C> configCreatorClass, Config.Creator after) {
 		return create(family, id, path, builder -> {}, configCreatorClass, after);
@@ -154,20 +160,22 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or
+	 *             a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them.
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.</p>
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
@@ -175,7 +183,7 @@ public final class QuiltConfig {
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Path path, Class<C> configCreatorClass) {
 		return create(family, id, path, builder -> {}, configCreatorClass, builder -> {});
@@ -184,27 +192,29 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or
+	 *             a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them.
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.</p>
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Config.Creator before, Class<C> configCreatorClass, Config.Creator after) {
 		return create(family, id, Paths.get(""), before, configCreatorClass, after);
@@ -213,26 +223,28 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or
+	 *             a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them.
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Config.Creator before, Class<C> configCreatorClass) {
 		return create(family, id, Paths.get(""), before, configCreatorClass, builder -> {});
@@ -241,26 +253,28 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:</li>
+	 *     <li>Each non-static non-transient field should be final, not null, and be one of the following types:
 	 *     <ul>
 	 *         <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
-	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
+	 *         <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types or
+	 *             a {@link org.quiltmc.config.api.values.ConfigSerializableObject})</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
-	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them. The {@link org.quiltmc.config.api.annotations.Comment}
-	 * annotation is one such annotation that is provided by default, but additional {@link ConfigFieldAnnotationProcessor}s
-	 * can be registered with {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.
+	 * <p>Certain annotations can also be used on fields of this class to attach metadata to them.
+	 * The {@link org.quiltmc.config.api.annotations.Comment} annotation is one such annotation that is provided by default,
+	 * but additional {@link ConfigFieldAnnotationProcessor}s can be registered with
+	 * {@link ConfigFieldAnnotationProcessor#register(Class, ConfigFieldAnnotationProcessor)}.</p>
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Class<C> configCreatorClass, Config.Creator after) {
 		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, after);
@@ -269,26 +283,25 @@ public final class QuiltConfig {
 	/**
 	 * Creates and registers a config with fields derived from the fields of the passed class
 	 *
-	 * <p>The passed class should have the following characteristics:
+	 * <p>The passed class should have the following characteristics:</p>
 	 * <ul>
 	 *     <li>Has a public no-argument constructor</li>
-	 *     <li>Each non-static field should be final and be one of the following types:</li>
+	 *     <li>Each non-static field should be final and be one of the following types:
 	 *     <ul>
 	 *     	   <li>A basic type (int, long, float, double, boolean, String, or enum)</li>
 	 *     	   <li>A complex type (a {@link ValueList} or {@link ValueMap} of basic or complex types)</li>
 	 *         <li>An object whose class follows these rules</li>
-	 *     </ul>
+	 *     </ul></li>
 	 * </ul>
 	 *
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link WrappedConfig <C>}
+	 * @return a config {@code C extends {@link WrappedConfig}}
 	 */
 	public static <C extends WrappedConfig> C create(String family, String id, Class<C> configCreatorClass) {
 		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
 	}
 	
-	private QuiltConfig() {
-	}
+	private QuiltConfig() {}
 }

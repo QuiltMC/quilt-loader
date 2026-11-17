@@ -62,7 +62,7 @@ public final class QuiltConfig {
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Path path, Config.Creator before, Class<C> configCreatorClass, Config.Creator after) {
 		return ConfigFactory.create(QuiltConfigImpl.getConfigEnvironment(), family, id, path, before, configCreatorClass, after);
@@ -78,7 +78,7 @@ public final class QuiltConfig {
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Path path, Config.Creator before, Class<C> configCreatorClass) {
 		return create(family, id, path, before, configCreatorClass, builder -> {});
@@ -94,7 +94,7 @@ public final class QuiltConfig {
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Path path, Class<C> configCreatorClass, Config.Creator after) {
 		return create(family, id, path, builder -> {}, configCreatorClass, after);
@@ -109,7 +109,7 @@ public final class QuiltConfig {
 	 *             if the path is empty, the config file might be ".minecraft/config/example_mod/id.toml"
 	 *             if the path is "client/gui", the config file might be ".minecraft/config/example_mod/client/gui/id.toml"
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Path path, Class<C> configCreatorClass) {
 		return create(family, id, path, builder -> {}, configCreatorClass, builder -> {});
@@ -123,7 +123,7 @@ public final class QuiltConfig {
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Config.Creator before, Class<C> configCreatorClass, Config.Creator after) {
 		return create(family, id, Paths.get(""), before, configCreatorClass, after);
@@ -136,7 +136,7 @@ public final class QuiltConfig {
 	 * @param id the config's id
 	 * @param before a {@link Config.Creator} that can be used to configure the resulting config further
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Config.Creator before, Class<C> configCreatorClass) {
 		return create(family, id, Paths.get(""), before, configCreatorClass, builder -> {});
@@ -149,7 +149,7 @@ public final class QuiltConfig {
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
 	 * @param after a {@link Config.Creator} that can be used to configure the resulting config further
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Class<C> configCreatorClass, Config.Creator after) {
 		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, after);
@@ -161,12 +161,11 @@ public final class QuiltConfig {
 	 * @param family the mod owning the resulting config file
 	 * @param id the config's id
 	 * @param configCreatorClass a class as described above
-	 * @return a {@link ReflectiveConfig <C>}
+	 * @return a config {@code C extends {@link ReflectiveConfig}}
 	 */
 	public static <C extends ReflectiveConfig> C create(String family, String id, Class<C> configCreatorClass) {
 		return create(family, id, Paths.get(""), builder -> {}, configCreatorClass, builder -> {});
 	}
 
-	private QuiltConfig() {
-	}
+	private QuiltConfig() {}
 }

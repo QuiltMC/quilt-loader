@@ -30,8 +30,7 @@ import org.quiltmc.loader.impl.metadata.VersionIntervalImpl;
  * <p>
  * The represented version constraint is contiguous between its lower and upper limit; disjoint intervals are built
  * using collections of {@link VersionInterval}. Empty intervals may be represented by {@code null} or any interval
- * 
- * @code (x,x)} with x being a non-{@code null} version and both endpoints being exclusive. */
+ * {@code (x,x)} with x being a non-{@code null} version and both endpoints being exclusive. */
 @ApiStatus.NonExtendable
 public interface VersionInterval extends Comparable<VersionInterval> {
 	VersionInterval ALL = new VersionIntervalImpl(null, false, null, false);

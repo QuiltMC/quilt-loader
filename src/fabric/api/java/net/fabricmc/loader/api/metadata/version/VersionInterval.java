@@ -31,7 +31,7 @@ import org.quiltmc.loader.impl.fabric.util.version.Quilt2FabricVersionInterval;
  *
  * <p>The represented version interval is contiguous between its lower and upper limit, disjoint intervals are built
  * using collections of {@link VersionInterval}. Empty intervals may be represented by {@code null} or any interval
- * @code (x,x)} with x being a non-{@code null} version and both endpoints being exclusive.
+ * {@code (x,x)} with x being a non-{@code null} version and both endpoints being exclusive.
  */
 @Deprecated
 public interface VersionInterval {
