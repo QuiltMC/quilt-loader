@@ -40,7 +40,7 @@ import org.quiltmc.loader.impl.util.QuiltLoaderInternalType;
  * <p>
  * Plugins are applied the following steps:
  * <ol>
- * <li>{@link #load(QuiltPluginContext, Map)} is called to set the {@link QuiltPluginContext}.</li></li>
+ * <li>{@link #load(QuiltPluginContext, Map)} is called to set the {@link QuiltPluginContext}.</li>
  * <li>Quilt Loader will scan all files in those folders, and follow these steps:
  * <ol>
  * <li>If it ends with ".disabled", or is a system or hidden file, then it is skipped.</li>

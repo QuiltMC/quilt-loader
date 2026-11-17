@@ -121,9 +121,9 @@ public interface Version {
 		int versionComponentCount();
 
 		/**
-		 * Returns the version component at {@code pos}.
-		 * If {@code pos} is greater than or equal to the number of components, then it returns {@code 0}.
-		 * @param pos the position to check
+		 * Returns the version component at {@code index}.
+		 * If {@code index} is greater than or equal to the number of components, then it returns {@code 0}.
+		 * @param index the position to check
 		 * @return the version component
 		 */
 		int versionComponent(int index);

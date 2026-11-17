@@ -25,25 +25,25 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *
  * <p>It enables obtaining of other JVM languages' objects with custom instantiation logic.</p>
  *
- * <p>A language adapter is defined as so in {@code fabric.mod.json}:
- * <pre><blockquote>
+ * <p>A language adapter is defined as so in {@code fabric.mod.json}:</p>
+ * <blockquote><pre>
  *   "languageAdapters": {
  *     "&lt;a key&gt;": "&lt;the binary name of the language adapter class&gt;"
  *   }
- * </blockquote></pre>
- * Multiple keys can be present in the {@code languageAdapters} section.</p>
+ * </pre></blockquote>
+ * Multiple keys can be present in the {@code languageAdapters} section.
  *
  * <p>In the declaration, the language adapter is referred by its <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1">binary name</a>,
  * such as {@code "mypackage.MyClass$Inner"}. It must have a no-argument public constructor for the Loader to instantiate.</p>
  *
- * <p>The {@code default} language adapter from Fabric Loader can accept {@code value} as follows:
+ * <p>The {@code default} language adapter from Fabric Loader can accept {@code value} as follows:</p>
  * <ul>
  *   <li>A fully qualified reference to a class, in <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-13.html#jls-13.1">
  *   binary name</a>, such as {@code package.MyClass$Inner}, where the class has a public no-argument constructor
  *   and {@code type} is assignable from the class.
  *
- *   <p>An example of an entrypoint class
- *   <pre><blockquote>
+ *   <p>An example of an entrypoint class</p>
+ *   <blockquote><pre>
  *     package net.fabricmc.example;
  *     import net.fabricmc.api.ModInitializer;
  *     public class ExampleMod implements ModInitializer {
@@ -51,8 +51,8 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *       {@literal @}Override
  *       public void onInitialize() {}
  *     }
- *   </blockquote></pre>
- *   You would declare {@code "net.fabricmc.example.ExampleMod"}.</p>
+ *   </pre></blockquote>
+ *   You would declare {@code "net.fabricmc.example.ExampleMod"}.
  *
  *   <p>For each entrypoint reference, a new instance of the class is created.
  * 	 If this class implements two separate entrypoints, there will be two distinct
@@ -63,8 +63,8 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *   field name. The field must be static, and {@code type} must be assignable from
  *   the field's class.
  *
- *   <p>An example of an entrypoint field
- *   <pre><blockquote>
+ *   <p>An example of an entrypoint field</p>
+ *   <blockquote><pre>
  *     package net.fabricmc.example;
  *     import net.fabricmc.api.ModInitializer;
  *     public final class ExampleMod implements ModInitializer {
@@ -75,8 +75,8 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *       {@literal @}Override
  *       public void onInitialize() {}
  *     }
- *   </blockquote></pre>
- *   You would declare {@code "net.fabricmc.example.ExampleMod::INSTANCE"}.</p>
+ *   </pre></blockquote>
+ *   You would declare {@code "net.fabricmc.example.ExampleMod::INSTANCE"}.
  *   </li>
  *
  *   <li>A fully qualified reference to a class in binary name followed by {@code ::} and a
@@ -84,26 +84,25 @@ import net.fabricmc.loader.impl.util.DefaultLanguageAdapter;
  *   method reference. If the method is not static, the class must have an
  *   accessible no-argument constructor for the Loader to create an instance.
  *
- *   <p>An example of an entrypoint method
- *   <pre><blockquote>
+ *   <p>An example of an entrypoint method</p>
+ *   <blockquote><pre>
  *     package net.fabricmc.example;
  *     public final class ExampleMod {
  *       private ExampleMod() {} // doesn't need to be instantiable by others if method is static
  *
  *       public static void init() {}
  *     }
- *   </blockquote></pre>
- *   You would declare {@code "net.fabricmc.example.ExampleMod::init"}.</p>
+ *   </pre></blockquote>
+ *   You would declare {@code "net.fabricmc.example.ExampleMod::init"}.
  *   </li>
  * </ul>
- *
- * @deprecated Please move to quilt's {@link org.quiltmc.loader.api.LanguageAdapter}.
  */
 @Deprecated
 public interface LanguageAdapter extends org.quiltmc.loader.api.LanguageAdapter {
 	static LanguageAdapter getDefault() {
 		return DefaultLanguageAdapter.INSTANCE;
 	}
+
 	/**
 	 * Creates an object of {@code type} from an arbitrary string declaration.
 	 *

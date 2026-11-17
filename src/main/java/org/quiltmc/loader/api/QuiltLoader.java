@@ -56,34 +56,36 @@ public final class QuiltLoader {
 	/**
 	 * Returns all entrypoints declared under a {@code key}, assuming they are of a specific type.
 	 *
-	 * <p>The entrypoint is declared in the {@code fabric.mod.json} as following:
-	 * <pre><blockquote>
+	 * <p>The entrypoint is declared in the {@code fabric.mod.json} as following:</p>
+	 * <blockquote><pre>
 	 *   "entrypoints": {
 	 *     "&lt;a key&gt;": [
 	 *       &lt;a list of entrypoint declarations&gt;
 	 *     ]
 	 *   }
-	 * </blockquote></pre>
-	 * Multiple keys can be present in the {@code entrypoints} section.</p>
+	 * </pre></blockquote>
+	 * Multiple keys can be present in the {@code entrypoints} section.
 	 *
 	 * <p>An entrypoint declaration indicates that an arbitrary notation is sent
 	 * to a {@link LanguageAdapter} to offer an instance of entrypoint. It is
 	 * either a string, or an object. An object declaration
-	 * is of this form:<pre><blockquote>
+	 * is of this form:</p>
+	 * <blockquote><pre>
 	 *   {
 	 *     "adapter": "&lt;a custom adatper&gt;"
 	 *     "value": "&lt;an arbitrary notation&gt;"
 	 *   }
-	 * </blockquote></pre>
+	 * </pre></blockquote>
+	 *
 	 * A string declaration {@code <an arbitrary notation>} is equivalent to
-	 * <pre><blockquote>
+	 * <blockquote><pre>
 	 *   {
 	 *     "adapter": "default"
 	 *     "value": "&lt;an arbitrary notation&gt;"
 	 *   }
-	 * </blockquote></pre>
+	 * </pre></blockquote>
 	 * where the {@code default} adapter is the {@linkplain LanguageAdapter adapter}
-	 * offered by Fabric Loader. </p>
+	 * offered by Fabric Loader.
 	 *
 	 * @param key  the key in entrypoint declaration in {@code fabric.mod.json}
 	 * @param type the type of entrypoints

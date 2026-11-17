@@ -92,10 +92,10 @@ public interface QuiltPluginContext {
 	 * @return true if the given folder is a new folder, or false if it has already been added and scanned before. */
 	boolean addFolderToScan(Path folder);
 
-	/** "Locks" a zip file that has been opened by {@link QuiltPluginManager#loadZip(Path)} so that it won't be unloaded
+	/** "Locks" a zip file that has been opened by {@link QuiltPluginManager#loadZipNow(Path)} so that it won't be unloaded
 	 * if no loaded mod is using it.
 	 * 
-	 * @param path A path that has been returned by {@link QuiltPluginManager#loadZip(Path)}, <em>not</em> one of it's
+	 * @param path A path that has been returned by {@link QuiltPluginManager#loadZipNow(Path)}, <em>not</em> one of it's
 	 *            subfolders, or the zip file passed to that method. */
 	void lockZip(Path path);
 

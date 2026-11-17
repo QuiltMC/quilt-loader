@@ -123,15 +123,15 @@ public interface QuiltPluginManager {
 	// #################
 
 	/** @return A joined path which fully describes the given path. If the given path is a sub-folder of one returned by
-	 *         {@link #loadZip(Path)} then that zip path will prefix the given path.
+	 *         {@link #loadZipNow(Path)} then that zip path will prefix the given path.
 	 *         <p>
-	 *         For example if "/minecraft/mods/buildcraft-9.0.0.jar" is passed to loadZip, and then
+	 *         For example if "/minecraft/mods/buildcraft-9.0.0.jar" is passed to loadZipNow, and then
 	 *         "/assets/buildcraft/logo.png" is passed here, then this would return something similar to
 	 *         "/minecraft/mods/buildcraft-9.0.0.jar!/assets/buildcraft/logo.png". */
 	String describePath(Path path);
 
 	/** Retrieves the direct parent of the given path. If the given path is one that's been returned by
-	 * {@link #loadZip(Path)} then this will return the path of the zip - otherwise this will return
+	 * {@link #loadZipNow(Path)} then this will return the path of the zip - otherwise this will return
 	 * {@link Path#getParent()} */
 	Path getParent(Path path);
 
@@ -185,16 +185,16 @@ public interface QuiltPluginManager {
 	Set<Path> getModPaths();
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
-	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)} or the {@link #getParent(Path)} of
+	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, Path, ModLocation, QuiltTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
 	 * @return The mod id of the loader plugin that is currently loading the given mod. */
 	@Nullable
 	String getModProvider(Path mod);
 
 	/** @param mod The path to the mod. This should always be one that was passed to
-	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, boolean, PluginGuiTreeNode)} or the {@link #getParent(Path)} of
-	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, boolean, PluginGuiTreeNode)}. (Paths in
+	 *            {@link QuiltLoaderPlugin#scanUnknownFile(Path, ModLocation, QuiltTreeNode)} or the {@link #getParent(Path)} of
+	 *            a path passed to {@link QuiltLoaderPlugin#scanZip(Path, Path, ModLocation, QuiltTreeNode)}. (Paths in
 	 *            {@link #getModPaths()} always meet this requirement)
 	 * @return The mod load option that is loaded from the given path.
 	 * @deprecated Replaced by {@link #getModLoadOptions(Path)}, since this only returns a single load option! */

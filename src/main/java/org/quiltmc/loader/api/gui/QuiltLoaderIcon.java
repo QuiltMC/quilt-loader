@@ -19,7 +19,7 @@ package org.quiltmc.loader.api.gui;
 import org.jetbrains.annotations.ApiStatus;
 
 /** A displayable icon that can be shown in {@link QuiltLoaderGui} related elements. These are created from
- * {@link QuiltLoaderGui#createIcon(java.awt.image.BufferedImage)} (and related methods). */
+ * {@link QuiltLoaderGui#createIcon(byte[])} (and related methods). */
 @ApiStatus.NonExtendable
 public interface QuiltLoaderIcon {
 

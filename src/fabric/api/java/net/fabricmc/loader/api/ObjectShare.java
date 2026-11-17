@@ -79,7 +79,7 @@ public interface ObjectShare {
 	 * </pre>
 	 *
 	 * @param key key to react upon, format {@code modid:subkey}
-	 * @paran consumer consumer receiving the key/value pair: key first, value second
+	 * @param consumer consumer receiving the key/value pair: key first, value second
 	 */
 	void whenAvailable(String key, BiConsumer<String, Object> consumer);
 

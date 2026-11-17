@@ -164,10 +164,10 @@ public interface ModMetadata {
 	 * dimensions are not defined - in particular, they are not
 	 * guaranteed to be a power of two.</p>
 	 *
-	 * <p>The preferred size is used in the following manner:
+	 * <p>The preferred size is used in the following manner:</p>
 	 * <ul><li>the smallest image larger than or equal to the size
 	 * is returned, if one is present;</li>
-	 * <li>failing that, the largest image is returned.</li></ul></p>
+	 * <li>failing that, the largest image is returned.</li></ul>
 	 *
 	 * @param size the preferred size
 	 * @return the icon path, if any
